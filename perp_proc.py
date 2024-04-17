@@ -11,7 +11,7 @@ if len(sys.argv) < 2:
 file_path = sys.argv[1]
 with open(file_path, 'r') as file:
     prompt = file.read()
-html_snippet = "Please format all parts of your answer in HTML."
+html_snippet = "Please use many emojis and most importantly, format all parts of your answer in HTML. Next most important is to use great references."
 prompt = prompt.replace('#AQ', '') + html_snippet 
 print(prompt)
 
@@ -30,10 +30,12 @@ for response in perplexity.generate_answer(prompt):
             web_results = text_content.get('web_results', [])
             # Map numbers to URLs
             references = {str(idx + 1): web_results[idx]['url'] for idx in range(len(web_results)) if str(idx + 1) in numeric_references}
-            # Format reference list
-            reference_list = '\n'.join(f"[{ref}] {references[ref]}" for ref in sorted(numeric_references) if ref in references)
+            # Format reference list in HTML
+            reference_list = '\n'.join(f"<li><a href='{references[ref]}'>{ref}</a></li>" for ref in sorted(numeric_references) if ref in references)
+            # Wrap references in an HTML unordered list
+            reference_list_html = f"<ul>{reference_list}</ul>"
             # Append formatted references to the answer
-            full_answer = f"{answer}\n\nReferences:\n{reference_list}"
+            full_answer = f"{answer}\n\nReferences:\n{reference_list_html}"
             print(f"🤖: {full_answer}")
             responses.append(full_answer)  # Save the full answer to a list
         else:
