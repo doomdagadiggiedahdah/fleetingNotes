@@ -11,7 +11,7 @@ if len(sys.argv) < 2:
 file_path = sys.argv[1]
 with open(file_path, 'r') as file:
     prompt = file.read()
-prompt = prompt.replace('#AQ', '')
+prompt = prompt.replace('#AQ', '') + "Please format your answer in HTML."
 print(prompt)
 
 perplexity = Perplexity()
@@ -42,6 +42,7 @@ for response in perplexity.generate_answer(prompt):
         pass
 
 # Optionally, save responses to a file
+prompt = prompt.replace("Please format your answer in HTML.", '')
 with open(file_path, 'w+') as file:
     file.write(f"{prompt}\n\n")
     for answer in responses:
