@@ -19,6 +19,6 @@
 
 - Follow these steps for the:
 	- `jo` package;                 https://github.com/jpmens/jo#build-from-release-tarball
-	- gedit quicksave feature;      https://github.com/seanh/gedit-smart-autosave#installation
 	- AnkiConnect (Anki Plugin);    https://ankiweb.net/shared/info/2055492159
 	- Setting custom hotkey;        https://help.ubuntu.com/stable/ubuntu-help/keyboard-shortcuts-set.html
+        - For a script to set your own hotkeys; https://github.com/doomdagadiggiedahdah/.setup/blob/main/keybinds.sh
