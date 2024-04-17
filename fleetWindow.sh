@@ -34,7 +34,8 @@ case "$file_contents" in
         ;;
 
     *) # Regular note, the OG. This has to be last because it's a wildcard, everything will get picked up.
-        JSON_STRING=$(jo -d. action=addNote version=6 params.note.deckName=meh::fleet params.note.modelName=Basic-1e476 params.note.fields.Front=@$FILE) # Note: the @ is important, it tells jo to read the contents of the file
+        # Note: the @ in @$FILE tells jo to read the contents of the file
+        JSON_STRING=$(jo -d. action=addNote version=6 params.note.deckName=meh::fleet params.note.modelName=Basic-1e476 params.note.fields.Front=@$FILE) 
         curl localhost:8765 -X POST -d "$JSON_STRING"
         ;;
 
