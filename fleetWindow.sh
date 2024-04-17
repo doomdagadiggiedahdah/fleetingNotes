@@ -1,6 +1,7 @@
 #!/bin/bash
 
 LOCATION="/home/mat/Documents/ProgramExperiments/fleetingNotes/main/note_folder/"
+RESEARCH_ARCHIVE="/home/mat/Documents/ProgramExperiments/fleetingNotes/main/research_archive/"
 
 NAME=`date +"%Y.%m.%d__%H.%M.%S"`
 FILE="$LOCATION"${NAME}
@@ -24,9 +25,12 @@ case "$file_contents" in
         ;;
 
     *"#AQ"*) ### TODO This needs the cue to add to Questions
+        python3 "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/perp_proc.py" $FILE
+        file_contents=$(<$FILE)
+
         JSON_STRING=$(jo -d. action=addNote version=6 params.note.deckName=Questions params.note.modelName=Basic-1e476 params.note.fields.Front=@$FILE) # Are there other things I  want to add?
         curl localhost:8765 -X POST -d "$JSON_STRING"
-        rm $FILE
+        mv $FILE $RESEARCH_ARCHIVE
         ;;
 
     *) # Regular note, the OG. This has to be last because it's a wildcard, everything will get picked up.
