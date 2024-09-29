@@ -10,7 +10,6 @@ gedit $FILE
 
 file_contents=$(<$FILE)
 
-#This helped out a lot https://github.com/seanh/gedit-smart-autosave
 #Shit, this may be even better https://gottcode.org/focuswriter/
 #look into the autosave thing, reddit mentioned it https://www.reddit.com/r/opensource/comments/44ol6s/a_text_editor_for_linux_that_silently_saves/
 
