@@ -7,7 +7,7 @@ FILE_NAME=$(date +"%Y.%m.%d__%H.%M.%S.md")
 OBS_DATE=$(date +"%Y.%m.%d - %H.%M.%S")
 FILE="$LOCATION$FILE_NAME"
 touch "$FILE"
-gedit "$FILE"
+gedit "$FILE" & wait $!
 
 obsidian_note_template="""\
 $OBS_DATE
@@ -16,17 +16,11 @@ Tags: #fleet_note
 
 """
 
-echo "case"
-case "$FILE" in
-    "") # Empty, deletes empty note too.
-        echo "nothing here"
-        rm "$FILE"
-        ;;
-
-    *) # grabs everything ❤️ 
-        echo 'grab'
-        # Prepend the template to the file
-        { echo "$obsidian_note_template"; cat "$FILE"; } > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
-        # rm "$FILE.tmp"
-        ;;
-esac
+if [[ ! -s "$FILE" ]]; then  # Check if the file is empty
+    echo "nothing here"
+    rm "$FILE"
+else
+    echo 'grab'
+    # Prepend the template to the file
+    { echo "$obsidian_note_template"; cat "$FILE"; } > "$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+fi
