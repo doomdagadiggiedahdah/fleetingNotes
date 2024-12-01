@@ -1,0 +1,39 @@
+#!/usr/bin/env fish
+# note_processor.fish
+
+set LOCATION "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/audioNoteTranscribe/"
+set OBS_LOCATION "/home/mat/Obsidian/gtd - inbox.md"
+set NOTES_FOLDER "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/note_folder/"
+set LONG_NOTES_FOLDER "/home/mat/Obsidian/fleet_notes/voice_memo/"
+
+# Create folders if they don't exist
+mkdir -p "$NOTES_FOLDER" "$LONG_NOTES_FOLDER"
+
+cd $LOCATION
+
+for file in *.txt
+    # Skip if no txt files exist
+    test -f "$file"; or continue
+    
+    # Read the content of the file
+    set content (cat "$file")
+    set char_count (string length "$content")
+    
+    # Format the initial text with filename
+    set formatted_text "- $file ----VM----<br>$content"
+
+    if test $char_count -gt 200
+        set md_filename (string replace -r '\.m4a.txt$' '.md' "$file")
+        echo "$formatted_text" > "$LONG_NOTES_FOLDER$md_filename"
+        set preview (string sub -l 200 "$content")
+        
+        # Add preview and link to inbox
+        echo "" >> "$OBS_LOCATION"  # Add blank line for readability
+        echo "- [[$md_filename]] ----VM---- $preview..." >> "$OBS_LOCATION"
+    else
+        # Append directly to inbox
+        echo "" >> "$OBS_LOCATION"  # Add blank line for readability
+        echo "$formatted_text" >> "$OBS_LOCATION"
+    end
+    mv "$file" "$NOTES_FOLDER"
+end
