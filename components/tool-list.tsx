@@ -15,7 +15,6 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 	const [searchQuery, setSearchQuery] = useState("")
 	const [page, setPage] = useState(1)
 	const [expandedToolId, setExpandedToolId] = useState<string | null>(null)
-	const [copiedToolId, setCopiedToolId] = useState<string | null>(null)
 	const [activeTab, setActiveTab] = useState<{ [key: string]: InstallTab }>({})
 
 	const filterTools = (query: string) => {
@@ -40,37 +39,8 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 		setPage((prevPage) => prevPage + 1)
 	}
 
-	const toggleToolExpansion = (toolId: string) => {
-		setExpandedToolId((prevId) => (prevId === toolId ? null : toolId))
-		if (!activeTab[toolId]) {
-			setActiveTab((prev) => ({ ...prev, [toolId]: "claude" }))
-		}
-	}
 	const expandTool = (toolId: string) => {
-		setExpandedToolId((prevId) => toolId)
-	}
-
-	const handleCopyCommand = (
-		toolId: string,
-		content: string,
-		e: React.MouseEvent,
-	) => {
-		e.stopPropagation() // Prevent card expansion when copying
-
-		// Copy to clipboard
-		navigator.clipboard
-			.writeText(content)
-			.then(() => {
-				setCopiedToolId(toolId)
-
-				// Reset copied state after 2 seconds
-				setTimeout(() => {
-					setCopiedToolId(null)
-				}, 2000)
-			})
-			.catch((err) => {
-				console.error("Failed to copy command:", err)
-			})
+		setExpandedToolId(() => toolId)
 	}
 
 	if (tools.length === 0) {
