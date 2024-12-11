@@ -1,7 +1,7 @@
 "use client"
 
 import type { Tool } from "@/types/tool"
-import { ExternalLink, Github, Copy, CheckCheck, Code } from "lucide-react"
+import { ExternalLink, Github, Code } from "lucide-react"
 import { useEffect, useState } from "react"
 import Search from "./search"
 import Image from "next/image"
