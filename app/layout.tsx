@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Smithery - Language Model Tool Registry',
-  description: 'Discover and integrate powerful tools for your language models',
+  title: 'Smithery - Model Context Protocol Registry',
+  description: 'Power your language models with resources and tools.',
 }
 
 export default function RootLayout({
