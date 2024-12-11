@@ -72,7 +72,7 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 	const getTabContent = (tool: Tool, tab: InstallTab) => {
 		switch (tab) {
 			case "claude":
-				return `npx @smithery/get install ${tool.id}`
+				return `npx @smithery/cli install ${tool.id} --client claude`
 			case "jan":
 				return "Coming soon!"
 			case "code":
