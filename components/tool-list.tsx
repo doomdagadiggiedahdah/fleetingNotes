@@ -5,6 +5,7 @@ import { ExternalLink, Github, Copy, CheckCheck, Code } from "lucide-react"
 import { useEffect, useState } from "react"
 import Search from "./search"
 import Image from "next/image"
+import CodeBlock from "./code-block"
 
 type InstallTab = "claude" | "jan" | "code"
 
@@ -45,6 +46,9 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 			setActiveTab((prev) => ({ ...prev, [toolId]: "claude" }))
 		}
 	}
+	const expandTool = (toolId: string) => {
+		setExpandedToolId((prevId) => toolId)
+	}
 
 	const handleCopyCommand = (
 		toolId: string,
@@ -69,19 +73,6 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 			})
 	}
 
-	const getTabContent = (tool: Tool, tab: InstallTab) => {
-		switch (tab) {
-			case "claude":
-				return `npx @smithery/cli install ${tool.id} --client claude`
-			case "jan":
-				return "Coming soon!"
-			case "code":
-				return JSON.stringify(tool, null, 2)
-			default:
-				throw new Error("Invalid tab")
-		}
-	}
-
 	if (tools.length === 0) {
 		return (
 			<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
@@ -100,7 +91,7 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 						className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors cursor-pointer ${
 							expandedToolId === tool.id ? "expanded" : ""
 						}`}
-						onClick={() => toggleToolExpansion(tool.id)}
+						onClick={() => expandTool(tool.id)}
 					>
 						<div className="flex items-baseline justify-between mb-2">
 							<h3 className="text-lg font-semibold text-primary">
@@ -207,30 +198,8 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 									</div>
 									<div className="flex items-start justify-between">
 										<div className="flex-1">
-											<h4 className="font-semibold mb-2 text-primary">
-												Install Command
-											</h4>
-											<code className="text-sm bg-accent/50 p-2 rounded block overflow-x-auto whitespace-pre-wrap break-all max-w-full">
-												{getTabContent(tool, activeTab[tool.id] || "claude")}
-											</code>
+											{getTabContent(tool, activeTab[tool.id] || "claude")}
 										</div>
-										<button
-											onClick={(e) =>
-												handleCopyCommand(
-													tool.id,
-													getTabContent(tool, activeTab[tool.id] || "claude"),
-													e,
-												)
-											}
-											className="ml-4 p-2 rounded hover:bg-accent transition-colors"
-											aria-label="Copy installation command"
-										>
-											{copiedToolId === tool.id ? (
-												<CheckCheck className="w-5 h-5 text-green-500" />
-											) : (
-												<Copy className="w-5 h-5" />
-											)}
-										</button>
 									</div>
 								</div>
 							</div>
@@ -250,4 +219,43 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 			</div>
 		</>
 	)
+}
+
+const getTabContent = (tool: Tool, tab: InstallTab) => {
+	switch (tab) {
+		case "claude":
+			return (
+				<>
+					<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
+					<CodeBlock language="shell">
+						{`npx @smithery/cli install ${tool.id} --client claude`}
+					</CodeBlock>
+				</>
+			)
+		case "jan":
+			return <>Coming soon!</>
+		case "code":
+			return (
+				<>
+					<h4 className="font-semibold mb-2 text-primary">JSON Connections</h4>
+					<CodeBlock language="json">
+						{JSON.stringify(tool.connections[0].stdio, null, 2)}
+					</CodeBlock>
+					{tool.connections[0].stdio && (
+						<>
+							<h4 className="font-semibold mb-2 text-primary mt-3">
+								TypeScript SDK
+							</h4>
+							<CodeBlock language="typescript">
+								{`\
+import {StdioClientTransport} from "@modelcontextprotocol/sdk/client/stdio.js"
+const transport = new StdioClientTransport(${JSON.stringify(tool.connections[0].stdio)})`}
+							</CodeBlock>
+						</>
+					)}
+				</>
+			)
+		default:
+			throw new Error("Invalid tab")
+	}
 }
