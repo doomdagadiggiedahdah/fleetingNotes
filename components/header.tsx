@@ -11,15 +11,23 @@ export function Header() {
 							<h1 className="text-2xl font-bold text-foreground">Smithery</h1>
 						</div>
 					</Link>
-					<a
-						href="https://github.com/smithery-ai/typescript-sdk"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-						aria-label="GitHub repository"
-					>
-						<Github className="w-6 h-6" />
-					</a>
+					<div className="flex items-center gap-6">
+						<Link
+							href="/about"
+							className="text-muted-foreground hover:text-foreground transition-colors"
+						>
+							About
+						</Link>
+						<a
+							href="https://github.com/smithery-ai/typescript-sdk"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+							aria-label="GitHub repository"
+						>
+							<Github className="w-6 h-6" />
+						</a>
+					</div>
 				</div>
 			</div>
 		</header>
