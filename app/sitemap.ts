@@ -6,7 +6,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const protocolIds = await getAllProtocolIds()
 
 	// Base URL - replace with your actual production URL
-	const baseUrl = "https://smithery.dev"
+	const baseUrl = "https://smithery.ai"
 
 	// Static routes
 	const staticRoutes = [
