@@ -55,6 +55,7 @@ export const RegistryItemSchema = z.object({
 		.describe(
 			"The human-readable name of the MCP server. Do not mention MCP or Claude Desktop since those are redundant.",
 		),
+	verified: z.boolean().optional(),
 	description: z
 		.string()
 		.optional()
