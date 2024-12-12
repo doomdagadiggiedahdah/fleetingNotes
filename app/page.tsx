@@ -3,7 +3,7 @@ import ToolList from "@/components/tool-list"
 import { type RegistryItem, RegistryItemSchema } from "@/types/tool"
 import { Anvil, Github } from "lucide-react"
 import { z } from "zod"
-
+import { shuffle } from "lodash"
 async function getTools(): Promise<RegistryItem[]> {
 	try {
 		const res = await fetch("https://registry.smithery.ai/-/all", {
@@ -35,6 +35,7 @@ export default async function Home() {
 
 	try {
 		tools = await getTools()
+		shuffle(tools)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}
@@ -74,11 +75,7 @@ export default async function Home() {
 						.
 					</p>
 				</div>
-				{error ? (
-					<ErrorMessage message={error} />
-				) : (
-					<ToolList initialTools={tools} />
-				)}
+				{error ? <ErrorMessage message={error} /> : <ToolList tools={tools} />}
 			</main>
 		</div>
 	)

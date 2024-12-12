@@ -13,6 +13,7 @@
 		"@icons-pack/react-simple-icons": "^10.2.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
 		"next": "14.2.16",
 		"prism-react-renderer": "^2.4.1",
@@ -23,6 +24,7 @@
 		"zod": "^3.24.0"
 	},
 	"devDependencies": {
+		"@types/lodash": "^4.17.13",
 		"@types/node": "^20",
 		"@types/react": "^18",
 		"@types/react-dom": "^18",

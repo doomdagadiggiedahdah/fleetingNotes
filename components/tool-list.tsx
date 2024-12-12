@@ -1,6 +1,6 @@
 "use client"
 
-import type { RegistryItem } from "@/types/tool"
+import { isStdio, type RegistryItem } from "@/types/tool"
 import { ExternalLink, Github, Code } from "lucide-react"
 import { useEffect, useState } from "react"
 import Search from "./search"
@@ -9,15 +9,16 @@ import CodeBlock from "./code-block"
 
 type InstallTab = "claude" | "jan" | "code"
 
-export default function ToolList({
-	initialTools,
-}: { initialTools: RegistryItem[] }) {
-	const [tools] = useState<RegistryItem[]>(initialTools)
-	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>([])
-	const [searchQuery, setSearchQuery] = useState("")
+export default function ToolList({ tools }: { tools: RegistryItem[] }) {
+	// Page we've opened
 	const [page, setPage] = useState(1)
+	// Tools displayed on the page
+	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>(
+		tools.slice(0, page * 10),
+	)
+	const [searchQuery, setSearchQuery] = useState("")
 	const [expandedToolId, setExpandedToolId] = useState<string | null>(null)
-	const [activeTab, setActiveTab] = useState<{ [key: string]: InstallTab }>({})
+	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
 
 	const filterTools = (query: string) => {
 		return tools.filter(
@@ -109,7 +110,9 @@ export default function ToolList({
 												tool.connections[0].configSchema.properties,
 											).map(([key, value]) => (
 												<li key={key}>
-													{key}: {value?.description}
+													{key}:{" "}
+													{(value as { description: string })?.description ??
+														""}
 												</li>
 											))}
 										</ul>
@@ -120,16 +123,13 @@ export default function ToolList({
 									<div className="flex border-b border-border mb-4">
 										<button
 											className={`px-4 py-2 flex items-center gap-2 ${
-												activeTab[tool.id] === "claude"
+												activeTab === "claude"
 													? "border-b-2 border-primary"
 													: ""
 											}`}
 											onClick={(e) => {
 												e.stopPropagation()
-												setActiveTab((prev) => ({
-													...prev,
-													[tool.id]: "claude",
-												}))
+												setActiveTab("claude")
 											}}
 										>
 											<Image
@@ -142,26 +142,22 @@ export default function ToolList({
 										</button>
 										<button
 											className={`px-4 py-2 flex items-center gap-2 ${
-												activeTab[tool.id] === "jan"
-													? "border-b-2 border-primary"
-													: ""
+												activeTab === "jan" ? "border-b-2 border-primary" : ""
 											}`}
 											onClick={(e) => {
 												e.stopPropagation()
-												setActiveTab((prev) => ({ ...prev, [tool.id]: "jan" }))
+												setActiveTab("jan")
 											}}
 										>
 											👋 Jan
 										</button>
 										<button
 											className={`px-4 py-2 flex items-center gap-2 ${
-												activeTab[tool.id] === "code"
-													? "border-b-2 border-primary"
-													: ""
+												activeTab === "code" ? "border-b-2 border-primary" : ""
 											}`}
 											onClick={(e) => {
 												e.stopPropagation()
-												setActiveTab((prev) => ({ ...prev, [tool.id]: "code" }))
+												setActiveTab("code")
 											}}
 										>
 											<Code className="w-4 h-4" />
@@ -170,7 +166,7 @@ export default function ToolList({
 									</div>
 									<div className="flex items-start justify-between">
 										<div className="flex-1">
-											{getTabContent(tool, activeTab[tool.id] || "claude")}
+											{getTabContent(tool, activeTab || "claude")}
 										</div>
 									</div>
 								</div>
@@ -210,19 +206,23 @@ const getTabContent = (tool: RegistryItem, tab: InstallTab) => {
 			return (
 				<>
 					<h4 className="font-semibold mb-2 text-primary">JSON Connections</h4>
-					<CodeBlock language="json">
-						{JSON.stringify(tool.connections[0].stdio, null, 2)}
-					</CodeBlock>
-					{tool.connections[0].stdio && (
+					{tool.connections[0] && isStdio(tool.connections[0]) && (
 						<>
-							<h4 className="font-semibold mb-2 text-primary mt-3">
-								TypeScript SDK
-							</h4>
-							<CodeBlock language="typescript">
-								{`\
+							<CodeBlock language="json">
+								{JSON.stringify(tool.connections[0].stdio, null, 2)}
+							</CodeBlock>
+							{tool.connections[0].stdio && (
+								<>
+									<h4 className="font-semibold mb-2 text-primary mt-3">
+										TypeScript SDK
+									</h4>
+									<CodeBlock language="typescript">
+										{`\
 import {StdioClientTransport} from "@modelcontextprotocol/sdk/client/stdio.js"
 const transport = new StdioClientTransport(${JSON.stringify(tool.connections[0].stdio)})`}
-							</CodeBlock>
+									</CodeBlock>
+								</>
+							)}
 						</>
 					)}
 				</>
