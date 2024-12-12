@@ -28,6 +28,26 @@ export async function getRegistryItems(): Promise<RegistryItem[]> {
 	}
 }
 
+export async function getRegistryItem(id: string): Promise<RegistryItem> {
+	const res = await fetch(`https://registry.smithery.ai/${id}`, {
+		next: { revalidate: 3600 }, // Revalidate every hour
+	})
+
+	if (!res.ok) {
+		throw new Error(`HTTP error! status: ${res.status}`)
+	}
+
+	const data = await res.json()
+	const parsedData = RegistryItemSchema.safeParse(data)
+
+	if (!parsedData.success) {
+		console.error("Zod parsing error:", parsedData.error)
+		throw new Error("Failed to parse tools data")
+	}
+	const item = parsedData.data
+	return item
+}
+
 export async function getAllProtocolIds(): Promise<string[]> {
 	try {
 		const items = await getRegistryItems()

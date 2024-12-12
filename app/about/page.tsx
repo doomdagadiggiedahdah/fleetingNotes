@@ -2,9 +2,7 @@ import type { Metadata } from "next"
 import { Header } from "@/components/header"
 
 export const metadata: Metadata = {
-	title: "About Smithery - Model Context Protocol Registry",
-	description:
-		"Discover and build with model context protocols for LLM-powered agents",
+	title: "About | Smithery",
 }
 
 export default function AboutPage() {

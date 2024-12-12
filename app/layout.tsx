@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
 	title: "Smithery - Model Context Protocol Registry",
-	description: "Power your language models with resources and tools.",
+	description: "Integrate your language models with external tools.",
 }
 
 export default function RootLayout({
