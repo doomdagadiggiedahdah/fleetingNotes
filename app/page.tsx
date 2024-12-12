@@ -35,7 +35,7 @@ export default async function Home() {
 
 	try {
 		tools = await getTools()
-		shuffle(tools)
+		tools = shuffle(tools)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}

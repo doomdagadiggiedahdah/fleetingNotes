@@ -17,7 +17,9 @@ export default function ToolList({ tools }: { tools: RegistryItem[] }) {
 		tools.slice(0, page * 10),
 	)
 	const [searchQuery, setSearchQuery] = useState("")
-	const [expandedToolId, setExpandedToolId] = useState<string | null>(null)
+	const [expandedToolId, setExpandedToolId] = useState<string | null>(
+		tools.length > 0 ? tools[0].id : null,
+	)
 	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
 
 	const filterTools = (query: string) => {
