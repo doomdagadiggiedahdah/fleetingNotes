@@ -1,6 +1,6 @@
 "use client"
 
-import type { Tool } from "@/types/tool"
+import type { RegistryItem } from "@/types/tool"
 import { ExternalLink, Github, Code } from "lucide-react"
 import { useEffect, useState } from "react"
 import Search from "./search"
@@ -9,9 +9,11 @@ import CodeBlock from "./code-block"
 
 type InstallTab = "claude" | "jan" | "code"
 
-export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
-	const [tools] = useState<Tool[]>(initialTools)
-	const [displayedTools, setDisplayedTools] = useState<Tool[]>([])
+export default function ToolList({
+	initialTools,
+}: { initialTools: RegistryItem[] }) {
+	const [tools] = useState<RegistryItem[]>(initialTools)
+	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>([])
 	const [searchQuery, setSearchQuery] = useState("")
 	const [page, setPage] = useState(1)
 	const [expandedToolId, setExpandedToolId] = useState<string | null>(null)
@@ -21,7 +23,7 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 		return tools.filter(
 			(tool) =>
 				tool.name.toLowerCase().includes(query.toLowerCase()) ||
-				tool.description.toLowerCase().includes(query.toLowerCase()),
+				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
 		)
 	}
 
@@ -191,7 +193,7 @@ export default function ToolList({ initialTools }: { initialTools: Tool[] }) {
 	)
 }
 
-const getTabContent = (tool: Tool, tab: InstallTab) => {
+const getTabContent = (tool: RegistryItem, tab: InstallTab) => {
 	switch (tab) {
 		case "claude":
 			return (

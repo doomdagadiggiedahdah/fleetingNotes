@@ -1,10 +1,10 @@
-import { Anvil, Github } from "lucide-react"
-import ToolList from "@/components/tool-list"
 import ErrorMessage from "@/components/error-message"
-import { ToolSchema } from "@/types/tool"
+import ToolList from "@/components/tool-list"
+import { type RegistryItem, RegistryItemSchema } from "@/types/tool"
+import { Anvil, Github } from "lucide-react"
 import { z } from "zod"
 
-async function getTools() {
+async function getTools(): Promise<RegistryItem[]> {
 	try {
 		const res = await fetch("https://registry.smithery.ai/-/all", {
 			next: { revalidate: 3600 }, // Revalidate every hour
@@ -15,7 +15,7 @@ async function getTools() {
 		}
 
 		const data = await res.json()
-		const parsedData = z.array(ToolSchema).safeParse(data)
+		const parsedData = z.array(RegistryItemSchema).safeParse(data)
 
 		if (!parsedData.success) {
 			console.error("Zod parsing error:", parsedData.error)
@@ -30,8 +30,8 @@ async function getTools() {
 }
 
 export default async function Home() {
-	let tools
-	let error
+	let tools: RegistryItem[] = []
+	let error = ""
 
 	try {
 		tools = await getTools()
@@ -77,7 +77,7 @@ export default async function Home() {
 				{error ? (
 					<ErrorMessage message={error} />
 				) : (
-					<ToolList initialTools={tools || []} />
+					<ToolList initialTools={tools} />
 				)}
 			</main>
 		</div>
