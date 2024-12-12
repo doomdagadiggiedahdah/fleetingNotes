@@ -4,7 +4,6 @@ import { isStdio, type RegistryItem } from "@/types/tool"
 import { BadgeCheck, Code, ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import CodeBlock from "./code-block"
 import Search from "./search"
@@ -23,7 +22,7 @@ export default function ToolList({
 				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
 		)
 	}
-	const router = useRouter()
+
 	// Page we've opened
 	const [page, setPage] = useState(1)
 	const [searchQuery, setSearchQuery] = useState(initialSearch)
