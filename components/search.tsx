@@ -1,14 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { SearchIcon } from "lucide-react"
 
 interface SearchProps {
 	onSearch: (query: string) => void
+	initialValue?: string
 }
 
-export default function Search({ onSearch }: SearchProps) {
-	const [query, setQuery] = useState("")
+export default function Search({ onSearch, initialValue = "" }: SearchProps) {
+	const [query, setQuery] = useState(initialValue)
+
+	useEffect(() => {
+		if (initialValue) {
+			setQuery(initialValue)
+			onSearch(initialValue)
+		}
+	}, [initialValue, onSearch])
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault()

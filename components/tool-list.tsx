@@ -1,30 +1,53 @@
 "use client"
 
 import { isStdio, type RegistryItem } from "@/types/tool"
-import { ExternalLink, Github, Code } from "lucide-react"
-import { useEffect, useState } from "react"
-import Search from "./search"
+import { Code, ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import CodeBlock from "./code-block"
+import Search from "./search"
 
 type InstallTab = "claude" | "jan" | "code"
 
-export default function ToolList({ tools }: { tools: RegistryItem[] }) {
+export default function ToolList({
+	tools,
+	initialSearch = "",
+}: { tools: RegistryItem[]; initialSearch?: string }) {
+	const router = useRouter()
 	// Page we've opened
 	const [page, setPage] = useState(1)
+	const [searchQuery, setSearchQuery] = useState(initialSearch)
+
 	// Tools displayed on the page
-	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>(
-		tools.slice(0, page * 10),
-	)
-	const [searchQuery, setSearchQuery] = useState("")
-	const [expandedToolId, setExpandedToolId] = useState<string | null>(
-		tools.length > 0 ? tools[0].id : null,
-	)
+	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>(() => {
+		if (initialSearch) {
+			return tools.filter(
+				(tool) =>
+					tool.id.toLowerCase() === initialSearch.toLowerCase() ||
+					tool.name.toLowerCase() === initialSearch.toLowerCase(),
+			)
+		}
+		return tools.slice(0, page * 10)
+	})
+	const [expandedToolId, setExpandedToolId] = useState<string | null>(() => {
+		if (initialSearch) {
+			const matchingTool = tools.find(
+				(tool) =>
+					tool.id.toLowerCase() === initialSearch.toLowerCase() ||
+					tool.name.toLowerCase() === initialSearch.toLowerCase(),
+			)
+			return matchingTool?.id || (tools.length > 0 ? tools[0].id : null)
+		}
+		return tools.length > 0 ? tools[0].id : null
+	})
 	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
 
 	const filterTools = (query: string) => {
 		return tools.filter(
 			(tool) =>
+				tool.id.toLowerCase().includes(query.toLowerCase()) ||
 				tool.name.toLowerCase().includes(query.toLowerCase()) ||
 				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
 		)
@@ -38,6 +61,7 @@ export default function ToolList({ tools }: { tools: RegistryItem[] }) {
 	const handleSearch = (query: string) => {
 		setSearchQuery(query)
 		setPage(1)
+		if (query === "") router.push(`/`)
 	}
 
 	const handleLoadMore = () => {
@@ -45,7 +69,7 @@ export default function ToolList({ tools }: { tools: RegistryItem[] }) {
 	}
 
 	const expandTool = (toolId: string) => {
-		setExpandedToolId(() => toolId)
+		setExpandedToolId(toolId)
 	}
 
 	if (tools.length === 0) {
@@ -58,7 +82,7 @@ export default function ToolList({ tools }: { tools: RegistryItem[] }) {
 
 	return (
 		<>
-			<Search onSearch={handleSearch} />
+			<Search onSearch={handleSearch} initialValue={searchQuery} />
 			<div className="space-y-4 mt-4">
 				{displayedTools.map((tool) => (
 					<div
@@ -69,9 +93,13 @@ export default function ToolList({ tools }: { tools: RegistryItem[] }) {
 						onClick={() => expandTool(tool.id)}
 					>
 						<div className="flex items-baseline justify-between mb-2">
-							<h3 className="text-lg font-semibold text-primary">
+							<Link
+								href={`/protocol/${tool.id}`}
+								className="text-lg font-semibold text-primary hover:underline"
+								onClick={(e) => e.stopPropagation()}
+							>
 								{tool.name}
-							</h3>
+							</Link>
 							{tool.license && (
 								<span className="text-sm text-muted-foreground">
 									{tool.license}
