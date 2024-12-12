@@ -1,6 +1,6 @@
 import { type RegistryItem, RegistryItemSchema } from "@/types/tool"
-import { z } from "zod"
 import { shuffle } from "lodash"
+import { z } from "zod"
 
 export async function getRegistryItems(): Promise<RegistryItem[]> {
 	try {
@@ -29,11 +29,11 @@ export async function getRegistryItems(): Promise<RegistryItem[]> {
 }
 
 export async function getAllProtocolIds(): Promise<string[]> {
-  try {
-    const items = await getRegistryItems()
-    return items.map(item => item.id)
-  } catch (error) {
-    console.error("Failed to fetch protocol IDs:", error)
-    return []
-  }
+	try {
+		const items = await getRegistryItems()
+		return items.map((item) => item.id)
+	} catch (error) {
+		console.error("Failed to fetch protocol IDs:", error)
+		return []
+	}
 }
