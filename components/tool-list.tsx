@@ -1,11 +1,11 @@
 "use client"
 
 import { isStdio, type RegistryItem } from "@/types/tool"
-import { Code, ExternalLink, Github } from "lucide-react"
+import { BadgeCheck, Code, ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import CodeBlock from "./code-block"
 import Search from "./search"
 
@@ -15,35 +15,6 @@ export default function ToolList({
 	tools,
 	initialSearch = "",
 }: { tools: RegistryItem[]; initialSearch?: string }) {
-	const router = useRouter()
-	// Page we've opened
-	const [page, setPage] = useState(1)
-	const [searchQuery, setSearchQuery] = useState(initialSearch)
-
-	// Tools displayed on the page
-	const [displayedTools, setDisplayedTools] = useState<RegistryItem[]>(() => {
-		if (initialSearch) {
-			return tools.filter(
-				(tool) =>
-					tool.id.toLowerCase() === initialSearch.toLowerCase() ||
-					tool.name.toLowerCase() === initialSearch.toLowerCase(),
-			)
-		}
-		return tools.slice(0, page * 10)
-	})
-	const [expandedToolId, setExpandedToolId] = useState<string | null>(() => {
-		if (initialSearch) {
-			const matchingTool = tools.find(
-				(tool) =>
-					tool.id.toLowerCase() === initialSearch.toLowerCase() ||
-					tool.name.toLowerCase() === initialSearch.toLowerCase(),
-			)
-			return matchingTool?.id || (tools.length > 0 ? tools[0].id : null)
-		}
-		return tools.length > 0 ? tools[0].id : null
-	})
-	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
-
 	const filterTools = (query: string) => {
 		return tools.filter(
 			(tool) =>
@@ -52,32 +23,27 @@ export default function ToolList({
 				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
 		)
 	}
+	const router = useRouter()
+	// Page we've opened
+	const [page, setPage] = useState(1)
+	const [searchQuery, setSearchQuery] = useState(initialSearch)
 
-	useEffect(() => {
-		const filtered = filterTools(searchQuery)
-		setDisplayedTools(filtered.slice(0, page * 10))
-	}, [searchQuery, page, tools])
+	// Tools displayed on the page
+	const filteredTools = filterTools(searchQuery)
+	const displayedTools = filterTools(searchQuery).slice(0, page * 10)
+
+	const [expandedToolId, setExpandedToolId] = useState<string | null>(
+		displayedTools.length > 0 ? displayedTools[0].id : null,
+	)
+	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
 
 	const handleSearch = (query: string) => {
 		setSearchQuery(query)
 		setPage(1)
-		if (query === "") router.push(`/`)
 	}
 
 	const handleLoadMore = () => {
 		setPage((prevPage) => prevPage + 1)
-	}
-
-	const expandTool = (toolId: string) => {
-		setExpandedToolId(toolId)
-	}
-
-	if (tools.length === 0) {
-		return (
-			<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
-				No tools found. Check back later for updates.
-			</div>
-		)
 	}
 
 	return (
@@ -90,16 +56,21 @@ export default function ToolList({
 						className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors cursor-pointer ${
 							expandedToolId === tool.id ? "expanded" : ""
 						}`}
-						onClick={() => expandTool(tool.id)}
+						onClick={() => setExpandedToolId(tool.id)}
 					>
 						<div className="flex items-baseline justify-between mb-2">
-							<Link
-								href={`/protocol/${tool.id}`}
-								className="text-lg font-semibold text-primary hover:underline"
-								onClick={(e) => e.stopPropagation()}
-							>
-								{tool.name}
-							</Link>
+							<div className="flex items-center">
+								<Link
+									href={`/protocol/${tool.id}`}
+									className="text-lg font-semibold text-primary hover:underline mr-2"
+									onClick={(e) => e.stopPropagation()}
+								>
+									{tool.name}
+								</Link>
+								{tool.verified && (
+									<BadgeCheck className="w-4 h-4 text-primary" />
+								)}
+							</div>
 							{tool.license && (
 								<span className="text-sm text-muted-foreground">
 									{tool.license}
@@ -204,7 +175,12 @@ export default function ToolList({
 						)}
 					</div>
 				))}
-				{displayedTools.length < tools.length && (
+				{filteredTools.length === 0 && (
+					<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
+						No tools found. Check back later for updates.
+					</div>
+				)}
+				{displayedTools.length < filteredTools.length && (
 					<div className="text-center py-4">
 						<button
 							onClick={handleLoadMore}
