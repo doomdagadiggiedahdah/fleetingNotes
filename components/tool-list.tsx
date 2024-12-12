@@ -52,6 +52,7 @@ export default function ToolList({
 			<div className="space-y-4 mt-4">
 				{displayedTools.map((tool) => (
 					<div
+						role="listitem"
 						key={tool.id}
 						className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors cursor-pointer ${
 							expandedToolId === tool.id ? "expanded" : ""

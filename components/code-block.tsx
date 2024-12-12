@@ -34,6 +34,7 @@ export default function CodeBlock({
 	return (
 		<div className="relative">
 			<button
+				type="button"
 				onClick={handleCopy}
 				className="absolute right-2 top-2 p-2 hover:bg-accent rounded-md transition-colors"
 				aria-label="Copy to clipboard"
@@ -56,10 +57,13 @@ export default function CodeBlock({
 						className={`text-sm bg-accent/50 p-2 rounded block overflow-x-auto whitespace-pre-wrap break-words ${className} ${highlightClassName}`}
 						style={style}
 					>
-						{tokens.map((line, i) => (
-							<div key={i} {...getLineProps({ line })}>
-								{line.map((token, key) => (
-									<span key={key} {...getTokenProps({ token })} />
+						{tokens.map((line) => (
+							<div key={JSON.stringify(line)} {...getLineProps({ line })}>
+								{line.map((token) => (
+									<span
+										key={JSON.stringify(token)}
+										{...getTokenProps({ token })}
+									/>
 								))}
 							</div>
 						))}
