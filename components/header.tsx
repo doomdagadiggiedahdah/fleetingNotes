@@ -5,12 +5,12 @@ export function Header() {
 		<header className="bg-card border-b border-border">
 			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 				<div className="flex items-center justify-between">
-					<div className="flex items-center">
-						<Anvil className="w-8 h-8 text-primary mr-2" />
-						<Link href="/" className="text-xl font-bold hover:opacity-80">
+					<Link href="/" className="text-xl font-bold hover:opacity-80">
+						<div className="flex items-center">
+							<Anvil className="w-8 h-8 text-primary mr-2" />
 							<h1 className="text-2xl font-bold text-foreground">Smithery</h1>
-						</Link>
-					</div>
+						</div>
+					</Link>
 					<a
 						href="https://github.com/smithery-ai/typescript-sdk"
 						target="_blank"

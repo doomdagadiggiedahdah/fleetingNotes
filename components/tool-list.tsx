@@ -224,8 +224,9 @@ const getTabContent = (tool: RegistryItem, tab: InstallTab) => {
 									</h4>
 									<CodeBlock language="typescript">
 										{`\
-import {StdioClientTransport} from "@modelcontextprotocol/sdk/client/stdio.js"
-const transport = new StdioClientTransport(${JSON.stringify(tool.connections[0].stdio)})`}
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+
+const transport = new StdioClientTransport(${JSON.stringify(tool.connections[0].stdio, null, 2)})`}
 									</CodeBlock>
 								</>
 							)}
