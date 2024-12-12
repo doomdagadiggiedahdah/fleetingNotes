@@ -27,3 +27,13 @@ export async function getRegistryItems(): Promise<RegistryItem[]> {
 		throw new Error("Failed to fetch tools. Please try again later.")
 	}
 }
+
+export async function getAllProtocolIds(): Promise<string[]> {
+  try {
+    const items = await getRegistryItems()
+    return items.map(item => item.id)
+  } catch (error) {
+    console.error("Failed to fetch protocol IDs:", error)
+    return []
+  }
+}
