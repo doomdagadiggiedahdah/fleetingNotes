@@ -1,0 +1,232 @@
+import Anthropic from "@anthropic-ai/sdk"
+import type { PromptCachingBetaMessageParam } from "@anthropic-ai/sdk/resources/beta/prompt-caching/index.js"
+import { AnthropicHandler, Connection } from "@smithery/sdk/index.js"
+import dotenv from "dotenv"
+import { Langfuse } from "langfuse"
+import fs from "node:fs"
+import path from "node:path"
+import { RegistryItemSchema, type RegistryItem } from "../types.js"
+import { stringify } from "yaml"
+import {
+	cacheLastMessage,
+	tracedAnthropicGenerate,
+} from "../crawler/anthropic.js"
+
+const systemPrompt = `\
+You are a maintainer of a Model Context Protocol (MCP) repository. Your job is to create a pull request (PR) to patch the README.md file in the repository.
+Your PR will be made to someone else's repository. So you'll have to first fork it to organization "smithery-ai" before making a PR.
+
+The update you will be making is adding an installation instruction to the README.md file (see <install_example/> below). This instruction tells the user how to install the MCP for end-user local Claude desktop usage. If the current repo author has an alternative preferred installation method (i.e., calling it "Recommended"), put Smithery after their recommended option.
+
+You will also add a badge to the README.md file to show the number of installations. This badge should appear right after the H1 heading, or next to other existing badges (see <badge_example/>).
+
+Do not replace existing content, simply insert it in the correct place in the README.md file. A good place to put it is before manual installation instructions, or where typically the installation instructions would appear.
+
+<diff>
+To make a patch, write out the .patch file that would've been produced from \`diff -u ...\` command. Example:
+
+<badge_example>
+[![smithery badge](https://smithery.ai/badge/[PACKAGE_NAME])](https://smithery.ai/protocol/[PACKAGE_NAME])
+</badge_example>
+
+<install_example>
+--- README.md
++++ README.md
+@@ -123,6 +123,14 @@
+ ## Installation
+ Installation instruction provided by Claude with MCP knowledge and modified by me after testing. I would appreciate any assistance in organizing this section.
+ 
++### Installing via Smithery
++
++To install [NAME] for Claude Desktop automatically via [Smithery](https://smithery.ai/protocol/[PACKAGE_NAME]):
++
++\`\`\`bash
++npx @smithery/cli install [PACKAGE_NAME] --client claude
++\`\`\`
++
+ ### Prerequisites
+ Node.js 18 or higher
+ npm (included with Node.js)
+\ No newline at end of file
+</install_example>
+
+Replace [NAME] with the name of the project. For example, this could be "Puppeteer".
+</diff>
+
+<pr>
+<pr_message>
+Here's a template for a PR message. Remember to replace [NAME].
+
+<title>Add Smithery CLI Installation Instructions</title>
+<body>
+This PR adds installation instructions to automatically install [NAME] for Claude Desktop using Smithery CLI. This makes it easier for users to install the MCP. Also, it adds a badge to show the number of installations from Smithery.
+</body>
+</pr_message>
+
+<do_not_pr>
+Conditions where you should not make a PR:
+- If there is no README.md file
+- If the README.md file already contains the instruction
+- If there's no appropriate place to insert the instruction or you're not confident about it
+
+In these cases, mention that this is not possible and do not make PR.
+</do_not_pr>
+</pr>
+
+<steps>
+Steps you should follow to ensure you correctly make a PR:
+1. Read the README.md and understand the style
+2. Extract the correct package name. If NodeJS, extract the exact name from package.json. If Python, extract the exact name from pyproject.toml.
+3. Fork the repo and patch the README.md using the above example. If needed, adapt it to the appropriate style of the README.md
+4. Create a PR
+</steps>`
+
+async function generateEntry(
+	langfuse: Langfuse,
+	connection: Connection,
+	url: string,
+): Promise<string | null> {
+	const trace = langfuse.trace({
+		name: "pr-agent",
+		input: { url },
+	})
+
+	// Initialize the LLM client
+	const client = new Anthropic()
+
+	// Example conversation with tool usage
+	let isDone = false
+	const messages: PromptCachingBetaMessageParam[] = [
+		{
+			role: "user",
+			content: `Github Repo to update: ${url}`,
+		},
+	]
+
+	const handler = new AnthropicHandler(connection)
+
+	while (!isDone) {
+		let tools = await handler.listTools()
+		// Only allow patch actions
+		tools = tools.filter(
+			(t) => !t.name.includes("github_create_or_update_file"),
+		)
+		const response = await tracedAnthropicGenerate(client, trace, {
+			messages: cacheLastMessage(messages),
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 1024 * 8,
+			system: [
+				{
+					type: "text",
+					text: systemPrompt,
+					cache_control: { type: "ephemeral" },
+				},
+			],
+			tools,
+		})
+		const message = response.content
+		console.log("Assistant:\n", stringify(message, null, 2))
+
+		messages.push({
+			role: "assistant",
+			content: response.content,
+		})
+
+		// Handle tool call
+		const toolMessages = await handler.call(response, {
+			timeout: 60 * 10 * 1000,
+		})
+
+		console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
+		messages.push(...toolMessages)
+		isDone = toolMessages.length === 0
+
+		if (messages.length > 20) {
+			console.error("Could not complete in message limit")
+			break
+		}
+
+		if (isDone) {
+			// TODO: Write an anthropic wrapper to make this part cleaner
+			for (const message of messages) {
+				if (typeof message.content !== "string") {
+					for (const part of message.content) {
+						if (
+							part.type === "tool_result" &&
+							typeof part.content !== "string"
+						) {
+							for (const c of part.content ?? []) {
+								if (c.type === "text") {
+									try {
+										return JSON.parse(c.text).url
+									} catch (e) {
+										console.error("Could not parse JSON", part.content)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	console.log("Done.")
+	return null
+}
+
+async function main() {
+	dotenv.config()
+
+	const currentServers: RegistryItem[] = (
+		await fs.promises.readFile(
+			path.resolve(process.cwd(), "servers_pr.jsonl"),
+			"utf8",
+		)
+	)
+		.split("\n")
+		.filter(Boolean)
+		.map((c) => JSON.parse(c))
+		.map((c) => RegistryItemSchema.parse(c))
+
+	console.log("Servers to PR", currentServers.length)
+
+	const langfuse = new Langfuse()
+
+	// Connect to MCPs
+	const connection = await Connection.connect({
+		github: {
+			stdio: {
+				// command: "npx",
+				// args: ["-y", "@modelcontextprotocol/server-github"],
+				command: "node",
+				args: ["/Users/henry/code/smithery/servers/src/github/dist/index.js"],
+				env: {
+					GITHUB_PERSONAL_ACCESS_TOKEN: process.env
+						.GITHUB_PERSONAL_ACCESS_TOKEN as string,
+					PATH: process.env.PATH as string,
+				},
+			},
+		},
+	})
+
+	// TODO: we shouldn't run this if the README already has a badge OR if there's a PR already
+	// TODO: Check if the URLs are valid
+	// TODO: Do not make PRs if our prior PR has been declined.
+	try {
+		for (const server of currentServers) {
+			console.log(`Making PR for ${server.sourceUrl}`)
+			const outputUrl = await generateEntry(
+				langfuse,
+				connection,
+				server.sourceUrl,
+			)
+			if (outputUrl)
+				await fs.promises.appendFile("completed_pr_urls.txt", `${outputUrl}\n`)
+		}
+	} finally {
+		connection.close()
+		await langfuse.shutdownAsync()
+	}
+}
+
+main()
