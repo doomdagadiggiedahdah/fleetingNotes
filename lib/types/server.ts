@@ -14,11 +14,11 @@ export const StdioConnectionSchema = z.object({
 	command: z.string().describe("The executable to run to start the server."),
 	args: z
 		.array(z.string())
-		.optional()
+		.nullish()
 		.describe("Command line arguments to pass to the executable."),
 	env: z
 		.record(z.string(), z.string())
-		.optional()
+		.nullish()
 		.describe("The environment to use when spawning the process."),
 })
 
@@ -28,7 +28,7 @@ export const ConnectionSchema = z
 	.object({
 		configSchema: JSONSchema.describe(
 			"JSON Schema that defines the configuration required to initialize the server. Each variable here can be used for templated initialization of the server. Leave undefined if there's no config required.",
-		).optional(),
+		).nullish(),
 	})
 	.and(
 		z.union([
@@ -46,7 +46,7 @@ export const ConnectionSchema = z
 
 export type Connection = z.infer<typeof ConnectionSchema>
 
-export const RegistryItemSchema = z.object({
+export const ServerSchema = z.object({
 	id: z
 		.string()
 		.describe("The unique identifier. Usually the `npm` package name."),
@@ -55,10 +55,10 @@ export const RegistryItemSchema = z.object({
 		.describe(
 			"The human-readable name of the MCP server. Do not mention MCP or Claude Desktop since those are redundant.",
 		),
-	verified: z.boolean().optional(),
+	verified: z.boolean().nullish(),
 	description: z
 		.string()
-		.optional()
+		.nullish()
 		.describe(
 			"The description of the MCP server for end-users. Don't mention MCP or Claude Desktop since those are redundant and the user already knows what a server is.",
 		),
@@ -68,7 +68,7 @@ export const RegistryItemSchema = z.object({
 		.describe("A list of URLs to the official page of the MCP."),
 	license: z
 		.string()
-		.optional()
+		.nullish()
 		.describe(
 			"The license of the MCP. Keep it short (e.g., just use MIT instead of MIT License)",
 		),
@@ -78,7 +78,7 @@ export const RegistryItemSchema = z.object({
 		.describe("A list of ways to connect with the MCP server."),
 })
 
-export type RegistryItem = z.infer<typeof RegistryItemSchema>
+export type Server = z.infer<typeof ServerSchema>
 
 export function isStdio(
 	connection: Connection,

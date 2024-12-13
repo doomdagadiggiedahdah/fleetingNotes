@@ -1,6 +1,6 @@
 "use client"
 
-import { isStdio, type RegistryItem } from "@/types/tool"
+import { isStdio, type Server } from "@/lib/types/server"
 import { BadgeCheck, Code, ExternalLink, Github } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -11,11 +11,11 @@ import Search from "./search"
 type InstallTab = "claude" | "jan" | "code"
 
 export default function ToolList({
-	tools,
+	servers,
 	initialSearch = "",
-}: { tools: RegistryItem[]; initialSearch?: string }) {
+}: { servers: Server[]; initialSearch?: string }) {
 	const filterTools = (query: string) => {
-		return tools.filter(
+		return servers.filter(
 			(tool) =>
 				tool.id.toLowerCase().includes(query.toLowerCase()) ||
 				tool.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -195,7 +195,7 @@ export default function ToolList({
 	)
 }
 
-const getTabContent = (tool: RegistryItem, tab: InstallTab) => {
+const getTabContent = (tool: Server, tab: InstallTab) => {
 	switch (tab) {
 		case "claude":
 			return (

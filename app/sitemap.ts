@@ -1,9 +1,14 @@
 import type { MetadataRoute } from "next"
-import { getAllProtocolIds } from "../lib/data-fetching"
+import { db } from "@/db"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	// Get all protocol IDs
-	const protocolIds = await getAllProtocolIds()
+	// Get all server IDs from the database
+	const servers = await db.query.servers.findMany({
+		columns: {
+			id: true,
+		},
+	})
+	const serverIds = servers.map((s) => s.id)
 
 	// Base URL - replace with your actual production URL
 	const baseUrl = "https://smithery.ai"
@@ -25,12 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	] as const
 
 	// Dynamic protocol routes
-	const protocolRoutes = protocolIds.map(
+	const protocolRoutes = serverIds.map(
 		(id) =>
 			({
 				url: `${baseUrl}/protocol/${id}`,
 				lastModified: new Date(),
-				changeFrequency: "daily",
+				changeFrequency: "weekly",
 				priority: 0.8,
 			}) as const,
 	)
