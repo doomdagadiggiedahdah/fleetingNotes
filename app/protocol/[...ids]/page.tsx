@@ -3,7 +3,7 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { Server } from "@/lib/types/server"
 import { ServerSchema } from "@/lib/types/server"
-import { orderServers } from "@/lib/utils"
+import { randomizeServerOrder } from "@/lib/utils"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { z } from "zod"
@@ -50,7 +50,7 @@ export default async function ServerPage({ params }: Props) {
 			throw new Error("Failed to parse tools data")
 		}
 
-		servers = orderServers(parsedData.data)
+		servers = randomizeServerOrder(parsedData.data)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}

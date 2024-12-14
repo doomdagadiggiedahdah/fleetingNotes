@@ -79,6 +79,7 @@ export const ServerSchema = z.object({
 })
 
 export type Server = z.infer<typeof ServerSchema>
+export type ServerWithUpvotes = Server & { upvoteCount: number }
 
 export function isStdio(
 	connection: Connection,
