@@ -2,7 +2,9 @@
 	"name": "@smithery/web",
 	"version": "1.0.0",
 	"private": true,
-	"workspaces": ["blacksmith"],
+	"workspaces": [
+		"blacksmith"
+	],
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
@@ -17,6 +19,7 @@
 	"dependencies": {
 		"@icons-pack/react-simple-icons": "^10.2.0",
 		"@neondatabase/serverless": "^0.10.4",
+		"@vercel/functions": "^1.5.2",
 		"@vercel/postgres": "^0.10.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
@@ -27,6 +30,7 @@
 		"lucide-react": "^0.468.0",
 		"next": "14.2.16",
 		"posthog-js": "^1.195.0",
+		"posthog-node": "^4.3.2",
 		"prism-react-renderer": "^2.4.1",
 		"react": "^18",
 		"react-dom": "^18",
