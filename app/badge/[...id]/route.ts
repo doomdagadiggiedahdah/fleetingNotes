@@ -1,8 +1,8 @@
 import { db } from "@/db"
-import { eventInstalls } from "@/db/schema"
+import { events } from "@/db/schema"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
-import { eq, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 
 export async function GET(
 	request: Request,
@@ -25,8 +25,13 @@ export async function GET(
 				.select({
 					count: sql<number>`count(*)`,
 				})
-				.from(eventInstalls)
-				.where(eq(eventInstalls.serverId, serverId))
+				.from(events)
+				.where(
+					and(
+						eq(events.eventName, "server_install"),
+						eq(sql`payload->>'serverId'`, serverId),
+					),
+				)
 				.execute()
 		)[0]?.count ?? 0
 

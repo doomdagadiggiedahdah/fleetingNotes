@@ -1,9 +1,11 @@
+import { sql } from "drizzle-orm"
 import {
+	boolean,
 	jsonb,
+	pgRole,
 	pgTable,
 	text,
 	timestamp,
-	boolean,
 	uuid,
 } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
@@ -21,7 +23,7 @@ export const servers = pgTable("servers", {
 	connections: jsonb("connections").notNull(),
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),
-})
+}).enableRLS()
 
 // Custom Zod schema for the connections array
 const ConnectionSchema = z.array(
@@ -42,6 +44,7 @@ const ConnectionSchema = z.array(
 			.optional(),
 	}),
 )
+// TODO: add pgjson schema constraint
 
 // Extend the auto-generated schema with our custom connections type
 export const insertServerSchema = createInsertSchema(servers).extend({
@@ -55,20 +58,26 @@ export const selectServerSchema = createSelectSchema(servers).extend({
 export type Server = z.infer<typeof selectServerSchema>
 export type NewServer = z.infer<typeof insertServerSchema>
 
-export const eventInstalls = pgTable("events_install", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	anonUserId: uuid("anon_user_id"),
-	eventType: text("event_type").notNull(),
-	serverId: text("package_id").notNull(),
-	timestamp: timestamp("timestamp").notNull().defaultNow(),
-	platform: text("platform").notNull(),
-	nodeVersion: text("node_version").notNull(),
-	sessionId: text("session_id").notNull(),
-	clientType: text("client_type"),
-})
+export const anon = pgRole("anon").existing()
+export const authenticated = pgRole("authenticated").existing()
 
-export const insertEventInstallationSchema = createInsertSchema(eventInstalls)
-export const selectEventInstallationSchema = createSelectSchema(eventInstalls)
-
-export type EventInstallation = z.infer<typeof selectEventInstallationSchema>
-export type NewEventInstallation = z.infer<typeof insertEventInstallationSchema>
+export const events = pgTable(
+	"events",
+	{
+		eventId: uuid("event_id").primaryKey().defaultRandom(),
+		eventName: text("event_name").notNull(),
+		userId: uuid("user_id").notNull().default(sql`(auth.uid())`),
+		timestamp: timestamp("timestamp").notNull().defaultNow(),
+		// Additional data associated with the event
+		payload: jsonb("payload"),
+	},
+	// () => [
+	// 	// TODO: Add security. This somehow always denies
+	// 	pgPolicy("Anonymous users can insert events", {
+	// 		as: "permissive",
+	// 		to: authenticated,
+	// 		for: "insert",
+	// 		withCheck: sql`( true )`,
+	// 	}),
+	// ],
+)
