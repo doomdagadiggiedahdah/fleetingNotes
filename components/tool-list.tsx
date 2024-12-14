@@ -1,6 +1,6 @@
 "use client"
 
-import type { Server } from "@/lib/types/server"
+import type { ServerWithUpvotes } from "@/lib/types/server"
 import { useState } from "react"
 import Search from "./search"
 import { ToolCard } from "./tool-card"
@@ -10,7 +10,7 @@ export type InstallTab = "claude" | "jan" | "code"
 export default function ToolList({
 	servers,
 	initialSearch = "",
-}: { servers: Server[]; initialSearch?: string }) {
+}: { servers: ServerWithUpvotes[]; initialSearch?: string }) {
 	const filterTools = (query: string) => {
 		return servers.filter(
 			(tool) =>

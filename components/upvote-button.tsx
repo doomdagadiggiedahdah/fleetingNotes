@@ -7,44 +7,38 @@ import { Button } from "./ui/button"
 
 interface UpvoteButtonProps {
 	serverId: string
+	upvoteCount: number
 }
 
-export function UpvoteButton({ serverId }: UpvoteButtonProps) {
-	const [upvotes, setUpvotes] = useState(0)
+export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
+	const [upvotes, setUpvotes] = useState(upvoteCount)
 	const [hasVoted, setHasVoted] = useState(false)
 	const [isLoading, setIsLoading] = useState(true)
 	const { showAuthDialog } = useAuth()
 
 	useEffect(() => {
-		fetchVoteData()
+		checkUserVote()
 	}, [serverId])
 
-	const fetchVoteData = async () => {
+	const checkUserVote = async () => {
 		setIsLoading(true)
 
-		// Get total vote count
-		const { data: voteCount } = await supabase
-			.from("upvotes")
-			.select("*", { count: "estimated" })
-			.eq("server_id", serverId)
-			.throwOnError()
-
-		const {
-			data: { session },
-		} = await supabase.auth.getSession()
-		// Get user's vote if logged in
-		if (session) {
-			const { data: userVote } = await supabase
-				.from("upvotes")
-				.select()
-				.eq("server_id", serverId)
-				.eq("user_id", session.user.id)
-				.maybeSingle()
-				.throwOnError()
-			setHasVoted(!!userVote)
+		const { data: session } = await supabase.auth.getSession()
+		if (!session?.session?.user) {
+			setIsLoading(false)
+			return
 		}
 
-		setUpvotes(voteCount?.length || 0)
+		// Check if user has already voted
+		const { data: userVote } = await supabase
+			.from("upvotes")
+			.select("*")
+			.eq("server_id", serverId)
+			.eq("user_id", session.session.user.id)
+			.maybeSingle()
+			.throwOnError()
+
+		setHasVoted(!!userVote)
 		setIsLoading(false)
 	}
 

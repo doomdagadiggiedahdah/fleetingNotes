@@ -1,6 +1,6 @@
 import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
-import type { Server, ServerWithUpvotes } from "@/lib/types/server"
+import type { ServerWithUpvotes } from "@/lib/types/server"
 import { ServerSchema } from "@/lib/types/server"
 import { z } from "zod"
 import { desc, sql } from "drizzle-orm"

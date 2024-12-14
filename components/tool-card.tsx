@@ -1,6 +1,6 @@
 "use client"
 
-import { isStdio, type Server } from "@/lib/types/server"
+import { isStdio, type ServerWithUpvotes } from "@/lib/types/server"
 import { BadgeCheck, Code, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -11,7 +11,7 @@ import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
 
 interface ToolCardProps {
-	tool: Server
+	tool: ServerWithUpvotes
 	activeTab: InstallTab
 	isExpanded: boolean
 	expand: () => void
@@ -56,7 +56,7 @@ export function ToolCard({
 			<div className="flex items-baseline justify-between mb-2">
 				<div className="flex items-center">
 					<div className="mr-3">
-						<UpvoteButton serverId={tool.id} />
+						<UpvoteButton serverId={tool.id} upvoteCount={tool.upvoteCount} />
 					</div>
 					<Link
 						href={`/protocol/${tool.id}`}
@@ -162,7 +162,7 @@ export function ToolCard({
 	)
 }
 
-const getTabContent = (tool: Server, tab: InstallTab) => {
+const getTabContent = (tool: ServerWithUpvotes, tab: InstallTab) => {
 	switch (tab) {
 		case "claude":
 			return (

@@ -1,13 +1,15 @@
 import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import type { Server } from "@/lib/types/server"
+import type { ServerWithUpvotes } from "@/lib/types/server"
 import { ServerSchema } from "@/lib/types/server"
 import { randomizeServerOrder } from "@/lib/utils"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { z } from "zod"
 
+import { upvotes } from "@/db/schema"
+import { desc, sql } from "drizzle-orm"
 type Props = {
 	params: { ids: string[] }
 }
@@ -40,24 +42,59 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServerPage({ params }: Props) {
-	let servers: Server[] = []
+	let serverData: ServerWithUpvotes[] = []
 	let error = ""
 	try {
-		const data = await db.query.servers.findMany()
-		const parsedData = z.array(ServerSchema).safeParse(data)
+		const data = await db
+			.select({
+				id: servers.id,
+				name: servers.name,
+				description: servers.description,
+				vendor: servers.vendor,
+				sourceUrl: servers.sourceUrl,
+				license: servers.license,
+				homepage: servers.homepage,
+				verified: servers.verified,
+				connections: servers.connections,
+				createdAt: servers.createdAt,
+				updatedAt: servers.updatedAt,
+				upvoteCount: sql<number>`count(${upvotes.id})::int`,
+			})
+			.from(servers)
+			.leftJoin(upvotes, sql`${servers.id} = ${upvotes.serverId}`)
+			.groupBy(
+				servers.id,
+				servers.name,
+				servers.description,
+				servers.vendor,
+				servers.sourceUrl,
+				servers.license,
+				servers.homepage,
+				servers.verified,
+				servers.connections,
+				servers.createdAt,
+				servers.updatedAt,
+			)
+			.orderBy(
+				sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
+				desc(sql`count(${upvotes.id})`),
+			)
 
+		const parsedData = z
+			.array(ServerSchema.extend({ upvoteCount: z.number() }))
+			.safeParse(data)
 		if (!parsedData.success) {
 			throw new Error("Failed to parse tools data")
 		}
 
-		servers = randomizeServerOrder(parsedData.data)
+		serverData = randomizeServerOrder(parsedData.data)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}
 
 	return (
 		<HomeSearch
-			servers={servers}
+			servers={serverData}
 			error={error}
 			initialSearch={decodeURIComponent(params.ids.join("/"))}
 		/>
