@@ -1,4 +1,11 @@
-import { jsonb, pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core"
+import {
+	jsonb,
+	pgTable,
+	text,
+	timestamp,
+	boolean,
+	uuid,
+} from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import { z } from "zod"
 
@@ -47,3 +54,21 @@ export const selectServerSchema = createSelectSchema(servers).extend({
 
 export type Server = z.infer<typeof selectServerSchema>
 export type NewServer = z.infer<typeof insertServerSchema>
+
+export const eventInstalls = pgTable("events_install", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	anonUserId: uuid("anon_user_id"),
+	eventType: text("event_type").notNull(),
+	packageId: text("package_id").notNull(),
+	timestamp: timestamp("timestamp").notNull().defaultNow(),
+	platform: text("platform").notNull(),
+	nodeVersion: text("node_version").notNull(),
+	sessionId: text("session_id").notNull(),
+	clientType: text("client_type"),
+})
+
+export const insertEventInstallationSchema = createInsertSchema(eventInstalls)
+export const selectEventInstallationSchema = createSelectSchema(eventInstalls)
+
+export type EventInstallation = z.infer<typeof selectEventInstallationSchema>
+export type NewEventInstallation = z.infer<typeof insertEventInstallationSchema>

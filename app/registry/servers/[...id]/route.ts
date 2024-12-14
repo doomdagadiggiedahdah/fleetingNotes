@@ -5,10 +5,10 @@ import { servers } from "@/db/schema"
 
 export async function GET(
 	request: Request,
-	{ params }: { params: { packageId: string[] } },
+	{ params }: { params: { id: string[] } },
 ) {
 	try {
-		const serverId = params.packageId.join("/")
+		const serverId = params.id.join("/")
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.id, serverId),
 		})
