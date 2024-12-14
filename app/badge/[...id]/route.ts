@@ -11,6 +11,7 @@ export async function GET(
 		event: "Badge Viewed",
 		distinctId: "badge-viewed",
 		properties: {
+			$process_person_profile: false,
 			serverId,
 		},
 	})
