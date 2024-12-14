@@ -60,9 +60,19 @@ export function ToolCard({
 					</div>
 					<Link
 						href={`/protocol/${tool.id}`}
-						className="text-lg font-semibold text-primary hover:underline mr-2"
+						className="text-lg font-semibold text-primary hover:underline mr-2 flex items-center gap-2"
 						onClick={(e) => e.stopPropagation()}
 					>
+						{tool.homepage && (
+							<img
+								src={`https://api.faviconkit.com/${new URL(tool.homepage).hostname}/`}
+								onError={(e) => {
+									e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(tool.homepage).hostname}.ico`
+								}}
+								alt={tool.name}
+								className="w-4 h-4"
+							/>
+						)}
 						{tool.name}
 					</Link>
 					{tool.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
