@@ -59,7 +59,7 @@ export const eventInstalls = pgTable("events_install", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	anonUserId: uuid("anon_user_id"),
 	eventType: text("event_type").notNull(),
-	packageId: text("package_id").notNull(),
+	serverId: text("package_id").notNull(),
 	timestamp: timestamp("timestamp").notNull().defaultNow(),
 	platform: text("platform").notNull(),
 	nodeVersion: text("node_version").notNull(),

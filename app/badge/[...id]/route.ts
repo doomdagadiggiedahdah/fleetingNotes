@@ -1,6 +1,8 @@
+import { db } from "@/db"
+import { eventInstalls } from "@/db/schema"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
-const badgeUrl = `https://img.shields.io/badge/smithery.ai-0%20installs-%23ea580c`
+import { eq, sql } from "drizzle-orm"
 
 export async function GET(
 	request: Request,
@@ -15,6 +17,20 @@ export async function GET(
 			serverId,
 		},
 	})
+
+	// TODO: Might want to cache this
+	const installCount =
+		(
+			await db
+				.select({
+					count: sql<number>`count(*)`,
+				})
+				.from(eventInstalls)
+				.where(eq(eventInstalls.serverId, serverId))
+				.execute()
+		)[0]?.count ?? 0
+
+	const badgeUrl = `https://img.shields.io/badge/smithery.ai-${installCount}%20installs-%23ea580c`
 	const response = await fetch(badgeUrl)
 	if (!response.ok) {
 		return Response.json({ error: "Failed to fetch badge" }, { status: 500 })
