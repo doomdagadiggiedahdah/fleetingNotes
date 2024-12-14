@@ -16,10 +16,6 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 	const [isLoading, setIsLoading] = useState(true)
 	const { showAuthDialog } = useAuth()
 
-	useEffect(() => {
-		checkUserVote()
-	}, [serverId])
-
 	const checkUserVote = async () => {
 		setIsLoading(true)
 
@@ -40,6 +36,17 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 
 		setHasVoted(!!userVote)
 		setIsLoading(false)
+	}
+
+	const fetchVoteCounts = async () => {
+		// Fetches again to update the count in case main page is cached
+		const { data: voteCount } = await supabase
+			.from("upvotes")
+			.select("*")
+			.eq("server_id", serverId)
+			.throwOnError()
+
+		setUpvotes(voteCount?.length || 0)
 	}
 
 	const handleUpvote = async () => {
@@ -100,6 +107,11 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 			console.error("Error removing vote:", error)
 		}
 	}
+
+	useEffect(() => {
+		checkUserVote()
+		fetchVoteCounts()
+	}, [serverId])
 
 	return (
 		<Button
