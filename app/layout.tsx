@@ -1,4 +1,5 @@
 import { CSPostHogProvider } from "@/components/analytics"
+import { AuthProvider } from "@/context/auth-context"
 import { Inter } from "next/font/google"
 import "./globals.css"
 
@@ -17,7 +18,9 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<CSPostHogProvider>
-				<body className={inter.className}>{children}</body>
+				<AuthProvider>
+					<body className={inter.className}>{children}</body>
+				</AuthProvider>
 			</CSPostHogProvider>
 		</html>
 	)

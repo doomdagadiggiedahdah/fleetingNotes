@@ -57,11 +57,13 @@ export default function CodeBlock({
 						className={`text-sm bg-accent/50 p-2 rounded block overflow-x-auto whitespace-pre-wrap break-words ${className} ${highlightClassName}`}
 						style={style}
 					>
-						{tokens.map((line) => (
-							<div key={JSON.stringify(line)} {...getLineProps({ line })}>
-								{line.map((token) => (
+						{tokens.map((line, i) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+							<div key={i} {...getLineProps({ line })}>
+								{line.map((token, tokenIndex) => (
 									<span
-										key={JSON.stringify(token)}
+										// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+										key={tokenIndex}
 										{...getTokenProps({ token })}
 									/>
 								))}

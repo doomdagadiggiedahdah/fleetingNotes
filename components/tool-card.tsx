@@ -1,6 +1,6 @@
 "use client"
 
-import { isStdio, Server } from "@/lib/types/server"
+import { isStdio, type Server } from "@/lib/types/server"
 import { BadgeCheck, Code, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -8,6 +8,7 @@ import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
 
 import { Github } from "lucide-react"
+import { UpvoteButton } from "./upvote-button"
 
 interface ToolCardProps {
 	tool: Server
@@ -54,6 +55,9 @@ export function ToolCard({
 		>
 			<div className="flex items-baseline justify-between mb-2">
 				<div className="flex items-center">
+					<div className="mr-3">
+						<UpvoteButton serverId={tool.id} />
+					</div>
 					<Link
 						href={`/protocol/${tool.id}`}
 						className="text-lg font-semibold text-primary hover:underline mr-2"
@@ -63,14 +67,11 @@ export function ToolCard({
 					</Link>
 					{tool.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
 				</div>
-				{tool.license && (
-					<span className="text-sm text-muted-foreground">{tool.license}</span>
-				)}
 			</div>
-			<p className="text-card-foreground mb-3">{tool.description}</p>
+			<p className="text-card-foreground mb-3 ">{tool.description}</p>
 
 			{isExpanded && (
-				<div className="mt-4 space-y-4 border-t border-border pt-4">
+				<div className="mt-4 space-y-4 border-t border-border pt-4 mb-4">
 					<div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
 						<span>Vendor: {tool.vendor}</span>
 						<a
