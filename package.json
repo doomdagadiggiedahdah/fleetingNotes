@@ -2,7 +2,9 @@
 	"name": "@smithery/web",
 	"version": "1.0.0",
 	"private": true,
-	"workspaces": ["blacksmith"],
+	"workspaces": [
+		"blacksmith"
+	],
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
@@ -16,6 +18,8 @@
 	},
 	"dependencies": {
 		"@icons-pack/react-simple-icons": "^10.2.0",
+		"@radix-ui/react-dialog": "^1.1.3",
+		"@radix-ui/react-slot": "^1.1.1",
 		"@supabase/supabase-js": "^2.47.7",
 		"@vercel/functions": "^1.5.2",
 		"class-variance-authority": "^0.7.1",
