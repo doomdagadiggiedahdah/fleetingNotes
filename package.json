@@ -18,9 +18,8 @@
 	},
 	"dependencies": {
 		"@icons-pack/react-simple-icons": "^10.2.0",
-		"@neondatabase/serverless": "^0.10.4",
+		"@supabase/supabase-js": "^2.47.7",
 		"@vercel/functions": "^1.5.2",
-		"@vercel/postgres": "^0.10.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"dotenv": "^16.4.7",
@@ -29,6 +28,7 @@
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
 		"next": "14.2.16",
+		"postgres": "^3.4.5",
 		"posthog-js": "^1.195.0",
 		"posthog-node": "^4.3.2",
 		"prism-react-renderer": "^2.4.1",

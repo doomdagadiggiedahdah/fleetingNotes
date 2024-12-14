@@ -1,9 +1,10 @@
-import { sql } from "@vercel/postgres"
-import { drizzle } from "drizzle-orm/vercel-postgres"
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
 
 import * as schema from "./schema"
 
 import dotenv from "dotenv"
 dotenv.config({ path: ".env.development.local" })
 
-export const db = drizzle({ client: sql, schema })
+const client = postgres(process.env.POSTGRES_URL!, { prepare: false })
+export const db = drizzle({ client, schema })
