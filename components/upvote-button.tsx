@@ -10,6 +10,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "./ui/tooltip"
+import posthog from "posthog-js"
 
 interface UpvoteButtonProps {
 	serverId: string
@@ -57,6 +58,9 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 
 	const handleUpvote = async () => {
 		if (isLoading) return
+		posthog.capture("Upvote Clicked", {
+			isUp: true,
+		})
 		const {
 			data: { session },
 		} = await supabase.auth.getSession()
@@ -85,6 +89,10 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 
 	const handleUnvote = async () => {
 		if (isLoading) return
+		posthog.capture("Upvote Clicked", {
+			isUp: false,
+		})
+
 		const {
 			data: { session },
 		} = await supabase.auth.getSession()
@@ -122,7 +130,7 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 	return (
 		<TooltipProvider>
 			<Tooltip>
-				<TooltipTrigger>
+				<TooltipTrigger asChild>
 					<Button
 						variant="outline"
 						size="icon"

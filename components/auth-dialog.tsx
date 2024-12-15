@@ -10,6 +10,8 @@ import {
 	DialogTitle,
 } from "./ui/dialog"
 import { supabase } from "@/lib/supabase_client"
+import posthog from "posthog-js"
+import { useEffect } from "react"
 
 interface AuthDialogProps {
 	open: boolean
@@ -18,6 +20,10 @@ interface AuthDialogProps {
 
 export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 	const handleGithubAuth = async () => {
+		posthog.capture("Sign In Clicked", {
+			source: "auth_dialog",
+			provider: "github",
+		})
 		await supabase.auth.signInWithOAuth({
 			provider: "github",
 			options: {
@@ -25,6 +31,20 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 			},
 		})
 	}
+
+	useEffect(() => {
+		// Posthog events
+		supabase.auth.onAuthStateChange((event, session) => {
+			if (session) {
+				posthog.identify(session.user.id, {
+					properties: {
+						...session.user.user_metadata,
+						email: session.user.email,
+					},
+				})
+			}
+		})
+	}, [])
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
