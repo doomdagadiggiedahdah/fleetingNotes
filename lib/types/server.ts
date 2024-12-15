@@ -79,7 +79,12 @@ export const ServerSchema = z.object({
 })
 
 export type Server = z.infer<typeof ServerSchema>
-export type ServerWithUpvotes = Server & { upvoteCount: number }
+
+export const ServerWithStatsSchema = ServerSchema.extend({
+	upvoteCount: z.number(),
+	installCount: z.number(),
+})
+export type ServerWithStats = z.infer<typeof ServerWithStatsSchema>
 
 export function isStdio(
 	connection: Connection,

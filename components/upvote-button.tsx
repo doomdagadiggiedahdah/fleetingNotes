@@ -4,6 +4,12 @@ import { useAuth } from "@/context/auth-context"
 import { supabase } from "@/lib/supabase_client"
 import { useEffect, useState } from "react"
 import { Button } from "./ui/button"
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "./ui/tooltip"
 
 interface UpvoteButtonProps {
 	serverId: string
@@ -111,29 +117,38 @@ export function UpvoteButton({ serverId, upvoteCount }: UpvoteButtonProps) {
 	useEffect(() => {
 		checkUserVote()
 		fetchVoteCounts()
-	}, [serverId])
+	}, [])
 
 	return (
-		<Button
-			variant="outline"
-			size="icon"
-			disabled={isLoading}
-			onClick={(e) => {
-				e.stopPropagation()
-				if (hasVoted) {
-					handleUnvote()
-				} else {
-					handleUpvote()
-				}
-			}}
-			className="transition-transform hover:scale-110 hover:border-primary px-5 gap-1 rounded-md"
-		>
-			<div
-				className={`w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] ${hasVoted ? "border-b-primary" : "border-b-gray-400"}`}
-			/>
-			<span className="text-xs font-medium text-light-600">
-				{upvotes || "-"}
-			</span>
-		</Button>
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger>
+					<Button
+						variant="outline"
+						size="icon"
+						disabled={isLoading}
+						onClick={(e) => {
+							e.stopPropagation()
+							if (hasVoted) {
+								handleUnvote()
+							} else {
+								handleUpvote()
+							}
+						}}
+						className="transition-transform hover:scale-110 hover:border-primary px-5 gap-1 rounded-md"
+					>
+						<div
+							className={`w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] ${hasVoted ? "border-b-primary" : "border-b-gray-400"}`}
+						/>
+						<span className="text-xs font-medium text-light-600">
+							{upvotes || "-"}
+						</span>
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent>
+					<p>{upvotes} upvotes</p>
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	)
 }

@@ -1,14 +1,14 @@
 import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
-import type { ServerWithUpvotes } from "@/lib/types/server"
-import { ServerSchema } from "@/lib/types/server"
-import { z } from "zod"
-import { desc, sql } from "drizzle-orm"
-import { servers, upvotes } from "@/db/schema"
+import { events, servers, upvotes } from "@/db/schema"
+import type { ServerWithStats } from "@/lib/types/server"
+import { ServerWithStatsSchema } from "@/lib/types/server"
 import { randomizeServerOrder } from "@/lib/utils"
+import { sql } from "drizzle-orm"
+import { z } from "zod"
 
 export default async function Home() {
-	let serverData: ServerWithUpvotes[] = []
+	let serverData: ServerWithStats[] = []
 	let error = ""
 
 	try {
@@ -25,10 +25,12 @@ export default async function Home() {
 				connections: servers.connections,
 				createdAt: servers.createdAt,
 				updatedAt: servers.updatedAt,
-				upvoteCount: sql<number>`count(${upvotes.id})::int`,
+				upvoteCount: sql<number>`COUNT(DISTINCT ${upvotes.id})::int`,
+				installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} = 'server_install' THEN ${events.eventId} END)::int`,
 			})
 			.from(servers)
 			.leftJoin(upvotes, sql`${servers.id} = ${upvotes.serverId}`)
+			.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
 			.groupBy(
 				servers.id,
 				servers.name,
@@ -42,14 +44,8 @@ export default async function Home() {
 				servers.createdAt,
 				servers.updatedAt,
 			)
-			.orderBy(
-				sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
-				desc(sql`count(${upvotes.id})`),
-			)
 
-		const parsedData = z
-			.array(ServerSchema.extend({ upvoteCount: z.number() }))
-			.safeParse(data)
+		const parsedData = z.array(ServerWithStatsSchema).safeParse(data)
 		if (!parsedData.success) {
 			console.error("Zod parsing error:", parsedData.error)
 			throw new Error("Failed to parse servers data")

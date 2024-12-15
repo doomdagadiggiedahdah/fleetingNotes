@@ -1,15 +1,15 @@
 import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
-import { servers } from "@/db/schema"
-import type { ServerWithUpvotes } from "@/lib/types/server"
-import { ServerSchema } from "@/lib/types/server"
+import { events, servers } from "@/db/schema"
+import type { ServerWithStats } from "@/lib/types/server"
+import { ServerSchema, ServerWithStatsSchema } from "@/lib/types/server"
 import { randomizeServerOrder } from "@/lib/utils"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { z } from "zod"
 
 import { upvotes } from "@/db/schema"
-import { desc, sql } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 type Props = {
 	params: { ids: string[] }
 }
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServerPage({ params }: Props) {
-	let serverData: ServerWithUpvotes[] = []
+	let serverData: ServerWithStats[] = []
 	let error = ""
 	try {
 		const data = await db
@@ -58,10 +58,12 @@ export default async function ServerPage({ params }: Props) {
 				connections: servers.connections,
 				createdAt: servers.createdAt,
 				updatedAt: servers.updatedAt,
-				upvoteCount: sql<number>`count(${upvotes.id})::int`,
+				upvoteCount: sql<number>`COUNT(DISTINCT ${upvotes.id})::int`,
+				installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} = 'server_install' THEN ${events.eventId} END)::int`,
 			})
 			.from(servers)
 			.leftJoin(upvotes, sql`${servers.id} = ${upvotes.serverId}`)
+			.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
 			.groupBy(
 				servers.id,
 				servers.name,
@@ -75,14 +77,8 @@ export default async function ServerPage({ params }: Props) {
 				servers.createdAt,
 				servers.updatedAt,
 			)
-			.orderBy(
-				sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
-				desc(sql`count(${upvotes.id})`),
-			)
 
-		const parsedData = z
-			.array(ServerSchema.extend({ upvoteCount: z.number() }))
-			.safeParse(data)
+		const parsedData = z.array(ServerWithStatsSchema).safeParse(data)
 		if (!parsedData.success) {
 			throw new Error("Failed to parse tools data")
 		}

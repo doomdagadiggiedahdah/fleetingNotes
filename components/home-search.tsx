@@ -1,6 +1,6 @@
 import ErrorMessage from "@/components/error-message"
 import ToolList from "@/components/tool-list"
-import type { ServerWithUpvotes } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/server"
 import { Header } from "./header"
 
 export const HomeSearch = ({
@@ -8,7 +8,7 @@ export const HomeSearch = ({
 	error,
 	initialSearch = "",
 }: {
-	servers: ServerWithUpvotes[]
+	servers: ServerWithStats[]
 	error?: string
 	initialSearch?: string
 }) => {

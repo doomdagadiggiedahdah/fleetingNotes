@@ -1,17 +1,18 @@
 "use client"
 
-import { isStdio, type ServerWithUpvotes } from "@/lib/types/server"
+import { isStdio, type ServerWithStats } from "@/lib/types/server"
 import { BadgeCheck, Code, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
+import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
 
 interface ToolCardProps {
-	tool: ServerWithUpvotes
+	server: ServerWithStats
 	activeTab: InstallTab
 	isExpanded: boolean
 	expand: () => void
@@ -38,7 +39,7 @@ const TabButton = ({ isActive, onClick, icon, children }: TabButtonProps) => (
 )
 
 export function ToolCard({
-	tool,
+	server,
 	activeTab,
 	isExpanded,
 	setActiveTab,
@@ -47,7 +48,7 @@ export function ToolCard({
 	return (
 		<div
 			role="listitem"
-			key={tool.id}
+			key={server.id}
 			className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors cursor-pointer ${
 				isExpanded ? "expanded" : ""
 			}`}
@@ -56,36 +57,41 @@ export function ToolCard({
 			<div className="flex items-baseline justify-between mb-2">
 				<div className="flex items-center">
 					<div className="mr-3">
-						<UpvoteButton serverId={tool.id} upvoteCount={tool.upvoteCount} />
+						<UpvoteButton
+							serverId={server.id}
+							upvoteCount={server.upvoteCount}
+						/>
 					</div>
 					<Link
-						href={`/protocol/${tool.id}`}
+						href={`/protocol/${server.id}`}
 						className="text-lg font-semibold text-primary hover:underline mr-2 flex items-center gap-2"
 						onClick={(e) => e.stopPropagation()}
 					>
-						{tool.homepage && (
+						{server.homepage && (
+							// eslint-disable-next-line @next/next/no-img-element
 							<img
-								src={`https://api.faviconkit.com/${new URL(tool.homepage).hostname}/`}
+								src={`https://api.faviconkit.com/${new URL(server.homepage).hostname}/`}
 								onError={(e) => {
-									e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(tool.homepage).hostname}.ico`
+									e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
 								}}
-								alt={tool.name}
+								alt={server.name}
 								className="w-4 h-4"
 							/>
 						)}
-						{tool.name}
+						{server.name}
 					</Link>
-					{tool.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
+					{server.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
 				</div>
+				<InstallCount count={server.installCount} />
 			</div>
-			<p className="text-card-foreground mb-3 ">{tool.description}</p>
+			<p className="text-card-foreground mb-3 ">{server.description}</p>
 
 			{isExpanded && (
 				<div className="mt-4 space-y-4 border-t border-border pt-4 mb-4">
 					<div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-						<span>Vendor: {tool.vendor}</span>
+						<span>Vendor: {server.vendor}</span>
 						<a
-							href={tool.sourceUrl}
+							href={server.sourceUrl}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center hover:text-primary"
@@ -94,7 +100,7 @@ export function ToolCard({
 							Source
 						</a>
 						<a
-							href={tool.homepage}
+							href={server.homepage}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center hover:text-primary"
@@ -104,12 +110,12 @@ export function ToolCard({
 						</a>
 					</div>
 
-					{tool.connections[0]?.configSchema?.properties && (
+					{server.connections[0]?.configSchema?.properties && (
 						<div className="text-sm text-card-foreground">
 							<h4 className="font-semibold mb-1">Configuration:</h4>
 							<ul className="list-disc list-inside">
 								{Object.entries(
-									tool.connections[0].configSchema.properties,
+									server.connections[0].configSchema.properties,
 								).map(([key, value]) => (
 									<li key={key}>
 										{key}:{" "}
@@ -162,7 +168,7 @@ export function ToolCard({
 						</div>
 						<div className="flex items-start justify-between">
 							<div className="flex-1">
-								{getTabContent(tool, activeTab || "claude")}
+								{getTabContent(server, activeTab || "claude")}
 							</div>
 						</div>
 					</div>
@@ -172,7 +178,7 @@ export function ToolCard({
 	)
 }
 
-const getTabContent = (tool: ServerWithUpvotes, tab: InstallTab) => {
+const getTabContent = (tool: ServerWithStats, tab: InstallTab) => {
 	switch (tab) {
 		case "claude":
 			return (

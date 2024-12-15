@@ -1,6 +1,6 @@
 "use client"
 
-import type { ServerWithUpvotes } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/server"
 import { useState } from "react"
 import Search from "./search"
 import { ToolCard } from "./tool-card"
@@ -10,7 +10,7 @@ export type InstallTab = "claude" | "jan" | "code"
 export default function ToolList({
 	servers,
 	initialSearch = "",
-}: { servers: ServerWithUpvotes[]; initialSearch?: string }) {
+}: { servers: ServerWithStats[]; initialSearch?: string }) {
 	const filterTools = (query: string) => {
 		return servers.filter(
 			(tool) =>
@@ -49,7 +49,7 @@ export default function ToolList({
 				{displayedTools.map((tool) => (
 					<ToolCard
 						key={tool.id}
-						tool={tool}
+						server={tool}
 						activeTab={activeTab}
 						isExpanded={expandedToolId === tool.id}
 						expand={() => setExpandedToolId(tool.id)}
