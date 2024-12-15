@@ -10,8 +10,24 @@ import { z } from "zod"
 
 import { upvotes } from "@/db/schema"
 import { sql } from "drizzle-orm"
+
 type Props = {
 	params: { ids: string[] }
+}
+
+export const revalidate = 60
+
+export async function generateStaticParams() {
+	// Get all server IDs from the database
+	const servers = await db.query.servers.findMany({
+		columns: {
+			id: true,
+		},
+	})
+	const serverIds = servers.map((s) => s.id)
+	return serverIds.map((id) => ({
+		ids: id.split("/"),
+	}))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

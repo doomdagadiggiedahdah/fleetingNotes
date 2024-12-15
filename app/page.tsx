@@ -7,6 +7,8 @@ import { randomizeServerOrder } from "@/lib/utils"
 import { sql } from "drizzle-orm"
 import { z } from "zod"
 
+export const revalidate = 60
+
 export default async function Home() {
 	let serverData: ServerWithStats[] = []
 	let error = ""
