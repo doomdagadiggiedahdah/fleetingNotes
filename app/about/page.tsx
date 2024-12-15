@@ -15,9 +15,9 @@ export default function AboutPage() {
 				<div className="mb-8 space-y-6">
 					<section className="space-y-4">
 						<p className="text-lg text-muted-foreground">
-							Smithery is a registry of model context protocols, designed to
-							help developers in building large language model (LLM) powered
-							agents.
+							Smithery is a registry of Model Context Protocols, designed to
+							help developers find the rights tools to build their AI agentic
+							applications.
 						</p>
 						<p className="text-lg text-muted-foreground">
 							Smithery addresses this challenge by providing:
@@ -28,6 +28,32 @@ export default function AboutPage() {
 							<li>Easy-to-use resources for agent development</li>
 							<li>Community-driven protocol sharing and collaboration</li>
 						</ul>
+					</section>
+
+					<section className="mt-12 space-y-4">
+						<h2 className="text-2xl font-semibold mb-6">
+							Model Context Protocol
+						</h2>
+						<p className="text-lg text-muted-foreground">
+							The Model Context Protocol (MCP) is an open protocol that enables
+							seamless integration between LLMs and external data sources and
+							tools. It is a universal standard for connecting AI systems with
+							the context they need, eliminating information silos and
+							fragmented integrations.
+						</p>
+						<p className="text-lg text-muted-foreground">
+							By providing a standard way to connect AI systems with data
+							sources, MCP simplifies the development and maintenance of agentic
+							applications. This makes it easier to build agents like
+							intelligent IDEs, chat interfaces and custom AI workflows.
+						</p>
+						<p className="text-lg text-muted-foreground">
+							Instead of writing custom implementations for each new data
+							source, developers can use MCP as a single, standardized protocol.
+							This approach not only makes systems more maintainable but also
+							ensures better scalability as your AI applications grow and
+							evolve.
+						</p>
 					</section>
 
 					<section className="mt-12">

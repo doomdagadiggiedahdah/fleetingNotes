@@ -22,6 +22,7 @@ export const HomeSearch = ({
 						<a
 							href="https://modelcontextprotocol.io/"
 							target="_blank"
+							rel="noreferrer"
 							className="text-primary hover:underline"
 						>
 							Model Context Protocols
