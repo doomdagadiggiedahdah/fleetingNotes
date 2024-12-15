@@ -37,11 +37,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 		supabase.auth.onAuthStateChange((event, session) => {
 			if (session) {
 				posthog.identify(session.user.id, {
-					properties: {
-						...session.user.user_metadata,
-						email: session.user.email,
-					},
+					...session.user.user_metadata,
+					email: session.user.email,
 				})
+			} else {
+				posthog.reset()
 			}
 		})
 	}, [])
