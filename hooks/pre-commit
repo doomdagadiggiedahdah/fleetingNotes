@@ -1,7 +1,4 @@
 #!/bin/sh
-
-echo "Running pre-push checks..."
-
 # Run lint
 echo "Running check..."
 npm run check
@@ -13,4 +10,5 @@ if [ $LINT_RESULT -ne 0 ]; then
 fi
 
 echo "✅ All checks passed!"
+git add .
 exit 0

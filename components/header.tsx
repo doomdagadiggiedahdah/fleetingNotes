@@ -1,4 +1,4 @@
-import { Anvil, Github } from "lucide-react"
+import { Anvil, Github, Plus } from "lucide-react"
 import Link from "next/link"
 export function Header() {
 	return (
@@ -18,6 +18,13 @@ export function Header() {
 						>
 							About
 						</Link>
+						<a
+							href="https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=submission&projects=&template=submit-mcp-to-registry-request.md"
+							className="text-muted-foreground hover:text-foreground transition-colors flex items-center"
+						>
+							<Plus className="w-4 h-4 mr-1" />
+							Submit MCP
+						</a>
 						<a
 							href="https://github.com/smithery-ai/typescript-sdk"
 							target="_blank"
