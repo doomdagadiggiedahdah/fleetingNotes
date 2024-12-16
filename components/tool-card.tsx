@@ -1,21 +1,14 @@
 "use client"
 
 import type { ServerWithStats } from "@/lib/types/server"
-import {
-	BadgeCheck,
-	ExternalLink,
-	FileJsonIcon,
-} from "lucide-react"
+import { BadgeCheck, ExternalLink, FileJsonIcon } from "lucide-react"
 import Link from "next/link"
 import type { InstallTab } from "./tool-list"
 import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
-import {
-	SiAnthropic,
-	SiTypescript,
-} from "@icons-pack/react-simple-icons"
+import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import { TabContent } from "./tool-tab"
 
 interface ToolCardProps {

@@ -1,12 +1,10 @@
 "use client"
 
 import type { ServerWithStats } from "@/lib/types/server"
-import {
-	ExternalLink,
-} from "lucide-react"
+import { ExternalLink } from "lucide-react"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
-import { isStdio, } from "@smithery/sdk/registry-types.js"
+import { isStdio } from "@smithery/sdk/registry-types.js"
 
 interface ToolCardProps {
 	tool: ServerWithStats

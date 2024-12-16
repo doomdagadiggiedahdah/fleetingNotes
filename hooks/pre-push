@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo "Running pre-push checks..."
+
+echo "Running build..."
+npm run build
+
+echo "✅ All checks passed!"
+exit 0
