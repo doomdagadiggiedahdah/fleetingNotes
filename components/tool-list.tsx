@@ -5,7 +5,7 @@ import { useState } from "react"
 import Search from "./search"
 import { ToolCard } from "./tool-card"
 
-export type InstallTab = "claude" | "jan" | "code"
+export type InstallTab = "claude" | "jan" | "code" | "json"
 
 export default function ToolList({
 	servers,

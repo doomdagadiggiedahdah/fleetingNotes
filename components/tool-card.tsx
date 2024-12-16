@@ -1,16 +1,22 @@
 "use client"
 
 import type { ServerWithStats } from "@/lib/types/server"
-import { BadgeCheck, Code, ExternalLink } from "lucide-react"
-import Image from "next/image"
+import {
+	BadgeCheck,
+	ExternalLink,
+	FileJsonIcon,
+} from "lucide-react"
 import Link from "next/link"
-import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
 import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
-import { isStdio } from "@smithery/sdk/registry-types.js"
+import {
+	SiAnthropic,
+	SiTypescript,
+} from "@icons-pack/react-simple-icons"
+import { TabContent } from "./tool-tab"
 
 interface ToolCardProps {
 	server: ServerWithStats
@@ -50,45 +56,47 @@ export function ToolCard({
 		<div
 			role="listitem"
 			key={server.id}
-			className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors cursor-pointer ${
+			className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors ${
 				isExpanded ? "expanded" : ""
 			}`}
 			onClick={expand}
 		>
-			<div className="flex items-baseline justify-between mb-2">
-				<div className="flex items-center">
-					<div className="mr-3">
-						<UpvoteButton
-							serverId={server.id}
-							upvoteCount={server.upvoteCount}
-						/>
-					</div>
-					<Link
-						href={`/protocol/${server.id}`}
-						className="text-lg font-semibold text-primary hover:underline mr-2 flex items-center gap-2"
-						onClick={(e) => e.stopPropagation()}
-					>
-						{server.homepage && (
-							// eslint-disable-next-line @next/next/no-img-element
-							<img
-								src={`https://api.faviconkit.com/${new URL(server.homepage).hostname}/`}
-								onError={(e) => {
-									e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
-								}}
-								alt={server.name}
-								className="w-4 h-4"
+			<div className="cursor-pointer">
+				<div className="flex items-baseline justify-between mb-2">
+					<div className="flex items-center">
+						<div className="mr-3">
+							<UpvoteButton
+								serverId={server.id}
+								upvoteCount={server.upvoteCount}
 							/>
-						)}
-						{server.name}
-					</Link>
-					{server.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
+						</div>
+						<Link
+							href={`/protocol/${server.id}`}
+							className="text-lg font-semibold text-primary hover:underline mr-2 flex items-center gap-2"
+							onClick={(e) => e.stopPropagation()}
+						>
+							{server.homepage && (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img
+									src={`https://api.faviconkit.com/${new URL(server.homepage).hostname}/`}
+									onError={(e) => {
+										e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
+									}}
+									alt={server.name}
+									className="w-4 h-4"
+								/>
+							)}
+							{server.name}
+						</Link>
+						{server.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
+					</div>
+					<InstallCount count={server.installCount} />
 				</div>
-				<InstallCount count={server.installCount} />
+				<p className="text-card-foreground mb-3 ">{server.description}</p>
 			</div>
-			<p className="text-card-foreground mb-3 ">{server.description}</p>
 
 			{isExpanded && (
-				<div className="mt-4 space-y-4 border-t border-border pt-4 mb-4">
+				<div className="mt-4 space-y-4 pt-2 mb-4">
 					<div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
 						<span>Vendor: {server.vendor}</span>
 						<a
@@ -128,25 +136,18 @@ export function ToolCard({
 					)}
 
 					<div className="bg-background p-3 rounded-lg border border-border">
-						<div className="flex border-b border-border mb-4">
+						<div className="flex border-b border-border mb-3">
 							<TabButton
 								isActive={activeTab === "claude"}
 								onClick={(e) => {
 									e.stopPropagation()
 									setActiveTab("claude")
 								}}
-								icon={
-									<Image
-										src="/anthropic_light.svg"
-										alt="Claude"
-										width={16}
-										height={16}
-									/>
-								}
+								icon={<SiAnthropic className="w-4 h-4" />}
 							>
 								Claude
 							</TabButton>
-							<TabButton
+							{/* <TabButton
 								isActive={activeTab === "jan"}
 								onClick={(e) => {
 									e.stopPropagation()
@@ -155,21 +156,31 @@ export function ToolCard({
 								icon="👋"
 							>
 								Jan
-							</TabButton>
+							</TabButton> */}
 							<TabButton
 								isActive={activeTab === "code"}
 								onClick={(e) => {
 									e.stopPropagation()
 									setActiveTab("code")
 								}}
-								icon={<Code className="w-4 h-4" />}
+								icon={<SiTypescript className="w-4 h-4" />}
 							>
-								Code
+								Agent
+							</TabButton>
+							<TabButton
+								isActive={activeTab === "json"}
+								onClick={(e) => {
+									e.stopPropagation()
+									setActiveTab("json")
+								}}
+								icon={<FileJsonIcon className="w-4 h-4" />}
+							>
+								JSON
 							</TabButton>
 						</div>
 						<div className="flex items-start justify-between">
 							<div className="flex-1">
-								{getTabContent(server, activeTab || "claude")}
+								<TabContent tool={server} tab={activeTab || "claude"} />
 							</div>
 						</div>
 					</div>
@@ -177,48 +188,4 @@ export function ToolCard({
 			)}
 		</div>
 	)
-}
-
-const getTabContent = (tool: ServerWithStats, tab: InstallTab) => {
-	switch (tab) {
-		case "claude":
-			return (
-				<>
-					<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
-					<CodeBlock language="shell">
-						{`npx -y @smithery/cli install ${tool.id} --client claude`}
-					</CodeBlock>
-				</>
-			)
-		case "jan":
-			return <>Coming soon!</>
-		case "code":
-			return (
-				<>
-					<h4 className="font-semibold mb-2 text-primary">JSON Connections</h4>
-					{tool.connections[0] && isStdio(tool.connections[0]) && (
-						<>
-							<CodeBlock language="json">
-								{JSON.stringify(tool.connections[0].stdio, null, 2)}
-							</CodeBlock>
-							{tool.connections[0].stdio && (
-								<>
-									<h4 className="font-semibold mb-2 text-primary mt-3">
-										TypeScript SDK
-									</h4>
-									<CodeBlock language="typescript">
-										{`\
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-
-const transport = new StdioClientTransport(${JSON.stringify(tool.connections[0].stdio, null, 2)})`}
-									</CodeBlock>
-								</>
-							)}
-						</>
-					)}
-				</>
-			)
-		default:
-			throw new Error("Invalid tab")
-	}
 }

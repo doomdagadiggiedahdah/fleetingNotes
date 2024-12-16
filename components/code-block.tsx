@@ -36,7 +36,7 @@ export default function CodeBlock({
 			<button
 				type="button"
 				onClick={handleCopy}
-				className="absolute right-2 top-2 p-2 hover:bg-accent rounded-md transition-colors"
+				className="absolute right-1 top-1 p-2 hover:bg-accent rounded-md transition-colors"
 				aria-label="Copy to clipboard"
 			>
 				{copied ? (

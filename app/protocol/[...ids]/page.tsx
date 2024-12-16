@@ -93,16 +93,17 @@ export default async function ServerPage({ params }: Props) {
 				servers.createdAt,
 				servers.updatedAt,
 			)
-
 		const parsedData = data.map((item) => {
 			return {
 				...item,
+				vendor: item.vendor || undefined,
+				verified: item.verified ?? false,
+				license: item.license || undefined,
 				connections: (item.connections as unknown[]).map((c) =>
 					ConnectionSchema.parse(c),
 				),
 			}
 		})
-
 		serverData = randomizeServerOrder(parsedData)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
