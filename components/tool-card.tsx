@@ -1,6 +1,6 @@
 "use client"
 
-import { isStdio, type ServerWithStats } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/server"
 import { BadgeCheck, Code, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -10,6 +10,7 @@ import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
+import { isStdio } from "@smithery/sdk/registry-types.js"
 
 interface ToolCardProps {
 	server: ServerWithStats

@@ -2,10 +2,9 @@ import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { events, servers, upvotes } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/server"
-import { ServerWithStatsSchema } from "@/lib/types/server"
 import { randomizeServerOrder } from "@/lib/utils"
+import { ConnectionSchema } from "@smithery/sdk/registry-types.js"
 import { sql } from "drizzle-orm"
-import { z } from "zod"
 
 export const revalidate = 60
 
@@ -47,13 +46,16 @@ export default async function Home() {
 				servers.updatedAt,
 			)
 
-		const parsedData = z.array(ServerWithStatsSchema).safeParse(data)
-		if (!parsedData.success) {
-			console.error("Zod parsing error:", parsedData.error)
-			throw new Error("Failed to parse servers data")
-		}
+		const parsedData = data.map((item) => {
+			return {
+				...item,
+				connections: (item.connections as unknown[]).map((c) =>
+					ConnectionSchema.parse(c),
+				),
+			}
+		})
 
-		serverData = randomizeServerOrder(parsedData.data)
+		serverData = randomizeServerOrder(parsedData)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}

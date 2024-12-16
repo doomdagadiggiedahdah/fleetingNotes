@@ -2,14 +2,14 @@ import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { events, servers } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/server"
-import { ServerSchema, ServerWithStatsSchema } from "@/lib/types/server"
+import { ServerWithStatsSchema } from "@/lib/types/server"
 import { randomizeServerOrder } from "@/lib/utils"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
-import { z } from "zod"
 
 import { upvotes } from "@/db/schema"
 import { sql } from "drizzle-orm"
+import { ConnectionSchema } from "@/blacksmith/types"
 
 type Props = {
 	params: { ids: string[] }
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 			return {}
 		}
 
-		const parsedData = ServerSchema.safeParse(result)
+		const parsedData = ServerWithStatsSchema.safeParse(result)
 		if (!parsedData.success) {
 			return {}
 		}
@@ -94,12 +94,16 @@ export default async function ServerPage({ params }: Props) {
 				servers.updatedAt,
 			)
 
-		const parsedData = z.array(ServerWithStatsSchema).safeParse(data)
-		if (!parsedData.success) {
-			throw new Error("Failed to parse tools data")
-		}
+		const parsedData = data.map((item) => {
+			return {
+				...item,
+				connections: (item.connections as unknown[]).map((c) =>
+					ConnectionSchema.parse(c),
+				),
+			}
+		})
 
-		serverData = randomizeServerOrder(parsedData.data)
+		serverData = randomizeServerOrder(parsedData)
 	} catch (e) {
 		error = e instanceof Error ? e.message : "An unexpected error occurred"
 	}
