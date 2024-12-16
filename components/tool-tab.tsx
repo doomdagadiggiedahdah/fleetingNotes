@@ -65,7 +65,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 								</p>
 								<CodeBlock language="typescript">
 									{`\
-import { createTransport, OpenAIChatAdapter } from "@smithery/sdk"
+import { createRegistryClient, OpenAIChatAdapter } from "@smithery/sdk"
 import { OpenAI } from "openai"
 
 const openai = new OpenAI()
