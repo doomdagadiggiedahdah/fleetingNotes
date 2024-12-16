@@ -185,7 +185,7 @@ const getTabContent = (tool: ServerWithStats, tab: InstallTab) => {
 				<>
 					<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
 					<CodeBlock language="shell">
-						{`npx @smithery/cli install ${tool.id} --client claude`}
+						{`npx -y @smithery/cli install ${tool.id} --client claude`}
 					</CodeBlock>
 				</>
 			)

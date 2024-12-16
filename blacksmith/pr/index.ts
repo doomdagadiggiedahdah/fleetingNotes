@@ -41,7 +41,7 @@ To make a patch, write out the .patch file that would've been produced from \`di
 +To install [NAME] for Claude Desktop automatically via [Smithery](https://smithery.ai/protocol/[PACKAGE_NAME]):
 +
 +\`\`\`bash
-+npx @smithery/cli install [PACKAGE_NAME] --client claude
++npx -y @smithery/cli install [PACKAGE_NAME] --client claude
 +\`\`\`
 +
  ### Prerequisites
