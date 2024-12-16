@@ -69,8 +69,8 @@ import { createTransport, OpenAIChatAdapter } from "@smithery/sdk"
 import { OpenAI } from "openai"
 
 const openai = new OpenAI()
-const transport = await createTransport("${tool.id}"${sampleSchema ? `, ${JSON.stringify(sampleSchema, null, 2)}` : ""})
-const adapter = new OpenAIChatAdapter(transport)
+const mcp = await createRegistryClient("${tool.id}"${sampleSchema ? `, ${JSON.stringify(sampleSchema, null, 2)}` : ""})
+const adapter = new OpenAIChatAdapter(mcp)
 const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: "What tools can you access?" }],

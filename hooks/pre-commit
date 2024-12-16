@@ -10,5 +10,4 @@ if [ $LINT_RESULT -ne 0 ]; then
 fi
 
 echo "✅ All checks passed!"
-git add .
 exit 0
