@@ -51,7 +51,7 @@ export const events = pgTable(
 	{
 		eventId: uuid("event_id").primaryKey().defaultRandom(),
 		eventName: text("event_name").notNull(),
-		userId: uuid("user_id").notNull().default(sql`(auth.uid())`),
+		userId: uuid("user_id").notNull(),
 		timestamp: timestamp("timestamp").notNull().defaultNow(),
 		// Additional data associated with the event
 		payload: jsonb("payload"),
