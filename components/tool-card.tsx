@@ -56,8 +56,8 @@ export function ToolCard({
 		>
 			<div className="cursor-pointer">
 				<div className="flex items-baseline justify-between mb-2">
-					<div className="flex items-center">
-						<div className="mr-3">
+					<div className="flex items-center gap-2">
+						<div>
 							<UpvoteButton
 								serverId={server.id}
 								upvoteCount={server.upvoteCount}
@@ -65,7 +65,7 @@ export function ToolCard({
 						</div>
 						<Link
 							href={`/protocol/${server.id}`}
-							className="text-lg font-semibold text-primary hover:underline mr-2 flex items-center gap-2"
+							className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"
 							onClick={(e) => e.stopPropagation()}
 						>
 							{server.homepage && (
@@ -81,7 +81,10 @@ export function ToolCard({
 							)}
 							{server.name}
 						</Link>
-						{server.verified && <BadgeCheck className="w-4 h-4 text-primary" />}
+						{server.verified && (
+							<BadgeCheck className="w-4 h-4 text-primary " />
+						)}
+						<div className="text-muted-foreground text-sm">{server.id}</div>
 					</div>
 					<InstallCount count={server.installCount} />
 				</div>
@@ -89,7 +92,7 @@ export function ToolCard({
 			</div>
 
 			{isExpanded && (
-				<div className="mt-4 space-y-4 pt-2 mb-4">
+				<div className="mt-4 space-y-4 pt-1 mb-4">
 					<div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
 						<span>Vendor: {server.vendor}</span>
 						<a
