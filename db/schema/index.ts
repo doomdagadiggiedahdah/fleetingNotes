@@ -1,17 +1,20 @@
+import { ConnectionSchema } from "@smithery/sdk/registry-types.js"
 import { sql } from "drizzle-orm"
 import {
 	boolean,
 	jsonb,
+	pgPolicy,
 	pgRole,
 	pgTable,
 	text,
 	timestamp,
-	uuid,
 	unique,
-	pgPolicy,
+	uuid,
 } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-import { z } from "zod"
+import type { z } from "zod"
+
+export * from "./blacksmith"
 
 export const servers = pgTable("servers", {
 	id: text("id").primaryKey(),
@@ -27,27 +30,7 @@ export const servers = pgTable("servers", {
 	updatedAt: timestamp("updated_at").defaultNow(),
 }).enableRLS()
 
-// Custom Zod schema for the connections array
-const ConnectionSchema = z.array(
-	z.object({
-		stdio: z
-			.object({
-				command: z.string(),
-				args: z.array(z.string()),
-				env: z.record(z.string()).optional(),
-			})
-			.optional(),
-		configSchema: z
-			.object({
-				type: z.string().optional(),
-				properties: z.record(z.any()).optional(),
-				required: z.array(z.string()).optional(),
-			})
-			.optional(),
-	}),
-)
 // TODO: add pgjson schema constraint
-
 // Extend the auto-generated schema with our custom connections type
 export const insertServerSchema = createInsertSchema(servers).extend({
 	connections: ConnectionSchema,

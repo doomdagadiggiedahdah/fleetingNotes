@@ -19,7 +19,7 @@
 		"@radix-ui/react-dialog": "^1.1.3",
 		"@radix-ui/react-slot": "^1.1.1",
 		"@radix-ui/react-tooltip": "^1.1.5",
-		"@smithery/sdk": "latest",
+		"@smithery/sdk": "^0.0.12",
 		"@supabase/supabase-js": "^2.47.7",
 		"@vercel/functions": "^1.5.2",
 		"class-variance-authority": "^0.7.1",
@@ -31,6 +31,7 @@
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
 		"next": "14.2.16",
+		"openai": "^4.76.3",
 		"postgres": "^3.4.5",
 		"posthog-js": "^1.195.0",
 		"posthog-node": "^4.3.2",
@@ -39,7 +40,8 @@
 		"react-dom": "^18",
 		"tailwind-merge": "^2.5.5",
 		"tailwindcss-animate": "^1.0.7",
-		"zod": "^3.24.0"
+		"zod": "^3.24.0",
+		"zod-to-json-schema": "^3.24.1"
 	},
 	"devDependencies": {
 		"@types/lodash": "^4.17.13",

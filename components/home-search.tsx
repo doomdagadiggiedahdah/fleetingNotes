@@ -25,9 +25,9 @@ export const HomeSearch = ({
 							rel="noreferrer"
 							className="text-primary hover:underline"
 						>
-							Model Context Protocols
-						</a>
-						.
+							Model Context Protocol
+						</a>{" "}
+						servers.
 					</p>
 				</div>
 				{error ? (

@@ -1,14 +1,9 @@
-import { zodToJsonSchema } from "zod-to-json-schema"
-
 import type { LangfuseTraceClient } from "langfuse"
 import type OpenAI from "openai"
 import type {
 	ChatCompletionCreateParamsNonStreaming,
 	ChatCompletionMessageParam,
-	ChatCompletionTool,
 } from "openai/resources/index.js"
-import { RegistryItemSchema } from "../types.js"
-import { CREATE_REGISTRY_ENTRY } from "./anthropic.js"
 
 export function pruneAllButLastExecResult(
 	messages: ChatCompletionMessageParam[],
@@ -59,13 +54,4 @@ export async function tracedOpenAIGenerate(
 	})
 
 	return response
-}
-
-export const writeRegistryTool: ChatCompletionTool = {
-	function: {
-		name: CREATE_REGISTRY_ENTRY,
-		description: "Use this tool when you're ready to output the final result",
-		parameters: zodToJsonSchema(RegistryItemSchema) as any,
-	},
-	type: "function",
 }
