@@ -38,7 +38,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 			const connection = tool.connections[0]
 
 			if (connection && isStdio(connection)) {
-				const sampleSchema = connection.configSchema
+				const sampleSchema = connection.configSchema?.properties
 					? Object.entries(connection.configSchema.properties as object)
 							.map(([key, value]) => ({
 								[key]: value.description ?? value.type ?? "...",
