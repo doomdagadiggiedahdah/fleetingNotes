@@ -1,10 +1,6 @@
 import { HomeSearch } from "@/components/home-search"
-import { db } from "@/db"
-import { events, servers, upvotes } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/server"
-import { randomizeServerOrder } from "@/lib/utils"
-import { ConnectionSchema } from "@smithery/sdk/registry-types.js"
-import { sql } from "drizzle-orm"
+import { getAllServers, parseServerData } from "@/lib/utils/parse-server-data"
 
 export const revalidate = 60
 
@@ -13,54 +9,11 @@ export default async function Home() {
 	let error = ""
 
 	try {
-		const data = await db
-			.select({
-				id: servers.id,
-				name: servers.name,
-				description: servers.description,
-				vendor: servers.vendor,
-				sourceUrl: servers.sourceUrl,
-				license: servers.license,
-				homepage: servers.homepage,
-				verified: servers.verified,
-				connections: servers.connections,
-				createdAt: servers.createdAt,
-				updatedAt: servers.updatedAt,
-				upvoteCount: sql<number>`COUNT(DISTINCT ${upvotes.id})::int`,
-				installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} = 'server_install' THEN ${events.eventId} END)::int`,
-			})
-			.from(servers)
-			.leftJoin(upvotes, sql`${servers.id} = ${upvotes.serverId}`)
-			.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
-			.groupBy(
-				servers.id,
-				servers.name,
-				servers.description,
-				servers.vendor,
-				servers.sourceUrl,
-				servers.license,
-				servers.homepage,
-				servers.verified,
-				servers.connections,
-				servers.createdAt,
-				servers.updatedAt,
-			)
-
-		const parsedData = data.map((item) => {
-			return {
-				...item,
-				vendor: item.vendor || undefined,
-				verified: item.verified ?? false,
-				license: item.license || undefined,
-				connections: (item.connections as unknown[]).map((c) =>
-					ConnectionSchema.parse(c),
-				),
-			}
-		})
-
-		serverData = randomizeServerOrder(parsedData)
+		const data = await getAllServers()
+		serverData = parseServerData(data)
 	} catch (e) {
-		error = e instanceof Error ? e.message : "An unexpected error occurred"
+		console.error(e)
+		error = "An unexpected error occurred"
 	}
 
 	return <HomeSearch servers={serverData} error={error} />
