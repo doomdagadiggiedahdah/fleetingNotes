@@ -32,7 +32,7 @@
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
 		"next": "14.2.16",
-		"openai": "^4.76.3",
+		"openai": "^4.77.0",
 		"postgres": "^3.4.5",
 		"posthog-js": "^1.195.0",
 		"posthog-node": "^4.3.2",
