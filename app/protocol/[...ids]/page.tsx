@@ -6,7 +6,7 @@ import { ServerWithStatsSchema } from "@/lib/types/server"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 
-import { getAllServers, parseServerData } from "@/lib/utils/parse-server-data"
+import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
 
 type Props = {
 	params: { ids: string[] }

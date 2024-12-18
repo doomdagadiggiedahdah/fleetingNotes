@@ -1,6 +1,6 @@
 import { HomeSearch } from "@/components/home-search"
 import type { ServerWithStats } from "@/lib/types/server"
-import { getAllServers, parseServerData } from "@/lib/utils/parse-server-data"
+import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
 
 export const revalidate = 60
 
