@@ -2,7 +2,6 @@
 	"name": "@smithery/web",
 	"version": "1.0.0",
 	"private": true,
-	"workspaces": ["blacksmith"],
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",

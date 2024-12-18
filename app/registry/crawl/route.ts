@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
-import { generateEntries } from "@/lib/blacksmith"
+import { generateEntries } from "@/lib/blacksmith/generate-entries"
 import { NextResponse } from "next/server"
 
 // const urlRegex = /https?:\/\/[^\s\)]+/g
