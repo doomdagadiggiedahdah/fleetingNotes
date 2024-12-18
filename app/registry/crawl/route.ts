@@ -37,7 +37,7 @@ export async function POST() {
 	if (urls) {
 		await db
 			.insert(candidate_urls)
-			.values(urls.map((url) => ({ url, processed: false })))
+			.values(urls.map((crawl_url) => ({ crawl_url, processed: false })))
 			.onConflictDoNothing()
 	}
 

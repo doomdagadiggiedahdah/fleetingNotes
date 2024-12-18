@@ -11,13 +11,15 @@ import { generateEntry } from "./generate-entry"
  */
 export async function generateEntries() {
 	const rows = await db
-		.select({ url: candidate_urls.url })
+		.select({ url: candidate_urls.crawl_url })
 		.from(candidate_urls)
 		.where(
 			and(
 				sql`NOT EXISTS (
 					SELECT 1 FROM ${servers}
-					WHERE ${servers.sourceUrl} = ${candidate_urls.url}
+					WHERE
+						${servers.crawlUrl} = ${candidate_urls.crawl_url} OR
+						${servers.crawlUrl} LIKE '%' || SPLIT_PART(${candidate_urls.crawl_url}, '/', -1)
 				)`,
 				eq(candidate_urls.processed, false),
 			),
@@ -25,14 +27,52 @@ export async function generateEntries() {
 		.execute()
 
 	const urlsToCrawl = rows.map((row) => row.url)
-	console.log("URLs to crawl", urlsToCrawl.length)
+	console.log("URLs to process:", urlsToCrawl.length)
 
 	const langfuse = new Langfuse()
 
 	try {
 		const llm = new OpenAI()
 
-		await generateEntry(langfuse, llm, urlsToCrawl[0])
+		for (const url of urlsToCrawl) {
+			const { outputServers, messages } = await generateEntry(
+				langfuse,
+				llm,
+				url,
+			)
+
+			// Update process status
+			await db
+				.update(candidate_urls)
+				.set({
+					processed: true,
+					log: messages,
+				})
+				.where(eq(candidate_urls.crawl_url, url))
+
+			if (outputServers && outputServers.length > 0) {
+				// Insert into DB
+				await db
+					.insert(servers)
+					.values(
+						outputServers.map((server) => ({
+							id: server.id,
+							name: server.name,
+							description: server.description,
+							vendor: server.vendor,
+							sourceUrl: server.sourceUrl,
+							homepage: server.homepage,
+							license: server.license,
+							remote: server.remote,
+							connections: server.connections,
+							crawlUrl: url,
+							verified: false,
+						})),
+					)
+					.onConflictDoNothing()
+			}
+			break
+		}
 	} finally {
 		await langfuse.shutdownAsync()
 	}

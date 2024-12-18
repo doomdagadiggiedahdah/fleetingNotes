@@ -1,4 +1,4 @@
-import { RegistryServerSchema } from "@smithery/sdk/registry-types.js"
+import { RegistryServerSchema } from "@/lib/blacksmith/registry-types"
 import { z } from "zod"
 
 export const ServerWithStatsSchema = RegistryServerSchema.extend({

@@ -1,4 +1,4 @@
-import { ConnectionSchema } from "@smithery/sdk/registry-types.js"
+import { ConnectionSchema } from "@/lib/blacksmith/registry-types"
 import { sql } from "drizzle-orm"
 import {
 	boolean,
@@ -27,7 +27,11 @@ export const servers = pgTable("servers", {
 	homepage: text("homepage").notNull(),
 	license: text("license"),
 	verified: boolean("verified").default(false),
-	remote: boolean("remote"),
+	// True if this server doesn't require local access
+	remote: boolean("remote").notNull().default(false),
+	// True if this server has any connection published to npm/pypi
+	published: boolean("published").notNull().default(false),
+	tags: jsonb("tags").notNull().default([]),
 	connections: jsonb("connections").notNull(),
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),

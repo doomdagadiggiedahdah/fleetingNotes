@@ -1,6 +1,8 @@
-import { boolean, pgTable, text } from "drizzle-orm/pg-core"
+import { boolean, jsonb, pgTable, text } from "drizzle-orm/pg-core"
 
 export const candidate_urls = pgTable("candidate_urls", {
-	url: text("url").primaryKey(),
-	processed: boolean("processed").default(false),
+	crawl_url: text("crawl_url").primaryKey(),
+	processed: boolean("processed").notNull().default(false),
+	// Log from the processing stage
+	log: jsonb("log"),
 }).enableRLS()
