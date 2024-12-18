@@ -22,9 +22,12 @@ export const servers = pgTable("servers", {
 	description: text("description").notNull(),
 	vendor: text("vendor"),
 	sourceUrl: text("source_url").notNull(),
-	license: text("license"),
+	// The URL this repo was crawled from
+	crawlUrl: text("crawl_url"),
 	homepage: text("homepage").notNull(),
+	license: text("license"),
 	verified: boolean("verified").default(false),
+	remote: boolean("remote"),
 	connections: jsonb("connections").notNull(),
 	createdAt: timestamp("created_at").defaultNow(),
 	updatedAt: timestamp("updated_at").defaultNow(),
