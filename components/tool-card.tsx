@@ -73,7 +73,8 @@ export function ToolCard({
 								<img
 									src={`https://api.faviconkit.com/${new URL(server.homepage).hostname}/`}
 									onError={(e) => {
-										e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
+										if (server.homepage)
+											e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
 									}}
 									alt={server.name}
 									className="w-4 h-4"

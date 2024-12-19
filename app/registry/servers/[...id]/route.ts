@@ -2,6 +2,7 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import {
 	isStdioFn,
+	JSONSchemaSchema,
 	RegistryServerSchema,
 } from "@/lib/blacksmith/registry-types"
 import Ajv from "ajv"
@@ -10,18 +11,18 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 const ajv = new Ajv()
 
-// const ReturnTypeSchema = RegistryServerSchema.pick({
-// 	id: true,
-// 	name: true,
-// }).extend({
-// 	connections: z.array(
-// 		z.object({
-// 			type: z.string(),
-// 			configSchema: JSONSchemaSchema,
-// 			exampleConfig: z.any(),
-// 		}),
-// 	),
-// })
+const ReturnTypeSchema = RegistryServerSchema.pick({
+	id: true,
+	name: true,
+}).extend({
+	connections: z.array(
+		z.object({
+			type: z.string(),
+			configSchema: JSONSchemaSchema.default({}),
+			exampleConfig: z.any(),
+		}),
+	),
+})
 
 export async function GET(
 	request: Request,
@@ -37,24 +38,24 @@ export async function GET(
 			return NextResponse.json({ error: "Server not found" }, { status: 404 })
 		}
 
-		// TODO: Change this once ready
-		return NextResponse.json(result)
-		// return NextResponse.json(
-		// 	ReturnTypeSchema.parse({
-		// 		...result,
-		// 		connections: RegistryServerSchema.shape.connections
-		// 			.parse(result.connections)
-		// 			.map((connection) => {
-		// 				if (isStdioFn(connection)) {
-		// 					return {
-		// 						...connection,
-		// 						type: "stdio",
-		// 					}
-		// 				}
-		// 				return connection
-		// 			}),
-		// 	}),
-		// )
+		return NextResponse.json(
+			ReturnTypeSchema.parse({
+				...result,
+				connections: RegistryServerSchema.shape.connections
+					.parse(result.connections)
+					.flatMap((connection) => {
+						if (isStdioFn(connection)) {
+							return [
+								{
+									...connection,
+									type: "stdio",
+								},
+							]
+						}
+						return []
+					}),
+			}),
+		)
 	} catch (error) {
 		console.error("Error fetching server:", error)
 		return NextResponse.json(
@@ -76,8 +77,8 @@ export async function POST(
 	request: Request,
 	{ params }: { params: { id: string[] } },
 ) {
+	const serverId = params.id.join("/")
 	try {
-		const serverId = params.id.join("/")
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.id, serverId),
 		})
@@ -126,7 +127,7 @@ export async function POST(
 
 		return NextResponse.json(finalResult)
 	} catch (error) {
-		console.error("Error generating config for server:", error)
+		console.error(`Error generating config for server ${serverId}:`, error)
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },
