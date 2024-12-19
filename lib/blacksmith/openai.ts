@@ -1,33 +1,6 @@
 import type { LangfuseTraceClient } from "langfuse"
 import type OpenAI from "openai"
-import type {
-	ChatCompletionCreateParamsNonStreaming,
-	ChatCompletionMessageParam,
-} from "openai/resources/index.js"
-
-export function pruneAllButLastExecResult(
-	messages: ChatCompletionMessageParam[],
-): ChatCompletionMessageParam[] {
-	return messages.map((message, idx) => {
-		if (idx === messages.length - 1) {
-			return message
-		}
-
-		if (message.role === "tool") {
-			if (typeof message.content === "string") {
-				if (message.content.includes("Execution result:"))
-					return { ...message, content: "[Truncated]" }
-			} else {
-				for (const part of message.content) {
-					if (part.type === "text" && part.text.includes("Execution result:")) {
-						return { ...message, content: "[Truncated]" }
-					}
-				}
-			}
-		}
-		return message
-	})
-}
+import type { ChatCompletionCreateParamsNonStreaming } from "openai/resources/index.js"
 
 export async function tracedOpenAIGenerate(
 	client: OpenAI,

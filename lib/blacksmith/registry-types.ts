@@ -4,7 +4,6 @@
  */
 import { z } from "zod"
 
-// TODO: This will be the official registry types used later
 export const JSONSchemaSchema: z.ZodType = z
 	.lazy(() =>
 		z
@@ -65,7 +64,16 @@ export type StdioConnection = z.infer<typeof StdioConnectionSchema>
 
 export const ConnectionSchema = z
 	.object({
-		configSchema: JSONSchemaSchema.optional(),
+		// TODO: Add connection type field for more flexibility and avoid guards
+		configSchema: JSONSchemaSchema
+			// TODO: Make not optional?
+			.optional(),
+		exampleConfig: z
+			.record(z.any())
+			.optional()
+			.describe(
+				"An example config object, conforming to the specified configSchema, which we will display to the user as documentation on what to pass to the stdioFunction.",
+			),
 		published: z
 			.boolean()
 			// TODO: Remove once migration completes
@@ -89,14 +97,37 @@ export const ConnectionSchema = z
 					.describe(
 						"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
 					),
-				exampleConfig: z
-					.any()
-					.describe(
-						"An example config object, conforming to the specified configSchema, which we will display to the user as documentation on what to pass to the stdioFunction.",
-					),
 			}),
 		]),
 	)
+	.describe(
+		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
+	)
+export const ConnectionSchemaNew = z
+	.object({
+		// TODO: Add connection type field for more flexibility and avoid guards
+		configSchema: JSONSchemaSchema
+			// TODO: Make not optional?
+			.optional(),
+		exampleConfig: z
+			.record(z.any())
+			.optional()
+			.describe(
+				"An example config object. This must conform to the specified configSchema and cannot have fields not present in the schema. This example config will be displayed to the user as documentation on what to pass to the stdioFunction.",
+			),
+		published: z
+			.boolean()
+			// TODO: Remove once migration completes
+			.default(false)
+			.describe(
+				"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
+			),
+		stdioFunction: z
+			.string()
+			.describe(
+				"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
+			),
+	})
 	.describe(
 		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
 	)
@@ -146,6 +177,7 @@ export const RegistryServerSchema = z.object({
 		),
 	homepage: z
 		.string()
+		.optional()
 		.describe(
 			"The URL to the product page of the MCP. (e.g,. https://search.brave.com/).",
 		),

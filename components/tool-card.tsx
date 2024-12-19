@@ -1,14 +1,14 @@
 "use client"
 
 import type { ServerWithStats } from "@/lib/types/server"
-import { BadgeCheck, ExternalLink, FileJsonIcon } from "lucide-react"
+import { BadgeCheck, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import type { InstallTab } from "./tool-list"
 import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
-import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
+import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import { TabContent } from "./tool-tab"
 
 interface ToolCardProps {
@@ -153,7 +153,7 @@ export function ToolCard({
 							>
 								Jan
 							</TabButton> */}
-							<TabButton
+							{/* <TabButton
 								isActive={activeTab === "code"}
 								onClick={(e) => {
 									e.stopPropagation()
@@ -172,7 +172,7 @@ export function ToolCard({
 								icon={<FileJsonIcon className="w-4 h-4" />}
 							>
 								JSON
-							</TabButton>
+							</TabButton> */}
 						</div>
 						<div className="flex items-start justify-between">
 							<div className="flex-1">
