@@ -44,15 +44,7 @@ export async function generateEntries() {
 				.insert(servers)
 				.values(
 					outputServers.map((server) => ({
-						id: server.id,
-						name: server.name,
-						description: server.description,
-						vendor: server.vendor,
-						sourceUrl: server.sourceUrl,
-						homepage: server.homepage,
-						license: server.license,
-						remote: server.remote,
-						connections: server.connections,
+						...server,
 						crawlUrl: url,
 						verified: false,
 					})),

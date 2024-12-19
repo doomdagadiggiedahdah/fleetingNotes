@@ -111,11 +111,17 @@ Recommended steps:
 </steps>
 </entry>`
 
-const RegistryServerSchemaNew = RegistryServerSchema.extend({
+const RegistryServerSchemaNew = z.object({
+	...RegistryServerSchema.shape,
 	connections: z.array(ConnectionSchemaNew),
 })
 
 type RegistryServerNew = z.infer<typeof RegistryServerSchemaNew>
+
+const BuilderRegistrySchema = z.object({
+	servers: z.array(RegistryServerSchemaNew)
+})
+
 export async function generateEntry(input_url: string): Promise<{
 	outputServers: RegistryServer[] | null
 	messages: ChatCompletionMessageParam[]
@@ -142,9 +148,7 @@ export async function generateEntry(input_url: string): Promise<{
 				name: REGISTRY_ENTRY_FNAME,
 				description:
 					"Upserts the entry in the registry and evaluates the configurations.",
-				parameters: z.object({
-					servers: z.array(RegistryServerSchemaNew),
-				}),
+				parameters: BuilderRegistrySchema,
 				execute: async (output) => {
 					const evaluated_outputs = []
 					// Test output servers by calling the command functions and do type checking

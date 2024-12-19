@@ -24,7 +24,7 @@ export const servers = pgTable("servers", {
 	sourceUrl: text("source_url").notNull(),
 	// The URL this repo was crawled from
 	crawlUrl: text("crawl_url"),
-	homepage: text("homepage").notNull(),
+	homepage: text("homepage"),
 	license: text("license"),
 	verified: boolean("verified").default(false),
 	// True if this server doesn't require local access

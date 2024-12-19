@@ -47,6 +47,7 @@ export function parseServerData(data: ServerSelection[]): ServerWithStats[] {
 	return data.map((item) => {
 		return {
 			...item,
+			homepage: item.homepage || undefined,
 			vendor: item.vendor || undefined,
 			verified: item.verified ?? false,
 			license: item.license || undefined,
