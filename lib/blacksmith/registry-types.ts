@@ -106,12 +106,9 @@ export const ConnectionSchema = z
 export const ConnectionSchemaNew = z
 	.object({
 		// TODO: Add connection type field for more flexibility and avoid guards
-		configSchema: JSONSchemaSchema
-			// TODO: Make not optional?
-			.optional(),
+		configSchema: JSONSchemaSchema,
 		exampleConfig: z
 			.record(z.any())
-			.optional()
 			.describe(
 				"An example config object. This must conform to the specified configSchema and cannot have fields not present in the schema. This example config will be displayed to the user as documentation on what to pass to the stdioFunction.",
 			),

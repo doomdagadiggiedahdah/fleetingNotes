@@ -34,6 +34,17 @@ When you're ready to produce your output, use the \`${REGISTRY_ENTRY_FNAME}\` to
 <connections>
 After comprehensive search, if it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
 
+If the docs show multiple ways to start the MCP, prefer the one that uses a published package and doesn't require end-user setup.
+If the README indicates some kind of custom installer (e.g., @smithery/cli), then you should ignore that instruction and, instead, look at the entrypoint source code to figure out how to start the MCP server.
+
+<publication>
+It may not be apparent from the repository if the package is published. You can use \`fetch\` to check.
+NPM's URL is:
+https://registry.npmjs.com/[...package_name]
+Pypiy is:
+https://pypi.org/project/[...package_name]
+</publication>
+
 <configs>
 MCPs may require configuration before they can be started. In these cases, you will define possible configurations (e.g., CLI args) required to start the MCP server via a valid JSON schema. These configuration variables will be passed into a \`stdioFunction\` which will produce the command and variables required to run the server.
 
@@ -89,14 +100,22 @@ The correct entry definition for this example is:
 
 <steps>
 Recommended steps:
-1. List the files in the root of the repo
-2. Check README.md
-3. Check package.json or pyproject.toml to figure out the package name
-4. Check if there are other subprojects in the repo for multiple MCP listings
-5. Create a registry entry
+1. List the files in the root of the repo. Before viewing any file on Github, list the directory to check if it exists first to prevent errors.
+2. Check if there are other subprojects in the repo for multiple MCP listings. If so, you'll have to repeat the following steps for each subproject.
+3. Check README.md
+4. Check package.json or pyproject.toml to figure out the package name
+5. Read the entrypoint source file (usually index.ts or main.py, depending on what was specified in package.json or pyproject.toml)
+6. Check if the package is published on a registry
+7. Create a registry entry. DO NOT create an entry until you've went through all the steps above at minimum.
+
 </steps>
 </entry>`
 
+const RegistryServerSchemaNew = RegistryServerSchema.extend({
+	connections: z.array(ConnectionSchemaNew),
+})
+
+type RegistryServerNew = z.infer<typeof RegistryServerSchemaNew>
 export async function generateEntry(input_url: string): Promise<{
 	outputServers: RegistryServer[] | null
 	messages: ChatCompletionMessageParam[]
@@ -115,7 +134,7 @@ export async function generateEntry(input_url: string): Promise<{
 			name: "blacksmith-crawler",
 		})
 
-		let outputServers: RegistryServer[] | null = null
+		let outputServers: RegistryServerNew[] | null = null
 		// Connect to MCPs
 		const mcp = new MultiClient()
 		const registry = new ServerBuilder()
@@ -124,17 +143,12 @@ export async function generateEntry(input_url: string): Promise<{
 				description:
 					"Upserts the entry in the registry and evaluates the configurations.",
 				parameters: z.object({
-					servers: z.array(
-						RegistryServerSchema.extend({
-							connections: z.array(ConnectionSchemaNew),
-						}),
-					),
+					servers: z.array(RegistryServerSchemaNew),
 				}),
 				execute: async (output) => {
-					outputServers = output.servers
 					const evaluated_outputs = []
 					// Test output servers by calling the command functions and do type checking
-					for (const server of outputServers) {
+					for (const server of output.servers) {
 						for (const connection of server.connections) {
 							if (isStdioFn(connection)) {
 								// Test
@@ -142,8 +156,7 @@ export async function generateEntry(input_url: string): Promise<{
 									const validate = ajv.compile(connection.configSchema)
 
 									if (
-										(!connection.configSchema ||
-											Object.keys(connection.configSchema).length === 0) &&
+										Object.keys(connection.configSchema).length === 0 &&
 										Object.keys(connection.exampleConfig).length > 0
 									) {
 										return {
@@ -203,6 +216,7 @@ export async function generateEntry(input_url: string): Promise<{
 						}
 					}
 
+					outputServers = output.servers
 					return {
 						content: [
 							{
@@ -217,7 +231,7 @@ export async function generateEntry(input_url: string): Promise<{
 
 		await mcp.connectAll({
 			gh: await createTransport(
-				"github-mcp-server",
+				"@modelcontextprotocol/github-mcp-server",
 				{
 					githubPersonalAccessToken: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
 				},
@@ -229,6 +243,10 @@ export async function generateEntry(input_url: string): Promise<{
 						PATH: process.env.PATH as string,
 					},
 				},
+			),
+			fetch: await createTransport(
+				"@modelcontextprotocol/mcp-server-fetch",
+				{},
 			),
 			registry: registry,
 		})
