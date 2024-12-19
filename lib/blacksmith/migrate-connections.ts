@@ -6,10 +6,7 @@ import { omit } from "lodash"
 import dotenv from "dotenv"
 import { servers } from "../../db/schema"
 import { generateEntry } from "@/lib/blacksmith/generate-entry"
-import {
-	isStdioFn,
-	RegistryServerSchema,
-} from "@/lib/blacksmith/registry-types"
+import { isStdioFn, RegistryServerSchema } from "@/lib/types/server"
 import { eq } from "drizzle-orm"
 dotenv.config({ path: ".env.development.local" })
 

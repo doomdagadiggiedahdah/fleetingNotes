@@ -1,4 +1,4 @@
-import { ConnectionSchema } from "@/lib/blacksmith/registry-types"
+import { ConnectionSchema } from "@/lib/types/server"
 import { sql } from "drizzle-orm"
 import {
 	boolean,

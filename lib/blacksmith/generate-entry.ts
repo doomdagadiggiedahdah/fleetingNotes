@@ -1,5 +1,6 @@
 import { OpenAI } from "openai"
 
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
 import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
@@ -7,16 +8,12 @@ import { Langfuse } from "langfuse"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { stringify } from "yaml"
 import { z } from "zod"
+import { isStdioFn, type StdioConnection } from "../types/server"
 import { tracedOpenAIGenerate } from "./openai"
 import {
-	ConnectionSchemaNew,
-	RegistryServerSchema,
-	isStdioFn,
-	type RegistryServer,
-	type StdioConnection,
+	type RegistryServerNew,
+	RegistryServerSchemaNew,
 } from "./registry-types"
-
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 const ajv = new Ajv()
 
 const MAX_TURNS = 15
@@ -36,7 +33,7 @@ When you're ready to produce your output, use the \`${REGISTRY_ENTRY_FNAME}\` to
 <connections>
 After comprehensive search, if it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
 
-If the docs show multiple ways to start the MCP, prefer the one that uses a published package and doesn't require end-user setup.
+Some documentation may show you how to run it locally, but not show the version that uses the published package. Whenever possible, you should prioritize the connection that uses a published package and doesn't require end-user setup or cloning the repo.
 If the README indicates some kind of custom installer (e.g., @smithery/cli), then you should ignore that instruction and, instead, look at the entrypoint source code to figure out how to start the MCP server.
 
 <publication>
@@ -45,6 +42,8 @@ NPM's URL is:
 https://registry.npmjs.com/[...package_name]
 Pypiy is:
 https://pypi.org/project/[...package_name]
+
+If you use \`npx\`, you should use the \`-y\` flag to run the MCP in your command without prompting.
 </publication>
 
 <configs>
@@ -85,10 +84,14 @@ The correct entry definition for this example is:
 <example_output>
 {
 	"configSchema": {
-		"braveApiKey": {
-			"type": "string"
-			"description": "The API key for the BRAVE Search server."
-		}
+		"type": "object",
+		"properties": {
+			"braveApiKey": {
+				"type": "string"
+				"description": "The API key for the BRAVE Search server."
+			}
+		},
+		"required": ["braveApiKey"]
 	},
 	"stdioFunction": "config=>({command:"npx",args:["-y","@modelcontextprotocol/server-brave-search"],env:{BRAVE_API_KEY:config.braveApiKey}})",
 	"exampleConfig": {
@@ -100,32 +103,29 @@ The correct entry definition for this example is:
 
 </connections>
 
+<navigation>
+Before viewing any file on Github, list the directory to check if it exists first to prevent errors.
+If you're given a URL that's a subdirectory of a Github repository, note that when URL references /tree/main is refers to the root of the repo, it doesn't mean there's an actual path in the repo called /tree/main.
+</navigation>
+
 <steps>
 Recommended steps:
-1. List the files in the root of the repo. Before viewing any file on Github, list the directory to check if it exists first to prevent errors.
+1. List the files in the root of the repo.
 2. Check if there are other subprojects in the repo for multiple MCP listings. If so, you'll have to repeat the following steps for each subproject.
 3. Check README.md
 4. Check package.json or pyproject.toml to figure out the package name
 5. Read the entrypoint source file (usually index.ts or main.py, depending on what was specified in package.json or pyproject.toml)
 6. Check if the package is published on a registry
 7. Create a registry entry. DO NOT create an entry until you've went through all the steps above at minimum.
-
 </steps>
 </entry>`
-
-const RegistryServerSchemaNew = z.object({
-	...RegistryServerSchema.shape,
-	connections: z.array(ConnectionSchemaNew),
-})
-
-type RegistryServerNew = z.infer<typeof RegistryServerSchemaNew>
 
 const BuilderRegistrySchema = z.object({
 	servers: z.array(RegistryServerSchemaNew),
 })
 
 export async function generateEntry(input_url: string): Promise<{
-	outputServers: RegistryServer[] | null
+	outputServers: RegistryServerNew[] | null
 	messages: ChatCompletionMessageParam[]
 }> {
 	if (!process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
@@ -159,22 +159,10 @@ export async function generateEntry(input_url: string): Promise<{
 							if (isStdioFn(connection)) {
 								// Test
 								try {
-									const validate = ajv.compile(connection.configSchema)
-
-									if (
-										Object.keys(connection.configSchema).length === 0 &&
-										Object.keys(connection.exampleConfig).length > 0
-									) {
-										return {
-											content: [
-												{
-													type: "text",
-													text: `Missing configSchema for server ID: ${server.id}. Configuration must exhaustively define all variables that are used in stdioFunction.`,
-												},
-											],
-											isError: true,
-										}
-									}
+									const validate = ajv.compile({
+										...connection.configSchema,
+										additionalProperties: false,
+									})
 
 									if (!validate(connection.exampleConfig)) {
 										return {
@@ -192,7 +180,7 @@ export async function generateEntry(input_url: string): Promise<{
 										content: [
 											{
 												type: "text",
-												text: `Could not compile configSchema JSON Schema for server ID: ${server.id}. Error: ${e}`,
+												text: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
 											},
 										],
 										isError: true,

@@ -4,7 +4,7 @@ import {
 	isStdioFn,
 	JSONSchemaSchema,
 	RegistryServerSchema,
-} from "@/lib/blacksmith/registry-types"
+} from "@/lib/types/server"
 import Ajv from "ajv"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"

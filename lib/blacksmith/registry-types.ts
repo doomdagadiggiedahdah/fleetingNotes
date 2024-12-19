@@ -1,17 +1,18 @@
 /**
- * Types for entries in the Smithery registry.
- * These are internal types. The external registry API would define a different type.
+ * Schema for creating types for new entries in the Smithery registry.
+ * These are internal types used by the agent, which is more strict than what's currently in the registry.
  */
 import { z } from "zod"
 
-export const JSONSchemaSchema: z.ZodType = z
+import { RegistryServerSchema } from "../types/server"
+
+export const JSONSchemaSchemaNew: z.ZodType = z
 	.lazy(() =>
 		z
 			.union([
 				z.object({
 					type: z
 						.enum(["string", "number", "boolean", "null"])
-						.optional()
 						.describe("The type of the variable."),
 				}),
 				z.object({
@@ -22,12 +23,12 @@ export const JSONSchemaSchema: z.ZodType = z
 						.describe(
 							"A list of required keys. Be sure to mark this as true if the command will not run/properly generate without the key.",
 						),
-					properties: z.record(JSONSchemaSchema).optional(),
+					properties: z.record(JSONSchemaSchemaNew).optional(),
 				}),
 				z.object({
 					type: z.literal("array").describe("The type of the variable."),
 					required: z.array(z.string()).optional(),
-					items: JSONSchemaSchema.optional(),
+					items: JSONSchemaSchemaNew.optional(),
 				}),
 			])
 			.and(
@@ -38,7 +39,7 @@ export const JSONSchemaSchema: z.ZodType = z
 						.describe(
 							"The default is typically used to express that if a value is missing, then the value is semantically the same as if the value was present with the default value. Leave undefined if no default is allowed.",
 						),
-					description: z.string().optional(),
+					description: z.string(),
 				}),
 			),
 	)
@@ -46,67 +47,12 @@ export const JSONSchemaSchema: z.ZodType = z
 		"JSON Schema defines the configuration required to initialize the server. All variables are used to template fill the commands. Leave undefined if no config required.",
 	)
 
-export type JSONSchema = z.infer<typeof JSONSchemaSchema>
+export type JSONSchemaNew = z.infer<typeof JSONSchemaSchemaNew>
 
-export const StdioConnectionSchema = z.object({
-	command: z.string().describe("The executable to run to start the server."),
-	args: z
-		.array(z.string())
-		.optional()
-		.describe("Command line arguments to pass to the executable."),
-	env: z
-		.record(z.string(), z.string())
-		.optional()
-		.describe("The environment to use when spawning the process."),
-})
-
-export type StdioConnection = z.infer<typeof StdioConnectionSchema>
-
-export const ConnectionSchema = z
-	.object({
-		// TODO: Add connection type field for more flexibility and avoid guards
-		configSchema: JSONSchemaSchema
-			// TODO: Make not optional?
-			.optional(),
-		exampleConfig: z
-			.record(z.any())
-			.optional()
-			.describe(
-				"An example config object, conforming to the specified configSchema, which we will display to the user as documentation on what to pass to the stdioFunction.",
-			),
-		published: z
-			.boolean()
-			// TODO: Remove once migration completes
-			.default(false)
-			.describe(
-				"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
-			),
-	})
-	.and(
-		z.union([
-			z.object({
-				sse: z.string(),
-			}),
-			z.object({
-				// TODO: Remove once migration completes. CLI will need to be updated.
-				stdio: StdioConnectionSchema,
-			}),
-			z.object({
-				stdioFunction: z
-					.string()
-					.describe(
-						"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
-					),
-			}),
-		]),
-	)
-	.describe(
-		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
-	)
 export const ConnectionSchemaNew = z
 	.object({
-		// TODO: Add connection type field for more flexibility and avoid guards
-		configSchema: JSONSchemaSchema,
+		type: z.literal("stdio"),
+		configSchema: JSONSchemaSchemaNew,
 		exampleConfig: z
 			.record(z.any())
 			.describe(
@@ -129,76 +75,9 @@ export const ConnectionSchemaNew = z
 		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
 	)
 
-export type Connection = z.infer<typeof ConnectionSchema>
-
-export const RegistryServerSchema = z.object({
-	id: z
-		.string()
-		.describe(
-			"The unique identifier that would typically be used to install this package. Usually the `npm` package name.",
-		),
-	name: z
-		.string()
-		.describe(
-			"The human-readable concise name of the MCP server. Do not mention MCP or Claude Desktop since those are redundant.",
-		),
-	verified: z
-		.boolean()
-		.describe(
-			"True if the server is maintained by the official API maintainers. This can be inferred by the organization that owns the repository.",
-		),
-	description: z
-		.string()
-		.describe("A concise description of the MCP server for end-users."),
-	tags: z.array(
-		z
-			.string()
-			.describe(
-				"Tags for the MCP. If this MCP wraps an API, then it should be 'api'. If it extends the memory of the LLM, then it should be tagged with 'memory'.",
-			),
-	),
-	vendor: z
-		.string()
-		.describe("The author of the MCP, usually the Github username.")
-		.optional(),
-	sourceUrl: z
-		.string()
-		.describe(
-			"A URL to the official page of the MCP repository. This is the place where the README is hosted, and contains the full npm/python package necessary to run the MCP. (e.g., https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search",
-		),
-	license: z
-		.string()
-		.optional()
-		.describe(
-			"The license of the MCP. Use the short name of the license (e.g., MIT instead of MIT License).",
-		),
-	homepage: z
-		.string()
-		.optional()
-		.describe(
-			"The URL to the product page of the MCP. (e.g,. https://search.brave.com/).",
-		),
-	remote: z
-		.boolean()
-		.describe(
-			"Whether it's possible to host this MCP remotely. For example, if a MCP accesses files local to a user's desktop, then it should be false. If it wraps a remote API, then it should be true.",
-		),
-	published: z
-		.boolean()
-		.describe("True if any of the connections are published."),
-	connections: z.array(ConnectionSchema),
+export const RegistryServerSchemaNew = z.object({
+	...RegistryServerSchema.shape,
+	connections: z.array(ConnectionSchemaNew),
 })
 
-export type RegistryServer = z.infer<typeof RegistryServerSchema>
-
-// Type guard
-export function isStdio(
-	connection: Connection,
-): connection is Connection & { stdio: StdioConnection } {
-	return "stdio" in connection
-}
-export function isStdioFn(
-	connection: Connection,
-): connection is Connection & { stdioFunction: string; exampleConfig: object } {
-	return "stdioFunction" in connection
-}
+export type RegistryServerNew = z.infer<typeof RegistryServerSchemaNew>

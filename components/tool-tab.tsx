@@ -4,7 +4,7 @@ import type { ServerWithStats } from "@/lib/types/server"
 import { ExternalLink } from "lucide-react"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
-import { isStdio } from "@/lib/blacksmith/registry-types"
+import { isStdio } from "@/lib/types/server"
 
 interface ToolCardProps {
 	tool: ServerWithStats
