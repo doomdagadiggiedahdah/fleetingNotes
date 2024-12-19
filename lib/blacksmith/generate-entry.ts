@@ -20,7 +20,32 @@ const MAX_TURNS = 15
 const REGISTRY_ENTRY_FNAME = "upsert_entry"
 
 const systemPrompt = `\
-You are a maintainer of a Model Context Protocol (MCP) registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to create new MCP entries to add to the registry. Some repository links given to you might be broken, invalid, or random. In those cases, upsert an empty list to the \`${REGISTRY_ENTRY_FNAME}\` tool.
+<about>
+# The Model Context Protocol
+MCP (Model Context Protocol) is an open protocol that standardizes how applications provide context to language models (LLMs). It functions like a “USB-C for AI,” enabling seamless integration between AI models, data sources, and tools.
+
+Why MCP?
+
+MCP simplifies building AI agents and workflows by addressing the need for LLMs to integrate with external tools and data. Its key benefits include:
+	•	Pre-built Integrations: Plug-and-play support for various data sources and tools.
+	•	Vendor Flexibility: Switch between LLM providers easily.
+	•	Data Security: Ensures best practices for securing data within your infrastructure.
+
+General Architecture
+
+MCP uses a client-server architecture to connect host applications with multiple servers.
+
+Key Components:
+	1.	MCP Hosts: Applications like Claude Desktop, IDEs, or AI tools that request data via MCP.
+	2.	MCP Clients: Protocol clients managing one-to-one connections with MCP servers.
+	3.	MCP Servers: Lightweight programs exposing specific functionalities through MCP.
+	4.	Local Data Sources: Files, databases, and services accessible on your computer.
+	5.	Remote Services: External APIs and systems available over the internet.
+
+This architecture allows seamless, secure, and standardized connections between LLMs and various data and service sources.
+</about>
+<task>
+You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to create new MCP entries to add to the registry.
 
 A Github repo URL will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
 
@@ -29,6 +54,12 @@ Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folde
 When you're ready to produce your output, use the \`${REGISTRY_ENTRY_FNAME}\` tool.
 </task>
 
+<invalid_repos>
+Some repository links given to you might be broken, invalid, or false positives. Examples of false positives include:
+- Repos that provide a framework for building an MCP, but isn't an MCP server itself
+- Repos that aggregate a list of MCPs in a single file.
+In those cases, upsert an empty list to the \`${REGISTRY_ENTRY_FNAME}\` tool.
+</invalid_repos>
 <entry>
 <connections>
 After comprehensive search, if it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
@@ -112,7 +143,7 @@ If you're given a URL that's a subdirectory of a Github repository, note that wh
 Recommended steps:
 1. List the files in the root of the repo.
 2. Check if there are other subprojects in the repo for multiple MCP listings. If so, you'll have to repeat the following steps for each subproject.
-3. Check README.md
+3. Check README.md. Reflect and do an analysis based on the evidence you've collected. Is this repository an MCP server?
 4. Check package.json or pyproject.toml to figure out the package name
 5. Read the entrypoint source file (usually index.ts or main.py, depending on what was specified in package.json or pyproject.toml)
 6. Check if the package is published on a registry
@@ -163,6 +194,19 @@ export async function generateEntry(input_url: string): Promise<{
 										...connection.configSchema,
 										additionalProperties: false,
 									})
+
+									if (connection.exampleConfig === undefined) {
+										// Model has trouble knowing it has to create an exampleConfig
+										return {
+											content: [
+												{
+													type: "text",
+													text: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
+												},
+											],
+											isError: true,
+										}
+									}
 
 									if (!validate(connection.exampleConfig)) {
 										return {

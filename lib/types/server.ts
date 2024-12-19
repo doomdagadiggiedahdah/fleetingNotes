@@ -1,5 +1,20 @@
 import { z } from "zod"
 
+// Defined by MCP protocol
+export const StdioConnectionSchema = z.object({
+	command: z.string().describe("The executable to run to start the server."),
+	args: z
+		.array(z.string())
+		.optional()
+		.describe("Command line arguments to pass to the executable."),
+	env: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe("The environment to use when spawning the process."),
+})
+
+export type StdioConnection = z.infer<typeof StdioConnectionSchema>
+
 export const JSONSchemaSchema: z.ZodType = z
 	.lazy(() =>
 		z
@@ -44,20 +59,6 @@ export const JSONSchemaSchema: z.ZodType = z
 
 export type JSONSchema = z.infer<typeof JSONSchemaSchema>
 
-export const StdioConnectionSchema = z.object({
-	command: z.string().describe("The executable to run to start the server."),
-	args: z
-		.array(z.string())
-		.optional()
-		.describe("Command line arguments to pass to the executable."),
-	env: z
-		.record(z.string(), z.string())
-		.optional()
-		.describe("The environment to use when spawning the process."),
-})
-
-export type StdioConnection = z.infer<typeof StdioConnectionSchema>
-
 export const ConnectionSchema = z
 	.object({
 		type: z.literal("stdio"),
@@ -70,8 +71,6 @@ export const ConnectionSchema = z
 			),
 		published: z
 			.boolean()
-			// TODO: Remove once migration completes
-			.default(false)
 			.describe(
 				"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
 			),

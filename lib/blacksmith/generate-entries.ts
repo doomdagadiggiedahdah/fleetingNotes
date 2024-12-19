@@ -3,6 +3,7 @@ import { candidate_urls, servers } from "@/db/schema"
 
 import { and, eq, sql } from "drizzle-orm"
 import { generateEntry } from "./generate-entry"
+import { shuffle } from "lodash"
 /**
  * Goes through all unprocessed URLs and generates entries for each
  */
@@ -23,7 +24,7 @@ export async function generateEntries() {
 		)
 		.execute()
 
-	const urlsToCrawl = rows.map((row) => row.url)
+	const urlsToCrawl = shuffle(rows.map((row) => row.url))
 	console.log("URLs to process:", urlsToCrawl.length)
 
 	for (const url of urlsToCrawl) {
@@ -40,17 +41,20 @@ export async function generateEntries() {
 
 		if (outputServers && outputServers.length > 0) {
 			// Insert into DB
-			await db
-				.insert(servers)
-				.values(
-					outputServers.map((server) => ({
-						...server,
-						crawlUrl: url,
-						verified: false,
-					})),
-				)
-				.onConflictDoNothing()
+			try {
+				await db
+					.insert(servers)
+					.values(
+						outputServers.map((server) => ({
+							...server,
+							crawlUrl: url,
+							verified: false,
+						})),
+					)
+					.onConflictDoNothing()
+			} catch (e) {
+				console.error(e)
+			}
 		}
-		break
 	}
 }
