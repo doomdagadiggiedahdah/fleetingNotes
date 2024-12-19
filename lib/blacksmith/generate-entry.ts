@@ -1,6 +1,6 @@
 import { OpenAI } from "openai"
 
-import { MultiClient, OpenAIChatAdapter, createTransport } from "@smithery/sdk"
+import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
 import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
 import { Langfuse } from "langfuse"
@@ -15,6 +15,8 @@ import {
 	type RegistryServer,
 	type StdioConnection,
 } from "./registry-types"
+
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 const ajv = new Ajv()
 
 const MAX_TURNS = 15
@@ -119,7 +121,7 @@ const RegistryServerSchemaNew = z.object({
 type RegistryServerNew = z.infer<typeof RegistryServerSchemaNew>
 
 const BuilderRegistrySchema = z.object({
-	servers: z.array(RegistryServerSchemaNew)
+	servers: z.array(RegistryServerSchemaNew),
 })
 
 export async function generateEntry(input_url: string): Promise<{
@@ -234,24 +236,22 @@ export async function generateEntry(input_url: string): Promise<{
 			.build()
 
 		await mcp.connectAll({
-			gh: await createTransport(
-				"@modelcontextprotocol/github-mcp-server",
-				{
-					githubPersonalAccessToken: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+			gh: new StdioClientTransport({
+				command: "node",
+				args: [
+					"./node_modules/@modelcontextprotocol/server-github/dist/index.js",
+				],
+				env: {
+					GITHUB_PERSONAL_ACCESS_TOKEN:
+						process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+					PATH: process.env.PATH as string,
 				},
-				{
-					env: {
-						// TODO: fix env var merging
-						GITHUB_PERSONAL_ACCESS_TOKEN:
-							process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-						PATH: process.env.PATH as string,
-					},
-				},
-			),
-			fetch: await createTransport(
-				"@modelcontextprotocol/mcp-server-fetch",
-				{},
-			),
+			}),
+			fetch: new StdioClientTransport({
+				command: "uvx",
+				args: ["mcp-server-fetch", "--ignore-robots-txt"],
+			}),
+
 			registry: registry,
 		})
 
