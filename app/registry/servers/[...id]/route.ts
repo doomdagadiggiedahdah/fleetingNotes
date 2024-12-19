@@ -1,6 +1,8 @@
 import { db } from "@/db"
-import { servers } from "@/db/schema"
+import { events, servers } from "@/db/schema"
+import { posthog } from "@/lib/posthog_server"
 import { JSONSchemaSchema, RegistryServerSchema } from "@/lib/types/server"
+import { waitUntil } from "@vercel/functions/wait-until"
 import Ajv from "ajv"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -109,6 +111,28 @@ export async function POST(
 		// biome-ignore lint/security/noGlobalEval: <explanation>
 		const stdioFunction = eval(connection.stdioFunction)
 		const finalResult = stdioFunction(data.config)
+
+		posthog.capture({
+			event: "Config Generated",
+			distinctId: "config-generated",
+			properties: {
+				$process_person_profile: false,
+				serverId,
+			},
+		})
+		waitUntil(
+			Promise.all([
+				db.insert(events).values({
+					eventName: "config",
+					payload: {
+						serverId,
+						config: data.config,
+						configOutput: finalResult,
+					},
+				}),
+				posthog.flush(),
+			]),
+		)
 
 		return NextResponse.json(finalResult)
 	} catch (error) {
