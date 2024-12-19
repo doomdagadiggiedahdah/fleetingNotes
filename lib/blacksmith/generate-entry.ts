@@ -8,7 +8,7 @@ import { Langfuse } from "langfuse"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { stringify } from "yaml"
 import { z } from "zod"
-import { isStdioFn, type StdioConnection } from "../types/server"
+import type { StdioConnection } from "../types/server"
 import { tracedOpenAIGenerate } from "./openai"
 import {
 	type RegistryServerNew,
@@ -156,7 +156,7 @@ export async function generateEntry(input_url: string): Promise<{
 					// Test output servers by calling the command functions and do type checking
 					for (const server of output.servers) {
 						for (const connection of server.connections) {
-							if (isStdioFn(connection)) {
+							if (connection.type === "stdio") {
 								// Test
 								try {
 									const validate = ajv.compile({

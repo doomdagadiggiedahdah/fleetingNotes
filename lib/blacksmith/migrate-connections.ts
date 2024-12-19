@@ -1,13 +1,13 @@
 import { drizzle } from "drizzle-orm/postgres-js"
 import postgres from "postgres"
 
-import * as schema from "../../db/schema"
-import { omit } from "lodash"
-import dotenv from "dotenv"
-import { servers } from "../../db/schema"
 import { generateEntry } from "@/lib/blacksmith/generate-entry"
-import { isStdioFn, RegistryServerSchema } from "@/lib/types/server"
+import { RegistryServerSchema } from "@/lib/types/server"
+import dotenv from "dotenv"
 import { eq } from "drizzle-orm"
+import { omit } from "lodash"
+import * as schema from "../../db/schema"
+import { servers } from "../../db/schema"
 dotenv.config({ path: ".env.development.local" })
 
 const client = postgres(process.env.POSTGRES_URL!, { prepare: false })
@@ -22,7 +22,7 @@ async function main() {
 		const connections = RegistryServerSchema.shape.connections.parse(
 			curServer.connections,
 		)
-		if (curServer.crawlUrl && !connections.find(isStdioFn)) {
+		if (curServer.crawlUrl && !connections.find((c) => c.type === "stdio")) {
 			try {
 				const { outputServers } = await generateEntry(curServer.crawlUrl)
 

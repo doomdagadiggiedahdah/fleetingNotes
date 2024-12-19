@@ -60,15 +60,13 @@ export type StdioConnection = z.infer<typeof StdioConnectionSchema>
 
 export const ConnectionSchema = z
 	.object({
-		// TODO: Add connection type field for more flexibility and avoid guards
-		configSchema: JSONSchemaSchema
-			// TODO: Make not optional?
-			.optional(),
+		type: z.literal("stdio"),
+		configSchema: JSONSchemaSchema,
 		exampleConfig: z
 			.record(z.any())
 			.optional()
 			.describe(
-				"An example config object, conforming to the specified configSchema, which we will display to the user as documentation on what to pass to the stdioFunction.",
+				"An example config object. This must conform to the specified configSchema and cannot have fields not present in the schema. This example config will be displayed to the user as documentation on what to pass to the stdioFunction.",
 			),
 		published: z
 			.boolean()
@@ -77,28 +75,16 @@ export const ConnectionSchema = z
 			.describe(
 				"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
 			),
+		stdioFunction: z
+			.string()
+			.describe(
+				"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
+			),
 	})
-	.and(
-		z.union([
-			z.object({
-				sse: z.string(),
-			}),
-			z.object({
-				// TODO: Remove once migration completes. CLI will need to be updated.
-				stdio: StdioConnectionSchema,
-			}),
-			z.object({
-				stdioFunction: z
-					.string()
-					.describe(
-						"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
-					),
-			}),
-		]),
-	)
 	.describe(
 		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
 	)
+
 export type Connection = z.infer<typeof ConnectionSchema>
 
 export const RegistryServerSchema = z.object({
@@ -160,18 +146,6 @@ export const RegistryServerSchema = z.object({
 })
 
 export type RegistryServer = z.infer<typeof RegistryServerSchema>
-
-// Type guard
-export function isStdio(
-	connection: Connection,
-): connection is Connection & { stdio: StdioConnection } {
-	return "stdio" in connection
-}
-export function isStdioFn(
-	connection: Connection,
-): connection is Connection & { stdioFunction: string; exampleConfig: object } {
-	return "stdioFunction" in connection
-}
 
 export const ServerWithStatsSchema = RegistryServerSchema.extend({
 	upvoteCount: z.number(),

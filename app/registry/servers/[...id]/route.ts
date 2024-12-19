@@ -1,10 +1,6 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import {
-	isStdioFn,
-	JSONSchemaSchema,
-	RegistryServerSchema,
-} from "@/lib/types/server"
+import { JSONSchemaSchema, RegistryServerSchema } from "@/lib/types/server"
 import Ajv from "ajv"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -41,19 +37,9 @@ export async function GET(
 		return NextResponse.json(
 			ReturnTypeSchema.parse({
 				...result,
-				connections: RegistryServerSchema.shape.connections
-					.parse(result.connections)
-					.flatMap((connection) => {
-						if (isStdioFn(connection)) {
-							return [
-								{
-									...connection,
-									type: "stdio",
-								},
-							]
-						}
-						return []
-					}),
+				connections: RegistryServerSchema.shape.connections.parse(
+					result.connections,
+				),
 			}),
 		)
 	} catch (error) {
@@ -98,14 +84,13 @@ export async function POST(
 		)
 		// Find the right connection
 		const connection = connections.find((connection) => {
-			if (isStdioFn(connection) && data.connectionType === "stdio") {
+			if (connection.type === "stdio" && data.connectionType === "stdio") {
 				return true
 			}
 			return false
 		})
 
-		// TODO: Temporary.
-		if (!connection || !isStdioFn(connection)) {
+		if (!connection) {
 			return NextResponse.json(
 				{ error: "Connection not found" },
 				{ status: 404 },
