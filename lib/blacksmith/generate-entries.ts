@@ -1,10 +1,7 @@
-import { OpenAI } from "openai"
-
 import { db } from "@/db"
 import { candidate_urls, servers } from "@/db/schema"
 
 import { and, eq, sql } from "drizzle-orm"
-import { Langfuse } from "langfuse"
 import { generateEntry } from "./generate-entry"
 /**
  * Goes through all unprocessed URLs and generates entries for each
@@ -29,51 +26,39 @@ export async function generateEntries() {
 	const urlsToCrawl = rows.map((row) => row.url)
 	console.log("URLs to process:", urlsToCrawl.length)
 
-	const langfuse = new Langfuse()
+	for (const url of urlsToCrawl) {
+		const { outputServers, messages } = await generateEntry(url)
 
-	try {
-		const llm = new OpenAI()
+		// Update process status
+		await db
+			.update(candidate_urls)
+			.set({
+				processed: true,
+				log: messages,
+			})
+			.where(eq(candidate_urls.crawl_url, url))
 
-		for (const url of urlsToCrawl) {
-			const { outputServers, messages } = await generateEntry(
-				langfuse,
-				llm,
-				url,
-			)
-
-			// Update process status
+		if (outputServers && outputServers.length > 0) {
+			// Insert into DB
 			await db
-				.update(candidate_urls)
-				.set({
-					processed: true,
-					log: messages,
-				})
-				.where(eq(candidate_urls.crawl_url, url))
-
-			if (outputServers && outputServers.length > 0) {
-				// Insert into DB
-				await db
-					.insert(servers)
-					.values(
-						outputServers.map((server) => ({
-							id: server.id,
-							name: server.name,
-							description: server.description,
-							vendor: server.vendor,
-							sourceUrl: server.sourceUrl,
-							homepage: server.homepage,
-							license: server.license,
-							remote: server.remote,
-							connections: server.connections,
-							crawlUrl: url,
-							verified: false,
-						})),
-					)
-					.onConflictDoNothing()
-			}
-			break
+				.insert(servers)
+				.values(
+					outputServers.map((server) => ({
+						id: server.id,
+						name: server.name,
+						description: server.description,
+						vendor: server.vendor,
+						sourceUrl: server.sourceUrl,
+						homepage: server.homepage,
+						license: server.license,
+						remote: server.remote,
+						connections: server.connections,
+						crawlUrl: url,
+						verified: false,
+					})),
+				)
+				.onConflictDoNothing()
 		}
-	} finally {
-		await langfuse.shutdownAsync()
+		break
 	}
 }
