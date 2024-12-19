@@ -41,7 +41,7 @@ It may not be apparent from the repository if the package is published. You can 
 NPM's URL is:
 https://registry.npmjs.com/[...package_name]
 Pypiy is:
-https://pypi.org/project/[...package_name]
+https://pypi.org/simple/[...package_name]
 
 If you use \`npx\`, you should use the \`-y\` flag to run the MCP in your command without prompting.
 </publication>
