@@ -13,6 +13,9 @@ const sources = [
 	"https://raw.githubusercontent.com/appcypher/awesome-mcp-servers/refs/heads/main/README.md",
 ]
 
+// Open server that provides JSON Github URLs
+const glama = "https://glama.ai/mcp/servers.json"
+
 // This site requires 2-hit scraping
 // https://mcp.so/sitemap_projects_1.xml
 
@@ -21,9 +24,20 @@ export async function POST() {
 
 	let urls: string[] = []
 	for (const source of sources) {
-		const response = await fetch(source)
-		const body = await response.text()
-		urls.push(...(body.match(urlRegex) || []))
+		try {
+			const response = await fetch(source)
+			const body = await response.text()
+			urls.push(...(body.match(urlRegex) || []))
+		} catch (e) {
+			console.error(e)
+		}
+	}
+	try {
+		const response = await fetch(glama)
+		const body = await response.json()
+		urls.push(...body.servers.map((s: { githubUrl: string }) => s.githubUrl))
+	} catch (e) {
+		console.error(e)
 	}
 
 	// Post-process

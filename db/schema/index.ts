@@ -26,7 +26,10 @@ export const servers = pgTable("servers", {
 	crawlUrl: text("crawl_url"),
 	homepage: text("homepage"),
 	license: text("license"),
+	// True if this is created by the official vendor
 	verified: boolean("verified").default(false),
+	// True if this entry has been checked by a human
+	checked: boolean("checked").default(false),
 	// True if this server doesn't require local access
 	remote: boolean("remote").notNull().default(false),
 	// True if this server has any connection published to npm/pypi
