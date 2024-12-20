@@ -1,9 +1,8 @@
-"use client"
-
 import type { ServerWithStats } from "@/lib/types/server"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
-import { Bug } from "lucide-react"
+import { Bug, ExternalLink } from "lucide-react"
+import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 
 interface ToolCardProps {
 	tool: ServerWithStats
@@ -69,57 +68,59 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 			)
 		case "jan":
 			return <>Coming soon!</>
-		// 		case "code": {
-		// 			const connection = tool.connections[0]
+		case "code": {
+			const connection = tool.connections[0]
 
-		// 			if (connection && connection.type === "stdio") {
-		// 				const sampleSchema = connection.configSchema?.properties
-		// 					? Object.entries(connection.configSchema.properties as object)
-		// 							.map(([key, value]) => ({
-		// 								[key]: value.description ?? value.type ?? "...",
-		// 							}))
-		// 							.reduce((a, b) => Object.assign(a, b), {})
-		// 					: undefined
-		// 				return (
-		// 					<>
-		// 						{connection.stdio && (
-		// 							<>
-		// 								<h4 className="font-semibold mb-2 text-primary ">
-		// 									<a
-		// 										href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
-		// 										target="_blank"
-		// 										className="flex items-center"
-		// 									>
-		// 										TypeScript SDK
-		// 										<ExternalLink className="w-4 h-4 ml-1" />
-		// 									</a>
-		// 								</h4>
-		// 								<p className="my-2">
-		// 									Integrate with your model with this tool via Smithery&apos;s
-		// 									TypeScript SDK:
-		// 								</p>
-		// 								<CodeBlock language="typescript">
-		// 									{`\
-		// import { createRegistryClient, OpenAIChatAdapter } from "@smithery/sdk"
-		// import { OpenAI } from "openai"
+			if (connection && connection.type === "stdio") {
+				// TODO: Move config generation to server-side
+				const exampleConfigResult = generateConfig(
+					connection,
+					connection.exampleConfig ?? {},
+				)
+				const exampleConfig = exampleConfigResult.success
+					? exampleConfigResult.result
+					: createDummyConfig(connection.configSchema)
 
-		// const openai = new OpenAI()
-		// const mcp = await createRegistryClient("${tool.id}"${sampleSchema ? `, ${JSON.stringify(sampleSchema, null, 2)}` : ""})
-		// const adapter = new OpenAIChatAdapter(mcp)
-		// const response = await openai.chat.completions.create({
-		//     model: "gpt-4o-mini",
-		//     messages: [{ role: "user", content: "What tools can you access?" }],
-		//     tools: await adapter.listTools(),
-		// })
-		// const toolMessages = await adapter.callTool(response)`}
-		// 								</CodeBlock>
-		// 							</>
-		// 						)}
-		// 					</>
-		// 				)
-		// 			}
-		// 			return <p>Unavailable</p>
-		// 		}
+				return (
+					<>
+						<h4 className="font-semibold mb-2 text-primary">TypeScript SDK</h4>
+						<p className="my-2">
+							Integrate with your model with this tool with{" "}
+							<a
+								href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
+								target="_blank"
+								className="hover:text-primary underline"
+							>
+								Smithery&apos;s TypeScript SDK
+								<ExternalLink className="w-4 h-4 ml-1 inline" />
+							</a>
+							:
+						</p>
+						<CodeBlock
+							language="typescript"
+							serverId={tool.id}
+							eventTag="typescript"
+						>
+							{`\
+import { OpenAIChatAdapter } from "@smithery/sdk"
+import { OpenAI } from "openai"
+
+const openai = new OpenAI()
+const mcp = new Client({name: "mcp-client", version: "1.0.0"}, {capabilities: {}})
+await mcp.connect(new StdioClientTransport(${JSON.stringify(exampleConfig, null, 2)}))
+const adapter = new OpenAIChatAdapter(mcp)
+const response = await openai.chat.completions.create({
+	model: "gpt-4o-mini",
+	messages: [{ role: "user", content: "What tools can you access?" }],
+	tools: await adapter.listTools(),
+})
+const toolMessages = await adapter.callTool(response)`}
+						</CodeBlock>
+					</>
+				)
+			}
+			return <p>Unavailable</p>
+		}
 		// case "json":
 		// 	if (tool.connections[0] && tool.connections[0].type === "stdio") {
 		// 		return (

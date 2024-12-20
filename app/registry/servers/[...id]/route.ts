@@ -2,12 +2,12 @@ import { db } from "@/db"
 import { events, servers } from "@/db/schema"
 import { posthog } from "@/lib/posthog_server"
 import { JSONSchemaSchema, RegistryServerSchema } from "@/lib/types/server"
+import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
-import Ajv from "ajv"
+
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { z } from "zod"
-const ajv = new Ajv()
 
 const ReturnTypeSchema = RegistryServerSchema.pick({
 	id: true,
@@ -99,18 +99,11 @@ export async function POST(
 			)
 		}
 
-		// Initializes configuration
-		const validate = ajv.compile(connection.configSchema)
-		const valid = validate(data.config)
+		const finalResult = generateConfig(connection, data.config)
 
-		if (!valid) {
-			return NextResponse.json({ error: validate.errors }, { status: 400 })
+		if (!finalResult.success) {
+			return NextResponse.json({ error: finalResult.error }, { status: 400 })
 		}
-
-		// Applies configuration
-		// biome-ignore lint/security/noGlobalEval: <explanation>
-		const stdioFunction = eval(connection.stdioFunction)
-		const finalResult = stdioFunction(data.config)
 
 		posthog.capture({
 			event: "Config Generated",
@@ -127,13 +120,12 @@ export async function POST(
 					payload: {
 						serverId,
 						config: data.config,
-						configOutput: finalResult,
+						configOutput: finalResult.result,
 					},
 				}),
 				posthog.flush(),
 			]),
 		)
-
 		return NextResponse.json(finalResult)
 	} catch (error) {
 		console.error(`Error generating config for server ${serverId}:`, error)
