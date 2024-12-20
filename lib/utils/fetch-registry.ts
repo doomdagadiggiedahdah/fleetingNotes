@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { events, servers, upvotes } from "@/db/schema"
 import { RegistryServerSchema } from "@/lib/types/server"
-import type { ServerWithStats } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/client"
 import { sql } from "drizzle-orm"
 
 import type { InferSelectModel } from "drizzle-orm"

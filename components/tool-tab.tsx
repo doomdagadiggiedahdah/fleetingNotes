@@ -1,4 +1,4 @@
-import type { ServerWithStats } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/client"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
 import { Bug, ExternalLink } from "lucide-react"

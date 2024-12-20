@@ -1,8 +1,8 @@
 import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import type { ServerWithStats } from "@/lib/types/server"
-import { ServerWithStatsSchema } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/client"
+import { ServerWithStatsSchema } from "@/lib/types/client"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 

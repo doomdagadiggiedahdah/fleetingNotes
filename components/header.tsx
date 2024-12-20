@@ -1,4 +1,5 @@
-import { Anvil, Github, Plus } from "lucide-react"
+import { SiDiscord, SiGithub } from "@icons-pack/react-simple-icons"
+import { Anvil, Plus } from "lucide-react"
 import Link from "next/link"
 export function Header() {
 	return (
@@ -32,7 +33,16 @@ export function Header() {
 							className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
 							aria-label="GitHub repository"
 						>
-							<Github className="w-6 h-6" />
+							<SiGithub className="w-6 h-6" />
+						</a>
+						<a
+							href="https://discord.gg/Afd38S5p9A"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+							aria-label="Discord server"
+						>
+							<SiDiscord className="w-6 h-6" />
 						</a>
 					</div>
 				</div>

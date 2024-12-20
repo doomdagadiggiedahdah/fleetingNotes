@@ -145,9 +145,3 @@ export const RegistryServerSchema = z.object({
 })
 
 export type RegistryServer = z.infer<typeof RegistryServerSchema>
-
-export const ServerWithStatsSchema = RegistryServerSchema.extend({
-	upvoteCount: z.number(),
-	installCount: z.number(),
-})
-export type ServerWithStats = z.infer<typeof ServerWithStatsSchema>

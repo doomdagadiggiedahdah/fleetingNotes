@@ -1,6 +1,6 @@
 "use client"
 
-import type { ServerWithStats } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/client"
 import { BadgeCheck, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import type { InstallTab } from "./tool-list"

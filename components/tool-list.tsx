@@ -1,6 +1,6 @@
 "use client"
 
-import type { ServerWithStats } from "@/lib/types/server"
+import type { ServerWithStats } from "@/lib/types/client"
 import { useState } from "react"
 import Search from "./search"
 import { ToolCard } from "./tool-card"
