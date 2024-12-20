@@ -39,10 +39,11 @@ export async function getAllServers() {
 		.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
 		.groupBy(servers.id)
 		.orderBy(
+			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
+			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
 			sql`COUNT(DISTINCT ${upvotes.id})::int DESC`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} = 'server_install' THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
-			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`RANDOM()`,
 		)
 }

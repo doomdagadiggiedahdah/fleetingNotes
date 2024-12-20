@@ -1,8 +1,9 @@
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { ServerWithStats } from "@/lib/types/client"
+import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
+import { AlertCircle, Bug, ExternalLink } from "lucide-react"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
-import { Bug, ExternalLink } from "lucide-react"
-import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 
 interface ToolCardProps {
 	tool: ServerWithStats
@@ -25,13 +26,25 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 						</a>
 						.
 					</p>
-					<CodeBlock
-						language="shell"
-						serverId={tool.id}
-						eventTag="install_command"
-					>
-						{`npx -y @smithery/cli install ${tool.id} --client claude`}
-					</CodeBlock>
+
+					{tool.published ? (
+						<CodeBlock
+							language="shell"
+							serverId={tool.id}
+							eventTag="install_command"
+						>
+							{`npx -y @smithery/cli install ${tool.id} --client claude`}
+						</CodeBlock>
+					) : (
+						<Alert>
+							<AlertCircle className="h-4 w-4" />
+							<AlertDescription>
+								This tool has not been published, so it can only be run locally
+								after cloning the source code. Please visit the source page to
+								see how to run it locally.
+							</AlertDescription>
+						</Alert>
+					)}
 					<p className="mt-3 text-muted-foreground hover:text-primary">
 						<a
 							href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${tool.id}`}

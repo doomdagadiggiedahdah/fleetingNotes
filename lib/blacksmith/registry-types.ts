@@ -15,7 +15,9 @@ export const ConnectionSchemaNew = ConnectionSchema.extend({
 		),
 })
 
-export const RegistryServerSchemaNew = RegistryServerSchema.extend({
+export const RegistryServerSchemaNew = RegistryServerSchema.omit({
+	published: true,
+}).extend({
 	connections: z.array(ConnectionSchemaNew),
 })
 

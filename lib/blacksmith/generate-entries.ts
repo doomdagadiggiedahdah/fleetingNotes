@@ -43,6 +43,9 @@ export async function generateEntries() {
 						.values(
 							outputServers.map((server) => ({
 								...server,
+								published: server.connections.some(
+									(c) => c.type === "stdio" && c.published,
+								),
 								crawlUrl: url,
 								verified: false,
 							})),

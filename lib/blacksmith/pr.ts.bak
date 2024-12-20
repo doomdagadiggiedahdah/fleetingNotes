@@ -1,16 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk"
 import type { PromptCachingBetaMessageParam } from "@anthropic-ai/sdk/resources/beta/prompt-caching/index.js"
-import { AnthropicHandler } from "@smithery/sdk"
-import dotenv from "dotenv"
 import { Langfuse } from "langfuse"
-import fs from "node:fs"
-import path from "node:path"
-import { RegistryItemSchema, type RegistryItem } from "../../blacksmith/types.js"
 import { stringify } from "yaml"
-import {
-	cacheLastMessage,
-	tracedAnthropicGenerate,
-} from "../crawler/anthropic.js"
+import { RegistryItemSchema, type RegistryItem } from "./registry-types.js"
+import { Connection } from "../types/server.js"
 
 const systemPrompt = `\
 You are a maintainer of a Model Context Protocol (MCP) repository. Your job is to create a pull request (PR) to patch the README.md file in the repository.
