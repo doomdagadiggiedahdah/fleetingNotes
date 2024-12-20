@@ -88,11 +88,12 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 				// TODO: Move config generation to server-side
 				const exampleConfigResult = generateConfig(
 					connection,
-					connection.exampleConfig ?? {},
+					connection.exampleConfig ??
+						createDummyConfig(connection.configSchema),
 				)
 				const exampleConfig = exampleConfigResult.success
 					? exampleConfigResult.result
-					: createDummyConfig(connection.configSchema)
+					: {}
 
 				return (
 					<>
