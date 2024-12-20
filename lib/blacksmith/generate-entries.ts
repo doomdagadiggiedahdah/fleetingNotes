@@ -4,6 +4,7 @@ import { candidate_urls, servers } from "@/db/schema"
 import { and, eq, sql } from "drizzle-orm"
 import { generateEntry } from "./generate-entry"
 import { shuffle } from "lodash"
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 /**
  * Goes through all unprocessed URLs and generates entries for each
  */
@@ -28,33 +29,42 @@ export async function generateEntries() {
 	console.log("URLs to process:", urlsToCrawl.length)
 
 	for (const url of urlsToCrawl) {
-		const { outputServers, messages } = await generateEntry(url)
-
-		// Update process status
-		await db
-			.update(candidate_urls)
-			.set({
-				processed: true,
-				log: messages,
-			})
-			.where(eq(candidate_urls.crawl_url, url))
-
-		if (outputServers && outputServers.length > 0) {
-			// Insert into DB
-			try {
-				await db
-					.insert(servers)
-					.values(
-						outputServers.map((server) => ({
-							...server,
-							crawlUrl: url,
-							verified: false,
-						})),
-					)
-					.onConflictDoNothing()
-			} catch (e) {
-				console.error(e)
+		let messages: ChatCompletionMessageParam[] = []
+		let errored = false
+		try {
+			const entryOutput = await generateEntry(url)
+			const outputServers = entryOutput.outputServers
+			messages = entryOutput.messages
+			if (outputServers && outputServers.length > 0) {
+				// Insert into DB
+				try {
+					await db
+						.insert(servers)
+						.values(
+							outputServers.map((server) => ({
+								...server,
+								crawlUrl: url,
+								verified: false,
+							})),
+						)
+						.onConflictDoNothing()
+				} catch (e) {
+					console.error(e)
+				}
 			}
+		} catch (e) {
+			errored = true
+			console.error(e)
+		} finally {
+			// Update process status
+			await db
+				.update(candidate_urls)
+				.set({
+					processed: true,
+					errored,
+					log: messages,
+				})
+				.where(eq(candidate_urls.crawl_url, url))
 		}
 	}
 }

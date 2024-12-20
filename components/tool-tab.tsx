@@ -102,8 +102,10 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 							eventTag="typescript"
 						>
 							{`\
-import { OpenAIChatAdapter } from "@smithery/sdk"
 import { OpenAI } from "openai"
+import { OpenAIChatAdapter } from "@smithery/sdk"
+import { Client } from "@modelcontextprotocol/sdk"
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const openai = new OpenAI()
 const mcp = new Client({name: "mcp-client", version: "1.0.0"}, {capabilities: {}})
