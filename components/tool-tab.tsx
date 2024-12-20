@@ -25,8 +25,31 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 						</a>
 						.
 					</p>
-					<CodeBlock language="shell">
+					<CodeBlock
+						language="shell"
+						serverId={tool.id}
+						eventTag="install_command"
+					>
 						{`npx -y @smithery/cli install ${tool.id} --client claude`}
+					</CodeBlock>
+				</>
+			)
+		case "badge":
+			return (
+				<>
+					<h4 className="font-semibold mb-2 text-primary">Github Badge</h4>
+					<p className="my-2">Add this tool to your Github README:</p>
+					<img
+						src={`/badge/${tool.id}`}
+						alt="Smithery Badge"
+						className="mb-4"
+					/>
+					<CodeBlock
+						language="markdown"
+						serverId={tool.id}
+						eventTag="install_command"
+					>
+						{`[![smithery badge](https://smithery.ai/badge/${tool.id})](https://smithery.ai/protocol/${tool.id})`}
 					</CodeBlock>
 				</>
 			)

@@ -8,7 +8,7 @@ import { InstallCount } from "./install-count"
 
 import { Github } from "lucide-react"
 import { UpvoteButton } from "./upvote-button"
-import { SiAnthropic } from "@icons-pack/react-simple-icons"
+import { SiAnthropic, SiGithub } from "@icons-pack/react-simple-icons"
 import { TabContent } from "./tool-tab"
 
 interface ToolCardProps {
@@ -143,6 +143,16 @@ export function ToolCard({
 								icon={<SiAnthropic className="w-4 h-4" />}
 							>
 								Claude
+							</TabButton>
+							<TabButton
+								isActive={activeTab === "badge"}
+								onClick={(e) => {
+									e.stopPropagation()
+									setActiveTab("badge")
+								}}
+								icon={<SiGithub className="w-4 h-4" />}
+							>
+								Badge
 							</TabButton>
 							{/* <TabButton
 								isActive={activeTab === "jan"}

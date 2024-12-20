@@ -12,14 +12,30 @@ export async function GET(
 	{ params }: { params: { id: string[] } },
 ) {
 	const serverId = params.id.join("/")
-	posthog.capture({
-		event: "Badge Viewed",
-		distinctId: "badge-viewed",
-		properties: {
-			$process_person_profile: false,
-			serverId,
-		},
-	})
+
+	// Only track views from external origins
+	const origin = request.headers.get("origin")
+	const referer = request.headers.get("referer")
+	const requestUrl = new URL(request.url)
+
+	let sourceUrl: URL | null = null
+	if (origin) {
+		sourceUrl = new URL(origin)
+	} else if (referer) {
+		sourceUrl = new URL(referer)
+	}
+	const isCrossOrigin = sourceUrl && sourceUrl.host !== requestUrl.host
+	if (isCrossOrigin) {
+		posthog.capture({
+			event: "Badge Viewed",
+			distinctId: "badge-viewed",
+			properties: {
+				$process_person_profile: false,
+				serverId,
+				sourceUrl,
+			},
+		})
+	}
 
 	// TODO: Might want to cache this
 	const installCount =

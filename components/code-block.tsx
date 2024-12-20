@@ -3,15 +3,20 @@
 import { Copy, CheckCheck } from "lucide-react"
 import { useState } from "react"
 import { Highlight, themes } from "prism-react-renderer"
+import posthog from "posthog-js"
 
 interface CodeBlockProps {
 	children: string
+	serverId: string
+	eventTag: string
 	className?: string
 	language?: string
 }
 
 export default function CodeBlock({
 	children,
+	serverId,
+	eventTag,
 	className = "",
 	language = "typescript",
 }: CodeBlockProps) {
@@ -20,6 +25,14 @@ export default function CodeBlock({
 	const handleCopy = (e: React.MouseEvent) => {
 		e.preventDefault()
 		e.stopPropagation()
+
+		posthog.capture("Code Copied", {
+			serverId,
+			eventTag,
+			language,
+			code: children,
+		})
+
 		navigator.clipboard
 			.writeText(children)
 			.then(() => {
