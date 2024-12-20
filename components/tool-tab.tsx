@@ -3,6 +3,7 @@
 import type { ServerWithStats } from "@/lib/types/server"
 import CodeBlock from "./code-block"
 import type { InstallTab } from "./tool-list"
+import { Bug } from "lucide-react"
 
 interface ToolCardProps {
 	tool: ServerWithStats
@@ -32,13 +33,26 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 					>
 						{`npx -y @smithery/cli install ${tool.id} --client claude`}
 					</CodeBlock>
+					<p className="mt-3 text-muted-foreground hover:text-primary">
+						<a
+							href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${tool.id}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center hover:text-primary"
+						>
+							<Bug className="w-4 h-4 mr-1" />
+							Report Bug
+						</a>
+					</p>
 				</>
 			)
 		case "badge":
 			return (
 				<>
 					<h4 className="font-semibold mb-2 text-primary">Github Badge</h4>
-					<p className="my-2">Add this tool to your Github README:</p>
+					<p className="my-2">
+						To show a download counter, add this badge to your README:
+					</p>
 					<img
 						src={`/badge/${tool.id}`}
 						alt="Smithery Badge"
