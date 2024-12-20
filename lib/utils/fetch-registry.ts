@@ -6,7 +6,10 @@ import { sql } from "drizzle-orm"
 
 import type { InferSelectModel } from "drizzle-orm"
 
-type ServerSelection = Omit<InferSelectModel<typeof servers>, "crawlUrl"> & {
+type ServerSelection = Omit<
+	InferSelectModel<typeof servers>,
+	"crawlUrl" | "checked"
+> & {
 	upvoteCount: number
 	installCount: number
 }
