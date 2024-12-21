@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 const eventSchema = z.object({
-	event_name: z.literal("server_install"),
+	event_name: z.enum(["server_install", "config"]),
 	localUserId: z.string(),
 	payload: z.object({
 		serverId: z.string(),
