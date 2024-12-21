@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { events } from "@/db/schema"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
-import { and, eq, sql } from "drizzle-orm"
+import { and, eq, or, sql } from "drizzle-orm"
 
 // Always dynamically render page
 export const revalidate = 0
@@ -47,7 +47,10 @@ export async function GET(
 				.from(events)
 				.where(
 					and(
-						eq(events.eventName, "server_install"),
+						or(
+							eq(events.eventName, "server_install"),
+							eq(events.eventName, "config"),
+						),
 						eq(sql`payload->>'serverId'`, serverId),
 					),
 				)

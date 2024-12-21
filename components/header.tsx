@@ -24,7 +24,7 @@ export function Header() {
 							className="text-muted-foreground hover:text-foreground transition-colors flex items-center"
 						>
 							<Plus className="w-4 h-4 mr-1" />
-							Submit MCP
+							Submit Server
 						</a>
 						<a
 							href="https://github.com/smithery-ai/typescript-sdk"
