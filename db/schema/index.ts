@@ -56,26 +56,14 @@ export type NewServer = z.infer<typeof insertServerSchema>
 export const anon = pgRole("anon").existing()
 export const authenticated = pgRole("authenticated").existing()
 
-export const events = pgTable(
-	"events",
-	{
-		eventId: uuid("event_id").primaryKey().defaultRandom(),
-		eventName: text("event_name").notNull(),
-		userId: uuid("user_id"),
-		timestamp: timestamp("timestamp").notNull().defaultNow(),
-		// Additional data associated with the event
-		payload: jsonb("payload"),
-	},
-	// () => [
-	// 	// TODO: Add security. This somehow always denies
-	// 	pgPolicy("Anonymous users can insert events", {
-	// 		as: "permissive",
-	// 		to: authenticated,
-	// 		for: "insert",
-	// 		withCheck: sql`( true )`,
-	// 	}),
-	// ],
-)
+export const events = pgTable("events", {
+	eventId: uuid("event_id").primaryKey().defaultRandom(),
+	eventName: text("event_name").notNull(),
+	userId: uuid("user_id"),
+	timestamp: timestamp("timestamp").notNull().defaultNow(),
+	// Additional data associated with the event
+	payload: jsonb("payload"),
+}).enableRLS()
 
 export const upvotes = pgTable(
 	"upvotes",

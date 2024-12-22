@@ -19,7 +19,7 @@ const ajv = new Ajv()
 const MAX_TURNS = 15
 const REGISTRY_ENTRY_FNAME = "upsert_entry"
 
-const systemPrompt = `\
+export const mcpInfo = `\
 <about>
 # The Model Context Protocol
 MCP (Model Context Protocol) is an open protocol that standardizes how applications provide context to language models (LLMs). It functions like a “USB-C for AI,” enabling seamless integration between AI models, data sources, and tools.
@@ -43,7 +43,10 @@ Key Components:
 	5.	Remote Services: External APIs and systems available over the internet.
 
 This architecture allows seamless, secure, and standardized connections between LLMs and various data and service sources.
-</about>
+</about>`
+
+const systemPrompt = `\
+${mcpInfo}
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to create new MCP entries to add to the registry.
 
@@ -301,10 +304,9 @@ export async function generateEntry(input_url: string): Promise<{
 
 		while (!isDone && messages.length < MAX_TURNS) {
 			let tools = await adapter.listTools()
+			// TODO: Only allow certain tools
 			tools = tools.filter(
-				// ban screenshot
 				// get_file_contents
-				// TODO: Only allow certain tools
 				(tool) => !tool.function.name.includes("screenshot"),
 			)
 
