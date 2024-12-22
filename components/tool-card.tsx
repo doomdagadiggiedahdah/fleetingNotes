@@ -68,7 +68,7 @@ export function ToolCard({
 							/>
 						</div>
 						<Link
-							href={`/protocol/${server.id}`}
+							href={`/server/${server.id}`}
 							className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"
 							onClick={(e) => e.stopPropagation()}
 						>

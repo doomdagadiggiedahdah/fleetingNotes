@@ -11,6 +11,12 @@ export function middleware(request: NextRequest) {
 		return NextResponse.rewrite(url)
 	}
 
+	// Redirect /protocol/... to /server/...
+	if (url.pathname.startsWith("/protocol/")) {
+		url.pathname = url.pathname.replace("/protocol/", "/server/")
+		return NextResponse.redirect(url)
+	}
+
 	return NextResponse.next()
 }
 

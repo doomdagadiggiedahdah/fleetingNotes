@@ -75,7 +75,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 						serverId={tool.id}
 						eventTag="install_command"
 					>
-						{`[![smithery badge](https://smithery.ai/badge/${tool.id})](https://smithery.ai/protocol/${tool.id})`}
+						{`[![smithery badge](https://smithery.ai/badge/${tool.id})](https://smithery.ai/server/${tool.id})`}
 					</CodeBlock>
 				</>
 			)

@@ -44,7 +44,7 @@ The second change is adding a badge to the README.md file to show the number of 
 To make a patch, write out the .patch file that would've been produced from \`diff -u ...\` command. Example:
 
 <badge_example>
-[![smithery badge](https://smithery.ai/badge/[SERVER_ID])](https://smithery.ai/servers/[SERVER_ID])
+[![smithery badge](https://smithery.ai/badge/[SERVER_ID])](https://smithery.ai/server/[SERVER_ID])
 </badge_example>
 
 <install_example>
@@ -56,7 +56,7 @@ To make a patch, write out the .patch file that would've been produced from \`di
  
 +### Installing via Smithery
 +
-+To install [NAME] for Claude Desktop automatically via [Smithery](https://smithery.ai/servers/[SERVER_ID]):
++To install [NAME] for Claude Desktop automatically via [Smithery](https://smithery.ai/server/[SERVER_ID]):
 +
 +\`\`\`bash
 +npx -y @smithery/cli install [SERVER_ID] --client claude
@@ -121,7 +121,7 @@ async function generatePR(
 				command: "node",
 				args: [
 					// TODO:
-					"/Users/henry/code/smithery/servers/src/github/dist/index.js",
+					"/Users/henry/code/smithery/server/src/github/dist/index.js",
 				],
 				env: {
 					GITHUB_PERSONAL_ACCESS_TOKEN:

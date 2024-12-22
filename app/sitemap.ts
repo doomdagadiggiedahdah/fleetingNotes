@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const protocolRoutes = serverIds.map(
 		(id) =>
 			({
-				url: `${baseUrl}/protocol/${id}`,
+				url: `${baseUrl}/server/${id}`,
 				lastModified: new Date(),
 				changeFrequency: "weekly",
 				priority: 0.8,
