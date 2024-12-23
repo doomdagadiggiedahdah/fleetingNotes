@@ -10,11 +10,11 @@ import {
 	forkRepository,
 	getREADME,
 	hasSmitheryBadge,
-	hasSmitheryPR,
-	waitForRepository,
+	getSmitheryPR,
 } from "../github"
 import { patchReadme } from "./patch"
 import { createPRMessage } from "./pr_message"
+import { retry } from "@lifeomic/attempt"
 
 import { sql } from "drizzle-orm"
 import { shuffle } from "lodash"
@@ -57,16 +57,17 @@ async function generatePR(
 	}
 
 	// Forking a Repository happens asynchronously. Wait for it to finish
-	const repoExists = await waitForRepository(newRepo.owner.login, repo)
-	if (!repoExists) {
-		console.log("Repository not found after maximum attempts")
-		return null
-	}
 
 	// 4. Create a new branch for our changes
 	const branchName = `add-smithery`
 	console.log("creating branch...")
-	await createBranch(newRepo.owner.login, repo, branchName, "main")
+	await retry(
+		async () => {
+			console.log("attempting to create branch...")
+			await createBranch(newRepo.owner.login, repo, branchName, "main")
+		},
+		{ delay: 3000, factor: 3, maxAttempts: 5 },
+	)
 
 	// 5. Commit the new README to our branch
 	console.log("committing...")
@@ -155,11 +156,12 @@ export async function generatePRs() {
 			}
 
 			const conditions = await Promise.all([
-				hasSmitheryPR(owner, repo),
+				getSmitheryPR(owner, repo),
 				hasSmitheryBadge(owner, repo),
 			])
 
 			if (conditions.some((x) => x)) {
+				prUrl = conditions[0]
 				continue
 			}
 
@@ -196,7 +198,6 @@ export async function generatePRs() {
 				})
 			await langfuse.shutdownAsync()
 		}
-		break
 	}
 }
 

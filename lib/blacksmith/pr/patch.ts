@@ -100,7 +100,7 @@ export async function patchReadme(
 		llm,
 		trace,
 		{
-			model: "gpt-4o",
+			model: "ft:gpt-4o-2024-08-06:personal:blacksmith-pr:AhYnIY60",
 			messages: constructPatchMessages(serverId, serverName, readme),
 			prediction: {
 				type: "content",

@@ -55,15 +55,15 @@ export async function extractRepo(trace: LangfuseTraceClient, url: string) {
 	}
 }
 
-export async function hasSmitheryPR(
+export async function getSmitheryPR(
 	owner: string,
 	repo: string,
-): Promise<boolean> {
+): Promise<string | null> {
 	const query = `repo:${owner}/${repo} type:pr in:title "smithery"`
 	const response = await octokit.request("GET /search/issues", {
 		q: query,
 	})
-	return response.data.total_count > 0
+	return response.data.total_count > 0 ? response.data.items[0].url : null
 }
 
 export async function getREADME(
@@ -205,32 +205,6 @@ export async function checkRepositoryExists(
 		console.log(`Repo doesn't exist: ${error}`)
 		return false
 	}
-}
-
-export async function waitForRepository(
-	owner: string,
-	repo: string,
-	maxAttempts = 5,
-): Promise<boolean> {
-	let attempts = 0
-	while (attempts < maxAttempts) {
-		try {
-			const delay = Math.pow(2, attempts) * 1000 // exponential backoff: 1s, 2s, 4s, 8s, 16s
-			console.log(
-				`Checking if repository exists (attempt ${attempts + 1}/${maxAttempts})...`,
-			)
-			const exists = await checkRepositoryExists(owner, repo)
-			if (exists) {
-				return true
-			}
-			await new Promise((resolve) => setTimeout(resolve, delay))
-			attempts++
-		} catch (error) {
-			console.error(`Error checking repository: ${error}`)
-			attempts++
-		}
-	}
-	return false
 }
 
 export async function getPRDiff(
