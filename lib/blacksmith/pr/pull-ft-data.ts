@@ -1,10 +1,10 @@
 import { db } from "@/db"
 import { pr_queue, servers } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, isNotNull } from "drizzle-orm"
 import { writeFile } from "node:fs/promises"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import path from "node:path"
-import { getPRDiff } from "../github"
+import { getPRDiff, octokit } from "../github"
 import { constructPatchMessages } from "./patch"
 
 interface TrainingExample {
@@ -23,11 +23,11 @@ export async function pullTrainingData() {
 			prUrl: pr_queue.prUrl,
 			serverId: pr_queue.serverId,
 			serverName: servers.name,
+			checked: pr_queue.checked,
 		})
 		.from(pr_queue)
 		.innerJoin(servers, eq(servers.id, pr_queue.serverId))
-		// TODO: Instead of filtering by "checked", filter by PRs that closed
-		.where(eq(pr_queue.checked, true))
+		.where(isNotNull(pr_queue.prUrl))
 
 	const trainingData: TrainingExample[] = []
 
@@ -40,6 +40,19 @@ export async function pullTrainingData() {
 		if (pathParts.length < 5 || pathParts[3] !== "pull") continue
 
 		const [_, owner, repo, _pull, prNumber] = pathParts
+
+		// Get PR info to check merge status
+		const { data: prInfo } = await octokit.request(
+			"GET /repos/{owner}/{repo}/pulls/{pull_number}",
+			{
+				owner,
+				repo,
+				pull_number: Number.parseInt(prNumber),
+			},
+		)
+
+		// Skip if PR is not checked and not merged
+		if (!pr.checked && !prInfo.merged) continue
 
 		// Get README content from PR diff
 		const diff = await getPRDiff(owner, repo, Number.parseInt(prNumber))

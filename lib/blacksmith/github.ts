@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/core"
 import type { LangfuseTraceClient } from "langfuse"
 
-const octokit = new Octokit({
+export const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
 })
 
@@ -63,7 +63,7 @@ export async function getSmitheryPR(
 	const response = await octokit.request("GET /search/issues", {
 		q: query,
 	})
-	return response.data.total_count > 0 ? response.data.items[0].url : null
+	return response.data.total_count > 0 ? response.data.items[0].html_url : null
 }
 
 export async function getREADME(
