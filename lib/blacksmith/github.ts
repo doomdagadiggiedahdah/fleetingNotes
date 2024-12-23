@@ -1,9 +1,6 @@
 import { Octokit } from "@octokit/core"
 import type { LangfuseTraceClient } from "langfuse"
-import OpenAI from "openai"
-import { zodResponseFormat } from "openai/helpers/zod"
 import { z } from "zod"
-import { tracedOpenAIParse } from "./openai"
 
 const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
@@ -18,6 +15,9 @@ export async function forkRepository(owner: string, repo: string) {
 		repo,
 		organization: "smithery-ai",
 	})
+	if (response.status !== 202) {
+		throw new Error(`GitHub API error: ${response}`)
+	}
 	return response.data
 }
 
@@ -39,24 +39,38 @@ export async function extractRepo(
 	trace: LangfuseTraceClient,
 	url: string,
 ): Promise<GitHubInfo | null> {
-	const llm = new OpenAI()
+	try {
+		// Extract potential owner/repo from URL path
+		const urlObj = new URL(url)
+		if (!urlObj.hostname.includes("github.com")) {
+			return null
+		}
 
-	const response = await tracedOpenAIParse(llm, trace, {
-		model: "gpt-4o-mini",
-		messages: [
-			{
-				role: "system",
-				content:
-					"Extract the owner and repository name from a GitHub URL. Respond in JSON format with exactly two fields: 'owner' and 'repo'. If the URL is not a valid GitHub URL, return null.",
-			},
-			{
-				role: "user",
-				content: url,
-			},
-		],
-		response_format: zodResponseFormat(GitHubInfoSchema, "github_info"),
-	})
-	return response.choices[0].message.parsed
+		// Remove .git suffix if present and split path
+		const pathParts = urlObj.pathname
+			.replace(/\.git$/, "")
+			.split("/")
+			.filter(Boolean)
+		if (pathParts.length < 2) {
+			return null
+		}
+
+		const [owner, repo] = pathParts
+
+		// Verify the repository exists and get its current info
+		const { data } = await octokit.request("GET /repos/{owner}/{repo}", {
+			owner,
+			repo,
+		})
+
+		return {
+			owner: data.owner.login, // Use the current owner name (handles org transfers)
+			repo: data.name, // Use the current repo name (handles renames)
+		}
+	} catch (error) {
+		// Handle 404s or invalid URLs
+		return null
+	}
 }
 
 export async function hasSmitheryPR(
@@ -193,4 +207,48 @@ export async function createPullRequest(
 	})
 
 	return response.data
+}
+
+export async function checkRepositoryExists(
+	owner: string,
+	repo: string,
+): Promise<boolean> {
+	try {
+		await octokit.request("GET /repos/{owner}/{repo}", {
+			owner,
+			repo,
+		})
+		return true
+	} catch (error: any) {
+		if (error.status === 404) {
+			return false
+		}
+		throw error // Re-throw other errors
+	}
+}
+
+export async function waitForRepository(
+	owner: string,
+	repo: string,
+	maxAttempts = 5,
+): Promise<boolean> {
+	let attempts = 0
+	while (attempts < maxAttempts) {
+		try {
+			const delay = Math.pow(2, attempts) * 1000 // exponential backoff: 1s, 2s, 4s, 8s, 16s
+			console.log(
+				`Checking if repository exists (attempt ${attempts + 1}/${maxAttempts})...`,
+			)
+			const exists = await checkRepositoryExists(owner, repo)
+			if (exists) {
+				return true
+			}
+			await new Promise((resolve) => setTimeout(resolve, delay))
+			attempts++
+		} catch (error) {
+			console.error(`Error checking repository: ${error}`)
+			attempts++
+		}
+	}
+	return false
 }

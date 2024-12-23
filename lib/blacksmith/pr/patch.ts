@@ -13,20 +13,21 @@ export async function patchReadme(
 	const systemPrompt = `\
 ${mcpInfo}
 <task>
-You are given a README file from a Model Context Protocol (MCP) server repository. Your job is to patch the README.md file with Smithery CLI installation instructions and a badge to show the number of installations.
+You are given a README file from a Model Context Protocol (MCP) server repository. Your job is to patch the README.md file with specific Smithery CLI installation instructions and a badge to show the number of installations. Prefer making precision changes rather than large changes.
 
 You will make two changes:
 
 <proposed_changes>
 
 <add_install>
-The first change is adding an installation instruction to the README.md file (see <install_example/> below). This instruction informs the user how to install the MCP for end-user local Claude desktop usage. If the current repo author has an alternative preferred installation method (i.e., by referring it to "Recommended"), put Smithery after their recommended option. If not, put Smithery above their alternative option.
+The first change is adding an installation instruction to the README.md file (see <install_example/> below). This instruction informs the user how to install the MCP for end-user local Claude desktop usage.
 
-Do not replace existing content, simply insert it in the correct place in the README.md file. A good place to put it is before manual installation instructions, or where typically the installation instructions would appear.
+Placement strategy:
+- A good place to put Smithery installation instructions is before the manual installation instructions, or where typically the installation instructions would appear.
+- If the repo author doesn't have clear installation instructions, you can put it under where the feature is usually described.
+- If the current repo author specifies a preferred installation method (i.e., by referring it to "Recommended"), put Smithery after their recommended option. If not, put Smithery above their alternative option.
 
-If the README has existing installation instructions but doesn't have a dedicated manual installation heading, you should add the heading "### Manual Installation" after Smithery's installation instructions so the author's original instructions are sectioned properly.
-
-Ensure the heading levels are consistent with the rest of the README.
+If the README has existing installation instructions but doesn't have a dedicated manual installation heading, you should add the heading "### Manual Installation" after Smithery's installation instructions so the author's original instructions are sectioned properly. Ensure the heading levels are consistent with the rest of the README.
 
 Here's an example for your reference:
 <install_snippet_example>
@@ -39,10 +40,10 @@ To install ${serverName} for Claude Desktop automatically via [Smithery](https:/
 \`\`\`bash
 npx -y @smithery/cli install ${serverId} --client claude
 \`\`\`
-</install_snippet_example>
 
 ### Installing Manually
 [...manual installation instructions. Only include this heading if the README has existing installation instructions.]
+</install_snippet_example>
 </add_install>
 
 <add_badge>
@@ -102,7 +103,6 @@ Output the new readme directly:`,
 		},
 		"patch_readme",
 	)
-	console.log(response.usage)
 
 	const newReadme = response.choices[0].message.content
 	if (!newReadme) throw new Error("No content generated")

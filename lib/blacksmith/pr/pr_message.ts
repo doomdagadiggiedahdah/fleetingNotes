@@ -4,8 +4,6 @@ import { mcpInfo } from "../generate-entry"
 import OpenAI from "openai"
 import { tracedOpenAIGenerate } from "../openai"
 
-
-
 import * as Diff from "diff"
 export async function createPRMessage(
 	trace: LangfuseTraceClient,
@@ -15,9 +13,9 @@ export async function createPRMessage(
 	newReadme: string,
 ): Promise<string> {
 	// Create diff. Model is not bad with unified diff formats for input and output
-	const diff = Diff.createPatch("oldReadme", oldReadme, "newReadme", newReadme)
+	const diff = Diff.createPatch("oldReadme", oldReadme, newReadme)
 
-	console.log('Creating README for diff:', diff)
+	console.log("Creating README for diff:\n", diff)
 
 	const prMessage = `This PR makes two changes to the README.
 
@@ -25,7 +23,7 @@ export async function createPRMessage(
 2. Adds a badge to show the number of installations from Smithery: https://smithery.ai/server/${serverId}
 
 Let me know if any tweaks have to be made!`
-	
+
 	const prMessageSystemPrompt = `\
 ${mcpInfo}
 <task>

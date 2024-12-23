@@ -11,6 +11,7 @@ import {
 	getREADME,
 	hasSmitheryBadge,
 	hasSmitheryPR,
+	waitForRepository,
 } from "../github"
 import { patchReadme } from "./patch"
 import { createPRMessage } from "./pr_message"
@@ -52,6 +53,13 @@ async function generatePR(
 	const newRepo = await forkRepository(owner, repo)
 	if (!newRepo) {
 		console.log("Failed to fork repository")
+		return null
+	}
+
+	// Forking a Repository happens asynchronously. Wait for it to finish
+	const repoExists = await waitForRepository(newRepo.owner.login, repo)
+	if (!repoExists) {
+		console.log("Repository not found after maximum attempts")
 		return null
 	}
 
@@ -130,7 +138,10 @@ export async function generatePRs() {
 
 			const repoInfo = await extractRepo(trace, server.sourceUrl)
 
-			if (!repoInfo) continue
+			if (!repoInfo) {
+				console.error("Invalid repo details")
+				continue
+			}
 
 			const { owner, repo } = repoInfo
 
