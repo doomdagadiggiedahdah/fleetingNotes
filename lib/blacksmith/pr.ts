@@ -13,6 +13,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
 import { tracedOpenAIGenerate } from "./openai"
 import * as z from "zod"
+import { zodToJsonSchema } from "zod-to-json-schema"
 
 const MAX_TURNS = 15
 const systemPrompt = `\
@@ -32,13 +33,23 @@ There are cases where you should not make a PR. If the repo has the following co
 <proposed_changes>
 You will make two changes.
 
+<change_install>
 The first change is adding an installation instruction to the README.md file (see <install_example/> below). This instruction tells the user how to install the MCP for end-user local Claude desktop usage. If the current repo author has an alternative preferred installation method (i.e., calling it "Recommended"), put Smithery after their recommended option. If not, put Smithery above their alternative option.
 
 Do not replace existing content, simply insert it in the correct place in the README.md file. A good place to put it is before manual installation instructions, or where typically the installation instructions would appear.
 
-If the README has manual installation instructions but doesn't have a heading, you may add the heading "Manual installation" after Smithery's installation instructions so it's sectioned properly.
+If the README has manual installation instructions but doesn't have a manual installation heading, you should add the heading "### Manual Installation" after Smithery's installation instructions so it's sectioned properly.
 
-The second change is adding a badge to the README.md file to show the number of installations. This badge should appear right under the H1 heading or next to other existing badges (see <badge_example/>).
+Ensure the heading levels are consistent with the rest of the README.
+</change_install>
+
+<change_badge>
+The second change is adding a badge to the README.md file to show the number of installations. If the README already has existing badges, place the badge immediately before the existing badges so that it's formatted to be on the same row. Images (e.g., from "glama.ai") do not count as a badge.
+
+If the repo does not have any badges, place the badge immediately under the H1 heading.
+</change_badge>
+</proposed_changes>
+
 </task>
 <diff>
 To make a patch, write out the .patch file that would've been produced from \`diff -u ...\` command. Example:
@@ -71,26 +82,45 @@ To make a patch, write out the .patch file that would've been produced from \`di
 
 <pr>
 <pr_message>
-Here's a template for a PR message. Remember to replace [NAME].
+Here's a template for a PR message. Remember to replace [NAME] and [SERVER_ID].
 
 <title>Add Smithery CLI Installation Instructions & Badge</title>
 <body>
 This PR makes two changes to the README.
 
 1. Adds installation instructions to automatically install [NAME] for Claude Desktop using Smithery CLI. This makes it easier for users to install the MCP.
-2. Adds a badge to show the number of installations from Smithery.
+2. Adds a badge to show the number of installations from Smithery: https://smithery.ai/server/[SERVER_ID]
 
 Let me know if any tweaks have to be made!
 </body>
 </pr_message>
+
+Note that if you didn't end up making one of these changes, you should not mention it in the PR.
 </pr>
 
 <steps>
 Steps you should follow to ensure you correctly make a PR:
 1. Read the README.md and understand the style.
-2. Fork the repo and patch the README.md using the above example. If needed, adapt it to the appropriate style of the README.md.
+2. Fork the repo and apply the proposed changes to the README.md using the above example.
 3. Create a PR.
 </steps>`
+
+const OutputSchema = z
+	.object({
+		thought: z.string(),
+		done: z
+			.object({
+				prUrl: z
+					.string()
+					.optional()
+					.describe(
+						"The URL of the PR that was made, if successful. If not successful, this will be undefined.",
+					),
+			})
+			.optional()
+			.describe("Set this when you're done."),
+	})
+	.strict()
 
 async function generatePR(
 	serverId: string,
@@ -104,12 +134,21 @@ async function generatePR(
 			"GITHUB_PERSONAL_ACCESS_TOKEN environment variable is not set",
 		)
 	}
+
+	const readme = await getREADME(owner, repo)
+
 	const langfuse = new Langfuse()
 
 	try {
 		const trace = langfuse.trace({
 			name: "blacksmith-pr",
-			input: { url },
+			input: {
+				serverId,
+				name,
+				url,
+				owner,
+				repo,
+			},
 		})
 
 		const llm = new OpenAI()
@@ -121,7 +160,7 @@ async function generatePR(
 				command: "node",
 				args: [
 					// TODO:
-					"/Users/henry/code/smithery/server/src/github/dist/index.js",
+					"/Users/henry/code/smithery/servers/src/github/dist/index.js",
 				],
 				env: {
 					GITHUB_PERSONAL_ACCESS_TOKEN:
@@ -145,11 +184,14 @@ Github Repo to update: ${url}
 Repo owner: ${owner}
 Repo name: ${repo}
 [NAME]: ${name}
-[SERVER_ID]: ${serverId}`,
+[SERVER_ID]: ${serverId}
+README:\n
+${readme}`,
 			},
 		]
 
 		const adapter = new OpenAIChatAdapter(mcp)
+		let output: z.infer<typeof OutputSchema> | null = null
 
 		while (!isDone && messages.length < MAX_TURNS) {
 			let tools = await adapter.listTools()
@@ -164,9 +206,18 @@ Repo name: ${repo}
 				max_completion_tokens: 4096,
 				temperature: 0.7,
 				tools,
+				response_format: {
+					type: "json_schema",
+					json_schema: {
+						name: "output",
+						strict: false,
+						schema: zodToJsonSchema(OutputSchema),
+					},
+				},
 			})
 			const message = response.choices[0].message
 			messages.push(message)
+
 			console.log("Assistant:\n", stringify(message, null, 2))
 
 			// Handle tool calls
@@ -177,9 +228,25 @@ Repo name: ${repo}
 			console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
 			messages.push(...toolMessages)
 			isDone = toolMessages.length === 0
+
+			const parseOutput = OutputSchema.safeParse(
+				JSON.parse(message.content ?? "{}"),
+			)
+
+			if (!parseOutput.success) {
+				if (isDone) {
+					isDone = false
+					messages.push({
+						role: "user",
+						content: `Your final output must conform to the schema:\n${parseOutput.error.message}`,
+					})
+				}
+			} else {
+				output = parseOutput.data
+			}
 		}
 		console.log("Done.")
-		return { messages }
+		return { output, messages }
 	} finally {
 		await langfuse.shutdownAsync()
 	}
@@ -319,12 +386,22 @@ export async function generatePRs() {
 		let messages: ChatCompletionMessageParam[] = []
 
 		let errored = false
+		let prUrl = null
 		try {
 			const repoInfo = await extractGitHubInfo(server.sourceUrl)
 
 			if (!repoInfo) continue
 
 			const { owner, repo } = repoInfo
+
+			if (
+				owner.includes("modelcontextprotocol") ||
+				owner.includes("mcp-get") ||
+				owner.includes("anaisbetts")
+			) {
+				// Skip these owners
+				continue
+			}
 
 			const conditions = await Promise.all([
 				hasSmitheryPR(owner, repo),
@@ -344,6 +421,7 @@ export async function generatePRs() {
 			)
 			if (entryOutput) {
 				messages = entryOutput.messages
+				prUrl = entryOutput.output?.done?.prUrl
 			}
 		} catch (e) {
 			errored = true
@@ -355,12 +433,18 @@ export async function generatePRs() {
 				.values({
 					serverId: server.id,
 					processed: true,
+					prUrl,
 					errored,
 					log: messages,
 				})
 				.onConflictDoUpdate({
 					target: pr_queue.serverId,
-					set: { processed: true, errored, log: messages },
+					set: {
+						processed: true,
+						prUrl,
+						errored,
+						log: messages,
+					},
 				})
 		}
 		break
