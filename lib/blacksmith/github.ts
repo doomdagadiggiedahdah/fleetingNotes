@@ -1,9 +1,9 @@
 import { Octokit } from "@octokit/core"
-import OpenAI from "openai"
-import { z } from "zod"
-import { zodResponseFormat } from "openai/helpers/zod"
-import { tracedOpenAIParse } from "./openai"
 import type { LangfuseTraceClient } from "langfuse"
+import OpenAI from "openai"
+import { zodResponseFormat } from "openai/helpers/zod"
+import { z } from "zod"
+import { tracedOpenAIParse } from "./openai"
 
 const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
@@ -16,6 +16,7 @@ export async function forkRepository(owner: string, repo: string) {
 	const response = await octokit.request("POST /repos/{owner}/{repo}/forks", {
 		owner,
 		repo,
+		organization: "smithery-ai",
 	})
 	return response.data
 }
@@ -89,4 +90,107 @@ export async function hasSmitheryBadge(
 		return false
 	}
 	return content.toLowerCase().includes("smithery")
+}
+
+/**
+ * Creates a new branch in a repository
+ */
+export async function createBranch(
+	owner: string,
+	repo: string,
+	branch: string,
+	baseBranch = "main",
+) {
+	// Get the SHA of the base branch
+	const { data: baseRef } = await octokit.request(
+		"GET /repos/{owner}/{repo}/git/ref/heads/{branch}",
+		{
+			owner,
+			repo,
+			branch: baseBranch,
+		},
+	)
+
+	const response = await octokit.request(
+		"POST /repos/{owner}/{repo}/git/refs",
+		{
+			owner,
+			repo,
+			ref: `refs/heads/${branch}`,
+			sha: baseRef.object.sha,
+		},
+	)
+	return response.data
+}
+
+/**
+ * Commits a file to a repository
+ */
+export async function commitFile(
+	owner: string,
+	repo: string,
+	path: string,
+	content: string,
+	message: string,
+	branch: string,
+) {
+	// First get the current file to get its SHA
+	let sha: string | undefined
+	try {
+		const { data: currentFile } = await octokit.request(
+			"GET /repos/{owner}/{repo}/contents/{path}",
+			{
+				owner,
+				repo,
+				path,
+				ref: branch,
+			},
+		)
+		if (!Array.isArray(currentFile)) {
+			sha = currentFile.sha
+		}
+	} catch (error) {
+		// File doesn't exist yet, that's fine
+	}
+
+	// Create or update the file
+
+	const response = await octokit.request(
+		"PUT /repos/{owner}/{repo}/contents/{path}",
+		{
+			owner,
+			repo,
+			path,
+			message,
+			content: Buffer.from(content).toString("base64"),
+			branch,
+			sha,
+		},
+	)
+	return response.data
+}
+
+/**
+ * Creates a pull request
+ */
+export async function createPullRequest(
+	owner: string,
+	repo: string,
+	baseOwner: string,
+	baseRepo: string,
+	head: string,
+	base: string,
+	title: string,
+	body: string,
+) {
+	const response = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
+		owner: baseOwner,
+		repo: baseRepo,
+		title,
+		body,
+		head: `${owner}:${head}`,
+		base,
+	})
+
+	return response.data
 }

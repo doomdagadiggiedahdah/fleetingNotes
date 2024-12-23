@@ -7,9 +7,10 @@ export async function tracedOpenAIGenerate(
 	client: OpenAI,
 	trace: LangfuseTraceClient,
 	params: ChatCompletionCreateParamsNonStreaming,
+	name = "openai-chat-completion",
 ) {
 	const generation = trace.generation({
-		name: "openai-chat-completion",
+		name,
 		model: params.model,
 		modelParameters: {
 			temperature: params.temperature,
