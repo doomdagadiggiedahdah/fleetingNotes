@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
 	// Redirect /protocol/... to /server/...
 	if (url.pathname.startsWith("/protocol/")) {
 		url.pathname = url.pathname.replace("/protocol/", "/server/")
-		return NextResponse.redirect(url)
+		return NextResponse.redirect(url, { status: 308 })
 	}
 
 	return NextResponse.next()

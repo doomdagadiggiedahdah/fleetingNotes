@@ -16,7 +16,7 @@ export default function AboutPage() {
 					<section className="space-y-4">
 						<p className="text-lg text-muted-foreground">
 							Smithery is a registry of Model Context Protocols, designed to
-							help developers find the rights tools to build their AI agentic
+							help developers find the right tools to build their AI agentic
 							applications.
 						</p>
 						<p className="text-lg text-muted-foreground">
