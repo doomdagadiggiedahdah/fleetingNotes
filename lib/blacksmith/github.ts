@@ -252,3 +252,67 @@ export async function waitForRepository(
 	}
 	return false
 }
+
+export async function getPRDiff(
+	owner: string,
+	repo: string,
+	prNumber: number,
+): Promise<{
+	before: string | null
+	after: string | null
+} | null> {
+	try {
+		// Get PR and files data in parallel
+		const [{ data: pr }, { data: files }] = await Promise.all([
+			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+				owner,
+				repo,
+				pull_number: prNumber,
+			}),
+			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+				owner,
+				repo,
+				pull_number: prNumber,
+			}),
+		])
+
+		// Find README.md changes
+		const readmeChange = files.find(
+			(file) =>
+				file.filename.toLowerCase() === "readme.md" ||
+				file.filename.toLowerCase() === "readme",
+		)
+		if (!readmeChange) return null
+
+		// Get both versions in parallel using the contents API
+		const [before, after] = await Promise.all([
+			octokit
+				.request("GET /repos/{owner}/{repo}/contents/{path}", {
+					owner,
+					repo,
+					path: readmeChange.filename,
+					ref: pr.base.sha,
+					headers: {
+						accept: "application/vnd.github.v3.raw",
+					},
+				})
+				.then((res) => res.data as unknown as string),
+			octokit
+				.request("GET /repos/{owner}/{repo}/contents/{path}", {
+					owner,
+					repo,
+					path: readmeChange.filename,
+					ref: pr.head.sha,
+					headers: {
+						accept: "application/vnd.github.v3.raw",
+					},
+				})
+				.then((res) => res.data as unknown as string),
+		])
+
+		return { before, after }
+	} catch (error) {
+		console.error("Error getting PR diff:", error)
+		return null
+	}
+}

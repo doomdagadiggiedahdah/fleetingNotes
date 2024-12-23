@@ -1,15 +1,14 @@
 import type { LangfuseTraceClient } from "langfuse"
 import { mcpInfo } from "../generate-entry"
-
 import OpenAI from "openai"
 import { tracedOpenAIGenerate } from "../openai"
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
-export async function patchReadme(
-	trace: LangfuseTraceClient,
+export function constructPatchMessages(
 	serverId: string,
 	serverName: string,
 	readme: string,
-) {
+): ChatCompletionMessageParam[] {
 	const systemPrompt = `\
 ${mcpInfo}
 <task>
@@ -69,10 +68,32 @@ There are cases where you should not make any changes.
 - The repo is not an MCP server. When the repo is not an MCP server, it doesn't make sense to add a badge and installation instruction, since there's nothing to install. Skip this repo if you notice this.
 - There's no clear location to add the instructions or badge into the README.
 In these cases, you should skip and return immediately without any text.
-</do_not_patch>
+</do_not_patch>`
 
-Output the new READMe directly. Do not put any surrouding text or tags.`
+	return [
+		{
+			role: "system",
+			content: systemPrompt,
+		},
+		{
+			role: "user",
+			content: `\
+<server_id>${serverId}</server_id>
+<server_name>${serverName}</server_name>
+<readme>
+${readme}
+</readme>
+Output the new readme directly:`,
+		},
+	]
+}
 
+export async function patchReadme(
+	trace: LangfuseTraceClient,
+	serverId: string,
+	serverName: string,
+	readme: string,
+) {
 	const llm = new OpenAI()
 
 	const response = await tracedOpenAIGenerate(
@@ -80,22 +101,7 @@ Output the new READMe directly. Do not put any surrouding text or tags.`
 		trace,
 		{
 			model: "gpt-4o",
-			messages: [
-				{
-					role: "system",
-					content: systemPrompt,
-				},
-				{
-					role: "user",
-					content: `\
-<server_id>${serverId}</server_id>
-<server_name>${serverName}</server_name>
-<readme>
-${readme}
-</readme>
-Output the new readme directly:`,
-				},
-			],
+			messages: constructPatchMessages(serverId, serverName, readme),
 			prediction: {
 				type: "content",
 				content: readme,
