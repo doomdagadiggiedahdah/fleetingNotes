@@ -1,6 +1,5 @@
 import { Octokit } from "@octokit/core"
 import type { LangfuseTraceClient } from "langfuse"
-import { z } from "zod"
 
 const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
@@ -21,55 +20,38 @@ export async function forkRepository(owner: string, repo: string) {
 	return response.data
 }
 
-const GitHubInfoSchema = z
-	.object({
-		owner: z.string(),
-		repo: z.string(),
-	})
-	.strict()
-
-type GitHubInfo = z.infer<typeof GitHubInfoSchema>
-
 /**
  * Extracts the owner and repo name from a GitHub URL
  * @param url
  * @returns Repo info
  */
-export async function extractRepo(
-	trace: LangfuseTraceClient,
-	url: string,
-): Promise<GitHubInfo | null> {
-	try {
-		// Extract potential owner/repo from URL path
-		const urlObj = new URL(url)
-		if (!urlObj.hostname.includes("github.com")) {
-			return null
-		}
-
-		// Remove .git suffix if present and split path
-		const pathParts = urlObj.pathname
-			.replace(/\.git$/, "")
-			.split("/")
-			.filter(Boolean)
-		if (pathParts.length < 2) {
-			return null
-		}
-
-		const [owner, repo] = pathParts
-
-		// Verify the repository exists and get its current info
-		const { data } = await octokit.request("GET /repos/{owner}/{repo}", {
-			owner,
-			repo,
-		})
-
-		return {
-			owner: data.owner.login, // Use the current owner name (handles org transfers)
-			repo: data.name, // Use the current repo name (handles renames)
-		}
-	} catch (error) {
-		// Handle 404s or invalid URLs
+export async function extractRepo(trace: LangfuseTraceClient, url: string) {
+	// Extract potential owner/repo from URL path
+	const urlObj = new URL(url)
+	if (!urlObj.hostname.includes("github.com")) {
 		return null
+	}
+
+	// Remove .git suffix if present and split path
+	const pathParts = urlObj.pathname
+		.replace(/\.git$/, "")
+		.split("/")
+		.filter(Boolean)
+	if (pathParts.length < 2) {
+		return null
+	}
+
+	const [owner, repo] = pathParts
+
+	// Verify the repository exists and get its current info
+	const { data } = await octokit.request("GET /repos/{owner}/{repo}", {
+		owner,
+		repo,
+	})
+
+	return {
+		owner: data.owner.login, // Use the current owner name (handles org transfers)
+		repo: data.name, // Use the current repo name (handles renames)
 	}
 }
 
@@ -163,7 +145,7 @@ export async function commitFile(
 		if (!Array.isArray(currentFile)) {
 			sha = currentFile.sha
 		}
-	} catch (error) {
+	} catch (_error) {
 		// File doesn't exist yet, that's fine
 	}
 
@@ -219,11 +201,9 @@ export async function checkRepositoryExists(
 			repo,
 		})
 		return true
-	} catch (error: any) {
-		if (error.status === 404) {
-			return false
-		}
-		throw error // Re-throw other errors
+	} catch (error: unknown) {
+		console.log(`Repo doesn't exist: ${error}`)
+		return false
 	}
 }
 

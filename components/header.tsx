@@ -27,11 +27,11 @@ export function Header() {
 							Submit Server
 						</a>
 						<a
-							href="https://github.com/smithery-ai/typescript-sdk"
+							href="https://github.com/smithery-ai"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-							aria-label="GitHub repository"
+							aria-label="GitHub Organization"
 						>
 							<SiGithub className="w-6 h-6" />
 						</a>
