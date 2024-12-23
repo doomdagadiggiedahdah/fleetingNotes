@@ -1,20 +1,19 @@
 import { db } from "@/db"
 import { pr_queue, servers } from "@/db/schema"
-import { Langfuse } from "langfuse"
+import type { MessageParam } from "@anthropic-ai/sdk/resources/index.mjs"
+import { Langfuse, type LangfuseTraceClient } from "langfuse"
 import { stringify } from "yaml"
+import { mcpInfo } from "../generate-entry"
 
+import Anthropic from "@anthropic-ai/sdk"
 import { and, eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
-import { OpenAI } from "openai"
-import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { zodResponseFormat } from "openai/helpers/zod"
+import { cacheLastMessage, tracedAnthropicGenerate } from "../anthropic"
 
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
-import { tracedOpenAIGenerate } from "./openai"
+import { AnthropicChatAdapter, MultiClient } from "@smithery/sdk"
 import * as z from "zod"
 import { zodToJsonSchema } from "zod-to-json-schema"
-
 const MAX_TURNS = 15
 const systemPrompt = `\
 ${mcpInfo}
@@ -47,16 +46,22 @@ Ensure the heading levels are consistent with the rest of the README.
 The second change is adding a badge to the README.md file to show the number of installations. If the README already has existing badges, place the badge immediately before the existing badges so that it's formatted to be on the same row. Images (e.g., from "glama.ai") do not count as a badge.
 
 If the repo does not have any badges, place the badge immediately under the H1 heading.
+
+<badge_example>
+[![smithery badge](https://smithery.ai/badge/[SERVER_ID])](https://smithery.ai/server/[SERVER_ID])
+</badge_example>
+
+Note that if the README uses HTML for badges, you should follow their style and write the badge in HTML:
+<badge_example>
+<a href="https://smithery.ai/server/[SERVER_ID]"><img alt="Smithery Badge" src="https://smithery.ai/badge/[SERVER_ID]"></a>
+</badge_example>
+
 </change_badge>
 </proposed_changes>
 
 </task>
 <diff>
 To make a patch, write out the .patch file that would've been produced from \`diff -u ...\` command. Example:
-
-<badge_example>
-[![smithery badge](https://smithery.ai/badge/[SERVER_ID])](https://smithery.ai/server/[SERVER_ID])
-</badge_example>
 
 <install_example>
 --- README.md
@@ -123,6 +128,7 @@ const OutputSchema = z
 	.strict()
 
 async function generatePR(
+	trace: LangfuseTraceClient,
 	serverId: string,
 	name: string,
 	url: string,
@@ -137,49 +143,32 @@ async function generatePR(
 
 	const readme = await getREADME(owner, repo)
 
-	const langfuse = new Langfuse()
+	const client = new Anthropic({
+		apiKey: process.env.ANTHROPIC_API_KEY,
+	})
+	// Connect to MCPs
+	const mcp = new MultiClient()
 
-	try {
-		const trace = langfuse.trace({
-			name: "blacksmith-pr",
-			input: {
-				serverId,
-				name,
-				url,
-				owner,
-				repo,
+	await mcp.connectAll({
+		gh: new StdioClientTransport({
+			command: "node",
+			args: [
+				// TODO:
+				"/Users/henry/code/smithery/servers/src/github/dist/index.js",
+			],
+			env: {
+				GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+				PATH: process.env.PATH as string,
 			},
-		})
+		}),
+	})
 
-		const llm = new OpenAI()
-		// Connect to MCPs
-		const mcp = new MultiClient()
-
-		await mcp.connectAll({
-			gh: new StdioClientTransport({
-				command: "node",
-				args: [
-					// TODO:
-					"/Users/henry/code/smithery/servers/src/github/dist/index.js",
-				],
-				env: {
-					GITHUB_PERSONAL_ACCESS_TOKEN:
-						process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-					PATH: process.env.PATH as string,
-				},
-			}),
-		})
-
-		// Example conversation with tool usage
-		let isDone = false
-		const messages: ChatCompletionMessageParam[] = [
-			{
-				role: "system",
-				content: systemPrompt,
-			},
-			{
-				role: "user",
-				content: `\
+	// Example conversation with tool usage
+	let isDone = false
+	const messages: MessageParam[] = [
+		{
+			role: "user",
+			content: `\
 Github Repo to update: ${url}
 Repo owner: ${owner}
 Repo name: ${repo}
@@ -187,177 +176,70 @@ Repo name: ${repo}
 [SERVER_ID]: ${serverId}
 README:\n
 ${readme}`,
-			},
-		]
+		},
+	]
 
-		const adapter = new OpenAIChatAdapter(mcp)
-		let output: z.infer<typeof OutputSchema> | null = null
+	const adapter = new AnthropicChatAdapter(mcp)
+	let output: z.infer<typeof OutputSchema> | null = null
 
-		while (!isDone && messages.length < MAX_TURNS) {
-			let tools = await adapter.listTools()
-			// Only allow patch actions
-			tools = tools.filter(
-				(tool) => !tool.function.name.includes("github_create_or_update_file"),
-			)
-
-			const response = await tracedOpenAIGenerate(llm, trace, {
-				messages: messages,
-				model: "gpt-4o",
-				max_completion_tokens: 4096,
-				temperature: 0.7,
-				tools,
-				response_format: {
-					type: "json_schema",
-					json_schema: {
-						name: "output",
-						strict: false,
-						schema: zodToJsonSchema(OutputSchema),
-					},
-				},
-			})
-			const message = response.choices[0].message
-			messages.push(message)
-
-			console.log("Assistant:\n", stringify(message, null, 2))
-
-			// Handle tool calls
-			const toolMessages = await adapter.callTool(response, {
-				timeout: 60 * 10 * 1000,
-			})
-
-			console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
-			messages.push(...toolMessages)
-			isDone = toolMessages.length === 0
-
-			const parseOutput = OutputSchema.safeParse(
-				JSON.parse(message.content ?? "{}"),
-			)
-
-			if (!parseOutput.success) {
-				if (isDone) {
-					isDone = false
-					messages.push({
-						role: "user",
-						content: `Your final output must conform to the schema:\n${parseOutput.error.message}`,
-					})
-				}
-			} else {
-				output = parseOutput.data
-			}
-		}
-		console.log("Done.")
-		return { output, messages }
-	} finally {
-		await langfuse.shutdownAsync()
-	}
-}
-
-export async function hasSmitheryPR(
-	owner: string,
-	repo: string,
-): Promise<boolean> {
-	const query = `repo:${owner}/${repo} type:pr in:title "smithery"`
-
-	try {
-		const response = await fetch(
-			`https://api.github.com/search/issues?q=${encodeURIComponent(query)}`,
-			{
-				headers: {
-					Authorization: `token ${process.env.GITHUB_PERSONAL_ACCESS_TOKEN}`,
-					Accept: "application/vnd.github.v3+json",
-					"User-Agent": "smithery",
-				},
-			},
+	while (!isDone && messages.length < MAX_TURNS) {
+		let tools = await adapter.listTools()
+		// Only allow patch actions
+		tools = tools.filter(
+			(tool) => !tool.name.includes("github_create_or_update_file"),
 		)
 
-		if (!response.ok) {
-			throw new Error(`GitHub API error: ${response.statusText}`)
+		const response = await tracedAnthropicGenerate(client, trace, {
+			messages: cacheLastMessage(messages),
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 4096,
+			temperature: 0.7,
+			system: systemPrompt,
+			tools,
+		})
+
+		const message = { role: response.role, content: response.content }
+		messages.push(message)
+
+		console.log("Assistant:\n", stringify(message, null, 2))
+
+		// Handle tool calls
+		const toolMessages = await adapter.callTool(response, {
+			timeout: 60 * 10 * 1000,
+		})
+
+		console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
+		messages.push(...toolMessages)
+		isDone = toolMessages.length === 0
+
+		let parseOutput = null
+		let parseError = ""
+		try {
+			parseOutput = OutputSchema.parse(
+				JSON.parse(
+					message.content[0].type === "text"
+						? (message.content[0].text ?? "{}")
+						: "{}",
+				),
+			)
+		} catch (e) {
+			parseError = JSON.stringify(e)
 		}
 
-		const data = await response.json()
-		return data.total_count > 0
-	} catch (error) {
-		console.error("Error checking for Smithery PR:", error)
-		return false
-	}
-}
-
-export async function getREADME(
-	owner: string,
-	repo: string,
-): Promise<string | null> {
-	const response = await fetch(
-		`https://api.github.com/repos/${owner}/${repo}/readme`,
-		{
-			headers: {
-				Authorization: `token ${process.env.GITHUB_PERSONAL_ACCESS_TOKEN}`,
-				Accept: "application/vnd.github.v3+json",
-				"User-Agent": "smithery",
-			},
-		},
-	)
-
-	if (!response.ok) {
-		if (response.status === 404) {
-			return null // Repository has no README
+		if (parseError) {
+			if (isDone) {
+				isDone = false
+				messages.push({
+					role: "user",
+					content: `Your final output must conform to the schema:${zodToJsonSchema(OutputSchema)}\n${parseError}`,
+				})
+			}
+		} else {
+			output = parseOutput
 		}
-		throw new Error(`GitHub API error: ${response.statusText}`)
 	}
-
-	const data = await response.json()
-	return Buffer.from(data.content, "base64").toString("utf-8")
-}
-export async function hasSmitheryBadge(
-	owner: string,
-	repo: string,
-): Promise<boolean> {
-	try {
-		const content = await getREADME(owner, repo)
-		if (!content) {
-			return false
-		}
-		return content.toLowerCase().includes("smithery")
-	} catch (error) {
-		console.error("Error checking for Smithery badge:", error)
-		return false
-	}
-}
-
-const GitHubInfoSchema = z
-	.object({
-		owner: z.string(),
-		repo: z.string(),
-	})
-	.strict()
-
-type GitHubInfo = z.infer<typeof GitHubInfoSchema>
-
-/**
- * Extracts the owner and repo name from a GitHub URL
- * @param url
- * @returns Repo info
- */
-export async function extractGitHubInfo(
-	url: string,
-): Promise<GitHubInfo | null> {
-	const llm = new OpenAI()
-
-	const response = await llm.beta.chat.completions.parse({
-		model: "gpt-4o-mini",
-		messages: [
-			{
-				role: "system",
-				content:
-					"Extract the owner and repository name from a GitHub URL. Respond in JSON format with exactly two fields: 'owner' and 'repo'. If the URL is not a valid GitHub URL, return null.",
-			},
-			{
-				role: "user",
-				content: url,
-			},
-		],
-		response_format: zodResponseFormat(GitHubInfoSchema, "github_info"),
-	})
-	return response.choices[0].message.parsed
+	console.log("Done.")
+	return { output, messages }
 }
 
 /**
@@ -383,12 +265,24 @@ export async function generatePRs() {
 	console.log("Servers to PR:", serverRows.length)
 
 	for (const server of serverRows) {
-		let messages: ChatCompletionMessageParam[] = []
+		let messages: any[] = []
 
 		let errored = false
 		let prUrl = null
+
+		const langfuse = new Langfuse()
+
 		try {
-			const repoInfo = await extractGitHubInfo(server.sourceUrl)
+			console.log("Processing server:", server.id, server.name)
+			const trace = langfuse.trace({
+				name: "blacksmith-pr",
+				input: {
+					serverId: server.id,
+					sourceUrl: server.sourceUrl,
+				},
+			})
+
+			const repoInfo = await extractRepo(trace, server.sourceUrl)
 
 			if (!repoInfo) continue
 
@@ -413,6 +307,7 @@ export async function generatePRs() {
 			}
 
 			const entryOutput = await generatePR(
+				trace,
 				server.id,
 				server.name,
 				server.sourceUrl,
@@ -446,12 +341,18 @@ export async function generatePRs() {
 						log: messages,
 					},
 				})
+			await langfuse.shutdownAsync()
 		}
 		break
 	}
 }
 
 import dotenv from "dotenv"
-import { mcpInfo } from "./generate-entry"
+import {
+	extractRepo,
+	getREADME,
+	hasSmitheryBadge,
+	hasSmitheryPR,
+} from "../github"
 dotenv.config()
 generatePRs()
