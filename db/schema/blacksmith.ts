@@ -16,7 +16,5 @@ export const pr_queue = pgTable("pr_queue", {
 	errored: boolean("errored").notNull().default(false),
 	// If true, it means this was manually checked by human
 	checked: boolean("checked").notNull().default(false),
-	// Log from the processing stage
-	log: jsonb("log"),
 	createdAt: timestamp("created_at").defaultNow(),
 }).enableRLS()

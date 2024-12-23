@@ -95,7 +95,7 @@ export async function createBranch(
 	owner: string,
 	repo: string,
 	branch: string,
-	baseBranch = "main",
+	baseBranch: string,
 ) {
 	// Get the SHA of the base branch
 	const { data: baseRef } = await octokit.request(

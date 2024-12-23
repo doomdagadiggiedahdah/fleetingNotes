@@ -26,6 +26,7 @@ export async function pullTrainingData() {
 		})
 		.from(pr_queue)
 		.innerJoin(servers, eq(servers.id, pr_queue.serverId))
+		// TODO: Instead of filtering by "checked", filter by PRs that closed
 		.where(eq(pr_queue.checked, true))
 
 	const trainingData: TrainingExample[] = []

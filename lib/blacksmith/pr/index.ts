@@ -55,6 +55,9 @@ async function generatePR(
 		console.log("Failed to fork repository")
 		return null
 	}
+	console.log(
+		`forked to ${newRepo.full_name}. Default branch: ${newRepo.default_branch}`,
+	)
 
 	// Forking a Repository happens asynchronously. Wait for it to finish
 
@@ -64,9 +67,14 @@ async function generatePR(
 	await retry(
 		async () => {
 			console.log("attempting to create branch...")
-			await createBranch(newRepo.owner.login, repo, branchName, "main")
+			await createBranch(
+				newRepo.owner.login,
+				repo,
+				branchName,
+				newRepo.default_branch,
+			)
 		},
-		{ delay: 3000, factor: 3, maxAttempts: 5 },
+		{ delay: 2000, factor: 2, maxAttempts: 5 },
 	)
 
 	// 5. Commit the new README to our branch
