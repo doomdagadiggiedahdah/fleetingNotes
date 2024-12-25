@@ -94,6 +94,10 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 				const exampleConfig = exampleConfigResult.success
 					? exampleConfigResult.result
 					: {}
+				console.log(exampleConfig)
+				if (exampleConfig.command === "npx" && exampleConfig.env) {
+					exampleConfig.env.PATH = "process.env.PATH"
+				}
 
 				return (
 					<>
@@ -123,7 +127,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const openai = new OpenAI()
 const mcp = new Client({name: "mcp-client", version: "1.0.0"}, {capabilities: {}})
-await mcp.connect(new StdioClientTransport(${JSON.stringify(exampleConfig, null, 2)}))
+await mcp.connect(new StdioClientTransport(${JSON.stringify(exampleConfig, null, 2).replace('"process.env.PATH"', "process.env.PATH")}))
 const adapter = new OpenAIChatAdapter(mcp)
 const response = await openai.chat.completions.create({
 	model: "gpt-4o-mini",
