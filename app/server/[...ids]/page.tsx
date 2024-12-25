@@ -12,7 +12,7 @@ type Props = {
 	params: { ids: string[] }
 }
 
-export const revalidate = 60
+export const revalidate = 3600
 
 export async function generateStaticParams() {
 	// Get all server IDs from the database

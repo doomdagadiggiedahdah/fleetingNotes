@@ -2,7 +2,7 @@ import { HomeSearch } from "@/components/home-search"
 import type { ServerWithStats } from "@/lib/types/client"
 import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
 
-export const revalidate = 60
+export const revalidate = 3600
 
 export default async function Home() {
 	let serverData: ServerWithStats[] = []
