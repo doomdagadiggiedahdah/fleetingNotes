@@ -149,6 +149,16 @@ export function ToolCard({
 								Claude
 							</TabButton>
 							<TabButton
+								isActive={activeTab === "cline"}
+								onClick={(e) => {
+									e.stopPropagation()
+									setActiveTab("cline")
+								}}
+								// icon={<SiAnthropic className="w-4 h-4" />}
+							>
+								Cline
+							</TabButton>
+							<TabButton
 								isActive={activeTab === "code"}
 								onClick={(e) => {
 									e.stopPropagation()

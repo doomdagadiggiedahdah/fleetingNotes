@@ -12,18 +12,29 @@ interface ToolCardProps {
 export const TabContent = ({ tool, tab }: ToolCardProps) => {
 	switch (tab) {
 		case "claude":
+		case "cline":
 			return (
 				<>
 					<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
 					<p className="my-2">
-						Integrate this tool for your{" "}
-						<a
-							href="https://claude.ai/download"
-							target="_blank"
-							className="hover:text-primary"
-						>
-							Claude Desktop app
-						</a>
+						Integrate this tool for{" "}
+						{tab === "claude" ? (
+							<a
+								href="https://claude.ai/download"
+								target="_blank"
+								className="hover:text-primary"
+							>
+								Claude Desktop
+							</a>
+						) : (
+							<a
+								href="https://github.com/cline/cline"
+								target="_blank"
+								className="hover:text-primary"
+							>
+								Cline
+							</a>
+						)}
 						.
 					</p>
 
@@ -33,7 +44,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 							serverId={tool.id}
 							eventTag="install_command"
 						>
-							{`npx -y @smithery/cli install ${tool.id} --client claude`}
+							{`npx -y @smithery/cli install ${tool.id} --client ${tab}`}
 						</CodeBlock>
 					) : (
 						<Alert>
@@ -79,8 +90,6 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 					</CodeBlock>
 				</>
 			)
-		case "jan":
-			return <>Coming soon!</>
 		case "code": {
 			const connection = tool.connections[0]
 
