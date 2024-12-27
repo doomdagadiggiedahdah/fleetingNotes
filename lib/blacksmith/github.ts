@@ -1,9 +1,60 @@
 import { Octokit } from "@octokit/core"
-import type { LangfuseTraceClient } from "langfuse"
 
 export const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
 })
+
+/**
+ * Resolves a GitHub URL to its canonical form by following redirects
+ * @param url The GitHub URL to canonicalize
+ * @returns The canonical GitHub URL after following redirects
+ */
+export async function canonicalizeGithubUrl(url: string): Promise<string> {
+	if (!url.toLowerCase().includes("github.com")) {
+		return url
+	}
+
+	try {
+		const response = await fetch(url, {
+			method: "HEAD",
+			redirect: "follow",
+		})
+
+		// Get the final URL after all redirects
+		const canonicalUrl = response.url
+
+		// Remove any trailing slashes for consistency
+		return canonicalUrl.replace(/\/+$/, "")
+	} catch (error) {
+		console.error(`Failed to canonicalize GitHub URL: ${url}`, error)
+		return url // Return original URL if canonicalization fails
+	}
+}
+
+/**
+ * Checks if a repository is a fork by querying the GitHub API
+ * @param owner The repository owner
+ * @param repo The repository name
+ * @returns True if the repository is a fork, false otherwise
+ */
+export async function isRepositoryFork(
+	owner: string,
+	repo: string,
+): Promise<boolean> {
+	try {
+		const response = await octokit.request("GET /repos/{owner}/{repo}", {
+			owner,
+			repo,
+		})
+		return response.data.fork === true
+	} catch (error) {
+		console.error(
+			`Failed to check if repository is a fork: ${owner}/${repo}`,
+			error,
+		)
+		return false
+	}
+}
 
 /**
  * Forks the given repo into the `smithery-ai` organization.
@@ -25,7 +76,7 @@ export async function forkRepository(owner: string, repo: string) {
  * @param url
  * @returns Repo info
  */
-export async function extractRepo(trace: LangfuseTraceClient, url: string) {
+export async function extractRepo(url: string) {
 	// Extract potential owner/repo from URL path
 	const urlObj = new URL(url)
 	if (!urlObj.hostname.includes("github.com")) {

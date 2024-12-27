@@ -5,6 +5,8 @@ import { and, eq, sql } from "drizzle-orm"
 import { generateEntry } from "./generate-entry"
 import { shuffle } from "lodash"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { canonicalizeGithubUrl, extractRepo, isRepositoryFork } from "./github"
+
 /**
  * Goes through all unprocessed URLs and generates entries for each
  */
@@ -17,21 +19,48 @@ export async function generateEntries() {
 				sql`NOT EXISTS (
 					SELECT 1 FROM ${servers}
 					WHERE
-						${servers.crawlUrl} = ${candidate_urls.crawl_url} OR
-						${servers.crawlUrl} LIKE '%' || SPLIT_PART(${candidate_urls.crawl_url}, '/', -1)
+						LOWER(RTRIM(${servers.crawlUrl}, '/')) = LOWER(RTRIM(${candidate_urls.crawl_url}, '/'))
 				)`,
 				eq(candidate_urls.processed, false),
 			),
 		)
 		.execute()
 
-	const urlsToCrawl = shuffle(rows.map((row) => row.url))
+	const canonicalCrawls = await Promise.all(
+		rows.map((row) => canonicalizeGithubUrl(row.url)),
+	)
+
+	const existingUrls = await db
+		.select({ url: servers.crawlUrl })
+		.from(servers)
+		.execute()
+
+	const existingUrlsLower = new Set(
+		existingUrls
+			.filter((row): row is { url: string } => !!row.url)
+			.map((row) => row.url.toLowerCase().replace(/\/+$/, "")),
+	)
+
+	const urlsToCrawl = shuffle(
+		canonicalCrawls.filter(
+			(url) => !existingUrlsLower.has(url.toLowerCase().replace(/\/+$/, "")),
+		),
+	)
 	console.log("URLs to process:", urlsToCrawl.length)
 
 	for (const url of urlsToCrawl) {
 		let messages: ChatCompletionMessageParam[] = []
 		let errored = false
 		try {
+			const repoInfo = await extractRepo(url)
+
+			if (!repoInfo) continue
+
+			if (await isRepositoryFork(repoInfo.owner, repoInfo.repo)) {
+				console.log("Skipping forked repository", url)
+				continue
+			}
+
 			const entryOutput = await generateEntry(url)
 			const outputServers = entryOutput.outputServers
 			messages = entryOutput.messages

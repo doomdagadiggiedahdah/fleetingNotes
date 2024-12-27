@@ -145,7 +145,7 @@ export async function generatePRs() {
 				},
 			})
 
-			const repoInfo = await extractRepo(trace, server.sourceUrl)
+			const repoInfo = await extractRepo(server.sourceUrl)
 
 			if (!repoInfo) {
 				console.error("Invalid repo details")
