@@ -1,5 +1,5 @@
 import type { LangfuseTraceClient } from "langfuse"
-import { mcpInfo } from "../generate-entry"
+import { mcpInfo } from "../crawl/generate-entry"
 
 import OpenAI from "openai"
 import { tracedOpenAIGenerate } from "../openai"

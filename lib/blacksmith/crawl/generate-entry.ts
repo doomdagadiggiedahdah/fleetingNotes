@@ -8,12 +8,12 @@ import { Langfuse } from "langfuse"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { stringify } from "yaml"
 import { z } from "zod"
-import type { StdioConnection } from "../types/server"
-import { tracedOpenAIGenerate } from "./openai"
+import type { StdioConnection } from "../../types/server"
+import { tracedOpenAIGenerate } from "../openai"
 import {
 	type RegistryServerNew,
 	RegistryServerSchemaNew,
-} from "./registry-types"
+} from "../registry-types"
 const ajv = new Ajv()
 
 const MAX_TURNS = 15
@@ -27,9 +27,9 @@ MCP (Model Context Protocol) is an open protocol that standardizes how applicati
 Why MCP?
 
 MCP simplifies building AI agents and workflows by addressing the need for LLMs to integrate with external tools and data. Its key benefits include:
-	•	Pre-built Integrations: Plug-and-play support for various data sources and tools.
-	•	Vendor Flexibility: Switch between LLM providers easily.
-	•	Data Security: Ensures best practices for securing data within your infrastructure.
+- Pre-built Integrations: Plug-and-play support for various data sources and tools.
+- Vendor Flexibility: Switch between LLM providers easily.
+- Data Security: Ensures best practices for securing data within your infrastructure.
 
 General Architecture
 
@@ -158,6 +158,12 @@ const BuilderRegistrySchema = z.object({
 	servers: z.array(RegistryServerSchemaNew),
 })
 
+/**
+ * Generates an entry for a registry based on the provided URL.
+ *
+ * @param input_url - The URL of the repository to generate the entry for.
+ * @returns An object containing the generated registry entry and messages.
+ */
 export async function generateEntry(input_url: string): Promise<{
 	outputServers: RegistryServerNew[] | null
 	messages: ChatCompletionMessageParam[]

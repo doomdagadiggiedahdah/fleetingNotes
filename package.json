@@ -26,6 +26,8 @@
 		"@supabase/supabase-js": "^2.47.7",
 		"@vercel/functions": "^1.5.2",
 		"ajv": "^8.17.1",
+		"autoevals": "^0.0.111",
+		"braintrust": "^0.0.177",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"diff": "^7.0.0",

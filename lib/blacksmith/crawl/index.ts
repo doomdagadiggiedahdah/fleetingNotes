@@ -5,7 +5,7 @@ import { and, eq, sql } from "drizzle-orm"
 import { generateEntry } from "./generate-entry"
 import { shuffle } from "lodash"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { canonicalizeGithubUrl, extractRepo, isRepositoryFork } from "./github"
+import { canonicalizeGithubUrl, extractRepo, isRepositoryFork } from "../github"
 
 /**
  * Goes through all unprocessed URLs and generates entries for each
