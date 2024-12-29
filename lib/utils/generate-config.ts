@@ -3,7 +3,7 @@ import Ajv from "ajv"
 
 const ajv = new Ajv()
 
-export function generateConfig(connection: Connection, config: unknown) {
+export function generateConfig(connection: Connection, config?: object) {
 	// Initializes configuration
 	const validate = ajv.compile(connection.configSchema)
 	const valid = validate(config)
@@ -26,23 +26,29 @@ export function generateConfig(connection: Connection, config: unknown) {
  * @param configSchema
  * @returns
  */
-export function createDummyConfig(configSchema: JSONSchema) {
-	return configSchema?.properties
-		? Object.entries(configSchema.properties as object)
-				.map(([key, value]) => ({
-					[key]:
-						value.type === "string"
-							? (value.description ?? value.type ?? "...")
-							: value.type === "number"
-								? 0
-								: value.type === "boolean"
-									? false
-									: value.type === "object"
-										? {}
-										: value.type === "array"
-											? []
-											: null,
-				}))
-				.reduce((a, b) => Object.assign(a, b), {})
-		: undefined
+export function createDummyConfig(
+	configSchema: JSONSchema,
+): Record<string, unknown> {
+	const typeDefaults = {
+		string: "...",
+		number: 0,
+		boolean: false,
+		array: [],
+	} as const
+
+	const properties = configSchema.properties ?? {}
+	const result: Record<string, unknown> = {}
+
+	for (const [key, value] of Object.entries(properties as object)) {
+		if (value.type === "string") {
+			result[key] = value.description ?? typeDefaults.string
+		} else if (value.type === "object") {
+			result[key] = createDummyConfig(value)
+		} else {
+			result[key] =
+				typeDefaults[value.type as keyof typeof typeDefaults] ?? null
+		}
+	}
+
+	return result
 }
