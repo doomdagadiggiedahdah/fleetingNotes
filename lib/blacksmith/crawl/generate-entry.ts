@@ -4,12 +4,11 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
 import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
-import { Langfuse } from "langfuse"
+import { wrapOpenAI } from "braintrust"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { stringify } from "yaml"
 import { z } from "zod"
 import type { StdioConnection } from "../../types/server"
-import { tracedOpenAIGenerate } from "../openai"
 import {
 	type RegistryServerNew,
 	RegistryServerSchemaNew,
@@ -173,180 +172,169 @@ export async function generateEntry(input_url: string): Promise<{
 			"GITHUB_PERSONAL_ACCESS_TOKEN environment variable is not set",
 		)
 	}
+	const llm = wrapOpenAI(new OpenAI())
 
-	const langfuse = new Langfuse()
+	let outputServers: RegistryServerNew[] | null = null
+	// Connect to MCPs
+	const mcp = new MultiClient()
+	const registry = new ServerBuilder()
+		.addTool({
+			name: REGISTRY_ENTRY_FNAME,
+			description:
+				"Upserts the entry in the registry and evaluates the configurations.",
+			parameters: BuilderRegistrySchema,
+			execute: async (output) => {
+				const evaluated_outputs = []
+				// Test output servers by calling the command functions and do type checking
+				for (const server of output.servers) {
+					for (const connection of server.connections) {
+						if (connection.type === "stdio") {
+							// Test
+							try {
+								const validate = ajv.compile({
+									...connection.configSchema,
+									additionalProperties: false,
+								})
 
-	try {
-		const llm = new OpenAI()
-		const trace = langfuse.trace({
-			name: "blacksmith-crawler",
-		})
-
-		let outputServers: RegistryServerNew[] | null = null
-		// Connect to MCPs
-		const mcp = new MultiClient()
-		const registry = new ServerBuilder()
-			.addTool({
-				name: REGISTRY_ENTRY_FNAME,
-				description:
-					"Upserts the entry in the registry and evaluates the configurations.",
-				parameters: BuilderRegistrySchema,
-				execute: async (output) => {
-					const evaluated_outputs = []
-					// Test output servers by calling the command functions and do type checking
-					for (const server of output.servers) {
-						for (const connection of server.connections) {
-							if (connection.type === "stdio") {
-								// Test
-								try {
-									const validate = ajv.compile({
-										...connection.configSchema,
-										additionalProperties: false,
-									})
-
-									if (connection.exampleConfig === undefined) {
-										// Model has trouble knowing it has to create an exampleConfig
-										return {
-											content: [
-												{
-													type: "text",
-													text: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
-												},
-											],
-											isError: true,
-										}
-									}
-
-									if (!validate(connection.exampleConfig)) {
-										return {
-											content: [
-												{
-													type: "text",
-													text: `Could not validate example config against JSON Schema for server ID: ${server.id}. Error: ${JSON.stringify(validate.errors)}`,
-												},
-											],
-											isError: true,
-										}
-									}
-								} catch (e) {
+								if (connection.exampleConfig === undefined) {
+									// Model has trouble knowing it has to create an exampleConfig
 									return {
 										content: [
 											{
 												type: "text",
-												text: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
+												text: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
 											},
 										],
 										isError: true,
 									}
 								}
 
-								try {
-									const stdioFunction: (config: unknown) => StdioConnection =
-										// biome-ignore lint/security/noGlobalEval: <explanation>
-										eval(connection.stdioFunction)
-									const output = stdioFunction(
-										connection.exampleConfig ?? undefined,
-									)
-									evaluated_outputs.push({ id: server.id, output })
-								} catch (e) {
+								if (!validate(connection.exampleConfig)) {
 									return {
 										content: [
 											{
 												type: "text",
-												text: `Error while evaluating stdioFunction for server ID: ${server.id}. Error: ${e}`,
+												text: `Could not validate example config against JSON Schema for server ID: ${server.id}. Error: ${JSON.stringify(validate.errors)}`,
 											},
 										],
 										isError: true,
 									}
+								}
+							} catch (e) {
+								return {
+									content: [
+										{
+											type: "text",
+											text: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
+										},
+									],
+									isError: true,
+								}
+							}
+
+							try {
+								const stdioFunction: (config: unknown) => StdioConnection =
+									// biome-ignore lint/security/noGlobalEval: <explanation>
+									eval(connection.stdioFunction)
+								const output = stdioFunction(
+									connection.exampleConfig ?? undefined,
+								)
+								evaluated_outputs.push({ id: server.id, output })
+							} catch (e) {
+								return {
+									content: [
+										{
+											type: "text",
+											text: `Error while evaluating stdioFunction for server ID: ${server.id}. Error: ${e}`,
+										},
+									],
+									isError: true,
 								}
 							}
 						}
 					}
+				}
 
-					outputServers = output.servers
-					return {
-						content: [
-							{
-								type: "text",
-								text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected.\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
-							},
-						],
-					}
-				},
-			})
-			.build()
+				outputServers = output.servers
+				return {
+					content: [
+						{
+							type: "text",
+							text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected.\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
+						},
+					],
+				}
+			},
+		})
+		.build()
 
-		await mcp.connectAll({
-			gh: new StdioClientTransport({
-				command: "node",
-				args: [
-					"./node_modules/@modelcontextprotocol/server-github/dist/index.js",
-				],
-				env: {
-					GITHUB_PERSONAL_ACCESS_TOKEN:
-						process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-					PATH: process.env.PATH as string,
-				},
-			}),
-			fetch: new StdioClientTransport({
-				command: "uvx",
-				args: ["mcp-server-fetch", "--ignore-robots-txt"],
-			}),
+	await mcp.connectAll({
+		gh: new StdioClientTransport({
+			command: "node",
+			args: [
+				"./node_modules/@modelcontextprotocol/server-github/dist/index.js",
+			],
+			env: {
+				GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+				PATH: process.env.PATH as string,
+			},
+		}),
+		fetch: new StdioClientTransport({
+			command: "uvx",
+			args: ["mcp-server-fetch", "--ignore-robots-txt"],
+		}),
 
-			registry: registry,
+		registry: registry,
+	})
+
+	// Example conversation with tool usage
+	let isDone = false
+	const messages: ChatCompletionMessageParam[] = [
+		{ role: "developer", content: systemPrompt },
+		{
+			role: "user",
+			content: `Produce a registry entry for this URL: ${input_url}`,
+		},
+	]
+
+	const adapter = new OpenAIChatAdapter(mcp)
+
+	while (!isDone && messages.length < MAX_TURNS) {
+		let tools = await adapter.listTools()
+		// TODO: Only allow certain tools
+		tools = tools.filter(
+			// get_file_contents
+			(tool) => !tool.function.name.includes("screenshot"),
+		)
+
+		const response = await llm.chat.completions.create({
+			messages: messages,
+			model: "gpt-4o",
+			max_completion_tokens: 4096,
+			temperature: 0.7,
+			tools,
+		})
+		const message = response.choices[0].message
+		messages.push(message)
+		console.log("Assistant:\n", stringify(message, null, 2))
+
+		// Handle tool calls
+		const toolMessages = await adapter.callTool(response, {
+			timeout: 60 * 10 * 1000,
 		})
 
-		// Example conversation with tool usage
-		let isDone = false
-		const messages: ChatCompletionMessageParam[] = [
-			{ role: "developer", content: systemPrompt },
-			{
+		messages.push(...toolMessages)
+		isDone = toolMessages.length === 0 && outputServers !== null
+		console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
+
+		if (toolMessages.length === 0 && !isDone) {
+			// No more tools used, but model did not produce an output.
+			messages.push({
 				role: "user",
-				content: `Produce a registry entry for this URL: ${input_url}`,
-			},
-		]
-
-		const adapter = new OpenAIChatAdapter(mcp)
-
-		while (!isDone && messages.length < MAX_TURNS) {
-			let tools = await adapter.listTools()
-			// TODO: Only allow certain tools
-			tools = tools.filter(
-				// get_file_contents
-				(tool) => !tool.function.name.includes("screenshot"),
-			)
-
-			const response = await tracedOpenAIGenerate(llm, trace, {
-				messages: messages,
-				model: "gpt-4o",
-				max_completion_tokens: 4096,
-				temperature: 0.7,
-				tools,
-			})
-			const message = response.choices[0].message
-			messages.push(message)
-			console.log("Assistant:\n", stringify(message, null, 2))
-
-			// Handle tool calls
-			const toolMessages = await adapter.callTool(response, {
-				timeout: 60 * 10 * 1000,
-			})
-
-			messages.push(...toolMessages)
-			isDone = toolMessages.length === 0 && outputServers !== null
-			console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
-
-			if (toolMessages.length === 0 && !isDone) {
-				// No more tools used, but model did not produce an output.
-				messages.push({
-					role: "user",
-					content: `\
+				content: `\
 ${REGISTRY_ENTRY_FNAME} was not called. Try again.`,
-				})
-			}
+			})
 		}
-		return { outputServers, messages }
-	} finally {
-		await langfuse.shutdownAsync()
 	}
+	return { outputServers, messages }
 }

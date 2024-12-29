@@ -38,7 +38,9 @@ export const JSONSchemaSchema: z.ZodType = z
 				z.object({
 					type: z.literal("array").describe("The type of the variable."),
 					required: z.array(z.string()).optional(),
-					items: JSONSchemaSchema.optional(),
+					items: JSONSchemaSchema.optional().describe(
+						"The type of the items in the array.",
+					),
 				}),
 			])
 			.and(

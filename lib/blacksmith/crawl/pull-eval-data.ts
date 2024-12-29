@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import { eq, getTableColumns } from "drizzle-orm"
+import { eq, getTableColumns, sql, and } from "drizzle-orm"
 
 import { initDataset } from "braintrust"
 import { omit } from "lodash"
@@ -18,9 +18,15 @@ async function main() {
 	const results = await db
 		.select({ ...selectCols })
 		.from(servers)
-		.where(eq(servers.checked, true))
+		.where(
+			and(
+				eq(servers.checked, true),
+				// Currently only root level projects are supported
+				sql`${servers.crawlUrl} ~ '^https://github\.com/[^/]+/[^/]+$'`,
+			),
+		)
 
-	const dataset = initDataset("Smithery", { dataset: "crawl" })
+	const dataset = initDataset("Smithery", { dataset: "servers_checked" })
 	for (const result of results) {
 		const id = dataset.insert({
 			input: result.crawlUrl,
