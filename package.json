@@ -11,7 +11,8 @@
 		"db:generate": "drizzle-kit generate:pg",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
-		"db:types": "npx supabase gen types typescript --project-id spjawbfpwezjfmicopsl --schema public > ./db/supabase.types.ts"
+		"db:types": "npx supabase gen types typescript --project-id spjawbfpwezjfmicopsl --schema public > ./db/supabase.types.ts",
+		"eval": "npx braintrust eval lib/blacksmith/crawl/index.eval.ts"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.33.1",

@@ -1,11 +1,10 @@
 import { JSONDiff } from "autoevals"
 import { Eval, initDataset, initLogger } from "braintrust"
-import { generateEntry } from "./generate-entry"
+import { extractServer } from "./generate-entry"
 
-import dotenv from "dotenv"
-import type { RegistryServerNew } from "../registry-types"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
-dotenv.config({ path: ".env.development.local" })
+import { omit, zip } from "lodash"
+import type { RegistryServerNew } from "../registry-types"
 
 const logger = initLogger({
 	projectName: "Smithery",
@@ -15,25 +14,41 @@ const logger = initLogger({
  * Measures the JSONDiff between generaetd connections objects
  */
 const connectionsDiff = async (args: {
-	output: RegistryServerNew | null
-	expected: RegistryServerNew
+	output: RegistryServerNew[]
+	expected: RegistryServerNew[]
 }) => {
-	if (!args.output) return null
+	if (args.output.length !== args.expected.length) return null
 
 	const outputs = []
 	const expects = []
 
-	for (let i = 0; i < args.expected.connections.length; i++) {
-		const expectedConnection = args.expected.connections[i]
-		const inputConfig =
-			expectedConnection.exampleConfig ??
-			createDummyConfig(expectedConnection.configSchema)
+	// TODO: These are actually sets, so arrange them by IDs
+	for (const [outputServer, expectedServer] of zip(
+		args.output,
+		args.expected,
+	)) {
+		if (!outputServer || !expectedServer) {
+			continue
+		}
 
-		const expectedOutputConfig = generateConfig(expectedConnection, inputConfig)
-		const outputConfig = generateConfig(args.output.connections[i], inputConfig)
+		for (let i = 0; i < expectedServer.connections.length; i++) {
+			const expectedConnection = expectedServer.connections[i]
+			const inputConfig =
+				expectedConnection.exampleConfig ??
+				createDummyConfig(expectedConnection.configSchema)
 
-		expects.push(expectedOutputConfig)
-		outputs.push(outputConfig)
+			const outputConfig = generateConfig(
+				outputServer.connections[i],
+				inputConfig,
+			)
+			const expectedOutputConfig = generateConfig(
+				expectedConnection,
+				inputConfig,
+			)
+
+			outputs.push(outputConfig)
+			expects.push(expectedOutputConfig)
+		}
 	}
 	const score = (
 		await JSONDiff({
@@ -48,12 +63,33 @@ const connectionsDiff = async (args: {
 	}
 }
 
-Eval<string, RegistryServerNew | null, RegistryServerNew>("crawl", {
+/**
+ * Measures the JSONDiff without connections
+ */
+const metadataDiff = async (args: {
+	output: RegistryServerNew[]
+	expected: RegistryServerNew[]
+}) => {
+	const score = (
+		await JSONDiff({
+			output: args.output.map((s) => omit(s, "connections")),
+			expected: args.expected.map((s) => omit(s, "connections")),
+		})
+	).score
+
+	return {
+		name: "Metadata Diff",
+		score,
+	}
+}
+
+Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
 	data: initDataset("Smithery", { dataset: "servers_checked" }),
 	task: async (input: string) => {
-		const entryOutput = await generateEntry(input)
-		if (!entryOutput || !entryOutput.outputServers) return null
-		return entryOutput.outputServers[0]
+		const entryOutput = await extractServer(input)
+		if (!entryOutput.outputServers)
+			throw new Error(`Failed to extract server. ${input}`)
+		return entryOutput.outputServers
 	},
-	scores: [JSONDiff, connectionsDiff],
+	scores: [JSONDiff, connectionsDiff, metadataDiff],
 })

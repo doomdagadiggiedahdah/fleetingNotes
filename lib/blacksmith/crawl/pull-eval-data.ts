@@ -1,9 +1,8 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import { eq, getTableColumns, sql, and } from "drizzle-orm"
+import { and, eq, getTableColumns, sql } from "drizzle-orm"
 
 import { initDataset } from "braintrust"
-import { omit } from "lodash"
 
 import dotenv from "dotenv"
 
@@ -30,7 +29,7 @@ async function main() {
 	for (const result of results) {
 		const id = dataset.insert({
 			input: result.crawlUrl,
-			expected: omit(result, "crawlUrl"),
+			expected: [result],
 		})
 		console.log("Inserted record with id", id)
 	}
