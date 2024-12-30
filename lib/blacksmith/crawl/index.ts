@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { candidate_urls, servers } from "@/db/schema"
 
 import { and, eq, sql } from "drizzle-orm"
-import { generateEntry } from "./generate-entry"
+import { extractServer } from "./generate-entry"
 import { shuffle } from "lodash"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { canonicalizeGithubUrl, extractRepo, isRepositoryFork } from "../github"
@@ -61,7 +61,7 @@ export async function generateEntries() {
 				continue
 			}
 
-			const entryOutput = await generateEntry(url)
+			const entryOutput = await extractServer(url)
 			const outputServers = entryOutput.outputServers
 			messages = entryOutput.messages
 			if (outputServers && outputServers.length > 0) {

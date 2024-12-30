@@ -6,13 +6,14 @@ import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
 import { wrapOpenAI } from "braintrust"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { stringify } from "yaml"
 import { z } from "zod"
 import type { StdioConnection } from "../../types/server"
 import {
 	type RegistryServerNew,
 	RegistryServerSchemaNew,
 } from "../registry-types"
+import { extractRepo, getREADME } from "../github"
+
 const ajv = new Ajv()
 
 const MAX_TURNS = 15
@@ -49,9 +50,9 @@ ${mcpInfo}
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to create new MCP entries to add to the registry.
 
-A Github repo URL will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
+A Github repo URL and its README will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
 
-Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs. You should be confident that each item in the list of MCPs will actually work.
+Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs. While you should leverage the README to guide your research, READMEs may contain false informations, so it's much better to double-check the code. You should be confident that each item in the list of MCPs will actually work.
 
 When you're ready to produce your output, use the \`${REGISTRY_ENTRY_FNAME}\` tool.
 </task>
@@ -63,6 +64,7 @@ Some repository links given to you might be broken, invalid, or false positives.
 In those cases, upsert an empty list to the \`${REGISTRY_ENTRY_FNAME}\` tool.
 </invalid_repos>
 <entry>
+
 <connections>
 After comprehensive search, if it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
 
@@ -126,7 +128,7 @@ The correct entry definition for this example is:
 		},
 		"required": ["braveApiKey"]
 	},
-	"stdioFunction": "config=>({command:"npx",args:["-y","@modelcontextprotocol/server-brave-search"],env:{BRAVE_API_KEY:config.braveApiKey}})",
+	"stdioFunction": "config=>({command:'npx',args:['-y','@modelcontextprotocol/server-brave-search'],env:{BRAVE_API_KEY:config.braveApiKey}})",
 	"exampleConfig": {
 		"braveApiKey": "YOUR_API_KEY_HERE"
 	}
@@ -143,13 +145,11 @@ If you're given a URL that's a subdirectory of a Github repository, note that wh
 
 <steps>
 Recommended steps:
-1. List the files in the root of the repo.
-2. Check if there are other subprojects in the repo for multiple MCP listings. If so, you'll have to repeat the following steps for each subproject.
-3. Check README.md. Reflect and do an analysis based on the evidence you've collected. Is this repository an MCP server?
-4. Check package.json or pyproject.toml to figure out the package name
-5. Read the entrypoint source file (usually index.ts or main.py, depending on what was specified in package.json or pyproject.toml)
-6. Check if the package is published on a registry
-7. Create a registry entry. DO NOT create an entry until you've went through all the steps above at minimum.
+1. Explore the folder structure of this repository to figure out how many MCP servers are in this repository (if any). If so, you'll have to repeat the following steps for each subproject.
+2. Check package.json or pyproject.toml to figure out the package name and also module structure.
+3. Read the entrypoint source file (usually index.ts or main.py, depending on what was specified in package.json or pyproject.toml)
+4. Check if the package is published on a registry
+5. Create a registry entry. DO NOT create an entry until you've went through all the steps above at minimum.
 </steps>
 </entry>`
 
@@ -158,12 +158,12 @@ const BuilderRegistrySchema = z.object({
 })
 
 /**
- * Generates an entry for a registry based on the provided URL.
+ * Extracts a server from the provided URL.
  *
- * @param input_url - The URL of the repository to generate the entry for.
- * @returns An object containing the generated registry entry and messages.
+ * @param input_url - The URL of the repository to extract the server from.
+ * @returns An object containing the extracted server and messages.
  */
-export async function generateEntry(input_url: string): Promise<{
+export async function extractServer(input_url: string): Promise<{
 	outputServers: RegistryServerNew[] | null
 	messages: ChatCompletionMessageParam[]
 }> {
@@ -287,18 +287,39 @@ export async function generateEntry(input_url: string): Promise<{
 		registry: registry,
 	})
 
-	// Example conversation with tool usage
-	let isDone = false
+	const adapter = new OpenAIChatAdapter(mcp)
+
+	// Hard-coded defaults the agent should do:
+	const repoInfo = await extractRepo(input_url)
+	if (!repoInfo) {
+		console.error("Invalid repo details")
+		return { outputServers, messages: [] }
+	}
+	const [readme, listRepoResults] = await Promise.all([
+		getREADME(repoInfo.owner, repoInfo.repo),
+		mcp.callTool({
+			name: "gh_get_file_contents",
+			arguments: {
+				owner: repoInfo.owner,
+				repo: repoInfo.repo,
+				path: "",
+			},
+		}),
+	])
 	const messages: ChatCompletionMessageParam[] = [
 		{ role: "developer", content: systemPrompt },
 		{
 			role: "user",
-			content: `Produce a registry entry for this URL: ${input_url}`,
+			content: `\
+<crawl_url>${input_url}</crawl_url>
+<repo_owner>${repoInfo.owner}</repo_owner>
+<repo_name>${repoInfo.repo}</repo_name>
+${readme ? `<readme>${readme}</readme>\n` : ""}
+<repo_root_files>${JSON.stringify(listRepoResults.content)}</repo_root_files>`,
 		},
 	]
 
-	const adapter = new OpenAIChatAdapter(mcp)
-
+	let isDone = false
 	while (!isDone && messages.length < MAX_TURNS) {
 		let tools = await adapter.listTools()
 		// TODO: Only allow certain tools
@@ -313,10 +334,17 @@ export async function generateEntry(input_url: string): Promise<{
 			max_completion_tokens: 4096,
 			temperature: 0.7,
 			tools,
+			// response_format: {
+			// 	type: "json_schema",
+			// 	json_schema: {
+			// 		name: REGISTRY_ENTRY_FNAME,
+			// 		schema: zodToJsonSchema(BuilderRegistrySchema),
+			// 	},
+			// },
 		})
 		const message = response.choices[0].message
 		messages.push(message)
-		console.log("Assistant:\n", stringify(message, null, 2))
+		console.log("Assistant:\n", JSON.stringify(message, null, 2))
 
 		// Handle tool calls
 		const toolMessages = await adapter.callTool(response, {
@@ -325,7 +353,7 @@ export async function generateEntry(input_url: string): Promise<{
 
 		messages.push(...toolMessages)
 		isDone = toolMessages.length === 0 && outputServers !== null
-		console.log(`Tools:\n`, stringify(toolMessages).slice(0, 1000))
+		console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
 
 		if (toolMessages.length === 0 && !isDone) {
 			// No more tools used, but model did not produce an output.

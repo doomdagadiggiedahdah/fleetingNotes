@@ -106,17 +106,21 @@ export const RegistryServerSchema = z.object({
 		),
 	description: z
 		.string()
-		.describe("A concise description of the MCP server for end-users."),
+		.describe(
+			"A concise description of the MCP server for end-users. For example, 'Add code execution and interpreting capabilities.'",
+		),
 	tags: z.array(
 		z
 			.string()
 			.describe(
-				"Tags for the MCP. If this MCP wraps an API, then it should be 'api'. If it extends the memory of the LLM, then it should be tagged with 'memory'.",
+				"One-word tags for the MCP to help categorization. For example, if this MCP wraps an API, then it should be 'API'. If it extends the memory of the LLM, then it should be tagged with 'Memory'.",
 			),
 	),
 	vendor: z
 		.string()
-		.describe("The author of the MCP, usually the Github username.")
+		.describe(
+			"The author of the MCP. If it's a company, then it should be the company name. If it's unclear, fallback to the Github username",
+		)
 		.optional(),
 	sourceUrl: z
 		.string()

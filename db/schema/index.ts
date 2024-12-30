@@ -29,7 +29,7 @@ export const servers = pgTable("servers", {
 	// True if this is created by the official vendor
 	verified: boolean("verified").default(false),
 	// True if this entry has been checked by a human
-	checked: boolean("checked").default(false),
+	checked: boolean("checked").notNull().default(false),
 	// True if this server doesn't require local access
 	remote: boolean("remote").notNull().default(false),
 	// True if this server has any connection published to npm/pypi

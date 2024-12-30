@@ -84,6 +84,8 @@ const metadataDiff = async (args: {
 }
 
 Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
+	experimentName: "crawl",
+	maxConcurrency: 1,
 	data: initDataset("Smithery", { dataset: "servers_checked" }),
 	task: async (input: string) => {
 		const entryOutput = await extractServer(input)
