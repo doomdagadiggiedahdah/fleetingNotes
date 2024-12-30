@@ -1,5 +1,5 @@
 import type { LangfuseTraceClient } from "langfuse"
-import { mcpInfo } from "../crawl/generate-entry"
+import { mcpInfo } from "../crawl/extract-server"
 import OpenAI from "openai"
 import { tracedOpenAIGenerate } from "../openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"

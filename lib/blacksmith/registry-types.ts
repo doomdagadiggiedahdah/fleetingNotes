@@ -17,7 +17,18 @@ export const ConnectionSchemaNew = ConnectionSchema.extend({
 /**
  * Schema for the model to extract new entries in the Smithery registry.
  */
+export const RegistryServerSchemaModel = RegistryServerSchema.omit({
+	verified: true,
+	published: true,
+}).extend({
+	connections: z.array(ConnectionSchemaNew),
+})
+
+/**
+ * Schema for to return for new entries in the Smithery registry.
+ */
 export const RegistryServerSchemaNew = RegistryServerSchema.omit({
+	// These are automatically set
 	verified: true,
 	published: true,
 }).extend({

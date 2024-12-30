@@ -2,22 +2,22 @@ import { OpenAI } from "openai"
 
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
-import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
 import { wrapOpenAI } from "braintrust"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import type { StdioConnection } from "../../types/server"
+import { extractRepo, getREADME, isRepositoryFork } from "../github"
 import {
 	type RegistryServerNew,
-	RegistryServerSchemaNew,
+	RegistryServerSchemaModel,
 } from "../registry-types"
-import { extractRepo, getREADME } from "../github"
+import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 
 const ajv = new Ajv()
 
 const MAX_TURNS = 15
-const REGISTRY_ENTRY_FNAME = "upsert_entry"
+const REGISTRY_FNAME = "upsert_entry"
 
 export const mcpInfo = `\
 <about>
@@ -36,11 +36,11 @@ General Architecture
 MCP uses a client-server architecture to connect host applications with multiple servers.
 
 Key Components:
-	1.	MCP Hosts: Applications like Claude Desktop, IDEs, or AI tools that request data via MCP.
-	2.	MCP Clients: Protocol clients managing one-to-one connections with MCP servers.
-	3.	MCP Servers: Lightweight programs exposing specific functionalities through MCP.
-	4.	Local Data Sources: Files, databases, and services accessible on your computer.
-	5.	Remote Services: External APIs and systems available over the internet.
+1.	MCP Hosts: Applications like Claude Desktop, IDEs, or AI tools that request data via MCP.
+2.	MCP Clients: Protocol clients managing one-to-one connections with MCP servers.
+3.	MCP Servers: Lightweight programs exposing specific functionalities through MCP.
+4.	Local Data Sources: Files, databases, and services accessible on your computer.
+5.	Remote Services: External APIs and systems available over the internet.
 
 This architecture allows seamless, secure, and standardized connections between LLMs and various data and service sources.
 </about>`
@@ -48,20 +48,20 @@ This architecture allows seamless, secure, and standardized connections between 
 const systemPrompt = `\
 ${mcpInfo}
 <task>
-You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to create new MCP entries to add to the registry.
+You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to extract new MCP entries to add to the registry.
 
 A Github repo URL and its README will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
 
 Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs. While you should leverage the README to guide your research, READMEs may contain false informations, so it's much better to double-check the code. You should be confident that each item in the list of MCPs will actually work.
 
-When you're ready to produce your output, use the \`${REGISTRY_ENTRY_FNAME}\` tool.
+When you're ready to produce your output, use the \`${REGISTRY_FNAME}\` tool.
 </task>
 
 <invalid_repos>
 Some repository links given to you might be broken, invalid, or false positives. Examples of false positives include:
 - Repos that provide a framework for building an MCP, but isn't an MCP server itself
 - Repos that aggregate a list of MCPs in a single file.
-In those cases, upsert an empty list to the \`${REGISTRY_ENTRY_FNAME}\` tool.
+In those cases, upsert an empty list to the \`${REGISTRY_FNAME}\` tool.
 </invalid_repos>
 <entry>
 
@@ -154,7 +154,7 @@ Recommended steps:
 </entry>`
 
 const BuilderRegistrySchema = z.object({
-	servers: z.array(RegistryServerSchemaNew),
+	servers: z.array(RegistryServerSchemaModel),
 })
 
 /**
@@ -174,95 +174,29 @@ export async function extractServer(input_url: string): Promise<{
 	}
 	const llm = wrapOpenAI(new OpenAI())
 
-	let outputServers: RegistryServerNew[] | null = null
 	// Connect to MCPs
 	const mcp = new MultiClient()
+
+	let outputServers: RegistryServerNew[] | null = null
 	const registry = new ServerBuilder()
 		.addTool({
-			name: REGISTRY_ENTRY_FNAME,
+			name: REGISTRY_FNAME,
 			description:
 				"Upserts the entry in the registry and evaluates the configurations.",
 			parameters: BuilderRegistrySchema,
 			execute: async (output) => {
-				const evaluated_outputs = []
-				// Test output servers by calling the command functions and do type checking
-				for (const server of output.servers) {
-					for (const connection of server.connections) {
-						if (connection.type === "stdio") {
-							// Test
-							try {
-								const validate = ajv.compile({
-									...connection.configSchema,
-									additionalProperties: false,
-								})
-
-								if (connection.exampleConfig === undefined) {
-									// Model has trouble knowing it has to create an exampleConfig
-									return {
-										content: [
-											{
-												type: "text",
-												text: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
-											},
-										],
-										isError: true,
-									}
-								}
-
-								if (!validate(connection.exampleConfig)) {
-									return {
-										content: [
-											{
-												type: "text",
-												text: `Could not validate example config against JSON Schema for server ID: ${server.id}. Error: ${JSON.stringify(validate.errors)}`,
-											},
-										],
-										isError: true,
-									}
-								}
-							} catch (e) {
-								return {
-									content: [
-										{
-											type: "text",
-											text: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
-										},
-									],
-									isError: true,
-								}
-							}
-
-							try {
-								const stdioFunction: (config: unknown) => StdioConnection =
-									// biome-ignore lint/security/noGlobalEval: <explanation>
-									eval(connection.stdioFunction)
-								const output = stdioFunction(
-									connection.exampleConfig ?? undefined,
-								)
-								evaluated_outputs.push({ id: server.id, output })
-							} catch (e) {
-								return {
-									content: [
-										{
-											type: "text",
-											text: `Error while evaluating stdioFunction for server ID: ${server.id}. Error: ${e}`,
-										},
-									],
-									isError: true,
-								}
-							}
-						}
-					}
+				const validatedOutput = validateServer(output)
+				if (validatedOutput.servers) {
+					outputServers = output.servers
 				}
-
-				outputServers = output.servers
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected.\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
+							text: validatedOutput.text,
 						},
 					],
+					isError: validatedOutput.isError,
 				}
 			},
 		})
@@ -283,8 +217,7 @@ export async function extractServer(input_url: string): Promise<{
 			command: "uvx",
 			args: ["mcp-server-fetch", "--ignore-robots-txt"],
 		}),
-
-		registry: registry,
+		registry,
 	})
 
 	const adapter = new OpenAIChatAdapter(mcp)
@@ -293,8 +226,14 @@ export async function extractServer(input_url: string): Promise<{
 	const repoInfo = await extractRepo(input_url)
 	if (!repoInfo) {
 		console.error("Invalid repo details")
-		return { outputServers, messages: [] }
+		return { outputServers: [], messages: [] }
 	}
+
+	if (await isRepositoryFork(repoInfo.owner, repoInfo.repo)) {
+		console.log("Skipping forked repository", repoInfo)
+		return { outputServers: [], messages: [] }
+	}
+
 	const [readme, listRepoResults] = await Promise.all([
 		getREADME(repoInfo.owner, repoInfo.repo),
 		mcp.callTool({
@@ -319,8 +258,7 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		},
 	]
 
-	let isDone = false
-	while (!isDone && messages.length < MAX_TURNS) {
+	for (let i = 0; i < MAX_TURNS; i++) {
 		let tools = await adapter.listTools()
 		// TODO: Only allow certain tools
 		tools = tools.filter(
@@ -331,16 +269,9 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		const response = await llm.chat.completions.create({
 			messages: messages,
 			model: "gpt-4o",
-			max_completion_tokens: 4096,
+			max_completion_tokens: 2048,
 			temperature: 0.7,
 			tools,
-			// response_format: {
-			// 	type: "json_schema",
-			// 	json_schema: {
-			// 		name: REGISTRY_ENTRY_FNAME,
-			// 		schema: zodToJsonSchema(BuilderRegistrySchema),
-			// 	},
-			// },
 		})
 		const message = response.choices[0].message
 		messages.push(message)
@@ -352,17 +283,82 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		})
 
 		messages.push(...toolMessages)
-		isDone = toolMessages.length === 0 && outputServers !== null
 		console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
 
-		if (toolMessages.length === 0 && !isDone) {
-			// No more tools used, but model did not produce an output.
-			messages.push({
-				role: "user",
-				content: `\
-${REGISTRY_ENTRY_FNAME} was not called. Try again.`,
-			})
+		if (toolMessages.length === 0) {
+			if (outputServers !== null) {
+				// We're done.
+				break
+			} else {
+				// No more tools used, but model did not produce an output.
+				messages.push({
+					role: "user",
+					content: `\
+${REGISTRY_FNAME} was not called. Try again.`,
+				})
+			}
 		}
 	}
 	return { outputServers, messages }
+}
+
+/**
+ * Validates the output of the model by calling the command functions and
+ * doing input checking.
+ */
+function validateServer(output: z.infer<typeof BuilderRegistrySchema>) {
+	const evaluated_outputs = []
+	// Test output servers by calling the command functions and do type checking
+	for (const server of output.servers) {
+		for (const connection of server.connections) {
+			if (connection.type === "stdio") {
+				// Test
+				try {
+					const validate = ajv.compile({
+						...connection.configSchema,
+						additionalProperties: false,
+					})
+
+					if (connection.exampleConfig === undefined) {
+						// Model has trouble knowing it has to create an exampleConfig
+						return {
+							message: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
+							isError: true,
+						} as const
+					}
+
+					if (!validate(connection.exampleConfig)) {
+						return {
+							message: `Could not validate example config against JSON Schema for server ID: ${server.id}. Error: ${JSON.stringify(validate.errors)}`,
+							isError: true,
+						} as const
+					}
+				} catch (e) {
+					return {
+						message: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
+						isError: true,
+					} as const
+				}
+
+				try {
+					const stdioFunction: (config: unknown) => StdioConnection =
+						// biome-ignore lint/security/noGlobalEval: <explanation>
+						eval(connection.stdioFunction)
+					const output = stdioFunction(connection.exampleConfig ?? undefined)
+					evaluated_outputs.push({ id: server.id, output })
+				} catch (e) {
+					return {
+						message: `Error while evaluating stdioFunction for server ID: ${server.id}. Error: ${e}`,
+						isError: true,
+					} as const
+				}
+			}
+		}
+	}
+
+	return {
+		servers: output.servers,
+		text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected.\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
+		isError: false,
+	} as const
 }

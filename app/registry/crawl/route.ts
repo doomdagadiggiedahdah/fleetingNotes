@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
-import { generateEntries } from "@/lib/blacksmith/crawl"
+import { crawlServers } from "@/lib/blacksmith/crawl"
 import { NextResponse } from "next/server"
 
 // const urlRegex = /https?:\/\/[^\s\)]+/g
@@ -55,6 +55,6 @@ export async function POST() {
 			.onConflictDoNothing()
 	}
 
-	await generateEntries()
+	await crawlServers()
 	return NextResponse.json({}, { status: 200 })
 }

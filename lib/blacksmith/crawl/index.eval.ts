@@ -1,6 +1,6 @@
 import { JSONDiff } from "autoevals"
 import { Eval, initDataset, initLogger } from "braintrust"
-import { extractServer } from "./generate-entry"
+import { extractServer } from "./extract-server"
 
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { omit, zip } from "lodash"
@@ -85,7 +85,7 @@ const metadataDiff = async (args: {
 
 Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
 	experimentName: "crawl",
-	maxConcurrency: 1,
+	maxConcurrency: 5,
 	data: initDataset("Smithery", { dataset: "servers_checked" }),
 	task: async (input: string) => {
 		const entryOutput = await extractServer(input)
