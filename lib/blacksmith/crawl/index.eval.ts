@@ -17,7 +17,7 @@ const connectionsDiff = async (args: {
 	output: RegistryServerNew[]
 	expected: RegistryServerNew[]
 }) => {
-	if (args.output.length !== args.expected.length) return null
+	if (args.output.length !== args.expected.length) return 0
 
 	const outputs = []
 	const expects = []
@@ -85,7 +85,7 @@ const metadataDiff = async (args: {
 
 Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
 	experimentName: "crawl",
-	maxConcurrency: 5,
+	// maxConcurrency: 1,
 	data: initDataset("Smithery", { dataset: "servers_checked" }),
 	task: async (input: string) => {
 		const entryOutput = await extractServer(input)

@@ -1,13 +1,18 @@
 import { OpenAI } from "openai"
 
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-import { MultiClient, OpenAIChatAdapter } from "@smithery/sdk"
+import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
 import Ajv from "ajv"
 import { wrapOpenAI } from "braintrust"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import type { StdioConnection } from "../../types/server"
-import { extractRepo, getREADME, isRepositoryFork } from "../github"
+import {
+	extractRepo,
+	getREADME,
+	getRepoLicense,
+	isRepositoryFork,
+} from "../github"
 import {
 	type RegistryServerNew,
 	RegistryServerSchemaModel,
@@ -16,7 +21,7 @@ import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 
 const ajv = new Ajv()
 
-const MAX_TURNS = 15
+const MAX_TURNS = 12
 const REGISTRY_FNAME = "upsert_entry"
 
 export const mcpInfo = `\
@@ -183,11 +188,13 @@ export async function extractServer(input_url: string): Promise<{
 			name: REGISTRY_FNAME,
 			description:
 				"Upserts the entry in the registry and evaluates the configurations.",
-			parameters: BuilderRegistrySchema,
+			parameters: BuilderRegistrySchema as any,
 			execute: async (output) => {
 				const validatedOutput = validateServer(output)
 				if (validatedOutput.servers) {
-					outputServers = output.servers
+					outputServers = validatedOutput.servers.map((server) => {
+						return { ...server, license: repoLicense ?? undefined }
+					})
 				}
 				return {
 					content: [
@@ -220,7 +227,7 @@ export async function extractServer(input_url: string): Promise<{
 		registry,
 	})
 
-	const adapter = new OpenAIChatAdapter(mcp)
+	const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
 
 	// Hard-coded defaults the agent should do:
 	const repoInfo = await extractRepo(input_url)
@@ -234,8 +241,9 @@ export async function extractServer(input_url: string): Promise<{
 		return { outputServers: [], messages: [] }
 	}
 
-	const [readme, listRepoResults] = await Promise.all([
+	const [readme, repoLicense, listRepoResults] = await Promise.all([
 		getREADME(repoInfo.owner, repoInfo.repo),
+		getRepoLicense(repoInfo.owner, repoInfo.repo),
 		mcp.callTool({
 			name: "gh_get_file_contents",
 			arguments: {
@@ -275,7 +283,7 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		})
 		const message = response.choices[0].message
 		messages.push(message)
-		console.log("Assistant:\n", JSON.stringify(message, null, 2))
+		// console.log("Assistant:\n", JSON.stringify(message, null, 2))
 
 		// Handle tool calls
 		const toolMessages = await adapter.callTool(response, {
@@ -283,7 +291,7 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		})
 
 		messages.push(...toolMessages)
-		console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
+		// console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
 
 		if (toolMessages.length === 0) {
 			if (outputServers !== null) {

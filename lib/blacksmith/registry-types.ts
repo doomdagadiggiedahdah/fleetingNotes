@@ -20,6 +20,7 @@ export const ConnectionSchemaNew = ConnectionSchema.extend({
 export const RegistryServerSchemaModel = RegistryServerSchema.omit({
 	verified: true,
 	published: true,
+	license: true,
 }).extend({
 	connections: z.array(ConnectionSchemaNew),
 })

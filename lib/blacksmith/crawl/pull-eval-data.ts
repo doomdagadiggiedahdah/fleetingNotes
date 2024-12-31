@@ -1,10 +1,12 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import { and, eq, getTableColumns, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 
 import { initDataset } from "braintrust"
 
 import dotenv from "dotenv"
+import { omit } from "lodash"
+import type { RegistryServer } from "@/lib/types/server"
 
 /**
  * Pulls eval data based on servers that were manually checked.
@@ -12,24 +14,22 @@ import dotenv from "dotenv"
 async function main() {
 	dotenv.config({ path: ".env.development.local" })
 
-	const { createdAt, updatedAt, verified, checked, ...selectCols } =
-		getTableColumns(servers)
 	const results = await db
-		.select({ ...selectCols })
+		.select({
+			crawlUrl: servers.crawlUrl,
+			servers: sql<any>`json_agg(row_to_json(${servers}))`.as("servers"),
+		})
 		.from(servers)
-		.where(
-			and(
-				eq(servers.checked, true),
-				// Currently only root level projects are supported
-				sql`${servers.crawlUrl} ~ '^https://github\.com/[^/]+/[^/]+$'`,
-			),
-		)
+		.where(and(eq(servers.checked, true)))
+		.groupBy(servers.crawlUrl)
 
 	const dataset = initDataset("Smithery", { dataset: "servers_checked" })
 	for (const result of results) {
 		const id = dataset.insert({
 			input: result.crawlUrl,
-			expected: [result],
+			expected: result.servers.map((s: RegistryServer) =>
+				omit(s, ["createdAt", "updatedAt", "verified", "checked"]),
+			),
 		})
 		console.log("Inserted record with id", id)
 	}

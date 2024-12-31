@@ -56,6 +56,25 @@ export async function isRepositoryFork(
 	}
 }
 
+export async function getRepoLicense(
+	owner: string,
+	repo: string,
+): Promise<string | null> {
+	try {
+		const response = await octokit.request(
+			"GET /repos/{owner}/{repo}/license",
+			{
+				owner,
+				repo,
+			},
+		)
+		return response.data.license?.spdx_id || null
+	} catch (error) {
+		// No license information
+		return null
+	}
+}
+
 /**
  * Forks the given repo into the `smithery-ai` organization.
  */
