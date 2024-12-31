@@ -192,19 +192,12 @@ export async function extractServer(input_url: string): Promise<{
 			execute: async (output) => {
 				const validatedOutput = validateServer(output)
 				if (validatedOutput.servers) {
-					outputServers = validatedOutput.servers.map((server) => {
-						return { ...server, license: repoLicense ?? undefined }
-					})
+					outputServers = validatedOutput.servers.map((server) => ({
+						...server,
+						license: repoLicense ?? undefined,
+					}))
 				}
-				return {
-					content: [
-						{
-							type: "text",
-							text: validatedOutput.text,
-						},
-					],
-					isError: validatedOutput.isError,
-				}
+				return validatedOutput.text
 			},
 		})
 		.build()
@@ -262,7 +255,7 @@ export async function extractServer(input_url: string): Promise<{
 <repo_owner>${repoInfo.owner}</repo_owner>
 <repo_name>${repoInfo.repo}</repo_name>
 ${readme ? `<readme>${readme}</readme>\n` : ""}
-<repo_root_files>${JSON.stringify(listRepoResults.content)}</repo_root_files>`,
+<repo_root_files>${JSON.stringify((listRepoResults.content as any)[0].text, null, 2)}</repo_root_files>`,
 		},
 	]
 
@@ -293,18 +286,16 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 		messages.push(...toolMessages)
 		// console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
 
+		if (outputServers !== null) {
+			// We're done.
+			break
+		}
 		if (toolMessages.length === 0) {
-			if (outputServers !== null) {
-				// We're done.
-				break
-			} else {
-				// No more tools used, but model did not produce an output.
-				messages.push({
-					role: "user",
-					content: `\
-${REGISTRY_FNAME} was not called. Try again.`,
-				})
-			}
+			// No more tools used, but model did not produce an output.
+			messages.push({
+				role: "user",
+				content: `${REGISTRY_FNAME} was not called. Try again.`,
+			})
 		}
 	}
 	return { outputServers, messages }
@@ -366,7 +357,7 @@ function validateServer(output: z.infer<typeof BuilderRegistrySchema>) {
 
 	return {
 		servers: output.servers,
-		text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected.\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
+		text: `Registry entry upserted.${evaluated_outputs.length > 0 ? ` Each server's connections was evaluated in order with the example config and produced the following connections. Check if this result is expected:\n${JSON.stringify(evaluated_outputs, null, 2)}` : ""}`,
 		isError: false,
 	} as const
 }

@@ -28,7 +28,8 @@ const connectionsDiff = async (args: {
 		args.expected,
 	)) {
 		if (!outputServer || !expectedServer) {
-			continue
+			// Mismatch on connections
+			return 0
 		}
 
 		for (let i = 0; i < expectedServer.connections.length; i++) {
