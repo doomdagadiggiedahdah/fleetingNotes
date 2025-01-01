@@ -1,6 +1,8 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
 import { crawlServers } from "@/lib/blacksmith/crawl"
+import { waitUntil } from "@vercel/functions"
+import { initLogger } from "braintrust"
 import { NextResponse } from "next/server"
 
 // const urlRegex = /https?:\/\/[^\s\)]+/g
@@ -21,6 +23,9 @@ const glama = "https://glama.ai/mcp/servers.json"
 
 export async function POST() {
 	// TODO: Validate request header.
+	const logger = initLogger({
+		projectName: "Smithery",
+	})
 
 	let urls: string[] = []
 	for (const source of sources) {
@@ -55,6 +60,7 @@ export async function POST() {
 			.onConflictDoNothing()
 	}
 
-	await crawlServers()
+	waitUntil(crawlServers())
+	waitUntil(logger.flush())
 	return NextResponse.json({}, { status: 200 })
 }

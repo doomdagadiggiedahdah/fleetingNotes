@@ -17,7 +17,9 @@ async function main() {
 	const results = await db
 		.select({
 			crawlUrl: servers.crawlUrl,
-			servers: sql<any>`json_agg(row_to_json(${servers}))`.as("servers"),
+			servers: sql<RegistryServer[]>`json_agg(row_to_json(${servers}))`.as(
+				"servers",
+			),
 		})
 		.from(servers)
 		.where(and(eq(servers.checked, true)))
@@ -27,7 +29,7 @@ async function main() {
 	for (const result of results) {
 		const id = dataset.insert({
 			input: result.crawlUrl,
-			expected: result.servers.map((s: RegistryServer) =>
+			expected: result.servers.map((s) =>
 				omit(s, ["createdAt", "updatedAt", "verified", "checked"]),
 			),
 		})
