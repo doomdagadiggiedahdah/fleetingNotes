@@ -1,7 +1,6 @@
 import { db } from "@/db"
 import { pr_queue, servers } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
-import { Langfuse, type LangfuseTraceClient } from "langfuse"
 import {
 	commitFile,
 	createBranch,
@@ -19,8 +18,7 @@ import { retry } from "@lifeomic/attempt"
 import { sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 
-async function generatePR(
-	trace: LangfuseTraceClient,
+const generatePR = wrapTraced(async function generatePR(
 	serverId: string,
 	name: string,
 	owner: string,
@@ -34,19 +32,13 @@ async function generatePR(
 	}
 
 	// 2. Generate the patched README
-	const newReadme = await patchReadme(trace, serverId, name, readme)
+	const newReadme = await patchReadme(serverId, name, readme)
 	if (!newReadme || newReadme === readme) {
 		console.log("No changes needed to README")
 		return null
 	}
 	// Generate PR message
-	const prMessage = await createPRMessage(
-		trace,
-		serverId,
-		name,
-		readme,
-		newReadme,
-	)
+	const prMessage = await createPRMessage(serverId, name, readme, newReadme)
 
 	// 3. Fork the repository to smithery-ai org
 	console.log("forking...")
@@ -105,12 +97,16 @@ async function generatePR(
 	return {
 		prUrl: pr.html_url,
 	}
-}
+})
 
 /**
  * Goes through all unprocessed URLs and generates entries for each
  */
 export async function generatePRs() {
+	const logger = initLogger({
+		projectName: "Smithery",
+	})
+
 	const rows = await db
 		.select()
 		.from(servers)
@@ -133,18 +129,8 @@ export async function generatePRs() {
 		let errored = false
 		let prUrl = null
 
-		const langfuse = new Langfuse()
-
 		try {
 			console.log("Processing server:", server.id, server.name)
-			const trace = langfuse.trace({
-				name: "blacksmith-pr",
-				input: {
-					serverId: server.id,
-					sourceUrl: server.sourceUrl,
-				},
-			})
-
 			const repoInfo = await extractRepo(server.sourceUrl)
 
 			if (!repoInfo) {
@@ -173,13 +159,7 @@ export async function generatePRs() {
 				continue
 			}
 
-			const entryOutput = await generatePR(
-				trace,
-				server.id,
-				server.name,
-				owner,
-				repo,
-			)
+			const entryOutput = await generatePR(server.id, server.name, owner, repo)
 			if (entryOutput) {
 				prUrl = entryOutput.prUrl
 			}
@@ -204,11 +184,12 @@ export async function generatePRs() {
 						errored,
 					},
 				})
-			await langfuse.shutdownAsync()
+			await logger.flush()
 		}
 	}
 }
 
 import dotenv from "dotenv"
+import { initLogger, wrapTraced } from "braintrust"
 dotenv.config()
 generatePRs()

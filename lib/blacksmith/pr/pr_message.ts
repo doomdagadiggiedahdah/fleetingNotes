@@ -1,12 +1,11 @@
-import type { LangfuseTraceClient } from "langfuse"
 import { mcpInfo } from "../crawl/extract-server"
 
 import OpenAI from "openai"
-import { tracedOpenAIGenerate } from "../openai"
 
+import { wrapOpenAI, wrapTraced } from "braintrust"
 import * as Diff from "diff"
-export async function createPRMessage(
-	trace: LangfuseTraceClient,
+
+export const createPRMessage = wrapTraced(async function createPRMessage(
 	serverId: string,
 	serverName: string,
 	oldReadme: string,
@@ -43,39 +42,34 @@ ${prMessage}
 </body>
 </pr_message>`
 
-	const llm = new OpenAI()
+	const llm = wrapOpenAI(new OpenAI())
 
-	const response = await tracedOpenAIGenerate(
-		llm,
-		trace,
-		{
-			model: "gpt-4o",
-			messages: [
-				{
-					role: "system",
-					content: prMessageSystemPrompt,
-				},
-				{
-					role: "user",
-					content: `\
+	const response = await llm.chat.completions.create({
+		model: "gpt-4o",
+		messages: [
+			{
+				role: "system",
+				content: prMessageSystemPrompt,
+			},
+			{
+				role: "user",
+				content: `\
 <server_id>${serverId}</server_id>
 <server_name>${serverName}</server_name>
 <diff>
 ${diff}
 </diff>
 Directly write the PR message body:`,
-				},
-			],
-			prediction: {
-				type: "content",
-				content: prMessage,
 			},
+		],
+		prediction: {
+			type: "content",
+			content: prMessage,
 		},
-		"create_pr_message",
-	)
+	})
 
 	const message = response.choices[0].message.content
 	if (!message) throw new Error("No PR message generated")
 
 	return message
-}
+})

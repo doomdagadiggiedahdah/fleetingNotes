@@ -1,8 +1,7 @@
-import type { LangfuseTraceClient } from "langfuse"
-import { mcpInfo } from "../crawl/extract-server"
+import { wrapOpenAI, wrapTraced } from "braintrust"
 import OpenAI from "openai"
-import { tracedOpenAIGenerate } from "../openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import { mcpInfo } from "../crawl/extract-server"
 
 export function constructPatchMessages(
 	serverId: string,
@@ -88,27 +87,21 @@ Output the new readme directly:`,
 	]
 }
 
-export async function patchReadme(
-	trace: LangfuseTraceClient,
+export const patchReadme = wrapTraced(async function patchReadme(
 	serverId: string,
 	serverName: string,
 	readme: string,
 ) {
-	const llm = new OpenAI()
+	const llm = wrapOpenAI(new OpenAI())
 
-	const response = await tracedOpenAIGenerate(
-		llm,
-		trace,
-		{
-			model: "ft:gpt-4o-2024-08-06:personal:blacksmith-pr:AhYnIY60",
-			messages: constructPatchMessages(serverId, serverName, readme),
-			prediction: {
-				type: "content",
-				content: readme,
-			},
+	const response = await llm.chat.completions.create({
+		model: "ft:gpt-4o-2024-08-06:personal:pr:AknuYBkm",
+		messages: constructPatchMessages(serverId, serverName, readme),
+		prediction: {
+			type: "content",
+			content: readme,
 		},
-		"patch_readme",
-	)
+	})
 
 	const newReadme = response.choices[0].message.content
 	if (!newReadme) throw new Error("No content generated")
@@ -118,4 +111,4 @@ export async function patchReadme(
 	const normalizedReadme = newReadme.replace(/\r\n|\n/g, inputEnding)
 
 	return normalizedReadme
-}
+})

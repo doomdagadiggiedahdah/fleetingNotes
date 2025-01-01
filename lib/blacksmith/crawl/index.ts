@@ -4,7 +4,6 @@ import { candidate_urls, servers } from "@/db/schema"
 import { and, eq, sql } from "drizzle-orm"
 import { extractServer } from "./extract-server"
 import { shuffle } from "lodash"
-import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { canonicalizeGithubUrl } from "../github"
 
 /**
@@ -49,12 +48,10 @@ export async function crawlServers() {
 	console.log("URLs to process:", urlsToCrawl.length)
 
 	for (const url of urlsToCrawl) {
-		let messages: ChatCompletionMessageParam[] = []
 		let errored = false
 		try {
 			const entryOutput = await extractServer(url)
 			const outputServers = entryOutput.outputServers
-			messages = entryOutput.messages
 			if (outputServers && outputServers.length > 0) {
 				// Insert into DB
 				try {
@@ -85,7 +82,6 @@ export async function crawlServers() {
 				.set({
 					processed: true,
 					errored,
-					log: messages,
 				})
 				.where(eq(candidate_urls.crawl_url, url))
 		}

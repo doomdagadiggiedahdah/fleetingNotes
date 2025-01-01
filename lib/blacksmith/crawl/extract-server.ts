@@ -2,6 +2,7 @@ import { OpenAI } from "openai"
 
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
+import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
 import { wrapOpenAI, wrapTraced } from "braintrust"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
@@ -17,7 +18,6 @@ import {
 	type RegistryServerNew,
 	RegistryServerSchemaModel,
 } from "../registry-types"
-import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 
 const ajv = new Ajv()
 
@@ -169,157 +169,153 @@ const BuilderRegistrySchema = z.object({
  * @param input_url - The URL of the repository to extract the server from.
  * @returns An object containing the extracted server and messages.
  */
-export const extractServer = wrapTraced(
-	async (
-		input_url: string,
-	): Promise<{
-		outputServers: RegistryServerNew[] | null
-		messages: ChatCompletionMessageParam[]
-	}> => {
-		if (!process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
-			throw new Error(
-				"GITHUB_PERSONAL_ACCESS_TOKEN environment variable is not set",
-			)
-		}
-		const llm = wrapOpenAI(new OpenAI())
+export const extractServer = wrapTraced(async function extractServer(
+	input_url: string,
+): Promise<{
+	outputServers: RegistryServerNew[] | null
+}> {
+	if (!process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+		throw new Error(
+			"GITHUB_PERSONAL_ACCESS_TOKEN environment variable is not set",
+		)
+	}
+	const llm = wrapOpenAI(new OpenAI())
 
-		// Connect to MCPs
-		const mcp = new MultiClient()
+	// Connect to MCPs
+	const mcp = new MultiClient()
 
-		let outputServers: RegistryServerNew[] | null = null
-		const registry = new ServerBuilder()
-			.addTool({
-				name: REGISTRY_FNAME,
-				description:
-					"Upserts the entry in the registry and evaluates the configurations.",
-				parameters: BuilderRegistrySchema,
-				execute: async (output) => {
-					const validatedOutput = validateServer(output)
-					if (validatedOutput.servers) {
-						outputServers = validatedOutput.servers.map((server) => ({
-							...server,
-							license: repoLicense ?? undefined,
-						}))
-					}
-					return validatedOutput.text
-				},
-			})
-			.build()
-
-		await mcp.connectAll({
-			gh: new StdioClientTransport({
-				command: "node",
-				args: [
-					"./node_modules/@modelcontextprotocol/server-github/dist/index.js",
-				],
-				env: {
-					GITHUB_PERSONAL_ACCESS_TOKEN:
-						process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-					PATH: process.env.PATH as string,
-				},
-			}),
-			fetch: new StdioClientTransport({
-				command: "uvx",
-				args: ["mcp-server-fetch", "--ignore-robots-txt"],
-			}),
-			registry,
+	let outputServers: RegistryServerNew[] | null = null
+	const registry = new ServerBuilder()
+		.addTool({
+			name: REGISTRY_FNAME,
+			description:
+				"Upserts the entry in the registry and evaluates the configurations.",
+			parameters: BuilderRegistrySchema,
+			execute: async (output) => {
+				const validatedOutput = validateServer(output)
+				if (validatedOutput.servers) {
+					outputServers = validatedOutput.servers.map((server) => ({
+						...server,
+						license: repoLicense ?? undefined,
+					}))
+				}
+				return validatedOutput.text
+			},
 		})
+		.build()
 
-		const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
+	await mcp.connectAll({
+		gh: new StdioClientTransport({
+			command: "node",
+			args: [
+				"./node_modules/@modelcontextprotocol/server-github/dist/index.js",
+			],
+			env: {
+				GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+				PATH: process.env.PATH as string,
+			},
+		}),
+		fetch: new StdioClientTransport({
+			command: "uvx",
+			args: ["mcp-server-fetch", "--ignore-robots-txt"],
+		}),
+		registry,
+	})
 
-		// Hard-coded defaults the agent should do:
-		const repoInfo = await extractRepo(input_url)
-		if (!repoInfo) {
-			console.error("Invalid repo details")
-			return { outputServers: [], messages: [] }
-		}
+	const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
 
-		if (await isRepositoryFork(repoInfo.owner, repoInfo.repo)) {
-			console.log("Skipping forked repository", repoInfo)
-			return { outputServers: [], messages: [] }
-		}
+	// Hard-coded defaults the agent should do:
+	const repoInfo = await extractRepo(input_url)
+	if (!repoInfo) {
+		console.error("Invalid repo details")
+		return { outputServers: [] }
+	}
 
-		const [readme, repoLicense, listRepoResults] = await Promise.all([
-			getREADME(repoInfo.owner, repoInfo.repo),
-			getRepoLicense(repoInfo.owner, repoInfo.repo),
-			mcp.callTool({
-				name: "gh_get_file_contents",
-				arguments: {
-					owner: repoInfo.owner,
-					repo: repoInfo.repo,
-					path: "",
-				},
-			}),
-		])
+	if (await isRepositoryFork(repoInfo.owner, repoInfo.repo)) {
+		console.log("Skipping forked repository", repoInfo)
+		return { outputServers: [] }
+	}
 
-		const listRepoText = (listRepoResults.content as Record<string, string>[])
-			.map((c) => c.text)
-			.join("\n")
+	const [readme, repoLicense, listRepoResults] = await Promise.all([
+		getREADME(repoInfo.owner, repoInfo.repo),
+		getRepoLicense(repoInfo.owner, repoInfo.repo),
+		mcp.callTool({
+			name: "gh_get_file_contents",
+			arguments: {
+				owner: repoInfo.owner,
+				repo: repoInfo.repo,
+				path: "",
+			},
+		}),
+	])
 
-		const messages: ChatCompletionMessageParam[] = [
-			{ role: "developer", content: systemPrompt },
-			{
-				role: "user",
-				content: `\
+	const listRepoText = (listRepoResults.content as Record<string, string>[])
+		.map((c) => c.text)
+		.join("\n")
+
+	const messages: ChatCompletionMessageParam[] = [
+		{ role: "developer", content: systemPrompt },
+		{
+			role: "user",
+			content: `\
 <crawl_url>${input_url}</crawl_url>
 <repo_owner>${repoInfo.owner}</repo_owner>
 <repo_name>${repoInfo.repo}</repo_name>
 ${readme ? `<readme>${readme}</readme>\n` : ""}
 <repo_root_files>${listRepoText}</repo_root_files>`,
-			},
-		]
+		},
+	]
 
-		for (let turn = 0; turn < MAX_TURNS; turn++) {
-			let tools = await adapter.listTools()
-			// Banned tools
-			tools = tools.filter(
-				(tool) =>
-					!tool.function.name.includes("gh_push_files") &&
-					!tool.function.name.includes("gh_create_issue") &&
-					!tool.function.name.includes("gh_create_pull_request") &&
-					!tool.function.name.includes("gh_fork_repository") &&
-					!tool.function.name.includes("gh_create_repository") &&
-					!tool.function.name.includes("gh_create_or_update_file") &&
-					!tool.function.name.includes("gh_create_branch"),
-			)
+	for (let turn = 0; turn < MAX_TURNS; turn++) {
+		let tools = await adapter.listTools()
+		// Banned tools
+		tools = tools.filter(
+			(tool) =>
+				!tool.function.name.includes("gh_push_files") &&
+				!tool.function.name.includes("gh_create_issue") &&
+				!tool.function.name.includes("gh_create_pull_request") &&
+				!tool.function.name.includes("gh_fork_repository") &&
+				!tool.function.name.includes("gh_create_repository") &&
+				!tool.function.name.includes("gh_create_or_update_file") &&
+				!tool.function.name.includes("gh_create_branch"),
+		)
 
-			const response = await llm.chat.completions.create({
-				messages: messages,
-				model:
-					turn < MAX_FT_TURNS
-						? "ft:gpt-4o-2024-08-06:personal:crawler:AkmI0VCD"
-						: "gpt-4o",
-				max_completion_tokens: 2048,
-				temperature: 0.9,
-				tools,
-			})
-			const message = response.choices[0].message
-			messages.push(message)
-			// console.log("Assistant:\n", JSON.stringify(message, null, 2))
+		const response = await llm.chat.completions.create({
+			messages: messages,
+			model:
+				turn < MAX_FT_TURNS
+					? "ft:gpt-4o-2024-08-06:personal:crawler:AkmI0VCD"
+					: "gpt-4o",
+			max_completion_tokens: 2048,
+			temperature: 0.9,
+			tools,
+		})
+		const message = response.choices[0].message
+		messages.push(message)
+		// console.log("Assistant:\n", JSON.stringify(message, null, 2))
 
-			// Handle tool calls
-			const toolMessages = await adapter.callTool(response, {
-				timeout: 60 * 10 * 1000,
-			})
+		// Handle tool calls
+		const toolMessages = await adapter.callTool(response, {
+			timeout: 60 * 10 * 1000,
+		})
 
-			messages.push(...toolMessages)
-			// console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
+		messages.push(...toolMessages)
+		// console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
 
-			if (outputServers !== null) {
-				// We're done.
-				break
-			}
-			if (toolMessages.length === 0) {
-				// No more tools used, but model did not produce an output.
-				messages.push({
-					role: "user",
-					content: `${REGISTRY_FNAME} was not called. Try again.`,
-				})
-			}
+		if (outputServers !== null) {
+			// We're done.
+			break
 		}
-		return { outputServers, messages }
-	},
-)
+		if (toolMessages.length === 0) {
+			// No more tools used, but model did not produce an output.
+			messages.push({
+				role: "user",
+				content: `${REGISTRY_FNAME} was not called. Try again.`,
+			})
+		}
+	}
+	return { outputServers }
+})
 
 /**
  * Validates the output of the model by calling the command functions and
