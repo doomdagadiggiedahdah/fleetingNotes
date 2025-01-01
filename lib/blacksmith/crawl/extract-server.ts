@@ -188,7 +188,7 @@ export async function extractServer(input_url: string): Promise<{
 			name: REGISTRY_FNAME,
 			description:
 				"Upserts the entry in the registry and evaluates the configurations.",
-			parameters: BuilderRegistrySchema as any,
+			parameters: BuilderRegistrySchema,
 			execute: async (output) => {
 				const validatedOutput = validateServer(output)
 				if (validatedOutput.servers) {
@@ -246,6 +246,11 @@ export async function extractServer(input_url: string): Promise<{
 			},
 		}),
 	])
+
+	const listRepoText = (listRepoResults.content as Record<string, string>[])
+		.map((c) => c.text)
+		.join("\n")
+
 	const messages: ChatCompletionMessageParam[] = [
 		{ role: "developer", content: systemPrompt },
 		{
@@ -255,21 +260,27 @@ export async function extractServer(input_url: string): Promise<{
 <repo_owner>${repoInfo.owner}</repo_owner>
 <repo_name>${repoInfo.repo}</repo_name>
 ${readme ? `<readme>${readme}</readme>\n` : ""}
-<repo_root_files>${JSON.stringify((listRepoResults.content as any)[0].text, null, 2)}</repo_root_files>`,
+<repo_root_files>${listRepoText}</repo_root_files>`,
 		},
 	]
 
 	for (let i = 0; i < MAX_TURNS; i++) {
 		let tools = await adapter.listTools()
-		// TODO: Only allow certain tools
+		// Banned tools
 		tools = tools.filter(
-			// get_file_contents
-			(tool) => !tool.function.name.includes("screenshot"),
+			(tool) =>
+				!tool.function.name.includes("gh_push_files") &&
+				!tool.function.name.includes("gh_create_issue") &&
+				!tool.function.name.includes("gh_create_pull_request") &&
+				!tool.function.name.includes("gh_fork_repository") &&
+				!tool.function.name.includes("gh_create_repository") &&
+				!tool.function.name.includes("gh_create_or_update_file") &&
+				!tool.function.name.includes("gh_create_branch"),
 		)
 
 		const response = await llm.chat.completions.create({
 			messages: messages,
-			model: "gpt-4o",
+			model: "ft:gpt-4o-2024-08-06:personal:crawler:AkmI0VCD",
 			max_completion_tokens: 2048,
 			temperature: 0.7,
 			tools,
