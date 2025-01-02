@@ -51,7 +51,7 @@ export async function crawlServers() {
 		let errored = false
 		try {
 			const entryOutput = await extractServer(url)
-			const outputServers = entryOutput.outputServers
+			const outputServers = entryOutput.servers
 			if (outputServers && outputServers.length > 0) {
 				// Insert into DB
 				try {

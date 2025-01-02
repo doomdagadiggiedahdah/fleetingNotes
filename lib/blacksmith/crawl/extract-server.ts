@@ -18,6 +18,7 @@ import {
 	type RegistryServerNew,
 	RegistryServerSchemaModel,
 } from "../registry-types"
+import { pick } from "lodash"
 
 const ajv = new Ajv()
 
@@ -172,7 +173,7 @@ const BuilderRegistrySchema = z.object({
 export const extractServer = wrapTraced(async function extractServer(
 	input_url: string,
 ): Promise<{
-	outputServers: RegistryServerNew[] | null
+	servers: RegistryServerNew[] | null
 }> {
 	if (!process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
 		throw new Error(
@@ -228,12 +229,12 @@ export const extractServer = wrapTraced(async function extractServer(
 	const repoInfo = await extractRepo(input_url)
 	if (!repoInfo) {
 		console.error("Invalid repo details")
-		return { outputServers: [] }
+		return { servers: [] }
 	}
 
 	if (await isRepositoryFork(repoInfo.owner, repoInfo.repo)) {
 		console.log("Skipping forked repository", repoInfo)
-		return { outputServers: [] }
+		return { servers: [] }
 	}
 
 	const [readme, repoLicense, listRepoResults] = await Promise.all([
@@ -250,7 +251,13 @@ export const extractServer = wrapTraced(async function extractServer(
 	])
 
 	const listRepoText = (listRepoResults.content as Record<string, string>[])
-		.map((c) => c.text)
+		.map((c) =>
+			JSON.stringify(
+				JSON.parse(c.text).map((file: object) =>
+					pick(file, ["type", "size", "name", "path"]),
+				),
+			),
+		)
 		.join("\n")
 
 	const messages: ChatCompletionMessageParam[] = [
@@ -261,8 +268,10 @@ export const extractServer = wrapTraced(async function extractServer(
 <crawl_url>${input_url}</crawl_url>
 <repo_owner>${repoInfo.owner}</repo_owner>
 <repo_name>${repoInfo.repo}</repo_name>
-${readme ? `<readme>${readme}</readme>\n` : ""}
-<repo_root_files>${listRepoText}</repo_root_files>`,
+${readme ? `<readme>\n${readme}\n</readme>\n` : ""}
+<repo_root_files>
+${listRepoText}
+</repo_root_files>`,
 		},
 	]
 
@@ -290,6 +299,7 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 			temperature: 0.9,
 			tools,
 		})
+
 		const message = response.choices[0].message
 		messages.push(message)
 		// console.log("Assistant:\n", JSON.stringify(message, null, 2))
@@ -314,7 +324,7 @@ ${readme ? `<readme>${readme}</readme>\n` : ""}
 			})
 		}
 	}
-	return { outputServers }
+	return { servers: outputServers }
 })
 
 /**

@@ -17,7 +17,11 @@ const connectionsDiff = async (args: {
 	output: RegistryServerNew[]
 	expected: RegistryServerNew[]
 }) => {
-	if (args.output.length !== args.expected.length) return 0
+	if (args.output.length !== args.expected.length)
+		return {
+			name: "Connections Diff",
+			score: 0,
+		}
 
 	const outputs = []
 	const expects = []
@@ -29,7 +33,10 @@ const connectionsDiff = async (args: {
 	)) {
 		if (!outputServer || !expectedServer) {
 			// Mismatch on connections
-			return 0
+			return {
+				name: "Connections Diff",
+				score: 0,
+			}
 		}
 
 		for (let i = 0; i < expectedServer.connections.length; i++) {
@@ -86,13 +93,13 @@ const metadataDiff = async (args: {
 
 Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
 	experimentName: "crawl",
-	// maxConcurrency: 1,
+	maxConcurrency: 10,
 	data: initDataset("Smithery", { dataset: "servers_checked" }),
 	task: async (input: string) => {
 		const entryOutput = await extractServer(input)
-		if (!entryOutput.outputServers)
+		if (!entryOutput.servers)
 			throw new Error(`Failed to extract server. ${input}`)
-		return entryOutput.outputServers
+		return entryOutput.servers
 	},
 	scores: [JSONDiff, connectionsDiff, metadataDiff],
 })

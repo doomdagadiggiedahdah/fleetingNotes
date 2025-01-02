@@ -28,6 +28,7 @@ async function main() {
 	const dataset = initDataset("Smithery", { dataset: "servers_checked" })
 	for (const result of results) {
 		const id = dataset.insert({
+			id: result.crawlUrl!,
 			input: result.crawlUrl,
 			expected: result.servers.map((s) =>
 				omit(s, ["createdAt", "updatedAt", "verified", "checked"]),

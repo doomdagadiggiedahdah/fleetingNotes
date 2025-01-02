@@ -1,5 +1,6 @@
 import dotenv from "dotenv"
 import type {
+	ChatCompletion,
 	ChatCompletionMessageParam,
 	ChatCompletionTool,
 } from "openai/resources/index.mjs"
@@ -7,6 +8,9 @@ import { initDataset } from "braintrust"
 import { isNil, omit, omitBy, pick } from "lodash"
 import fs from "node:fs"
 import path from "node:path"
+import yargs from "yargs"
+import { hideBin } from "yargs/helpers"
+
 export interface Response {
 	/**
 	 * A list of fetched events
@@ -259,9 +263,8 @@ const createTrainingDataset = (
 			// Get all messages
 			const messages: TrainingExample["messages"] = [
 				...(llmSpan.input as ChatCompletionMessageParam[]),
-				llmSpan.output.message as ChatCompletionMessageParam,
+				(llmSpan.output as unknown as ChatCompletion["choices"])[0].message,
 			]
-
 			// Find index of first registry_upsert_entry call
 			const firstUpsertIndex = messages.findIndex(
 				(msg) =>
@@ -305,7 +308,9 @@ const createTrainingDataset = (
 			if (lastMsg.role === "assistant" && lastMsg.tool_calls) {
 				// biome-ignore lint/performance/noDelete: We can't have undefined
 				delete lastMsg.content
-				lastMsg.tool_calls[0].function.arguments = JSON.stringify(expected)
+				lastMsg.tool_calls[0].function.arguments = JSON.stringify({
+					servers: expected,
+				})
 			}
 
 			const tools = (llmSpan.metadata?.tools as unknown as ChatCompletionTool[])
@@ -337,10 +342,19 @@ const createTrainingDataset = (
  * Pulls the full trace from a Braintrust experiment.
  */
 async function main() {
+	const argv = await yargs(hideBin(process.argv))
+		.option("experimentId", {
+			alias: "e",
+			type: "string",
+			description: "Braintrust experiment ID to fetch data from",
+			demandOption: true,
+		})
+		.help().argv
+
 	dotenv.config({ path: ".env.development.local" })
 
 	const resp = await fetch(
-		"https://api.braintrust.dev/v1/experiment/3568c4b1-c905-4375-97c0-11d086094f85/fetch",
+		`https://api.braintrust.dev/v1/experiment/${argv.experimentId}/fetch`,
 		{
 			headers: {
 				Authorization: `Bearer ${process.env.BRAINTRUST_API_KEY}`,
@@ -360,11 +374,11 @@ async function main() {
 	console.log(`Created ${trainingDataset.length} training examples`)
 
 	// Push to Braintrust
-	const dataset = initDataset("Smithery", { dataset: "registry_upsert_traces" })
+	const dataset = initDataset("Smithery", { dataset: "crawl_ft_dataset" })
 
 	for (const example of trainingDataset) {
 		const id = dataset.insert({
-			id: example.id,
+			id: example.input,
 			input: example.input,
 			expected: example.messages,
 		})
@@ -375,7 +389,7 @@ async function main() {
 
 	// Push dataset to JSONL file
 	// TODO: Make this general purpose "Braintrust" -> FT script
-	const outputPath = path.join("scratch", "registry_upsert_traces.jsonl")
+	const outputPath = path.join("scratch", "crawl_ft_dataset.jsonl")
 
 	fs.writeFileSync(
 		outputPath,
