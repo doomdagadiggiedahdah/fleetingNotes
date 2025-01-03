@@ -45,17 +45,25 @@ const connectionsDiff = async (args: {
 				expectedConnection.exampleConfig ??
 				createDummyConfig(expectedConnection.configSchema)
 
-			const outputConfig = generateConfig(
-				outputServer.connections[i],
-				inputConfig,
-			)
+			// Possible for a connection to be missing
+			const outputConfig = outputServer.connections[i]
+				? generateConfig(outputServer.connections[i], inputConfig)
+				: null
 			const expectedOutputConfig = generateConfig(
 				expectedConnection,
 				inputConfig,
 			)
+			if (expectedOutputConfig.error) {
+				console.error(`Invalid expected config: ${expectedOutputConfig.error}`)
+				throw new Error(
+					`Invalid expected config: ${expectedOutputConfig.error}`,
+				)
+			}
 
-			outputs.push(outputConfig)
-			expects.push(expectedOutputConfig)
+			outputs.push(outputConfig?.error ? null : outputConfig?.result)
+			expects.push(
+				expectedOutputConfig.error ? null : expectedOutputConfig.result,
+			)
 		}
 	}
 	const score = (

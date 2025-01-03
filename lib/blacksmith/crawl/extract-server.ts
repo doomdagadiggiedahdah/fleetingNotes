@@ -22,7 +22,7 @@ import { pick } from "lodash"
 
 const ajv = new Ajv()
 
-const MAX_FT_TURNS = 6
+const MAX_FT_TURNS = 8
 const MAX_TURNS = 10
 const REGISTRY_FNAME = "upsert_entry"
 
@@ -57,9 +57,9 @@ ${mcpInfo}
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt). Your goal is to explore a potential Github repository to extract new MCP entries to add to the registry.
 
-A Github repo URL and its README will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
+A Github repo URL and its root README will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
 
-Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs. While you should leverage the README to guide your research, READMEs may contain false informations, so it's much better to double-check the code. You should be confident that each item in the list of MCPs will actually work.
+Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs and read the READMEs of each MCP in their subdirectories. While you should leverage the README to guide your research, READMEs may contain mistakes, so it's much better to double-check the code. You should be confident that each item in the list of MCPs will actually work.
 
 When you're ready to produce your output, use the \`${REGISTRY_FNAME}\` tool.
 </task>
@@ -217,8 +217,8 @@ export const extractServer = wrapTraced(async function extractServer(
 			},
 		}),
 		fetch: new StdioClientTransport({
-			command: "uvx",
-			args: ["mcp-server-fetch", "--ignore-robots-txt"],
+			command: "node",
+			args: ["./node_modules/@kazuph/mcp-fetch/dist/index.js"],
 		}),
 		registry,
 	})
@@ -293,7 +293,7 @@ ${listRepoText}
 			messages: messages,
 			model:
 				turn < MAX_FT_TURNS
-					? "ft:gpt-4o-2024-08-06:personal:crawler:AkmI0VCD"
+					? "ft:gpt-4o-2024-08-06:personal:crawler:AlYAgDWy"
 					: "gpt-4o",
 			max_completion_tokens: 2048,
 			temperature: 0.9,

@@ -6,8 +6,6 @@ import type {
 } from "openai/resources/index.mjs"
 import { initDataset } from "braintrust"
 import { isNil, omit, omitBy, pick } from "lodash"
-import fs from "node:fs"
-import path from "node:path"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 
@@ -219,6 +217,24 @@ const buildSpanTree = (events: Response["events"]) => {
 	return rootSpanMap
 }
 
+const filterByConnectionAccuracy = (
+	rootSpanMap: Record<string, Response["events"]>,
+	minAccuracy = 0.0,
+): Record<string, Response["events"]> => {
+	const filteredSpans: Record<string, Response["events"]> = {}
+
+	for (const [rootSpanId, spans] of Object.entries(rootSpanMap)) {
+		// Find the span where the score is stored
+		const span = spans.find((e) => e.scores && "Connections Diff" in e.scores)
+		const connectionsDiffScore = span?.scores?.["Connections Diff"] ?? 0
+		if (connectionsDiffScore >= minAccuracy) {
+			filteredSpans[rootSpanId] = spans
+		}
+	}
+
+	return filteredSpans
+}
+
 const getLastLlmSpans = (spanTree: Record<string, Response["events"]>) => {
 	const lastLlmSpans: Record<string, Response["events"][0] | undefined> = {}
 
@@ -363,7 +379,10 @@ async function main() {
 	)
 	const data: Response = await resp.json()
 
-	const spanTree = buildSpanTree(data.events)
+	const allRootSpans = buildSpanTree(data.events)
+	console.log(`Found ${Object.keys(allRootSpans).length} root spans`)
+	const spanTree = filterByConnectionAccuracy(allRootSpans)
+	console.log(`Filtered to ${Object.keys(spanTree).length} root spans`)
 	const lastLlmSpans = getLastLlmSpans(spanTree)
 	console.log(`Found ${Object.keys(spanTree).length} root spans`)
 	console.log(
@@ -380,25 +399,12 @@ async function main() {
 		const id = dataset.insert({
 			id: example.input,
 			input: example.input,
-			expected: example.messages,
+			expected: example,
 		})
 		console.log("Inserted record with id", id)
 	}
 
 	console.log(await dataset.summarize())
-
-	// Push dataset to JSONL file
-	// TODO: Make this general purpose "Braintrust" -> FT script
-	const outputPath = path.join("scratch", "crawl_ft_dataset.jsonl")
-
-	fs.writeFileSync(
-		outputPath,
-		trainingDataset
-			.map((example) => JSON.stringify(pick(example, ["messages", "tools"])))
-			.join("\n"),
-	)
-
-	console.log(`Dumped ${trainingDataset.length} examples to ${outputPath}`)
 }
 
 main()
