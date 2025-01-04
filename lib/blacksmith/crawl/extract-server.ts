@@ -59,7 +59,7 @@ You are a maintainer of a Model Context Protocol (MCP) server registry, which li
 
 A Github repo URL and its root README will be provided to you as a starting point for you to explore. This URL is scraped from the web. The repository may contain details on how to use this MCP and its source code. You will navigate this repository to examine the source code and documentation for the MCP.
 
-Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to output a list of MCPs and read the READMEs of each MCP in their subdirectories. While you should leverage the README to guide your research, READMEs may contain mistakes, so it's much better to double-check the code. You should be confident that each item in the list of MCPs will actually work.
+Some repositories contain multiple MCPs (e.g., npm workspaces, or multiple folders, each containing an MCP) that are nested in subdirectories. In these cases, you want to read the READMEs of each MCP in their subdirectories so you can output a list of MCPs. While you should leverage the README to guide your research, so you should also double-check the code because READMEs can contain mistakes. You should be confident that each item in the list of MCPs will actually work.
 
 When you're ready to produce your output, use the \`${REGISTRY_FNAME}\` tool.
 </task>
@@ -73,19 +73,23 @@ In those cases, upsert an empty list to the \`${REGISTRY_FNAME}\` tool.
 <entry>
 
 <connections>
-After comprehensive search, if it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
+For every server you discover, you will exhaustively output a list of connections which describe all possible ways to use this server. Each connection is a command that can be executed to start/connect to the server. If it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections, indicating that the MCP server exists but it's unclear how to start it. You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
 
 Some documentation may show you how to run it locally, but not show the version that uses the published package. Whenever possible, you should prioritize the connection that uses a published package and doesn't require end-user setup or cloning the repo.
+
 If the README indicates some kind of custom installer (e.g., @smithery/cli), then you should ignore that instruction and, instead, look at the entrypoint source code to figure out how to start the MCP server.
 
 <publication>
 It may not be apparent from the repository if the package is published. You can use \`fetch\` to check.
 NPM's URL is:
-https://registry.npmjs.com/[...package_name]
+https://registry.npmjs.com/[...package_name]/latest
 Pypiy is:
 https://pypi.org/simple/[...package_name]
+Dockerhub can be:
+https://hub.docker.com/_/[...package_name] (official packages)
+https://hub.docker.com/r/[...package_name]
 
-If you use \`npx\`, you should use the \`-y\` flag to run the MCP in your command without prompting.
+If you specify an \`npx\` connection, you should use the \`-y\` flag to run the MCP in your command without prompting.
 </publication>
 
 <configs>
@@ -216,9 +220,14 @@ export const extractServer = wrapTraced(async function extractServer(
 				PATH: process.env.PATH as string,
 			},
 		}),
+		// TODO: This blocks robots
+		// fetch: new StdioClientTransport({
+		// 	command: "node",
+		// 	args: ["./node_modules/@kazuph/mcp-fetch/dist/index.js"],
+		// }),
 		fetch: new StdioClientTransport({
-			command: "node",
-			args: ["./node_modules/@kazuph/mcp-fetch/dist/index.js"],
+			command: "uvx",
+			args: ["mcp-server-fetch", "--ignore-robots-txt"],
 		}),
 		registry,
 	})
@@ -293,10 +302,12 @@ ${listRepoText}
 			messages: messages,
 			model:
 				turn < MAX_FT_TURNS
-					? "ft:gpt-4o-2024-08-06:personal:crawler:AlYAgDWy"
+					? "ft:gpt-4o-2024-08-06:personal:crawler-r:Aluz858G"
 					: "gpt-4o",
+			// "gpt-4o",
 			max_completion_tokens: 2048,
-			temperature: 0.9,
+			temperature: 1.0,
+			top_p: 0.95,
 			tools,
 		})
 
