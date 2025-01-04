@@ -4,10 +4,11 @@ import type {
 	ChatCompletionMessageParam,
 	ChatCompletionTool,
 } from "openai/resources/index.mjs"
-import { initDataset } from "braintrust"
+import { initDataset, wrapOpenAI } from "braintrust"
 import { isNil, omit, omitBy, pick } from "lodash"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
+import OpenAI from "openai"
 
 export interface Response {
 	/**
@@ -199,8 +200,12 @@ const buildSpanTree = (events: Response["events"]) => {
 	// Create a map of root spans to their subspans
 	const rootSpanMap: Record<string, Response["events"]> = {}
 
-	// First, identify all root spans and initialize their arrays
-	const rootSpans = events.filter((e) => e.is_root)
+	// First, identify all root spans
+	const rootSpans = events
+		.filter((e) => e.is_root)
+		// Ignore incorrect root spans
+		.filter((e) => !e.tags?.includes("incorrect"))
+
 	rootSpans.forEach((rootSpan) => {
 		rootSpanMap[rootSpan.span_id] = [rootSpan]
 	})
@@ -217,9 +222,19 @@ const buildSpanTree = (events: Response["events"]) => {
 	return rootSpanMap
 }
 
+/**
+ * Filters out spans that do not meet the minimum accuracy threshold or marked as correct.
+ *
+ * If it's not 100% accuracy, the search process might've been wrong.
+ * Need to manually mark those as correct via inspection
+ *
+ * @param rootSpanMap - The root span map to filter.
+ * @param minAccuracy - The minimum accuracy threshold.
+ * @returns A new root span map with spans that meet the threshold.
+ */
 const filterByConnectionAccuracy = (
 	rootSpanMap: Record<string, Response["events"]>,
-	minAccuracy = 0.0,
+	minAccuracy = 1.0,
 ): Record<string, Response["events"]> => {
 	const filteredSpans: Record<string, Response["events"]> = {}
 
@@ -227,7 +242,10 @@ const filterByConnectionAccuracy = (
 		// Find the span where the score is stored
 		const span = spans.find((e) => e.scores && "Connections Diff" in e.scores)
 		const connectionsDiffScore = span?.scores?.["Connections Diff"] ?? 0
-		if (connectionsDiffScore >= minAccuracy) {
+		if (
+			spans[0].tags?.includes("correct") ||
+			connectionsDiffScore >= minAccuracy
+		) {
 			filteredSpans[rootSpanId] = spans
 		}
 	}
@@ -261,96 +279,158 @@ interface TrainingExample {
 	tools?: ChatCompletionTool[]
 }
 
-const createTrainingDataset = (
-	rootSpanMap: Record<string, Response["events"]>,
-	lastLlmSpans: Record<string, Response["events"][0] | undefined>,
-): TrainingExample[] => {
-	const dataset: TrainingExample[] = []
+async function generateThoughts(messages: ChatCompletionMessageParam[]) {
+	const prompt = `
+You are the "assistant" - an thoughtful and smart researcher. You are given a trajectory from a conversation you had where you took an action as a step in completing a task.
 
-	for (const [rootSpanId, llmSpan] of Object.entries(lastLlmSpans)) {
-		if (!llmSpan || !llmSpan.input || !llmSpan.output) continue
+Your job is to write out the reasoning behind the last action you made. Your reasoning should concisely (max 3 sentences) describe what you observed and thoughts that led to your final action. A good reasoning chain of thought starts with the evidence and ends with the action decision.
 
-		const rootSpan = rootSpanMap[rootSpanId][0]
-		const expected = rootSpan.expected
+You must write your reasoning as if you're about to take the final action, so use present tense. Good phrases to start with are "I notice", or "I observe", or "I see" and refer to your next action with "I will". Be concise and only write about the last action. Do not repeat prior reasonings.`
 
-		if (!expected) continue
+	const llm = wrapOpenAI(new OpenAI())
 
-		try {
-			// Get all messages
-			const messages: TrainingExample["messages"] = [
-				...(llmSpan.input as ChatCompletionMessageParam[]),
-				(llmSpan.output as unknown as ChatCompletion["choices"])[0].message,
-			]
-			// Find index of first registry_upsert_entry call
-			const firstUpsertIndex = messages.findIndex(
-				(msg) =>
-					msg.role === "assistant" &&
-					msg.tool_calls?.some(
-						(call) => call.function?.name === "registry_upsert_entry",
-					),
-			)
+	const response = await llm.chat.completions.create({
+		model: "gpt-4o",
+		messages: [
+			{
+				role: "developer",
+				content: prompt,
+			},
+			{
+				role: "user",
+				content: `\`\`\`
+${JSON.stringify(messages, null, 2)}
+\`\`\`
 
-			if (firstUpsertIndex === -1) {
-				console.warn(
-					`Skipping example without registry_upsert_entry call: ${rootSpanId}`,
-				)
-				continue
-			}
+You must write your reasoning as if you're about to take the final action, so use present tense. Be concise and only write about the last action. Do not repeat prior reasonings.`,
+			},
+		],
+		temperature: 1,
+	})
+	const reasoning = response.choices[0].message.content
+	if (!reasoning) throw new Error("No reasoning generated")
+	return reasoning
+}
 
-			// Trim to first registry_upsert_entry call
-			const trimmedMessages: ChatCompletionMessageParam[] = messages
-				.slice(0, firstUpsertIndex + 1)
-				.map((msg) => ({
-					...msg,
-					// Old OpenAI format required for fine-tuning
-					role: msg.role === "developer" ? "system" : msg.role,
-					// Flatten content into string
-					content: Array.isArray(msg.content)
-						? msg.content
-								.map((part) => part.type === "text" && part.text)
-								.join("")
-						: msg.content,
-				}))
-				.map(
-					(msg) =>
-						omitBy(
-							pick(msg, ["role", "content", "tool_calls", "tool_call_id"]),
-							isNil,
-						) as unknown as ChatCompletionMessageParam,
-				)
+async function annotateAssistantMessages(
+	messages: ChatCompletionMessageParam[],
+) {
+	const annotatedMessages: ChatCompletionMessageParam[] = []
 
-			// Overwrite the registry_upsert_entry with expected output
-			const lastMsg = trimmedMessages[trimmedMessages.length - 1]
-			if (lastMsg.role === "assistant" && lastMsg.tool_calls) {
-				// biome-ignore lint/performance/noDelete: We can't have undefined
-				delete lastMsg.content
-				lastMsg.tool_calls[0].function.arguments = JSON.stringify({
-					servers: expected,
-				})
-			}
+	for (const message of messages) {
+		// Add message to conversation context
+		annotatedMessages.push(message)
 
-			const tools = (llmSpan.metadata?.tools as unknown as ChatCompletionTool[])
-				// Remove "strict" paramter from all tool calls
-				.map((tool) => ({
-					...tool,
-					function: {
-						...omit(tool.function, ["strict"]),
-					},
-				}))
+		if (message.role === "assistant") {
+			// Generate reasoning for this assistant message using the conversation context
+			const reasoning = await generateThoughts(annotatedMessages)
 
-			const example: TrainingExample = {
-				id: rootSpanId,
-				input: rootSpan.input as unknown as string,
-				messages: trimmedMessages,
-				tools,
-			}
-
-			dataset.push(example)
-		} catch (error) {
-			console.error(`Error processing span ${rootSpanId}:`, error)
+			// Add the reasoning to the message content
+			annotatedMessages[annotatedMessages.length - 1].content = reasoning.trim()
 		}
 	}
 
+	return annotatedMessages
+}
+
+const createTrainingDataset = async (
+	rootSpanMap: Record<string, Response["events"]>,
+	lastLlmSpans: Record<string, Response["events"][0] | undefined>,
+): Promise<TrainingExample[]> => {
+	const dataset: TrainingExample[] = []
+
+	const promises = Object.entries(lastLlmSpans).map(
+		async ([rootSpanId, llmSpan]) => {
+			if (!llmSpan || !llmSpan.input || !llmSpan.output) return
+
+			const rootSpan = rootSpanMap[rootSpanId][0]
+			const expected = rootSpan.expected
+
+			if (!expected) return
+
+			try {
+				// Get all messages
+				const messages: TrainingExample["messages"] = [
+					...(llmSpan.input as ChatCompletionMessageParam[]),
+					(llmSpan.output as unknown as ChatCompletion["choices"])[0].message,
+				]
+				// Find index of first registry_upsert_entry call
+				const firstUpsertIndex = messages.findIndex(
+					(msg) =>
+						msg.role === "assistant" &&
+						msg.tool_calls?.some(
+							(call) => call.function?.name === "registry_upsert_entry",
+						),
+				)
+
+				if (firstUpsertIndex === -1) {
+					console.warn(
+						`Skipping example without registry_upsert_entry call: ${rootSpanId}`,
+					)
+					return
+				}
+
+				// Trim to first registry_upsert_entry call
+				let trimmedMessages: ChatCompletionMessageParam[] = messages
+					.slice(0, firstUpsertIndex + 1)
+					.map((msg) => ({
+						...msg,
+						// Old OpenAI format required for fine-tuning
+						role: msg.role === "developer" ? "system" : msg.role,
+						// Flatten content into string
+						content: Array.isArray(msg.content)
+							? msg.content
+									.map((part) => part.type === "text" && part.text)
+									.join("")
+							: msg.content,
+					}))
+					.map(
+						(msg) =>
+							omitBy(
+								pick(msg, ["role", "content", "tool_calls", "tool_call_id"]),
+								isNil,
+							) as unknown as ChatCompletionMessageParam,
+					)
+
+				// Overwrite the registry_upsert_entry with expected output
+				const lastMsg = trimmedMessages[trimmedMessages.length - 1]
+				if (lastMsg.role === "assistant" && lastMsg.tool_calls) {
+					// biome-ignore lint/performance/noDelete: We can't have undefined
+					delete lastMsg.content
+					lastMsg.tool_calls[0].function.arguments = JSON.stringify({
+						servers: expected,
+					})
+				}
+
+				const tools = (
+					llmSpan.metadata?.tools as unknown as ChatCompletionTool[]
+				)
+					// Remove "strict" paramter from all tool calls
+					.map((tool) => ({
+						...tool,
+						function: {
+							...omit(tool.function, ["strict"]),
+						},
+					}))
+
+				// Annotate assistant messages with reasoning
+				trimmedMessages = await annotateAssistantMessages(trimmedMessages)
+
+				const example: TrainingExample = {
+					id: rootSpanId,
+					input: rootSpan.input as unknown as string,
+					messages: trimmedMessages,
+					tools,
+				}
+
+				dataset.push(example)
+			} catch (error) {
+				console.error(`Error processing span ${rootSpanId}:`, error)
+			}
+		},
+	)
+
+	await Promise.all(promises)
 	return dataset
 }
 
@@ -379,21 +459,37 @@ async function main() {
 	)
 	const data: Response = await resp.json()
 
+	const dataset = initDataset("Smithery", { dataset: "crawl_ft_dataset" })
+
+	// Load existing dataset entries and get their IDs
+	const existingDataset = await dataset.fetchedData()
+	const existingIds = new Set(existingDataset.map((entry) => entry.expected.id))
+	console.log(`Found ${existingIds.size} existing examples in dataset`)
+
 	const allRootSpans = buildSpanTree(data.events)
 	console.log(`Found ${Object.keys(allRootSpans).length} root spans`)
-	const spanTree = filterByConnectionAccuracy(allRootSpans)
-	console.log(`Filtered to ${Object.keys(spanTree).length} root spans`)
+
+	// Filter out root spans that already exist in the dataset
+	const newRootSpans = Object.fromEntries(
+		Object.entries(allRootSpans).filter(
+			([rootSpanId]) => !existingIds.has(rootSpanId),
+		),
+	)
+	console.log(`Filtered to ${Object.keys(newRootSpans).length} new root spans`)
+
+	const spanTree = filterByConnectionAccuracy(newRootSpans)
+	console.log(
+		`Filtered to ${Object.keys(spanTree).length} root spans with sufficient accuracy`,
+	)
 	const lastLlmSpans = getLastLlmSpans(spanTree)
-	console.log(`Found ${Object.keys(spanTree).length} root spans`)
 	console.log(
 		`Found ${Object.values(lastLlmSpans).filter(Boolean).length} root spans with LLM spans`,
 	)
 
-	const trainingDataset = createTrainingDataset(spanTree, lastLlmSpans)
+	const trainingDataset = await createTrainingDataset(spanTree, lastLlmSpans)
 	console.log(`Created ${trainingDataset.length} training examples`)
 
 	// Push to Braintrust
-	const dataset = initDataset("Smithery", { dataset: "crawl_ft_dataset" })
 
 	for (const example of trainingDataset) {
 		const id = dataset.insert({
