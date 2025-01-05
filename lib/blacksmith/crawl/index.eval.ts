@@ -11,7 +11,7 @@ const logger = initLogger({
 })
 
 /**
- * Measures the JSONDiff between generaetd connections objects
+ * Measures the JSONDiff between generated connections objects
  */
 const connectionsDiff = async (args: {
 	output: RegistryServerNew[]
@@ -23,8 +23,15 @@ const connectionsDiff = async (args: {
 			score: 0,
 		}
 
-	const outputs = []
-	const expects = []
+	if (args.expected.length === 0) {
+		// No expected connections
+		return {
+			name: "Connections Diff",
+			score: 1,
+		}
+	}
+
+	const serverScores: number[] = []
 
 	// TODO: These are actually sets, so arrange them by IDs
 	for (const [outputServer, expectedServer] of zip(
@@ -39,16 +46,14 @@ const connectionsDiff = async (args: {
 			}
 		}
 
-		for (let i = 0; i < expectedServer.connections.length; i++) {
-			const expectedConnection = expectedServer.connections[i]
+		// For each expected connection, calculate IoU with all output connections
+		// and take the best match
+		let totalIoU = 0
+		for (const expectedConnection of expectedServer.connections) {
 			const inputConfig =
 				expectedConnection.exampleConfig ??
 				createDummyConfig(expectedConnection.configSchema)
 
-			// Possible for a connection to be missing
-			const outputConfig = outputServer.connections[i]
-				? generateConfig(outputServer.connections[i], inputConfig)
-				: null
 			const expectedOutputConfig = generateConfig(
 				expectedConnection,
 				inputConfig,
@@ -60,22 +65,61 @@ const connectionsDiff = async (args: {
 				)
 			}
 
-			outputs.push(outputConfig?.error ? null : outputConfig?.result)
-			expects.push(
-				expectedOutputConfig.error ? null : expectedOutputConfig.result,
+			// Calculate IoU with each output connection
+			const scores = await Promise.all(
+				outputServer.connections.map(async (outputConnection) => {
+					// Consider 2 ways of generating a config - either using the expected config or the example config provided by the output connection
+
+					const outputConfig = outputConnection
+						? generateConfig(outputConnection, inputConfig)
+						: null
+
+					const outputConfigAlt = outputConnection
+						? generateConfig(
+								outputConnection,
+								outputConnection.exampleConfig ??
+									createDummyConfig(outputConnection.configSchema),
+							)
+						: null
+
+					const similarity =
+						(
+							await JSONDiff({
+								output: outputConfig?.result,
+								expected: expectedOutputConfig.result,
+							})
+						).score ?? 0
+					const similarityAlt =
+						(
+							await JSONDiff({
+								output: outputConfigAlt?.result,
+								expected: expectedOutputConfig.result,
+							})
+						).score ?? 0
+
+					return Math.max(similarity, similarityAlt)
+				}),
 			)
+
+			// Take the best matching score
+			totalIoU += Math.max(0, ...scores)
 		}
+
+		// Normalize by total number of connections (union)
+		// This penalizes both missing and extra connections
+		const totalConnections = Math.max(
+			expectedServer.connections.length,
+			outputServer.connections.length,
+		)
+		serverScores.push(totalIoU / totalConnections)
 	}
-	const score = (
-		await JSONDiff({
-			output: outputs,
-			expected: expects,
-		})
-	).score
+
+	// Average across all servers
+	const avgScore = serverScores.reduce((a, b) => a + b, 0) / serverScores.length
 
 	return {
 		name: "Connections Diff",
-		score,
+		score: avgScore,
 	}
 }
 
@@ -102,7 +146,11 @@ const metadataDiff = async (args: {
 Eval<string, RegistryServerNew[], RegistryServerNew[]>("Smithery", {
 	experimentName: "crawl",
 	maxConcurrency: 10,
-	data: initDataset("Smithery", { dataset: "servers_checked" }),
+	data: async () => {
+		const dataset = initDataset("Smithery", { dataset: "servers_checked" })
+		const data = await dataset.fetchedData()
+		return data
+	},
 	task: async (input: string) => {
 		const entryOutput = await extractServer(input)
 		if (!entryOutput.servers)
