@@ -49,6 +49,7 @@ export async function crawlServers() {
 
 	for (const url of urlsToCrawl) {
 		let errored = false
+
 		try {
 			const entryOutput = await extractServer(url)
 			const outputServers = entryOutput.servers

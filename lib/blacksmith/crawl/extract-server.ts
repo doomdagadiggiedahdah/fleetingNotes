@@ -73,9 +73,9 @@ In those cases, upsert an empty list to the \`${REGISTRY_FNAME}\` tool.
 <entry>
 
 <connections>
-For every server you discover, you will exhaustively output a list of connections which describe all possible ways to use this server. Each connection is a command that can be executed to start/connect to the server. If it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections (but still output the MCP server). You should be confident, based on the documentation or source code, that any connections you specify will work when the command is executed.
+For every server you discover, you will exhaustively output a list of connections which describe all possible ways to use this server. Each connection is a command that can be executed to start/connect to the server. If it turns out the documentation or source code does not indicate any way to start an MCP server, you should just output an empty list of connections (but still produce an entry for the server).
 
-Some documentation may show you how to run it locally, but not show the version that uses the published package. Whenever possible, you should prioritize the connection that uses a published package and doesn't require end-user setup or cloning the repo. Only when there are no published package options, then you should specify a connection that requires cloning and local setup.
+Some documentation may show you how to run the MCP locally, but not show a published edition. You should prioritize connections that uses a published package and doesn't require end-user setup or cloning the repo. If there are no published editions, then you may fallback to specifying a connection that requires local setup.
 
 If the README indicates some kind of custom installer (e.g., @smithery/cli), then you should ignore that instruction and, instead, look at the entrypoint source code to figure out how to start the MCP server.
 
@@ -90,6 +90,7 @@ https://hub.docker.com/_/[...package_name] (official packages)
 https://hub.docker.com/r/[...package_name]
 
 If you specify an \`npx\` connection, you should use the \`-y\` flag to run the MCP in your command without prompting.
+Note that it's valid to still create an entry for the package if it's not published - it will simply be a local connection.
 </publication>
 
 <configs>
@@ -296,10 +297,7 @@ ${listRepoText}
 
 		const response = await llm.chat.completions.create({
 			messages: messages,
-			model:
-				turn < MAX_FT_TURNS
-					? "ft:gpt-4o-2024-08-06:personal:crawler-r:Aluz858G"
-					: "gpt-4o",
+			model: "ft:gpt-4o-2024-08-06:personal:crawler-r2:AmIcb7yX",
 			// "gpt-4o",
 			max_completion_tokens: 2048,
 			temperature: 1.0,

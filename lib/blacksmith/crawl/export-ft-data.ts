@@ -13,7 +13,6 @@ async function main() {
 
 	const outputPath = path.join("scratch", "crawl_ft_dataset.jsonl")
 	const data = await dataset.fetchedData()
-	console.log(data)
 	fs.writeFileSync(
 		outputPath,
 		data

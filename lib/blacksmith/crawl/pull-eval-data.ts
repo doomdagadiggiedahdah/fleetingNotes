@@ -31,7 +31,15 @@ async function main() {
 			id: result.crawlUrl!,
 			input: result.crawlUrl,
 			expected: result.servers.map((s) =>
-				omit(s, ["createdAt", "updatedAt", "verified", "checked"]),
+				omit(s, [
+					"createdAt",
+					"updatedAt",
+					"verified",
+					"checked",
+					"published",
+					"crawlUrl",
+					"license",
+				]),
 			),
 		})
 		console.log("Inserted record with id", id)
