@@ -32,7 +32,6 @@ export type Database = {
 					created_at: string
 					deployment_url: string | null
 					id: string
-					log_url: string | null
 					project_id: string
 					status: string
 					updated_at: string
@@ -41,7 +40,6 @@ export type Database = {
 					created_at?: string
 					deployment_url?: string | null
 					id: string
-					log_url?: string | null
 					project_id: string
 					status: string
 					updated_at?: string
@@ -50,7 +48,6 @@ export type Database = {
 					created_at?: string
 					deployment_url?: string | null
 					id?: string
-					log_url?: string | null
 					project_id?: string
 					status?: string
 					updated_at?: string
@@ -229,35 +226,6 @@ export type Database = {
 					verified?: boolean | null
 				}
 				Relationships: []
-			}
-			upvotes: {
-				Row: {
-					created_at: string | null
-					id: string
-					server_id: string
-					user_id: string
-				}
-				Insert: {
-					created_at?: string | null
-					id?: string
-					server_id: string
-					user_id: string
-				}
-				Update: {
-					created_at?: string | null
-					id?: string
-					server_id?: string
-					user_id?: string
-				}
-				Relationships: [
-					{
-						foreignKeyName: "upvotes_server_id_servers_id_fk"
-						columns: ["server_id"]
-						isOneToOne: false
-						referencedRelation: "servers"
-						referencedColumns: ["id"]
-					},
-				]
 			}
 		}
 		Views: {

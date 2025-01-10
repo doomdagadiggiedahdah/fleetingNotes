@@ -10,7 +10,6 @@ type ServerSelection = Omit<
 	InferSelectModel<typeof servers>,
 	"crawlUrl" | "checked"
 > & {
-	upvoteCount: number
 	installCount: number
 }
 
