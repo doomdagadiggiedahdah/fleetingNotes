@@ -3,11 +3,11 @@
 import type { ServerWithStats } from "@/lib/types/client"
 import { BadgeCheck, ExternalLink } from "lucide-react"
 import Link from "next/link"
-import type { InstallTab } from "./tool-list"
 import { InstallCount } from "./install-count"
+import type { InstallTab } from "./tool-list"
 
 import { Github } from "lucide-react"
-import { UpvoteButton } from "./upvote-button"
+
 import {
 	SiAnthropic,
 	SiGithub,
@@ -61,12 +61,6 @@ export function ToolCard({
 			<div className="cursor-pointer">
 				<div className="flex items-baseline justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<div>
-							<UpvoteButton
-								serverId={server.id}
-								upvoteCount={server.upvoteCount}
-							/>
-						</div>
 						<Link
 							href={`/server/${server.id}`}
 							className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"

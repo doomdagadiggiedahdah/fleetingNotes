@@ -1,18 +1,14 @@
 import { ConnectionSchema } from "@/lib/types/server"
-import { sql } from "drizzle-orm"
 import {
 	boolean,
 	jsonb,
-	pgPolicy,
 	pgTable,
 	text,
 	timestamp,
-	unique,
 	uuid,
 } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
-import { authenticated } from "./auth"
 
 export * from "./blacksmith"
 export * from "./deployments"
@@ -64,49 +60,3 @@ export const events = pgTable("events", {
 	// Additional data associated with the event
 	payload: jsonb("payload"),
 }).enableRLS()
-
-export const upvotes = pgTable(
-	"upvotes",
-	{
-		id: uuid("id").defaultRandom().primaryKey(),
-		serverId: text("server_id")
-			.notNull()
-			.references(() => servers.id, { onDelete: "cascade" }),
-		userId: uuid("user_id").notNull(),
-		createdAt: timestamp("created_at").defaultNow(),
-	},
-	(table) => [
-		{
-			uniqueVote: unique("unique_vote").on(table.serverId, table.userId),
-		},
-		pgPolicy("Everyone can see aggregate counts", {
-			as: "permissive",
-			for: "select",
-			using: sql`EXISTS (
-				SELECT 1 FROM upvotes
-				WHERE server_id = upvotes.server_id
-				GROUP BY server_id
-			)`,
-		}),
-		pgPolicy("Users can see their own votes", {
-			as: "permissive",
-			to: authenticated,
-			for: "select",
-			using: sql`auth.uid() = user_id`,
-		}),
-		pgPolicy("Users can insert their own votes", {
-			as: "permissive",
-			to: authenticated,
-			for: "insert",
-			withCheck: sql`auth.uid() = user_id`,
-		}),
-		pgPolicy("Users can delete their own votes", {
-			as: "permissive",
-			to: authenticated,
-			for: "delete",
-			using: sql`auth.uid() = user_id`,
-		}),
-	],
-)
-
-// TODO: RLS should be enabled for this table, at least read only
