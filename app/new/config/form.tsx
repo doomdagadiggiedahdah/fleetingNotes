@@ -186,12 +186,16 @@ export default function ConfigForm({ owner, repo }: Props) {
 
 			// If all validation passes, proceed with form submission
 			setIsLoading(true)
-			await createProject({
+			const { error } = await createProject({
 				...value,
 				owner,
 				repo,
 				installationId,
 			})
+
+			if (error) {
+				throw new Error(error)
+			}
 
 			router.push(`/project/${value.id}`)
 		} catch (error) {
@@ -249,7 +253,7 @@ export default function ConfigForm({ owner, repo }: Props) {
 									/>
 								</FormControl>
 								<p className="text-sm text-muted-foreground">
-									Display Name for your project
+									Display name for your project
 								</p>
 								<FormMessage />
 							</FormItem>

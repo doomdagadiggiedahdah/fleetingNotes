@@ -1,7 +1,6 @@
 "use client"
 import { LockClosedIcon } from "@radix-ui/react-icons"
-import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
+import Link from "next/link"
 
 interface GithubRepo {
 	name: string
@@ -16,21 +15,6 @@ interface GithubRepoListProps {
 }
 
 export function GithubRepoList({ repos, isLoading }: GithubRepoListProps) {
-	const router = useRouter()
-
-	const handleImport = async (repo: GithubRepo) => {
-		try {
-			const {
-				data: { user },
-			} = await supabase.auth.getUser()
-			if (!user) throw new Error("Not authenticated")
-
-			router.push(`/new/config?owner=${repo.owner}&repo=${repo.name}`)
-		} catch (error) {
-			console.error("Error deploying product:", error)
-		}
-	}
-
 	return (
 		<div className="space-y-2">
 			{isLoading ? (
@@ -51,12 +35,12 @@ export function GithubRepoList({ repos, isLoading }: GithubRepoListProps) {
 								<LockClosedIcon className="h-4 w-4 text-neutral-400" />
 							)}
 						</div>
-						<button
-							onClick={() => handleImport(repo)}
-							className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
+						<Link
+							href={`/new/config?owner=${repo.owner}&repo=${repo.name}`}
+							className="flex items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
 						>
 							Deploy
-						</button>
+						</Link>
 					</div>
 				))
 			)}

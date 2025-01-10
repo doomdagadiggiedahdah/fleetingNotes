@@ -85,7 +85,14 @@ export const createProject = async (data: CreateProjectInputs) => {
 	} = await supabase.auth.getUser()
 
 	if (!user) {
-		throw new Error("Unauthorized")
+		return { error: "Unauthorized" }
+	}
+
+	// Check if project exists
+	const { project } = await getProject(data.id)
+
+	if (project) {
+		return { error: "Project ID already exists" }
 	}
 
 	await commitFile(data)
@@ -100,9 +107,10 @@ export const createProject = async (data: CreateProjectInputs) => {
 			repoUrl: `https://github.com/${data.owner}/${data.repo}`,
 		})
 	} catch (error) {
-		console.log(error)
-		throw new Error("Failed to create new project. (id might be taken)")
+		return { error: "Failed to create new project." }
 	}
+
+	return {}
 }
 
 // Server action to get project details
@@ -113,7 +121,7 @@ export const getProject = async (projectId: string) => {
 	} = await supabase.auth.getUser()
 
 	if (!user) {
-		throw new Error("Unauthorized")
+		return { error: "Unauthorized" }
 	}
 
 	// Get project details
@@ -125,11 +133,10 @@ export const getProject = async (projectId: string) => {
 		.single()
 
 	if (projectError) {
-		throw new Error("Failed to fetch project")
+		return { error: "Failed to fetch project" }
 	}
-
 	if (!project) {
-		throw new Error("Project not found")
+		return { error: "Project not found" }
 	}
-	return project
+	return { project }
 }
