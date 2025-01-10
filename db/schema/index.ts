@@ -4,7 +4,6 @@ import {
 	boolean,
 	jsonb,
 	pgPolicy,
-	pgRole,
 	pgTable,
 	text,
 	timestamp,
@@ -13,8 +12,12 @@ import {
 } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
+import { authenticated } from "./auth"
 
 export * from "./blacksmith"
+export * from "./deployments"
+export * from "./projects"
+export * from "./github"
 
 export const servers = pgTable("servers", {
 	id: text("id").primaryKey(),
@@ -52,9 +55,6 @@ export const selectServerSchema = createSelectSchema(servers).extend({
 
 export type Server = z.infer<typeof selectServerSchema>
 export type NewServer = z.infer<typeof insertServerSchema>
-
-export const anon = pgRole("anon").existing()
-export const authenticated = pgRole("authenticated").existing()
 
 export const events = pgTable("events", {
 	eventId: uuid("event_id").primaryKey().defaultRandom(),
@@ -108,3 +108,5 @@ export const upvotes = pgTable(
 		}),
 	],
 )
+
+// TODO: RLS should be enabled for this table, at least read only

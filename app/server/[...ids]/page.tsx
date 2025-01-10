@@ -2,7 +2,6 @@ import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/client"
-import { ServerWithStatsSchema } from "@/lib/types/client"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 
@@ -33,20 +32,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.id, serverId),
 		})
-
 		if (!result) {
 			return {}
 		}
 
-		const parsedData = ServerWithStatsSchema.safeParse(result)
-		if (!parsedData.success) {
-			return {}
-		}
-
-		const protoItem = parsedData.data
 		return {
-			title: `${protoItem.name} | Smithery`,
-			description: protoItem.description,
+			title: `${result.name} | Smithery`,
+			description: result.description,
 		}
 	} catch (e: unknown) {
 		console.error(e)

@@ -1,0 +1,24 @@
+steps:
+- name: 'gcr.io/kaniko-project/executor:latest'
+  args:
+    - --destination=us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/$_PKG_NAME:latest
+    - --cache=true
+    - --cache-ttl=24h
+    - --build-arg=REPO=$_REPO
+    - --dockerfile=$_DOCKERFILE_PATH
+
+- name: 'gcr.io/cloud-builders/gcloud'
+  script: |
+    gcloud run deploy $_PKG_NAME \
+      --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/$_PKG_NAME:latest \
+      --region us-central1 \
+      --platform managed \
+      --memory 512Mi \
+      --max-instances 1 \
+      --allow-unauthenticated
+  automapSubstitutions: true
+
+substitutions:
+  _PKG_NAME: memory-mesh
+  _REPO: https://github.com/CheMiguel23/MemoryMesh
+  _DOCKERFILE_PATH: node.Dockerfile

@@ -9,66 +9,221 @@ export type Json =
 export type Database = {
 	public: {
 		Tables: {
+			candidate_urls: {
+				Row: {
+					crawl_url: string
+					errored: boolean
+					processed: boolean
+				}
+				Insert: {
+					crawl_url: string
+					errored?: boolean
+					processed?: boolean
+				}
+				Update: {
+					crawl_url?: string
+					errored?: boolean
+					processed?: boolean
+				}
+				Relationships: []
+			}
+			deployments: {
+				Row: {
+					created_at: string
+					deployment_url: string | null
+					id: string
+					log_url: string | null
+					project_id: string
+					status: string
+					updated_at: string
+				}
+				Insert: {
+					created_at?: string
+					deployment_url?: string | null
+					id: string
+					log_url?: string | null
+					project_id: string
+					status: string
+					updated_at?: string
+				}
+				Update: {
+					created_at?: string
+					deployment_url?: string | null
+					id?: string
+					log_url?: string | null
+					project_id?: string
+					status?: string
+					updated_at?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: "deployments_project_id_projects_id_fk"
+						columns: ["project_id"]
+						isOneToOne: false
+						referencedRelation: "projects"
+						referencedColumns: ["id"]
+					},
+				]
+			}
 			events: {
 				Row: {
 					event_id: string
 					event_name: string
 					payload: Json | null
 					timestamp: string
-					user_id: string
+					user_id: string | null
 				}
 				Insert: {
 					event_id?: string
 					event_name: string
 					payload?: Json | null
 					timestamp?: string
-					user_id?: string
+					user_id?: string | null
 				}
 				Update: {
 					event_id?: string
 					event_name?: string
 					payload?: Json | null
 					timestamp?: string
+					user_id?: string | null
+				}
+				Relationships: []
+			}
+			github_installations: {
+				Row: {
+					installation_id: string
+					installed_at: string
+					setup_action: string | null
+					user_id: string
+				}
+				Insert: {
+					installation_id: string
+					installed_at: string
+					setup_action?: string | null
+					user_id: string
+				}
+				Update: {
+					installation_id?: string
+					installed_at?: string
+					setup_action?: string | null
 					user_id?: string
+				}
+				Relationships: []
+			}
+			pr_queue: {
+				Row: {
+					checked: boolean
+					created_at: string | null
+					errored: boolean
+					pr_url: string | null
+					processed: boolean
+					server_id: string
+				}
+				Insert: {
+					checked?: boolean
+					created_at?: string | null
+					errored?: boolean
+					pr_url?: string | null
+					processed?: boolean
+					server_id: string
+				}
+				Update: {
+					checked?: boolean
+					created_at?: string | null
+					errored?: boolean
+					pr_url?: string | null
+					processed?: boolean
+					server_id?: string
+				}
+				Relationships: []
+			}
+			projects: {
+				Row: {
+					created_at: string
+					description: string
+					homepage: string | null
+					id: string
+					local: boolean
+					name: string
+					owner: string
+					repo_url: string
+					updated_at: string
+				}
+				Insert: {
+					created_at?: string
+					description: string
+					homepage?: string | null
+					id: string
+					local?: boolean
+					name: string
+					owner: string
+					repo_url: string
+					updated_at?: string
+				}
+				Update: {
+					created_at?: string
+					description?: string
+					homepage?: string | null
+					id?: string
+					local?: boolean
+					name?: string
+					owner?: string
+					repo_url?: string
+					updated_at?: string
 				}
 				Relationships: []
 			}
 			servers: {
 				Row: {
+					checked: boolean
 					connections: Json
+					crawl_url: string | null
 					created_at: string | null
-					description: string | null
+					description: string
 					homepage: string | null
 					id: string
 					license: string | null
 					name: string
-					source_url: string | null
+					published: boolean
+					remote: boolean
+					source_url: string
+					tags: Json
 					updated_at: string | null
 					vendor: string | null
 					verified: boolean | null
 				}
 				Insert: {
+					checked?: boolean
 					connections: Json
+					crawl_url?: string | null
 					created_at?: string | null
-					description?: string | null
+					description: string
 					homepage?: string | null
 					id: string
 					license?: string | null
 					name: string
-					source_url?: string | null
+					published?: boolean
+					remote?: boolean
+					source_url: string
+					tags?: Json
 					updated_at?: string | null
 					vendor?: string | null
 					verified?: boolean | null
 				}
 				Update: {
+					checked?: boolean
 					connections?: Json
+					crawl_url?: string | null
 					created_at?: string | null
-					description?: string | null
+					description?: string
 					homepage?: string | null
 					id?: string
 					license?: string | null
 					name?: string
-					source_url?: string | null
+					published?: boolean
+					remote?: boolean
+					source_url?: string
+					tags?: Json
 					updated_at?: string | null
 					vendor?: string | null
 					verified?: boolean | null

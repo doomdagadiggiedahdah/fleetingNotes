@@ -1,6 +1,8 @@
 "use client"
 
+import { supabase } from "@/lib/supabase/client"
 import { Github } from "lucide-react"
+import posthog from "posthog-js"
 import { Button } from "./ui/button"
 import {
 	Dialog,
@@ -9,9 +11,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "./ui/dialog"
-import { supabase } from "@/lib/supabase_client"
-import posthog from "posthog-js"
-import { useEffect } from "react"
 
 interface AuthDialogProps {
 	open: boolean
@@ -31,20 +30,6 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 			},
 		})
 	}
-
-	useEffect(() => {
-		// Posthog events
-		supabase.auth.onAuthStateChange((event, session) => {
-			if (session) {
-				posthog.identify(session.user.id, {
-					...session.user.user_metadata,
-					email: session.user.email,
-				})
-			} else {
-				posthog.reset()
-			}
-		})
-	}, [])
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
