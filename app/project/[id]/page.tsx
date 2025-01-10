@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card"
 import { DeploymentsTable } from "./deployments-table"
 import { Header } from "@/components/header"
+import { notFound } from "next/navigation"
 
 interface Props {
 	params: {
@@ -15,8 +16,24 @@ interface Props {
 	}
 }
 
+/**
+ * Page for viewing a project's details and deployment history
+ *
+ * @example
+ * <Route path="/project/:id" element={<ProjectPage />} />
+ *
+ * @param {Object} props
+ * @prop {Object} params - The route params
+ * @prop {string} params.id - The ID of the project
+ *
+ * @returns {ReactElement} The project page
+ */
 export default async function ProjectPage({ params }: Props) {
-	const project = await getProject(params.id)
+	const { project, error } = await getProject(params.id)
+
+	if (error || !project) {
+		notFound()
+	}
 
 	return (
 		<>

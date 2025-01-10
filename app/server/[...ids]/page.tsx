@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 
 import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
+import { notFound } from "next/navigation"
 
 type Props = {
 	params: { ids: string[] }
@@ -47,9 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServerPage({ params }: Props) {
+	const serverId = decodeURIComponent(params.ids.join("/"))
 	let serverData: ServerWithStats[] = []
-	let error = ""
 
+	let error = ""
 	try {
 		const data = await getAllServers()
 		serverData = parseServerData(data)
@@ -57,11 +59,12 @@ export default async function ServerPage({ params }: Props) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
+
+	if (!serverData.find((s) => s.id === serverId)) {
+		notFound()
+	}
+
 	return (
-		<HomeSearch
-			servers={serverData}
-			error={error}
-			initialSearch={decodeURIComponent(params.ids.join("/"))}
-		/>
+		<HomeSearch servers={serverData} error={error} initialSearch={serverId} />
 	)
 }
