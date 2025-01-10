@@ -1,7 +1,10 @@
 "use client"
 
-import type { ServerWithStats } from "@/lib/types/client"
-import { BadgeCheck, ExternalLink } from "lucide-react"
+import {
+	NEW_DAYS as NEW_SERVER_DAYS,
+	type ServerWithStats,
+} from "@/lib/types/client"
+import { BadgeCheck, ExternalLink, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { InstallCount } from "./install-count"
 import type { InstallTab } from "./tool-list"
@@ -49,6 +52,12 @@ export function ToolCard({
 	setActiveTab,
 	expand,
 }: ToolCardProps) {
+	const isNew = (createdAt: Date) => {
+		const twoDaysAgo = new Date()
+		twoDaysAgo.setDate(twoDaysAgo.getDate() - NEW_SERVER_DAYS)
+		return new Date(createdAt) >= twoDaysAgo
+	}
+
 	return (
 		<div
 			role="listitem"
@@ -82,6 +91,12 @@ export function ToolCard({
 						</Link>
 						{server.verified && (
 							<BadgeCheck className="w-4 h-4 text-primary " />
+						)}
+						{server.createdAt && isNew(server.createdAt) && (
+							<div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+								<Sparkles className="w-3 h-3" />
+								New
+							</div>
 						)}
 						<div className="text-muted-foreground text-sm">{server.id}</div>
 					</div>

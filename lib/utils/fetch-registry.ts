@@ -38,6 +38,7 @@ export async function getAllServers() {
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
+			sql`CASE WHEN ${servers.createdAt} >= NOW() - INTERVAL '2 days' AND ${servers.createdAt} = (SELECT MAX(created_at) FROM servers) THEN 0 ELSE 1 END`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('server_install', 'config') THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
@@ -48,6 +49,7 @@ export function parseServerData(data: ServerSelection[]): ServerWithStats[] {
 	return data.map((item) => {
 		return {
 			...item,
+			createdAt: item.createdAt,
 			homepage: item.homepage || undefined,
 			vendor: item.vendor || undefined,
 			verified: item.verified ?? false,

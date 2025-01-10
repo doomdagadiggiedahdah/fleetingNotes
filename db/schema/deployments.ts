@@ -32,7 +32,7 @@ export const deployments = pgTable(
 	],
 )
 // TODO: Fix the RLS
-//.enableRLS()
+// .enableRLS()
 
 // Zod schemas for type safety
 export const insertDeploymentSchema = createInsertSchema(deployments)
