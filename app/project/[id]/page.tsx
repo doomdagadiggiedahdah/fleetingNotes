@@ -1,4 +1,5 @@
-import { getProject } from "@/lib/actions/project"
+import { Header } from "@/components/header"
+import { Container } from "@/components/layouts/container"
 import {
 	Card,
 	CardContent,
@@ -6,10 +7,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
-import { DeploymentsTable } from "./deployments-table"
-import { Header } from "@/components/header"
+import { getProject } from "@/lib/actions/project"
 import { notFound } from "next/navigation"
-import { Container } from "@/components/layouts/container"
+import { DeploymentsTable } from "./deployments-table"
 
 interface Props {
 	params: {
@@ -86,7 +86,7 @@ export default async function ProjectPage({ params }: Props) {
 					</CardContent>
 				</Card>
 
-				<DeploymentsTable projectId={params.id} />
+				<DeploymentsTable project={project} />
 			</Container>
 		</>
 	)

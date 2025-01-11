@@ -24,6 +24,7 @@ export const getDeployments = async (projectId: string) => {
 		.select("*")
 		.eq("project_id", projectId)
 		.order("updated_at", { ascending: false })
+		.limit(10)
 
 	if (error) {
 		throw new Error("Failed to fetch deployments")
@@ -111,6 +112,36 @@ async function getProjectLanguage(
 	return null
 }
 
+async function getCommitInfo(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	ref = "main",
+) {
+	const commit = await octokit.request(
+		"GET /repos/{owner}/{repo}/commits/{ref}",
+		{
+			owner,
+			repo,
+			ref,
+		},
+	)
+
+	// Get the branches this commit belongs to
+	const branches = await octokit.request(
+		"GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head",
+		{
+			owner,
+			repo,
+			commit_sha: commit.data.sha,
+		},
+	)
+	return {
+		...commit,
+		branch: branches.data[0]?.name || "main",
+	}
+}
+
 export async function createDeployment(data: TriggerBuildInput) {
 	const supabase = await createClient()
 
@@ -182,13 +213,10 @@ export async function createDeployment(data: TriggerBuildInput) {
 		},
 	})
 
-	const [smitheryConfig, language, latestCommit] = await Promise.all([
+	const [smitheryConfig, language, commitInfo] = await Promise.all([
 		fetchSmitheryConfig(installationOctokit, repoOwner, repoName),
 		getProjectLanguage(installationOctokit, repoOwner, repoName),
-		installationOctokit.request("GET /repos/{owner}/{repo}/commits/main", {
-			owner: repoOwner,
-			repo: repoName,
-		}),
+		getCommitInfo(installationOctokit, repoOwner, repoName),
 	])
 
 	if (!smitheryConfig) {
@@ -216,7 +244,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 				{
 					name: "gcr.io/kaniko-project/executor:latest",
 					args: [
-						`--destination=us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${repoName}:latest`,
+						`--destination=us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest`,
 						"--cache=true",
 						"--cache-ttl=24h",
 						"--dockerfile=Dockerfile",
@@ -226,8 +254,8 @@ export async function createDeployment(data: TriggerBuildInput) {
 				{
 					name: "gcr.io/cloud-builders/gcloud",
 					script: `
-            gcloud run deploy ${repoName} \\
-              --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${repoName}:latest \\
+            gcloud run deploy ${data.projectId} \\
+              --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest \\
               --region us-central1 \\
               --platform managed \\
               --memory 512Mi \\
@@ -254,11 +282,11 @@ export async function createDeployment(data: TriggerBuildInput) {
 	await db.insert(deployments).values({
 		id: buildId,
 		projectId: data.projectId,
-		status: "PENDING",
+		status: "QUEUED",
 		deploymentUrl: null,
-		commit: latestCommit.data.sha,
-		createdAt: new Date(),
-		updatedAt: new Date(),
+		commit: commitInfo.data.sha,
+		commitMessage: commitInfo.data.commit.message,
+		branch: commitInfo.branch,
 	})
 
 	return {

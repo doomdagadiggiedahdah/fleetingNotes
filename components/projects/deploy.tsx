@@ -16,6 +16,10 @@ export function DeployButton({ projectId }: { projectId: string }) {
 				try {
 					setIsLoading(true)
 					await createDeployment({ projectId })
+					toast({
+						title: "Deployment started",
+						description: "This might take a minute...",
+					})
 				} catch (error) {
 					toast({
 						title: "Failed to create deployment",

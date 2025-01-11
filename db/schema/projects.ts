@@ -1,5 +1,7 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 
+import { createSelectSchema } from "drizzle-zod"
+import type { z } from "zod"
 import { users } from "./auth"
 
 // A list of projects owned by users
@@ -20,3 +22,6 @@ export const projects = pgTable("projects", {
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }) //.enableRLS()
+
+export const selectProjectSchema = createSelectSchema(projects)
+export type Project = z.infer<typeof selectProjectSchema>

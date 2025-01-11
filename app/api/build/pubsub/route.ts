@@ -1,9 +1,28 @@
 import { db } from "@/db"
-import { deployments } from "@/db/schema"
+import { type Deployment, deployments } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
+import * as cloudRun from "@google-cloud/run"
 
-export const KEY = "A2aC3mQN%GImJ7yj"
+const KEY = "A2aC3mQN%GImJ7yj"
+
+// Shared utility for getting Cloud Run URL
+async function getCloudRunUrl(projectId: string) {
+	const cloudCredentials = JSON.parse(
+		process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
+	)
+	const run = new cloudRun.v2.ServicesClient({ credentials: cloudCredentials })
+
+	try {
+		const [service] = await run.getService({
+			name: `projects/${cloudCredentials.project_id}/locations/us-central1/services/${projectId}`,
+		})
+		return service.uri || null
+	} catch (error) {
+		console.error("Error fetching Cloud Run URL:", error)
+		return null
+	}
+}
 
 const BuildStepSchema = z.object({
 	name: z.string(),
@@ -16,9 +35,14 @@ const BuildStepSchema = z.object({
 const PubSubBuildSchema = z
 	.object({
 		id: z.string().uuid(),
-		status: z.string(),
+		status: z.enum([
+			"QUEUED",
+			"WORKING",
+			"SUCCESS",
+			"FAILURE",
+			"INTERNAL_ERROR",
+		]),
 		createTime: z.string().datetime(),
-		startTime: z.string().datetime(),
 		steps: z.array(BuildStepSchema),
 		timeout: z.string(),
 		projectId: z.string(),
@@ -47,13 +71,28 @@ export async function POST(request: Request) {
 		const json = await request.json()
 		const data = PubSubBuildSchema.parse(json)
 
-		// Update the deployment in the database
+		const updateData: Partial<Deployment> = {
+			status: data.status,
+			updatedAt: new Date(),
+		}
+
+		if (data.status === "SUCCESS") {
+			const deployment = await db.query.deployments.findFirst({
+				where: eq(deployments.id, data.id),
+				columns: { projectId: true },
+			})
+
+			if (deployment) {
+				const cloudRunUrl = await getCloudRunUrl(deployment.projectId)
+				if (cloudRunUrl) {
+					updateData.deploymentUrl = cloudRunUrl
+				}
+			}
+		}
+
 		await db
 			.update(deployments)
-			.set({
-				status: data.status,
-				updatedAt: new Date(),
-			})
+			.set(updateData)
 			.where(eq(deployments.id, data.id))
 
 		return new Response("OK", { status: 200 })

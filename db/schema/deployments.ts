@@ -1,9 +1,15 @@
-import { sql } from "drizzle-orm"
-import { pgPolicy, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
-import { authenticated } from "./auth"
 import { projects } from "./projects"
+
+export const deploymentStatus = pgEnum("deployment_status", [
+	"QUEUED",
+	"WORKING",
+	"SUCCESS",
+	"FAILURE",
+	"INTERNAL_ERROR",
+])
 
 // Track build history for projects
 export const deployments = pgTable(
@@ -13,24 +19,26 @@ export const deployments = pgTable(
 		projectId: text("project_id")
 			.notNull()
 			.references(() => projects.id),
-		status: text("status").notNull(),
+		status: deploymentStatus("status").notNull(),
+		commit: text("commit").notNull(),
+		commitMessage: text("commit_message").notNull(),
+		branch: text("branch").notNull(),
 		deploymentUrl: text("deployment_url"),
-		commit: text("commit"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
-	(table) => [
-		pgPolicy("Users can read deployments for their projects", {
-			as: "permissive",
-			to: authenticated,
-			for: "select",
-			using: sql`EXISTS (
-				SELECT 1 FROM projects 
-				WHERE projects.id = deployments.project_id 
-				AND projects.owner = auth.uid()
-			)`,
-		}),
-	],
+	// (table) => [
+	// 	pgPolicy("Users can read deployments for their projects", {
+	// 		as: "permissive",
+	// 		to: authenticated,
+	// 		for: "select",
+	// 		using: sql`EXISTS (
+	// 			SELECT 1 FROM projects
+	// 			WHERE projects.id = deployments.project_id
+	// 			AND projects.owner = auth.uid()
+	// 		)`,
+	// 	}),
+	// ],
 )
 // TODO: Fix the RLS
 // .enableRLS()

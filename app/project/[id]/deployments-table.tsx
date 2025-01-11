@@ -1,38 +1,22 @@
-import { DeployButton } from "@/components/projects/deploy"
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card"
+import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { Suspense } from "react"
 import { DeploymentsTableClient } from "./deployments-table-client"
 
+type Project = Database["public"]["Tables"]["projects"]["Row"]
+
 interface Props {
-	projectId: string
+	project: Project
 }
 
-async function DeploymentsTableContent({ projectId }: Props) {
-	const deployments = await getDeployments(projectId)
+async function DeploymentsTableContent({ project }: Props) {
+	const deployments = await getDeployments(project.id)
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-center justify-between">
-				<div>
-					<CardTitle>Deployment History</CardTitle>
-					<CardDescription>Recent deployments and their status</CardDescription>
-				</div>
-				<DeployButton projectId={projectId} />
-			</CardHeader>
-			<CardContent>
-				<DeploymentsTableClient
-					projectId={projectId}
-					initialDeployments={deployments}
-				/>
-			</CardContent>
-		</Card>
+		<DeploymentsTableClient
+			project={project}
+			initialDeployments={deployments}
+		/>
 	)
 }
 

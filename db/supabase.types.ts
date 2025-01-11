@@ -29,30 +29,36 @@ export type Database = {
 			}
 			deployments: {
 				Row: {
-					commit: string | null
+					branch: string
+					commit: string
+					commit_message: string
 					created_at: string
 					deployment_url: string | null
 					id: string
 					project_id: string
-					status: string
+					status: Database["public"]["Enums"]["deployment_status"]
 					updated_at: string
 				}
 				Insert: {
-					commit?: string | null
+					branch: string
+					commit: string
+					commit_message: string
 					created_at?: string
 					deployment_url?: string | null
 					id: string
 					project_id: string
-					status: string
+					status: Database["public"]["Enums"]["deployment_status"]
 					updated_at?: string
 				}
 				Update: {
-					commit?: string | null
+					branch?: string
+					commit?: string
+					commit_message?: string
 					created_at?: string
 					deployment_url?: string | null
 					id?: string
 					project_id?: string
-					status?: string
+					status?: Database["public"]["Enums"]["deployment_status"]
 					updated_at?: string
 				}
 				Relationships: [
@@ -238,7 +244,12 @@ export type Database = {
 			[_ in never]: never
 		}
 		Enums: {
-			[_ in never]: never
+			deployment_status:
+				| "QUEUED"
+				| "WORKING"
+				| "SUCCESS"
+				| "FAILURE"
+				| "INTERNAL_ERROR"
 		}
 		CompositeTypes: {
 			[_ in never]: never
