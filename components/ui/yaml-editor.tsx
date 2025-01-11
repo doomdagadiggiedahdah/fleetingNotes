@@ -1,5 +1,8 @@
 "use client"
 
+import { cn } from "@/lib/utils"
+import Editor, { type OnMount } from "@monaco-editor/react"
+import type { editor } from "monaco-editor"
 import {
 	forwardRef,
 	useCallback,
@@ -7,9 +10,6 @@ import {
 	useImperativeHandle,
 	useRef,
 } from "react"
-import Editor, { type OnMount } from "@monaco-editor/react"
-import type { editor } from "monaco-editor"
-import { cn } from "@/lib/utils"
 
 export interface YamlEditorProps
 	extends Omit<
@@ -56,7 +56,8 @@ const YamlEditor = forwardRef<HTMLTextAreaElement, YamlEditorProps>(
 				)}
 			>
 				<Editor
-					height="25rem"
+					// Compute height based on lines
+					height={value ? `${value.split("\n").length * 1.35}rem` : "20rem"}
 					defaultValue={value}
 					defaultLanguage="yaml"
 					theme="vs-dark"

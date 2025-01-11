@@ -9,6 +9,7 @@ import {
 import { DeploymentsTable } from "./deployments-table"
 import { Header } from "@/components/header"
 import { notFound } from "next/navigation"
+import { Container } from "@/components/layouts/container"
 
 interface Props {
 	params: {
@@ -38,7 +39,7 @@ export default async function ProjectPage({ params }: Props) {
 	return (
 		<>
 			<Header />
-			<div className="container mx-auto py-8">
+			<Container className="mt-4">
 				<div className="flex justify-between items-center mb-8">
 					<div>
 						<h1 className="text-3xl font-bold">{project.name}</h1>
@@ -86,7 +87,7 @@ export default async function ProjectPage({ params }: Props) {
 				</Card>
 
 				<DeploymentsTable projectId={params.id} />
-			</div>
+			</Container>
 		</>
 	)
 }

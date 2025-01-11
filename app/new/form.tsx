@@ -102,7 +102,7 @@ function defaultYamlConfig() {
 		" JSON Schema defining the configuration options for the MCP."
 
 	const yamlString = doc.toString()
-	return yamlString
+	return yamlString.trim()
 }
 
 type ProjectFormData = z.infer<typeof projectFormSchema>

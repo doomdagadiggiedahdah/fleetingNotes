@@ -36,7 +36,7 @@ export function GithubRepoList({ repos, isLoading }: GithubRepoListProps) {
 							)}
 						</div>
 						<Link
-							href={`/new/config?owner=${repo.owner}&repo=${repo.name}`}
+							href={`/new?owner=${repo.owner}&repo=${repo.name}`}
 							className="flex items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
 						>
 							Deploy

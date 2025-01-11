@@ -1,10 +1,11 @@
 import { SiDiscord, SiGithub } from "@icons-pack/react-simple-icons"
 import { Anvil, Plus } from "lucide-react"
 import Link from "next/link"
+import { Container } from "./layouts/container"
 export function Header() {
 	return (
 		<header className="bg-card border-b border-border">
-			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+			<Container>
 				<div className="flex items-center justify-between">
 					<Link href="/" className="text-xl font-bold hover:opacity-80">
 						<div className="flex items-center">
@@ -46,7 +47,7 @@ export function Header() {
 						</a>
 					</div>
 				</div>
-			</div>
+			</Container>
 		</header>
 	)
 }

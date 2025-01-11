@@ -13,30 +13,12 @@ const sizeClasses = {
 	lg: "max-w-[1024px]",
 }
 
-export function Container({
-	children,
-	className,
-	size = "sm",
-	centered = true,
-	...props
-}: ContainerProps) {
+export function Container({ children, className }: ContainerProps) {
 	return (
-		<div className="min-h-screen bg-background">
-			<div className="flex min-h-[calc(100vh-64px)] flex-col">
-				<div
-					className={cn(
-						"flex flex-1 flex-col px-4 sm:px-6 lg:px-8",
-						centered && "items-center pt-8",
-					)}
-				>
-					<div
-						className={cn("w-full", sizeClasses[size], className)}
-						{...props}
-					>
-						{children}
-					</div>
-				</div>
-			</div>
+		<div
+			className={cn("max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4", className)}
+		>
+			{children}
 		</div>
 	)
 }
