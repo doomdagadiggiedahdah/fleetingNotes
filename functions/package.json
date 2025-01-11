@@ -1,0 +1,21 @@
+{
+	"name": "@smithery/funcs",
+	"version": "1.0.0",
+	"private": true,
+	"module": "esm",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"deploy": "npm run build && gcloud functions deploy cloud-builds --gen2 --runtime=nodejs20 --source=. --region=us-central1 --trigger-topic=cloud-builds",
+		"emulate": "gcloud beta emulators pubsub start --project smithery-ai"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@google-cloud/functions-framework": "^3.4.5"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.3"
+	}
+}
