@@ -4,14 +4,17 @@ import { createDeployment } from "@/lib/actions/deployment"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
-export function DeployButton({ projectId }: { projectId: string }) {
+export function DeployButton({
+	projectId,
+	hasPendingBuilding,
+}: { projectId: string; hasPendingBuilding: boolean }) {
 	const { toast } = useToast()
 	const [isLoading, setIsLoading] = useState(false)
 
 	return (
 		<Button
 			type="submit"
-			disabled={isLoading}
+			disabled={isLoading || hasPendingBuilding}
 			onClick={async () => {
 				try {
 					setIsLoading(true)

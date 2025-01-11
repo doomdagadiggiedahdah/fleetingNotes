@@ -25,7 +25,8 @@ function formatBuildTime(startDate: Date, currentTime: Date) {
 	const seconds = differenceInSeconds(currentTime, startDate)
 	const minutes = Math.floor(seconds / 60)
 	const remainingSeconds = seconds % 60
-	return `${minutes}m ${remainingSeconds}s`
+	if (minutes > 0) return `${minutes}m ${remainingSeconds}s`
+	return `${remainingSeconds}s`
 }
 
 function formatTimeDisplay(date: Date, status: string, currentTime: Date) {
@@ -95,6 +96,10 @@ export function DeploymentsTableClient({ project, initialDeployments }: Props) {
 
 	const latestSuccessDeploy = deployments.find((d) => d.deployment_url)
 
+	const hasPendingBuilding = deployments.some(
+		(d) => d.status === "WORKING" || d.status === "QUEUED",
+	)
+
 	return (
 		<Card>
 			<CardHeader className="flex flex-row justify-between">
@@ -117,7 +122,10 @@ export function DeploymentsTableClient({ project, initialDeployments }: Props) {
 						)}
 					</CardDescription>
 				</div>
-				<DeployButton projectId={project.id} />
+				<DeployButton
+					projectId={project.id}
+					hasPendingBuilding={hasPendingBuilding}
+				/>
 			</CardHeader>
 			<CardContent>
 				<Table>
@@ -199,7 +207,7 @@ export function DeploymentsTableClient({ project, initialDeployments }: Props) {
 									className={`text-sm ${deployment.status === "QUEUED" ? "text-gray-500" : "text-gray-600"}`}
 								>
 									{formatTimeDisplay(
-										new Date(deployment.created_at),
+										new Date(`${deployment.created_at}Z`),
 										deployment.status,
 										timeNow,
 									)}
