@@ -29,6 +29,7 @@ export type Database = {
 			}
 			deployments: {
 				Row: {
+					commit: string | null
 					created_at: string
 					deployment_url: string | null
 					id: string
@@ -37,6 +38,7 @@ export type Database = {
 					updated_at: string
 				}
 				Insert: {
+					commit?: string | null
 					created_at?: string
 					deployment_url?: string | null
 					id: string
@@ -45,6 +47,7 @@ export type Database = {
 					updated_at?: string
 				}
 				Update: {
+					commit?: string | null
 					created_at?: string
 					deployment_url?: string | null
 					id?: string

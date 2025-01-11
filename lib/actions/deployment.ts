@@ -182,9 +182,13 @@ export async function createDeployment(data: TriggerBuildInput) {
 		},
 	})
 
-	const [smitheryConfig, language] = await Promise.all([
+	const [smitheryConfig, language, latestCommit] = await Promise.all([
 		fetchSmitheryConfig(installationOctokit, repoOwner, repoName),
 		getProjectLanguage(installationOctokit, repoOwner, repoName),
+		installationOctokit.request("GET /repos/{owner}/{repo}/commits/main", {
+			owner: repoOwner,
+			repo: repoName,
+		}),
 	])
 
 	if (!smitheryConfig) {
@@ -252,6 +256,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 		projectId: data.projectId,
 		status: "PENDING",
 		deploymentUrl: null,
+		commit: latestCommit.data.sha,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	})

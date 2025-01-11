@@ -62,8 +62,8 @@ export function DeploymentsTableClient({
 			</TableHeader>
 			<TableBody>
 				{deployments.map((deployment) => (
-					<TableRow key={deployment.id}>
-						<TableCell className="font-mono">{deployment.id}</TableCell>
+					<TableRow key={deployment.commit}>
+						<TableCell className="font-mono">{deployment.commit}</TableCell>
 						<TableCell>
 							<span
 								className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium

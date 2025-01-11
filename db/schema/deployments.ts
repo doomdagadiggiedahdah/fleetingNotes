@@ -15,6 +15,7 @@ export const deployments = pgTable(
 			.references(() => projects.id),
 		status: text("status").notNull(),
 		deploymentUrl: text("deployment_url"),
+		commit: text("commit"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
