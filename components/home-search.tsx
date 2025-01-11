@@ -2,6 +2,7 @@ import ErrorMessage from "@/components/error-message"
 import ToolList from "@/components/tool-list"
 import type { ServerWithStats } from "@/lib/types/client"
 import { Header } from "./header"
+import { Container } from "./layouts/container"
 
 export const HomeSearch = ({
 	servers,
@@ -13,9 +14,9 @@ export const HomeSearch = ({
 	initialSearch?: string
 }) => {
 	return (
-		<div className="min-h-screen bg-background">
+		<main className="min-h-screen bg-background">
 			<Header />
-			<main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<Container className="mt-4">
 				<div className="mb-8">
 					<p className="text-lg text-muted-foreground">
 						Extend your language model with {servers.length} capabilities via{" "}
@@ -35,7 +36,7 @@ export const HomeSearch = ({
 				) : (
 					<ToolList servers={servers} initialSearch={initialSearch} />
 				)}
-			</main>
-		</div>
+			</Container>
+		</main>
 	)
 }

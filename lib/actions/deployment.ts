@@ -1,12 +1,12 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
-
 import { db } from "@/db"
 import { deployments } from "@/db/schema"
+import { createClient } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
+import { parse } from "yaml"
 
 export const getDeployments = async (projectId: string) => {
 	const supabase = await createClient()
@@ -42,6 +42,73 @@ const cloudBuildClient = new CloudBuildClient({
 
 interface TriggerBuildInput {
 	projectId: string
+}
+
+function createDockerfile(repo: string, config: object) {
+	return `\
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+RUN apk add --no-cache git && \
+    git clone ${repo} . && \
+    npm ci && \
+    npm install @smithery/gateway && \
+    npm run build && \
+    npm cache clean --force
+
+
+EXPOSE 8080
+
+CMD ["npx", "@smithery/gateway", "--port", "8080", "--configb64", "${Buffer.from(JSON.stringify(config)).toString("base64")}"]`
+}
+
+async function fetchSmitheryConfig(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	ref: string | undefined = undefined,
+) {
+	try {
+		const response = await octokit.request(
+			"GET /repos/{owner}/{repo}/contents/{path}",
+			{
+				owner,
+				repo,
+				path: "smithery.yaml",
+				ref,
+			},
+		)
+
+		if (!Array.isArray(response.data) && response.data.type === "file") {
+			const content = Buffer.from(response.data.content, "base64").toString()
+			return parse(content)
+		}
+	} catch (error) {
+		console.error("Error fetching smithery.yaml:", error)
+	}
+	return null
+}
+
+async function getProjectLanguage(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	ref: string | undefined = undefined,
+): Promise<"node" | "python" | null> {
+	const { data } = await octokit.request("GET /repos/{owner}/{repo}/contents", {
+		owner,
+		repo,
+		ref,
+	})
+
+	if (Array.isArray(data)) {
+		const files = data.map((file) => file.name)
+		if (files.includes("package.json")) return "node"
+		if (files.includes("pyproject.toml")) return "python"
+	}
+
+	return null
 }
 
 export async function createDeployment(data: TriggerBuildInput) {
@@ -106,26 +173,32 @@ export async function createDeployment(data: TriggerBuildInput) {
 	})
 	const { token } = await auth({ type: "installation" })
 
-	// Get the Dockerfile contents
-	const dockerfileContents = `\
-# Wraps a nodejs-based stdio server into a sse MCP server
-FROM node:20-alpine as builder
+	const installationOctokit = new Octokit({
+		authStrategy: createAppAuth,
+		auth: {
+			appId: process.env.GITHUB_APP_ID!,
+			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+			installationId: installation.id,
+		},
+	})
 
-WORKDIR /app
+	const [smitheryConfig, language] = await Promise.all([
+		fetchSmitheryConfig(installationOctokit, repoOwner, repoName),
+		getProjectLanguage(installationOctokit, repoOwner, repoName),
+	])
 
-RUN npm i -g @smithery/gateway
+	if (!smitheryConfig) {
+		throw new Error("Failed to fetch smithery.yaml from repository root.")
+	}
 
-# Build stage with git and build dependencies
-RUN apk add --no-cache git && \
-    git clone https://x-access-token:${token}@github.com/${repoOwner}/${repoName} . && \
-    npm ci && \
-    npm run build && \
-    npm cache clean --force
+	if (language === null) {
+		throw new Error("Only Node.js or Python projects are supported.")
+	}
 
-EXPOSE 8080
-
-# TODO: Generate the config
-CMD ["npx", "-y", "@smithery/gateway", "--port", "8080", "--stdio", "npx ."]`
+	const dockerfileContents = createDockerfile(
+		`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
+		smitheryConfig,
+	)
 
 	// Trigger Cloud Build using our builder configuration
 	const [operation] = await cloudBuildClient.createBuild({

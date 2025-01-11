@@ -1,9 +1,11 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { createDeployment } from "@/lib/actions/deployment"
+import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
 export function DeployButton({ projectId }: { projectId: string }) {
+	const { toast } = useToast()
 	const [isLoading, setIsLoading] = useState(false)
 
 	return (
@@ -14,6 +16,14 @@ export function DeployButton({ projectId }: { projectId: string }) {
 				try {
 					setIsLoading(true)
 					await createDeployment({ projectId })
+				} catch (error) {
+					toast({
+						title: "Failed to create deployment",
+						description:
+							error instanceof Error
+								? error.message
+								: "An unexpected error occurred",
+					})
 				} finally {
 					setIsLoading(false)
 				}
