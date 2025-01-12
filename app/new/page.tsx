@@ -1,4 +1,4 @@
-import { NewProject } from "@/components/new-project"
+import { UserRepoList } from "@/components/github/user-repo-list"
 import ConfigForm from "./form"
 
 interface Props {
@@ -13,7 +13,7 @@ export default function NewPage({ searchParams }: Props) {
 	const repo = searchParams.repo
 
 	if (!owner || !repo) {
-		return <NewProject />
+		return <UserRepoList />
 	}
 
 	return <ConfigForm owner={owner} repo={repo} />

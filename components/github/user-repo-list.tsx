@@ -1,13 +1,13 @@
 "use client"
 import { getGithubUser, type GithubUser } from "@/lib/auth/github"
 import { useEffect, useState } from "react"
-import { GithubAuthButton } from "./github/github-auth-button"
-import { RepoSelector } from "./github/repo-selector"
+import { GithubAuthButton } from "./github-auth-button"
+import { RepoSelector } from "./repo-selector"
 
 /**
  * Components for setting up a new project.
  */
-export function NewProject() {
+export function UserRepoList() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [ghUser, setGhUser] = useState<GithubUser | null>(null)
 
