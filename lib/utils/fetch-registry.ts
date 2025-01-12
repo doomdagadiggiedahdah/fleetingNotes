@@ -16,6 +16,7 @@ type ServerSelection = Omit<
 export async function getAllServers() {
 	return await db
 		.select({
+			uuid: servers.uuid,
 			id: servers.id,
 			name: servers.name,
 			description: servers.description,
@@ -34,7 +35,7 @@ export async function getAllServers() {
 		})
 		.from(servers)
 		.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
-		.groupBy(servers.id)
+		.groupBy(servers.uuid)
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
