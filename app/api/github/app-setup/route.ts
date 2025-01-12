@@ -25,22 +25,22 @@ export async function GET(request: Request) {
 		// TODO: Check for installation ID spoofing
 
 		// Store the installation in Supabase
-		const { error } = await supabase.from("github_installations").upsert(
-			{
-				installation_id: installationId,
-				user_id: session.user.id,
-				setup_action: setupAction,
-				installed_at: new Date().toISOString(),
-			},
-			{
-				onConflict: "installation_id",
-			},
-		)
+		// const { error } = await supabase.from("github_installations").upsert(
+		// 	{
+		// 		installation_id: installationId,
+		// 		user_id: session.user.id,
+		// 		setup_action: setupAction,
+		// 		installed_at: new Date().toISOString(),
+		// 	},
+		// 	{
+		// 		onConflict: "installation_id",
+		// 	},
+		// )
 
-		if (error) {
-			console.error("Failed to store installation:", error)
-			return new Response("Failed to store installation", { status: 500 })
-		}
+		// if (error) {
+		// 	console.error("Failed to store installation:", error)
+		// 	return new Response("Failed to store installation", { status: 500 })
+		// }
 
 		// Return HTML that closes the popup and refreshes the parent
 		return new Response(
