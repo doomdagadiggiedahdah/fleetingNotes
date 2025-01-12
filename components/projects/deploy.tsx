@@ -18,7 +18,8 @@ export function DeployButton({
 			onClick={async () => {
 				try {
 					setIsLoading(true)
-					await createDeployment({ projectId })
+					const { error } = await createDeployment({ projectId })
+					if (error) throw new Error(error)
 					toast({
 						title: "Deployment started",
 						description: "This might take a minute...",

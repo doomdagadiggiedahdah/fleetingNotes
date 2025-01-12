@@ -75,7 +75,7 @@ export function DeploymentsTableClient({ project, initialDeployments }: Props) {
 				(payload) => {
 					setDeployments((prev) =>
 						prev.map((dep) =>
-							dep.id === payload.new.id ? (payload.new as Deployment) : dep,
+							dep.id === payload.old.id ? (payload.new as Deployment) : dep,
 						),
 					)
 				},
@@ -139,7 +139,7 @@ export function DeploymentsTableClient({ project, initialDeployments }: Props) {
 					</TableHeader>
 					<TableBody>
 						{deployments.map((deployment) => (
-							<TableRow key={deployment.commit}>
+							<TableRow key={deployment.id}>
 								<TableCell>
 									<div>
 										<div className="flex items-center gap-2">

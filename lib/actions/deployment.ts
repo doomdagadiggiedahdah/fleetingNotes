@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
-import { parse } from "yaml"
+import YAML from "yaml"
 
 export const getDeployments = async (projectId: string) => {
 	const supabase = await createClient()
@@ -45,29 +45,45 @@ interface TriggerBuildInput {
 	projectId: string
 }
 
-function createDockerfile(repo: string, config: object) {
+function createDockerfile(baseImage: string, config: object) {
 	return `\
-FROM node:20-alpine as builder
+# Stage 1: Use the developer's original image
+FROM ${baseImage} as userimage
 
-WORKDIR /app
+# Stage 2: Add Smithery gateway
+FROM userimage
 
-RUN apk add --no-cache git && \
-    git clone ${repo} . && \
-    npm ci && \
-    npm install @smithery/gateway && \
-    npm run build && \
-    npm cache clean --force
+# Install Node.js and npm if not already present
+RUN if ! command -v node > /dev/null; then \
+      if command -v apt-get > /dev/null; then \
+        apt-get update && apt-get install -y nodejs npm; \
+      elif command -v apk > /dev/null; then \
+        apk add --no-cache nodejs npm; \
+      elif command -v yum > /dev/null; then \
+        yum install -y nodejs npm; \
+      elif command -v dnf > /dev/null; then \
+        dnf install -y nodejs npm; \
+      else \
+        echo "No supported package manager found (tried: apt-get, apk, yum, dnf)" && exit 1; \
+      fi \
+    fi
 
+# Install Smithery gateway
+RUN npm install -g @smithery/gateway
 
+# Expose port for gateway
 EXPOSE 8080
 
-CMD ["npx", "@smithery/gateway", "--port", "8080", "--configb64", "${Buffer.from(JSON.stringify(config)).toString("base64")}"]`
+# Use gateway as the entrypoint, which will manage the original command
+ENTRYPOINT ["npx", "@smithery/gateway"]
+CMD ["--port", "8080", "--configb64", "${Buffer.from(JSON.stringify(config)).toString("base64")}"]`
 }
 
-async function fetchSmitheryConfig(
+async function getGithubFile(
 	octokit: Octokit,
 	owner: string,
 	repo: string,
+	path: string,
 	ref: string | undefined = undefined,
 ) {
 	try {
@@ -76,39 +92,18 @@ async function fetchSmitheryConfig(
 			{
 				owner,
 				repo,
-				path: "smithery.yaml",
+				path,
 				ref,
 			},
 		)
 
 		if (!Array.isArray(response.data) && response.data.type === "file") {
 			const content = Buffer.from(response.data.content, "base64").toString()
-			return parse(content)
+			return content
 		}
 	} catch (error) {
 		console.error("Error fetching smithery.yaml:", error)
 	}
-	return null
-}
-
-async function getProjectLanguage(
-	octokit: Octokit,
-	owner: string,
-	repo: string,
-	ref: string | undefined = undefined,
-): Promise<"node" | "python" | null> {
-	const { data } = await octokit.request("GET /repos/{owner}/{repo}/contents", {
-		owner,
-		repo,
-		ref,
-	})
-
-	if (Array.isArray(data)) {
-		const files = data.map((file) => file.name)
-		if (files.includes("package.json")) return "node"
-		if (files.includes("pyproject.toml")) return "python"
-	}
-
 	return null
 }
 
@@ -150,7 +145,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	} = await supabase.auth.getUser()
 
 	if (!user) {
-		throw new Error("Unauthorized")
+		return { error: "Unauthorized" }
 	}
 
 	// Get project details
@@ -162,17 +157,17 @@ export async function createDeployment(data: TriggerBuildInput) {
 
 	if (error || !project) {
 		console.error("Error:", error)
-		throw new Error("Project not found")
+		return { error: "Project not found" }
 	}
 
 	if (project.owner !== user.id) {
-		throw new Error("Unauthorized")
+		return { error: "Unauthorized" }
 	}
 
 	// Parse repo URL to get owner and repo name
 	const repoUrlMatch = project.repo_url.match(/github\.com\/([^\/]+)\/([^\/]+)/)
 	if (!repoUrlMatch) {
-		throw new Error("Invalid repository URL")
+		return { error: "Invalid repository URL" }
 	}
 	const [, repoOwner, repoName] = repoUrlMatch
 
@@ -193,7 +188,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	)
 
 	if (!installation) {
-		throw new Error("GitHub App not installed for this repository")
+		return { error: "GitHub App not installed for this repository" }
 	}
 
 	// Get installation token
@@ -213,84 +208,120 @@ export async function createDeployment(data: TriggerBuildInput) {
 		},
 	})
 
-	const [smitheryConfig, language, commitInfo] = await Promise.all([
-		fetchSmitheryConfig(installationOctokit, repoOwner, repoName),
-		getProjectLanguage(installationOctokit, repoOwner, repoName),
+	const [smitheryFile, dockerfile, commitInfo] = await Promise.all([
+		getGithubFile(installationOctokit, repoOwner, repoName, "smithery.yaml"),
+		getGithubFile(installationOctokit, repoOwner, repoName, "Dockerfile"),
 		getCommitInfo(installationOctokit, repoOwner, repoName),
 	])
 
-	if (!smitheryConfig) {
-		throw new Error("Failed to fetch smithery.yaml from repository root.")
+	if (!smitheryFile) {
+		return { error: "Failed to fetch smithery.yaml from repository root" }
+	}
+	if (!dockerfile) {
+		return { error: "Failed to fetch Dockerfile from repository root" }
 	}
 
-	if (language === null) {
-		throw new Error("Only Node.js or Python projects are supported.")
+	let smitheryConfig: object
+	try {
+		smitheryConfig = YAML.parse(smitheryFile)
+	} catch (e) {
+		console.error(e)
+		return { error: "Unable to parse YAML file." }
 	}
 
 	const dockerfileContents = createDockerfile(
-		`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
+		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
 		smitheryConfig,
 	)
 
-	// Trigger Cloud Build using our builder configuration
-	const [operation] = await cloudBuildClient.createBuild({
-		projectId: cloudCredentials.project_id,
-		build: {
-			steps: [
-				{
-					name: "ubuntu",
-					script: `cat > Dockerfile << 'EOL'\n${dockerfileContents}\nEOL`,
-				},
-				{
-					name: "gcr.io/kaniko-project/executor:latest",
-					args: [
-						`--destination=us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest`,
-						"--cache=true",
-						"--cache-ttl=24h",
-						"--dockerfile=Dockerfile",
-					],
+	try {
+		// Trigger Cloud Build using our builder configuration
+		const [operation] = await cloudBuildClient.createBuild({
+			projectId: cloudCredentials.project_id,
+			build: {
+				steps: [
+					// Clone the repo
+					{
+						name: "gcr.io/cloud-builders/git",
+						args: [
+							"clone",
+							`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
+							".",
+						],
+					},
+					// Build user's image
+					{
+						name: "gcr.io/cloud-builders/docker",
+						env: ["DOCKER_BUILDKIT=1"],
+						args: [
+							"build",
+							"-t",
+							`us-central1-docker.pkg.dev/$PROJECT_ID/smithery-user-servers/${data.projectId}:latest`,
+							"-f",
+							"Dockerfile",
+							".",
+						],
+					},
+					// Build our layer on top
+					{
+						name: "ubuntu",
+						script: `cat > Dockerfile.smithery << 'EOL'\n${dockerfileContents}\nEOL`,
+					},
+					{
+						name: "gcr.io/cloud-builders/docker",
+						args: [
+							"build",
+							"-t",
+							`us-central1-docker.pkg.dev/$PROJECT_ID/smithery-servers/${data.projectId}:latest`,
+							"-f",
+							"Dockerfile.smithery",
+							".",
+						],
+					},
+					{
+						name: "gcr.io/cloud-builders/gcloud",
+						script: `
+				gcloud run deploy ${data.projectId} \\
+				  --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest \\
+				  --region us-central1 \\
+				  --platform managed \\
+				  --memory 512Mi \\
+				  --max-instances 1 \\
+				  --allow-unauthenticated
+			  `,
+					},
+				],
+				options: {
 					automapSubstitutions: true,
+					logging: "CLOUD_LOGGING_ONLY",
 				},
-				{
-					name: "gcr.io/cloud-builders/gcloud",
-					script: `
-            gcloud run deploy ${data.projectId} \\
-              --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest \\
-              --region us-central1 \\
-              --platform managed \\
-              --memory 512Mi \\
-              --max-instances 1 \\
-              --allow-unauthenticated
-          `,
-					automapSubstitutions: true,
-				},
-			],
-			options: {
-				logging: "CLOUD_LOGGING_ONLY",
 			},
-		},
-	})
+		})
 
-	// Create build record
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const buildMeta = operation.metadata as any
-	const buildId = buildMeta.build?.id
-	if (!buildId) {
-		throw new Error("Failed to get build ID from Cloud Build")
-	}
+		// Create build record
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const buildMeta = operation.metadata as any
+		const buildId = buildMeta.build?.id
+		if (!buildId) {
+			return { error: "Failed to generate build ID." }
+		}
 
-	await db.insert(deployments).values({
-		id: buildId,
-		projectId: data.projectId,
-		status: "QUEUED",
-		deploymentUrl: null,
-		commit: commitInfo.data.sha,
-		commitMessage: commitInfo.data.commit.message,
-		branch: commitInfo.branch,
-	})
+		await db.insert(deployments).values({
+			id: buildId,
+			projectId: data.projectId,
+			status: "QUEUED",
+			deploymentUrl: null,
+			commit: commitInfo.data.sha,
+			commitMessage: commitInfo.data.commit.message,
+			branch: commitInfo.branch,
+		})
 
-	return {
-		buildId,
-		status: "started",
+		return {
+			buildId,
+			status: "started",
+		}
+	} catch (error) {
+		console.error("Cloud Build error:", error)
+		return { error: "Failed to trigger deployment." }
 	}
 }
