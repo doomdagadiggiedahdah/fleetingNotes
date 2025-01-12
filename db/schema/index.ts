@@ -13,7 +13,6 @@ import type { z } from "zod"
 export * from "./blacksmith"
 export * from "./deployments"
 export * from "./projects"
-export * from "./github"
 
 export const servers = pgTable("servers", {
 	id: text("id").primaryKey(),

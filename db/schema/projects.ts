@@ -1,8 +1,8 @@
 import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import { authUsers } from "drizzle-orm/supabase"
 
 import { createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
-import { users } from "./auth"
 
 // A list of projects owned by users
 export const projects = pgTable("projects", {
@@ -11,7 +11,7 @@ export const projects = pgTable("projects", {
 	// User who owns this project
 	owner: uuid("owner")
 		.notNull()
-		.references(() => users.id),
+		.references(() => authUsers.id),
 
 	name: text("name").notNull(),
 	description: text("description").notNull(),
@@ -21,7 +21,7 @@ export const projects = pgTable("projects", {
 	local: boolean("local").notNull().default(false),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}) //.enableRLS()
+}).enableRLS()
 
 export const selectProjectSchema = createSelectSchema(projects)
 export type Project = z.infer<typeof selectProjectSchema>

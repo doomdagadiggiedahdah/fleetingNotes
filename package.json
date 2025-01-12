@@ -49,8 +49,6 @@
 		"date-fns": "^4.1.0",
 		"diff": "^7.0.0",
 		"dotenv": "^16.4.7",
-		"drizzle-orm": "^0.38.1",
-		"drizzle-zod": "^0.6.0",
 		"json-schema-to-zod": "^2.5.0",
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
@@ -67,7 +65,9 @@
 		"tailwindcss-animate": "^1.0.7",
 		"yaml": "^2.7.0",
 		"zod": "^3.24.1",
-		"zod-to-json-schema": "^3.24.1"
+		"zod-to-json-schema": "^3.24.1",
+		"drizzle-orm": "^0.38.3",
+		"drizzle-zod": "^0.6.1"
 	},
 	"devDependencies": {
 		"@types/diff": "^6.0.0",
@@ -76,7 +76,7 @@
 		"@types/react": "^18",
 		"@types/react-dom": "^18",
 		"@types/yargs": "^17.0.33",
-		"drizzle-kit": "^0.30.0",
+		"drizzle-kit": "^0.30.1",
 		"eslint": "^8",
 		"eslint-config-next": "14.2.16",
 		"postcss": "^8",
