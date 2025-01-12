@@ -255,11 +255,20 @@ export async function createDeployment(data: TriggerBuildInput) {
 						env: ["DOCKER_BUILDKIT=1"],
 						args: [
 							"build",
+							"--pull",
 							"-t",
-							`us-central1-docker.pkg.dev/$PROJECT_ID/smithery-user-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
 							"-f",
 							"Dockerfile",
 							".",
+						],
+					},
+					// Push user's image
+					{
+						name: "gcr.io/cloud-builders/docker",
+						args: [
+							"push",
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
 						],
 					},
 					// Build our layer on top
@@ -272,17 +281,25 @@ export async function createDeployment(data: TriggerBuildInput) {
 						args: [
 							"build",
 							"-t",
-							`us-central1-docker.pkg.dev/$PROJECT_ID/smithery-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest`,
 							"-f",
 							"Dockerfile.smithery",
 							".",
+						],
+					},
+					// Push final image
+					{
+						name: "gcr.io/cloud-builders/docker",
+						args: [
+							"push",
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest`,
 						],
 					},
 					{
 						name: "gcr.io/cloud-builders/gcloud",
 						script: `
 				gcloud run deploy ${data.projectId} \\
-				  --image us-central1-docker.pkg.dev/$PROJECT_ID/smithery-projects/${data.projectId}:latest \\
+				  --image us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest \\
 				  --region us-central1 \\
 				  --platform managed \\
 				  --memory 512Mi \\
@@ -295,6 +312,10 @@ export async function createDeployment(data: TriggerBuildInput) {
 					automapSubstitutions: true,
 					logging: "CLOUD_LOGGING_ONLY",
 				},
+				images: [
+					// For caching purposes
+					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
+				],
 			},
 		})
 
