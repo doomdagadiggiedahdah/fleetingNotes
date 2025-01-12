@@ -10,7 +10,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 const ReturnTypeSchema = RegistryServerSchema.pick({
-	id: true,
+	qualifiedName: true,
 	displayName: true,
 }).extend({
 	connections: z.array(

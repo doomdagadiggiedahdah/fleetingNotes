@@ -130,7 +130,7 @@ export async function generatePRs() {
 		let prUrl = null
 
 		try {
-			console.log("Processing server:", server.id, server.name)
+			console.log("Processing server:", server.qualifiedName)
 			const repoInfo = await extractRepo(server.sourceUrl)
 
 			if (!repoInfo) {
@@ -159,7 +159,12 @@ export async function generatePRs() {
 				continue
 			}
 
-			const entryOutput = await generatePR(server.id, server.name, owner, repo)
+			const entryOutput = await generatePR(
+				server.id,
+				server.qualifiedName,
+				owner,
+				repo,
+			)
 			if (entryOutput) {
 				prUrl = entryOutput.prUrl
 			}

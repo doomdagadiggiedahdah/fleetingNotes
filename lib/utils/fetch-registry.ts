@@ -8,7 +8,7 @@ import type { InferSelectModel } from "drizzle-orm"
 
 type ServerSelection = Omit<
 	InferSelectModel<typeof servers>,
-	"crawlUrl" | "checked"
+	"crawlUrl" | "checked" | "owner"
 > & {
 	installCount: number
 }
@@ -16,7 +16,7 @@ type ServerSelection = Omit<
 export async function getAllServers() {
 	return await db
 		.select({
-			uuid: servers.id,
+			id: servers.id,
 			qualifiedName: servers.qualifiedName,
 			displayName: servers.displayName,
 			description: servers.description,
@@ -30,6 +30,7 @@ export async function getAllServers() {
 			updatedAt: servers.updatedAt,
 			remote: servers.remote,
 			published: servers.published,
+			deploymentUrl: servers.deploymentUrl,
 			tags: servers.tags,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('server_install', 'config') THEN ${events.eventId} END)::int`,
 		})
