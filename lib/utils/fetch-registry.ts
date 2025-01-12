@@ -16,9 +16,9 @@ type ServerSelection = Omit<
 export async function getAllServers() {
 	return await db
 		.select({
-			uuid: servers.uuid,
-			id: servers.id,
-			name: servers.name,
+			uuid: servers.id,
+			qualifiedName: servers.qualifiedName,
+			displayName: servers.displayName,
 			description: servers.description,
 			vendor: servers.vendor,
 			sourceUrl: servers.sourceUrl,
@@ -34,8 +34,8 @@ export async function getAllServers() {
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('server_install', 'config') THEN ${events.eventId} END)::int`,
 		})
 		.from(servers)
-		.leftJoin(events, sql`${servers.id} = payload->>'serverId'`)
-		.groupBy(servers.uuid)
+		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
+		.groupBy(servers.id)
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,

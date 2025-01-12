@@ -115,7 +115,7 @@ export async function generatePRs() {
 				sql`NOT EXISTS (
           SELECT 1 FROM ${pr_queue}
           WHERE
-            ${servers.id} = ${pr_queue.serverId}
+            ${servers.qualifiedName} = ${pr_queue.serverId}
         )`,
 				eq(servers.published, true),
 			),

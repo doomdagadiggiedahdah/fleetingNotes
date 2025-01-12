@@ -14,8 +14,8 @@ export default function ToolList({
 	const filterTools = (query: string) => {
 		return servers.filter(
 			(tool) =>
-				tool.id.toLowerCase().includes(query.toLowerCase()) ||
-				tool.name.toLowerCase().includes(query.toLowerCase()) ||
+				tool.qualifiedName.toLowerCase().includes(query.toLowerCase()) ||
+				tool.displayName.toLowerCase().includes(query.toLowerCase()) ||
 				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
 		)
 	}
@@ -29,7 +29,7 @@ export default function ToolList({
 	const displayedTools = filterTools(searchQuery).slice(0, page * 10)
 
 	const [expandedToolId, setExpandedToolId] = useState<string | null>(
-		displayedTools.length > 0 ? displayedTools[0].id : null,
+		displayedTools.length > 0 ? displayedTools[0].qualifiedName : null,
 	)
 	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
 
@@ -48,11 +48,11 @@ export default function ToolList({
 			<div className="space-y-4 mt-4">
 				{displayedTools.map((tool) => (
 					<ToolCard
-						key={tool.id}
+						key={tool.qualifiedName}
 						server={tool}
 						activeTab={activeTab}
-						isExpanded={expandedToolId === tool.id}
-						expand={() => setExpandedToolId(tool.id)}
+						isExpanded={expandedToolId === tool.qualifiedName}
+						expand={() => setExpandedToolId(tool.qualifiedName)}
 						setActiveTab={setActiveTab}
 					/>
 				))}

@@ -22,11 +22,11 @@ export async function pullTrainingData() {
 		.select({
 			prUrl: pr_queue.prUrl,
 			serverId: pr_queue.serverId,
-			serverName: servers.name,
+			serverName: servers.displayName,
 			checked: pr_queue.checked,
 		})
 		.from(pr_queue)
-		.innerJoin(servers, eq(servers.id, pr_queue.serverId))
+		.innerJoin(servers, eq(servers.qualifiedName, pr_queue.serverId))
 		.where(isNotNull(pr_queue.prUrl))
 
 	const trainingData: TrainingExample[] = []

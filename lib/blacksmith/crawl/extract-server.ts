@@ -352,20 +352,20 @@ function validateServer(output: z.infer<typeof BuilderRegistrySchema>) {
 					if (connection.exampleConfig === undefined) {
 						// Model has trouble knowing it has to create an exampleConfig
 						return {
-							message: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.id}.`,
+							message: `Error: exampleConfig is not defined for one of the connections of server ID: ${server.qualifiedName}.`,
 							isError: true,
 						} as const
 					}
 
 					if (!validate(connection.exampleConfig)) {
 						return {
-							message: `Could not validate example config against JSON Schema for server ID: ${server.id}. Error: ${JSON.stringify(validate.errors)}`,
+							message: `Could not validate example config against JSON Schema for server ID: ${server.qualifiedName}. Error: ${JSON.stringify(validate.errors)}`,
 							isError: true,
 						} as const
 					}
 				} catch (e) {
 					return {
-						message: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.id}. Error: ${e}`,
+						message: `Could not compile JSON Schema \`configSchema\` for server ID: ${server.qualifiedName}. Error: ${e}`,
 						isError: true,
 					} as const
 				}
@@ -375,10 +375,10 @@ function validateServer(output: z.infer<typeof BuilderRegistrySchema>) {
 						// biome-ignore lint/security/noGlobalEval: <explanation>
 						eval(connection.stdioFunction)
 					const output = stdioFunction(connection.exampleConfig ?? undefined)
-					evaluated_outputs.push({ id: server.id, output })
+					evaluated_outputs.push({ id: server.qualifiedName, output })
 				} catch (e) {
 					return {
-						message: `Error while evaluating stdioFunction for server ID: ${server.id}. Error: ${e}`,
+						message: `Error while evaluating stdioFunction for server ID: ${server.qualifiedName}. Error: ${e}`,
 						isError: true,
 					} as const
 				}

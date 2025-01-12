@@ -95,27 +95,6 @@ export type Database = {
 				}
 				Relationships: []
 			}
-			github_installations: {
-				Row: {
-					installation_id: string
-					installed_at: string
-					setup_action: string | null
-					user_id: string
-				}
-				Insert: {
-					installation_id: string
-					installed_at: string
-					setup_action?: string | null
-					user_id: string
-				}
-				Update: {
-					installation_id?: string
-					installed_at?: string
-					setup_action?: string | null
-					user_id?: string
-				}
-				Relationships: []
-			}
 			pr_queue: {
 				Row: {
 					checked: boolean
@@ -179,22 +158,63 @@ export type Database = {
 				}
 				Relationships: []
 			}
+			server_repos: {
+				Row: {
+					created_at: string
+					id: string
+					owner: string
+					repo: string
+					server_id: string
+					type: Database["public"]["Enums"]["provider"]
+					updated_at: string
+				}
+				Insert: {
+					created_at?: string
+					id: string
+					owner: string
+					repo: string
+					server_id: string
+					type: Database["public"]["Enums"]["provider"]
+					updated_at?: string
+				}
+				Update: {
+					created_at?: string
+					id?: string
+					owner?: string
+					repo?: string
+					server_id?: string
+					type?: Database["public"]["Enums"]["provider"]
+					updated_at?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: "server_repos_server_id_servers_uuid_fk"
+						columns: ["server_id"]
+						isOneToOne: false
+						referencedRelation: "servers"
+						referencedColumns: ["uuid"]
+					},
+				]
+			}
 			servers: {
 				Row: {
 					checked: boolean
 					connections: Json
 					crawl_url: string | null
 					created_at: string | null
+					deployment_url: string | null
 					description: string
 					homepage: string | null
 					id: string
 					license: string | null
 					name: string
+					owner: string | null
 					published: boolean
 					remote: boolean
 					source_url: string
 					tags: Json
 					updated_at: string | null
+					uuid: string
 					vendor: string | null
 					verified: boolean | null
 				}
@@ -203,16 +223,19 @@ export type Database = {
 					connections: Json
 					crawl_url?: string | null
 					created_at?: string | null
+					deployment_url?: string | null
 					description: string
 					homepage?: string | null
 					id: string
 					license?: string | null
 					name: string
+					owner?: string | null
 					published?: boolean
 					remote?: boolean
 					source_url: string
 					tags?: Json
 					updated_at?: string | null
+					uuid?: string
 					vendor?: string | null
 					verified?: boolean | null
 				}
@@ -221,16 +244,19 @@ export type Database = {
 					connections?: Json
 					crawl_url?: string | null
 					created_at?: string | null
+					deployment_url?: string | null
 					description?: string
 					homepage?: string | null
 					id?: string
 					license?: string | null
 					name?: string
+					owner?: string | null
 					published?: boolean
 					remote?: boolean
 					source_url?: string
 					tags?: Json
 					updated_at?: string | null
+					uuid?: string
 					vendor?: string | null
 					verified?: boolean | null
 				}
@@ -250,6 +276,7 @@ export type Database = {
 				| "SUCCESS"
 				| "FAILURE"
 				| "INTERNAL_ERROR"
+			provider: "github"
 		}
 		CompositeTypes: {
 			[_ in never]: never

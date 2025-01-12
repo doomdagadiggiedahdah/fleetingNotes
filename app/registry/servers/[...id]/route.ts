@@ -11,7 +11,7 @@ import { z } from "zod"
 
 const ReturnTypeSchema = RegistryServerSchema.pick({
 	id: true,
-	name: true,
+	displayName: true,
 }).extend({
 	connections: z.array(
 		z.object({
@@ -29,7 +29,7 @@ export async function GET(
 	try {
 		const serverId = params.id.join("/")
 		const result = await db.query.servers.findFirst({
-			where: eq(servers.id, serverId),
+			where: eq(servers.qualifiedName, serverId),
 		})
 
 		if (!result) {
@@ -68,7 +68,7 @@ export async function POST(
 	const serverId = params.id.join("/")
 	try {
 		const result = await db.query.servers.findFirst({
-			where: eq(servers.id, serverId),
+			where: eq(servers.qualifiedName, serverId),
 		})
 
 		if (!result) {

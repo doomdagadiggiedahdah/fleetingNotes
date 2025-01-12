@@ -18,10 +18,10 @@ export async function generateStaticParams() {
 	// Get all server IDs from the database
 	const servers = await db.query.servers.findMany({
 		columns: {
-			id: true,
+			qualifiedName: true,
 		},
 	})
-	const serverIds = servers.map((s) => s.id)
+	const serverIds = servers.map((s) => s.qualifiedName)
 	return serverIds.map((id) => ({
 		ids: id.split("/"),
 	}))
@@ -31,14 +31,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	const serverId = decodeURIComponent(params.ids.join("/"))
 	try {
 		const result = await db.query.servers.findFirst({
-			where: eq(servers.id, serverId),
+			where: eq(servers.qualifiedName, serverId),
 		})
 		if (!result) {
 			return {}
 		}
 
 		return {
-			title: `${result.name} | Smithery`,
+			title: `${result.displayName} | Smithery`,
 			description: result.description,
 		}
 	} catch (e: unknown) {
@@ -60,7 +60,7 @@ export default async function ServerPage({ params }: Props) {
 		error = "An unexpected error occurred"
 	}
 
-	if (!serverData.find((s) => s.id === serverId)) {
+	if (!serverData.find((s) => s.qualifiedName === serverId)) {
 		notFound()
 	}
 

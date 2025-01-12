@@ -14,10 +14,10 @@ import type { z } from "zod"
 
 export const servers = pgTable("servers", {
 	// Stable ID
-	uuid: uuid("uuid").primaryKey().defaultRandom(),
+	id: uuid("id").primaryKey().defaultRandom(),
 	// Qualified name of the server
-	id: text("id").notNull(),
-	name: text("name").notNull(),
+	qualifiedName: text("qualifiedName").notNull().unique(),
+	displayName: text("displayName").notNull(),
 	description: text("description").notNull(),
 	vendor: text("vendor"),
 	sourceUrl: text("source_url").notNull(),
@@ -65,7 +65,7 @@ export const serverRepos = pgTable("server_repos", {
 	id: uuid("id").primaryKey(),
 	serverId: uuid("server_id")
 		.notNull()
-		.references(() => servers.uuid),
+		.references(() => servers.id),
 	type: providerEnum("type").notNull(),
 	owner: text("owner").notNull(),
 	repo: text("repo").notNull(),

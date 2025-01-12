@@ -11,7 +11,7 @@ export async function GET(
 	request: Request,
 	{ params }: { params: { id: string[] } },
 ) {
-	const serverId = params.id.join("/")
+	const qualifiedName = params.id.join("/")
 
 	// Only track views from external origins
 	const origin = request.headers.get("origin")
@@ -29,7 +29,7 @@ export async function GET(
 		distinctId: "badge-viewed",
 		properties: {
 			$process_person_profile: false,
-			serverId,
+			serverId: qualifiedName,
 			sourceUrl,
 		},
 	})
@@ -48,7 +48,7 @@ export async function GET(
 							eq(events.eventName, "server_install"),
 							eq(events.eventName, "config"),
 						),
-						eq(sql`payload->>'serverId'`, serverId),
+						eq(sql`payload->>'serverId'`, qualifiedName),
 					),
 				)
 				.execute()

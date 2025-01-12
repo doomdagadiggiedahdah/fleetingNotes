@@ -89,12 +89,12 @@ export const ConnectionSchema = z
 export type Connection = z.infer<typeof ConnectionSchema>
 
 export const RegistryServerSchema = z.object({
-	id: z
+	qualifiedName: z
 		.string()
 		.describe(
 			"The unique identifier that would typically be used to install this package. Usually the `npm` or `pypi` package name. If not clear, fallback to @owner_name/repo_name",
 		),
-	name: z
+	displayName: z
 		.string()
 		.describe(
 			"The human-readable concise name of the MCP server. Do not mention 'MCP' or 'Claude Desktop' since those are redundant.",

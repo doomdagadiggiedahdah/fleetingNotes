@@ -61,7 +61,7 @@ export function ToolCard({
 	return (
 		<div
 			role="listitem"
-			key={server.id}
+			key={server.qualifiedName}
 			className={`bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors ${
 				isExpanded ? "expanded" : ""
 			}`}
@@ -71,7 +71,7 @@ export function ToolCard({
 				<div className="flex items-baseline justify-between mb-2">
 					<div className="flex items-center gap-2">
 						<Link
-							href={`/server/${server.id}`}
+							href={`/server/${server.qualifiedName}`}
 							className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"
 							onClick={(e) => e.stopPropagation()}
 						>
@@ -83,11 +83,11 @@ export function ToolCard({
 										if (server.homepage)
 											e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
 									}}
-									alt={server.name}
+									alt={server.displayName}
 									className="w-4 h-4"
 								/>
 							)}
-							{server.name}
+							{server.displayName}
 						</Link>
 						{server.verified && (
 							<BadgeCheck className="w-4 h-4 text-primary " />
@@ -98,7 +98,9 @@ export function ToolCard({
 								New
 							</div>
 						)}
-						<div className="text-muted-foreground text-sm">{server.id}</div>
+						<div className="text-muted-foreground text-sm">
+							{server.qualifiedName}
+						</div>
 					</div>
 					<InstallCount count={server.installCount} />
 				</div>

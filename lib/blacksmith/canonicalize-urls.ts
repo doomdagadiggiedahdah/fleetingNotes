@@ -10,7 +10,7 @@ export async function canonicalizeServerUrls() {
 	// Get all servers with GitHub URLs
 	const allServers = await db
 		.select({
-			id: servers.id,
+			qualifiedName: servers.qualifiedName,
 			sourceUrl: servers.sourceUrl,
 			crawlUrl: servers.crawlUrl,
 		})
@@ -43,10 +43,10 @@ export async function canonicalizeServerUrls() {
 					crawlUrl: canonicalCrawlUrl,
 					updatedAt: new Date(),
 				})
-				.where(eq(servers.id, server.id))
+				.where(eq(servers.qualifiedName, server.qualifiedName))
 				.execute()
 
-			console.log(`Updated server ${server.id}:
+			console.log(`Updated server ${server.qualifiedName}:
                 Source: ${server.sourceUrl} -> ${canonicalSourceUrl}
                 Crawl: ${server.crawlUrl} -> ${canonicalCrawlUrl}`)
 		}

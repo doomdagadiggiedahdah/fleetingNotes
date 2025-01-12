@@ -41,10 +41,10 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 					{tool.published ? (
 						<CodeBlock
 							language="shell"
-							serverId={tool.id}
+							serverId={tool.qualifiedName}
 							eventTag="install_command"
 						>
-							{`npx -y @smithery/cli install ${tool.id} --client ${tab}`}
+							{`npx -y @smithery/cli install ${tool.qualifiedName} --client ${tab}`}
 						</CodeBlock>
 					) : (
 						<Alert>
@@ -58,7 +58,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 					)}
 					<p className="mt-3 text-muted-foreground hover:text-primary">
 						<a
-							href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${tool.id}`}
+							href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${tool.qualifiedName}`}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center hover:text-primary"
@@ -77,16 +77,16 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 						To show a download counter, add this badge to your README:
 					</p>
 					<img
-						src={`/badge/${tool.id}`}
+						src={`/badge/${tool.qualifiedName}`}
 						alt="Smithery Badge"
 						className="mb-4"
 					/>
 					<CodeBlock
 						language="markdown"
-						serverId={tool.id}
+						serverId={tool.qualifiedName}
 						eventTag="install_command"
 					>
-						{`[![smithery badge](https://smithery.ai/badge/${tool.id})](https://smithery.ai/server/${tool.id})`}
+						{`[![smithery badge](https://smithery.ai/badge/${tool.qualifiedName})](https://smithery.ai/server/${tool.qualifiedName})`}
 					</CodeBlock>
 				</>
 			)
@@ -125,7 +125,7 @@ export const TabContent = ({ tool, tab }: ToolCardProps) => {
 						</p>
 						<CodeBlock
 							language="typescript"
-							serverId={tool.id}
+							serverId={tool.qualifiedName}
 							eventTag="typescript"
 						>
 							{`\
