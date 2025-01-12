@@ -7,7 +7,7 @@ import { RepoSelector } from "./repo-selector"
 /**
  * Components for setting up a new project.
  */
-export function UserRepoList() {
+export function UserRepoPicker() {
 	const [isLoading, setIsLoading] = useState(false)
 	const [ghUser, setGhUser] = useState<GithubUser | null>(null)
 

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { assignUnclaimedServers } from "@/lib/utils/assign-server-owners"
 
 // TODO: this needs more work
 // Callback when the GitHub app is installed as a notification
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
 		}
 
 		// TODO: Check for installation ID spoofing
+		await assignUnclaimedServers([Number.parseInt(installationId)])
 
 		// Store the installation in Supabase
 		// const { error } = await supabase.from("github_installations").upsert(
