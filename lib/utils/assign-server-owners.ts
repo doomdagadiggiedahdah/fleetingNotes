@@ -2,10 +2,15 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema/servers"
 import { Octokit } from "@octokit/rest"
+
 import { and, inArray, isNull } from "drizzle-orm"
+
+import type { GithubAccount } from "../auth/github"
 import { createClient } from "../supabase/server"
 
-export async function assignUnclaimedServers(installationIds: number[]) {
+export async function assignUnclaimedServers(
+	installations: { id: number; account: GithubAccount }[],
+) {
 	const supabase = await createClient()
 	// Get the GitHub access token from the session
 	const {
@@ -20,34 +25,8 @@ export async function assignUnclaimedServers(installationIds: number[]) {
 	const octokit = new Octokit({
 		auth: session.provider_token,
 	})
-	// Get all repositories the user has access to through their installations
-	const accessibleRepos = (
-		await Promise.all(
-			installationIds.map(async (installId) => {
-				try {
-					const { data: reposData } = await octokit.request(
-						"GET /user/installations/{installation_id}/repositories",
-						{ installation_id: installId },
-					)
-					return reposData.repositories.map(
-						(repo) => `${repo.owner.login}/${repo.name}`,
-					)
-				} catch (error) {
-					console.error(
-						`Failed to get repositories for installation ${installId}:`,
-						error,
-					)
-					return []
-				}
-			}),
-		)
-	).flat()
 
-	if (accessibleRepos.length === 0) {
-		return { error: "No accessible repositories found" }
-	}
-
-	// Get all unclaimed servers that match the user's accessible repositories
+	// Get all unclaimed servers first
 	const unclaimedServers = await db
 		.select({
 			id: servers.id,
@@ -56,15 +35,77 @@ export async function assignUnclaimedServers(installationIds: number[]) {
 		.from(servers)
 		.where(isNull(servers.owner))
 
+	// Extract GitHub repository paths from unclaimed servers
+	const unclaimedRepoPaths = unclaimedServers
+		.map((server) => {
+			if (!server.crawlUrl?.startsWith("https://github.com/")) return null
+			const path = server.crawlUrl.replace("https://github.com/", "").split("/")
+			return path.length >= 2 ? `${path[0]}/${path[1]}` : null
+		})
+		.filter((path): path is string => path !== null)
+
+	if (unclaimedRepoPaths.length === 0) {
+		return { error: "No unclaimed GitHub repositories found" }
+	}
+
+	// Get repositories from installations, with pagination only if needed
+	const accessibleRepos = (
+		await Promise.all(
+			installations.map(async (installation) => {
+				const hasMatchingRepo = unclaimedRepoPaths.some((path) =>
+					path.startsWith(`${installation.account.login}/`),
+				)
+
+				if (!hasMatchingRepo) return []
+
+				try {
+					let page = 1
+					const allRepos: string[] = []
+					let foundAllNeeded = false
+
+					while (!foundAllNeeded) {
+						const { data: reposData } = await octokit.request(
+							"GET /user/installations/{installation_id}/repositories",
+							{ installation_id: installation.id, per_page: 100, page },
+						)
+
+						const currentPageRepos = reposData.repositories.map(
+							(repo) => `${repo.owner.login}/${repo.name}`,
+						)
+
+						allRepos.push(...currentPageRepos)
+
+						// Check if we found all needed repositories
+						const foundRepos = unclaimedRepoPaths.every((path) =>
+							allRepos.some((repo) => repo === path),
+						)
+
+						// Stop if we found all needed repos or if there are no more pages
+						if (foundRepos || reposData.repositories.length < 100) {
+							foundAllNeeded = true
+						}
+
+						page++
+					}
+
+					return allRepos
+				} catch (error) {
+					console.error(
+						`Failed to get repositories for installation ${installation.id}:`,
+						error,
+					)
+					return []
+				}
+			}),
+		)
+	).flat()
+
 	// Filter servers that match the user's repositories
 	const serversToAssign = unclaimedServers.filter((server) => {
-		if (!server.crawlUrl) return false
-
-		if (!server.crawlUrl.startsWith("https://github.com/")) return false
-
-		return accessibleRepos.some((repoPath) =>
-			server.crawlUrl?.includes(repoPath),
-		)
+		if (!server.crawlUrl?.startsWith("https://github.com/")) return false
+		const path = server.crawlUrl.replace("https://github.com/", "").split("/")
+		const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
+		return repoPath && accessibleRepos.includes(repoPath)
 	})
 
 	console.log("serversToAssign", serversToAssign.length)

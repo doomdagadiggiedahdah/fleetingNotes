@@ -1,5 +1,9 @@
 "use client"
-import { getGithubUser, type GithubUser } from "@/lib/auth/github"
+import {
+	claimRepoOwnership,
+	getGithubUser,
+	type GithubUser,
+} from "@/lib/auth/github"
 import { useEffect, useState } from "react"
 import { GithubAuthButton } from "./github-auth-button"
 import { RepoSelector } from "./repo-selector"
@@ -17,6 +21,8 @@ export function UserRepoPicker() {
 			try {
 				const user = await getGithubUser()
 				setGhUser(user)
+				// TODO: Would only work after user has installed Github app
+				if (user) claimRepoOwnership(user)
 			} catch (error) {
 				setGhUser(null)
 			} finally {

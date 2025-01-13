@@ -1,3 +1,4 @@
+import { getOctokit, type GithubAccount } from "@/lib/auth/github"
 import { createClient } from "@/lib/supabase/server"
 import { assignUnclaimedServers } from "@/lib/utils/assign-server-owners"
 
@@ -25,8 +26,22 @@ export async function GET(request: Request) {
 			return new Response("Unauthorized", { status: 401 })
 		}
 
-		// TODO: Check for installation ID spoofing
-		await assignUnclaimedServers([Number.parseInt(installationId)])
+		const octokitRes = await getOctokit()
+		if (!octokitRes) return
+
+		const { octokit } = octokitRes
+
+		const { data: installationsData } = await octokit.request(
+			"GET /user/installations",
+		)
+		if (installationsData.installations.length > 0) {
+			await assignUnclaimedServers(
+				installationsData.installations.map((install) => ({
+					id: install.id,
+					account: install.account as GithubAccount,
+				})),
+			)
+		}
 
 		// Store the installation in Supabase
 		// const { error } = await supabase.from("github_installations").upsert(

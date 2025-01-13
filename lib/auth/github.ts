@@ -86,7 +86,10 @@ export async function claimRepoOwnership(user: GithubUser) {
 		if (installationsData.installations.length > 0) {
 			// Call server action with installation IDs (in background)
 			await assignUnclaimedServers(
-				installationsData.installations.map((install) => install.id),
+				installationsData.installations.map((install) => ({
+					id: install.id,
+					account: install.account as GithubAccount,
+				})),
 			)
 		}
 	}
