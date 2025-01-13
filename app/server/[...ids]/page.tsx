@@ -4,12 +4,13 @@ import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { ServerInfo } from "@/components/server-page/server-info"
+import { ServerPage } from "@/components/server-page/server-info"
 import { getServer } from "@/lib/utils/fetch-registry"
 import ErrorMessage from "@/components/error-message"
 
 type Props = {
 	params: { ids: string[] }
+	searchParams: { tab?: string }
 }
 
 export const revalidate = 3600
@@ -47,8 +48,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	}
 }
 
-export default async function ServerPage({ params }: Props) {
+export default async function Page({ params }: Props) {
 	const qualifiedName = decodeURIComponent(params.ids.join("/"))
+
 	let serverData: FetchedServer | null = null
 	let error = ""
 
@@ -66,7 +68,7 @@ export default async function ServerPage({ params }: Props) {
 			{error ? (
 				<ErrorMessage message={error} />
 			) : (
-				<ServerInfo server={serverData} />
+				<ServerPage server={serverData} />
 			)}
 		</main>
 	)

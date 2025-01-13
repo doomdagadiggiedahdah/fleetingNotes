@@ -3,14 +3,15 @@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
+import { getMyServer } from "@/lib/actions/servers"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { Info, Server, Settings } from "lucide-react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings/settings-tab"
 import { ToolsPanel } from "./tools-tab"
-import { getMyServer } from "@/lib/actions/servers"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -18,20 +19,14 @@ interface ServerTabsProps {
 
 export function ServerTabs({ server }: ServerTabsProps) {
 	const { capabilities } = useMCP()
-	const [activeTab, setActiveTab] = useState<string>("about")
+	const router = useRouter()
+	const searchParams = useSearchParams()
+	const pathname = usePathname()
+
+	const tab = searchParams.get("tab") ?? "about"
 
 	// Determines if the user is an admin of this MCP
 	const [isAdmin, setIsAdmin] = useState(false)
-
-	// Handle initial tab selection from search params
-	useEffect(() => {
-		const availableTabs = ["about"]
-
-		if (capabilities?.tools) availableTabs.push("tools")
-		if (capabilities?.resources) availableTabs.push("resources")
-
-		setActiveTab(availableTabs[0])
-	}, [capabilities])
 
 	// Handle admin status from search params
 	useEffect(() => {
@@ -40,15 +35,30 @@ export function ServerTabs({ server }: ServerTabsProps) {
 		}
 
 		checkAdminStatus()
+
+		// Prefetch tabs
+		router.prefetch(`${pathname}?tab=about`)
+		if (capabilities?.tools) router.prefetch(`${pathname}?tab=tools`)
+		if (capabilities?.resources) router.prefetch(`${pathname}?tab=resources`)
 	}, [server.id])
+
+	useEffect(() => {
+		// Prefetch tabs
+		if (isAdmin) {
+			router.prefetch(`${pathname}?tab=deployments`)
+			router.prefetch(`${pathname}?tab=settings`)
+		}
+	}, [isAdmin])
 
 	// Update URL when tab changes
 	const handleTabChange = (value: string) => {
-		setActiveTab(value)
+		const params = new URLSearchParams(searchParams.toString())
+		params.set("tab", value)
+		router.push(`${pathname}?${params.toString()}`)
 	}
 
 	return (
-		<Tabs value={activeTab} onValueChange={handleTabChange}>
+		<Tabs value={tab} onValueChange={handleTabChange}>
 			<TabsList className="flex justify-between">
 				<div className="flex">
 					<TabsTrigger value="about">

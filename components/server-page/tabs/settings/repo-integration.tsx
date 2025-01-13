@@ -15,7 +15,7 @@ export async function RepoIntegration({ server }: Props) {
 		return (
 			<>
 				<Card>
-					<CardContent>
+					<CardContent className="space-y-2 pt-4">
 						<p className="text-sm text-neutral-400">
 							This server is connected to {repo.repoOwner}/{repo.repoName}.
 						</p>

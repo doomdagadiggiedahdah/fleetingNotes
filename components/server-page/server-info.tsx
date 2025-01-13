@@ -7,21 +7,20 @@ import { Container } from "../layouts/container"
 import { ServerFavicon } from "./server-favicon"
 import ServerSearch from "./server-search"
 import { ServerTabs } from "./tabs"
-import { Suspense } from "react"
 
-interface ServerInfoProps {
+interface Props {
 	server: FetchedServer
-	searchParams?: { [key: string]: string | string[] | undefined }
+	tab?: string
 }
 
-export function ServerInfo({ server, searchParams = {} }: ServerInfoProps) {
+export function ServerPage({ server }: Props) {
 	return (
 		<>
 			<Header />
 			<Container className="mt-4">
 				{/* Search */}
 				<div className="mb-6">
-					<ServerSearch initialValue={searchParams?.q?.toString() ?? ""} />
+					<ServerSearch />
 				</div>
 
 				{/* Server Header */}
@@ -71,9 +70,7 @@ export function ServerInfo({ server, searchParams = {} }: ServerInfoProps) {
 				</div>
 
 				<MCPProvider>
-					<Suspense>
-						<ServerTabs server={server} />
-					</Suspense>
+					<ServerTabs server={server} />
 				</MCPProvider>
 			</Container>
 		</>
