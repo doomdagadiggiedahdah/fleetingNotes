@@ -1,3 +1,4 @@
+"use server"
 import { db } from "@/db"
 import { servers } from "@/db/schema/servers"
 import { Octokit } from "@octokit/rest"

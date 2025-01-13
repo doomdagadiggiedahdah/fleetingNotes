@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { assignUnclaimedServers } from "@/lib/utils/assign-server-owners"
 
+export const dynamic = "force-dynamic"
+
 // TODO: this needs more work
 // Callback when the GitHub app is installed as a notification
 export async function GET(request: Request) {
