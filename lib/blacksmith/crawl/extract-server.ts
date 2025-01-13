@@ -281,6 +281,9 @@ ${listRepoText}
 		},
 	]
 
+	// True if the tool errored during the latest turn
+	let toolErrored = false
+
 	for (let turn = 0; turn < MAX_TURNS; turn++) {
 		let tools = await adapter.listTools()
 		// Banned tools
@@ -297,8 +300,10 @@ ${listRepoText}
 
 		const response = await llm.chat.completions.create({
 			messages: messages,
-			model: "ft:gpt-4o-2024-08-06:personal:crawler-r2:AmIcb7yX",
-			// "gpt-4o",
+			// Switch back to 4o if tool errored
+			model: toolErrored
+				? "gpt-4o"
+				: "ft:gpt-4o-2024-08-06:personal:crawler-r2:AmIcb7yX",
 			max_completion_tokens: 2048,
 			temperature: 1.0,
 			top_p: 0.9,
@@ -313,6 +318,12 @@ ${listRepoText}
 		const toolMessages = await adapter.callTool(response, {
 			timeout: 60 * 10 * 1000,
 		})
+
+		toolErrored = toolMessages.some((message) =>
+			Array.isArray(message.content)
+				? message.content.some((c) => c.text.includes("ZodError"))
+				: message.content.includes("ZodError"),
+		)
 
 		messages.push(...toolMessages)
 		// console.log(`Tools:\n`, JSON.stringify(toolMessages).slice(0, 1000))
