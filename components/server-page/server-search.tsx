@@ -17,6 +17,7 @@ export default function ServerSearch({ initialValue = "" }: ServerSearchProps) {
 				router.push(`/?q=${encodeURIComponent(query)}`)
 			}}
 			autosearch={false}
+			placeholder="Search for MCP servers..."
 		/>
 	)
 }

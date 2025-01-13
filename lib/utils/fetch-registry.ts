@@ -72,7 +72,7 @@ export async function getAllServers(): Promise<FetchedServer[]> {
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
-			sql`CASE WHEN ${servers.createdAt} >= NOW() - INTERVAL '2 days' AND ${servers.createdAt} = (SELECT MAX(created_at) FROM servers) THEN 0 ELSE 1 END`,
+			sql`CASE WHEN ${servers.createdAt} >= NOW() - INTERVAL '2 days' AND ${servers.createdAt} >= (SELECT created_at FROM servers ORDER BY created_at DESC LIMIT 1 OFFSET 2) THEN 0 ELSE 1 END`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,

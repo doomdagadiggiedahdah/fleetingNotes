@@ -99,7 +99,11 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 	return (
 		<div className="space-y-6">
 			<Card className="p-6 border-0">
-				<Search onSearch={handleSearch} initialValue={searchQuery} />
+				<Search
+					onSearch={handleSearch}
+					initialValue={searchQuery}
+					placeholder="Search for tools..."
+				/>
 
 				{filteredTools.length === 0 ? (
 					<div className="text-sm text-muted-foreground text-center py-4">

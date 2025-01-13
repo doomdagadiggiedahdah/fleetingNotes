@@ -6,12 +6,14 @@ import { useCallback, useState } from "react"
 
 interface SearchProps {
 	onSearch?: (query: string) => Promise<void>
+	placeholder?: string
 	initialValue?: string
 	autosearch?: boolean
 }
 
 export default function Search({
 	onSearch,
+	placeholder,
 	initialValue = "",
 	autosearch = true,
 }: SearchProps) {
@@ -51,7 +53,7 @@ export default function Search({
 			<div className="relative">
 				<input
 					type="text"
-					placeholder="Search for tools..."
+					placeholder={placeholder}
 					value={query}
 					onChange={handleChange}
 					className="w-full p-4 pr-12 text-foreground border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring"

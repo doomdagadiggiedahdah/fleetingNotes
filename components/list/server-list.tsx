@@ -3,7 +3,6 @@
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { useState } from "react"
 import Search from "../search"
-import type { InstallTabStates } from "../server-page/tabs/install-tabs"
 import { ServerListItem } from "./server-list-item"
 
 export default function ServerList({
@@ -25,12 +24,7 @@ export default function ServerList({
 
 	// Tools displayed on the page
 	const filteredTools = filterTools(searchQuery)
-	const displayedTools = filterTools(searchQuery).slice(0, page * 10)
-
-	const [expandedToolId, setExpandedToolId] = useState<string | null>(
-		displayedTools.length > 0 ? displayedTools[0].qualifiedName : null,
-	)
-	const [activeTab, setActiveTab] = useState<InstallTabStates>("claude")
+	const displayedTools = filterTools(searchQuery).slice(0, page * 3 * 4)
 
 	const handleSearch = async (query: string) => {
 		setSearchQuery(query)
@@ -43,18 +37,17 @@ export default function ServerList({
 
 	return (
 		<>
-			<Search onSearch={handleSearch} initialValue={initialSearch} />
+			<Search
+				onSearch={handleSearch}
+				initialValue={initialSearch}
+				placeholder={`Search for MCP servers...`}
+			/>
 			<div className="space-y-4 mt-4">
-				{displayedTools.map((tool) => (
-					<ServerListItem
-						key={tool.qualifiedName}
-						server={tool}
-						activeTab={activeTab}
-						isExpanded={expandedToolId === tool.qualifiedName}
-						expand={() => setExpandedToolId(tool.qualifiedName)}
-						setActiveTab={setActiveTab}
-					/>
-				))}
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					{displayedTools.map((tool) => (
+						<ServerListItem key={tool.qualifiedName} server={tool} />
+					))}
+				</div>
 				{filteredTools.length === 0 && (
 					<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
 						No tools found. Check back later for updates.
