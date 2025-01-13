@@ -15,10 +15,6 @@ export const createServerSchema = insertServerSchema
 		qualifiedName: true,
 		displayName: true,
 		description: true,
-		vendor: true,
-		license: true,
-		homepage: true,
-		verified: true,
 	})
 	.extend({
 		repoOwner: z.string(),

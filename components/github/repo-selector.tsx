@@ -3,7 +3,7 @@ import type {
 	GithubAccount,
 	GithubRepository,
 	GithubUser,
-} from "@/lib/auth/github"
+} from "@/lib/auth/github/client"
 import { useState } from "react"
 import { GithubRepoList } from "./github-repo-list"
 import { GithubSearch } from "./github-search"

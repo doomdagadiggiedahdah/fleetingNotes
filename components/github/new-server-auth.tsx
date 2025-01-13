@@ -3,7 +3,7 @@ import {
 	claimRepoOwnership,
 	getGithubUser,
 	type GithubUser,
-} from "@/lib/auth/github"
+} from "@/lib/auth/github/client"
 import { useEffect, useState } from "react"
 import { GithubAuthButton } from "./github-auth-button"
 import { RepoSelector } from "./repo-selector"

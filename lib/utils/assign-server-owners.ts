@@ -5,7 +5,7 @@ import { Octokit } from "@octokit/rest"
 
 import { and, inArray, isNull } from "drizzle-orm"
 
-import type { GithubAccount } from "../auth/github"
+import type { GithubAccount } from "../auth/github/client"
 import { createClient } from "../supabase/server"
 
 export async function assignUnclaimedServers(

@@ -97,7 +97,7 @@ export default function ConfigForm({ owner, repo }: Props) {
 				throw new Error(error)
 			}
 
-			router.push(`/project/${value.qualifiedName}`)
+			router.push(`/server/${value.qualifiedName}`)
 		} catch (error) {
 			form.setError("root", {
 				message:
@@ -130,7 +130,10 @@ export default function ConfigForm({ owner, repo }: Props) {
 	return (
 		<>
 			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+				<form
+					onSubmit={form.handleSubmit(onSubmit)}
+					className="space-y-8 max-w-lg"
+				>
 					<FormField
 						control={form.control}
 						name="displayName"
@@ -195,12 +198,15 @@ export default function ConfigForm({ owner, repo }: Props) {
 					<div className="space-y-2">
 						<p className="text-sm text-muted-foreground mb-4">
 							Once you click &quot;Create&quot;, your repository will be
-							publicly listed on Smithery.
+							publicly listed on Smithery. We reserve the right to remove
+							servers that don&apos;t meet our standard.
 						</p>
 						<ButtonLoading
 							type="submit"
 							isLoading={form.formState.isSubmitting || isLoading}
 							disabled={
+								form.formState.isSubmitting ||
+								isLoading ||
 								!form.formState.isValid ||
 								Object.keys(form.formState.errors).length > 0
 							}

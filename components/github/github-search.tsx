@@ -4,7 +4,7 @@ import {
 	getRecentGithubRepositories,
 	type GithubAccount,
 	type GithubUser,
-} from "@/lib/auth/github"
+} from "@/lib/auth/github/client"
 import { useEffect, useState } from "react"
 
 interface GithubSearchProps {

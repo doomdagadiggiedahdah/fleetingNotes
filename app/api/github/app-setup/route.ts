@@ -1,4 +1,4 @@
-import { getOctokit, type GithubAccount } from "@/lib/auth/github"
+import { getOctokit, type GithubAccount } from "@/lib/auth/github/client"
 import { createClient } from "@/lib/supabase/server"
 import { assignUnclaimedServers } from "@/lib/utils/assign-server-owners"
 

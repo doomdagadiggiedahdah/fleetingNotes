@@ -1,7 +1,8 @@
+"use client"
 import { supabase } from "@/lib/supabase/client"
 import type { components } from "@octokit/openapi-types"
 import { Octokit } from "@octokit/rest"
-import { assignUnclaimedServers } from "../utils/assign-server-owners"
+import { assignUnclaimedServers } from "../../utils/assign-server-owners"
 const GITHUB_APP_ID = process.env.NEXT_PUBLIC_GITHUB_APP_ID!
 const GITHUB_APP_NAME = process.env.NEXT_PUBLIC_GITHUB_APP_NAME!
 

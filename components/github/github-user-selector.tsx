@@ -3,7 +3,7 @@ import {
 	openGithubAppInstall,
 	type GithubAccount,
 	type GithubUser,
-} from "@/lib/auth/github"
+} from "@/lib/auth/github/client"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
 import { ChevronDownIcon } from "@radix-ui/react-icons"
 import { Plus } from "lucide-react"

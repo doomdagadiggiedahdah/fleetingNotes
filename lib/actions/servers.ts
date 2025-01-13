@@ -13,7 +13,8 @@ import {
 	updateServerSchema,
 } from "./servers.schema"
 
-import { getOctokit, type GithubAccount } from "../auth/github"
+import type { GithubAccount } from "../auth/github/client"
+import { getOctokit } from "../auth/github/server"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -149,13 +150,14 @@ export async function getConnectedRepos(serverId: string) {
 // }
 
 // Server action to create project and commit config
-export const createServer = async (rawData: CreateServerInputs) => {
+export async function createServer(rawData: CreateServerInputs) {
 	// Validate
 	const insertData = createServerSchema.parse(rawData)
 
 	const res = await getOctokit()
 
-	if (!res) throw new Error("Failed to fetch GitHub user")
+	if (!res) return { error: "Failed to connect to GitHub user." }
+
 	const { octokit, user } = res
 
 	if (!user) {
@@ -172,33 +174,37 @@ export const createServer = async (rawData: CreateServerInputs) => {
 	if (installationId === undefined)
 		return { error: "Failed to validate GitHub installation." }
 
-	// Check if project exists
-	const server = await db.query.servers.findFirst({
-		where: eq(servers.id, insertData.qualifiedName),
-	})
-
-	if (server) {
-		return { error: "Server ID already exists" }
-	}
-
 	try {
-		// Create the project in the database
-		await db.insert(servers).values({
-			owner: user.id,
-			sourceUrl: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
-			tags: [],
-			connections: {},
-			// User passed
-			qualifiedName: insertData.qualifiedName,
-			displayName: insertData.displayName,
-			description: insertData.description,
-			vendor: insertData.vendor,
-			license: insertData.license,
-			homepage: insertData.homepage,
-			verified: insertData.verified,
+		// Create both the server and repo connection in a single transaction
+		await db.transaction(async (tx) => {
+			const [newServer] = await tx
+				.insert(servers)
+				.values({
+					owner: user.id,
+					sourceUrl: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
+					tags: [],
+					connections: [],
+					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
+					verified: false,
+					vendor: null,
+					license: null,
+					// User passed
+					qualifiedName: insertData.qualifiedName,
+					displayName: insertData.displayName,
+					description: insertData.description,
+				})
+				.returning({ id: servers.id })
+
+			await tx.insert(serverRepos).values({
+				serverId: newServer.id,
+				type: "github",
+				repoOwner: insertData.repoOwner,
+				repoName: insertData.repoName,
+			})
 		})
 	} catch (error) {
-		return { error: "Failed to create new project." }
+		console.error(error)
+		return { error: "Server ID already taken." }
 	}
 
 	return {}
