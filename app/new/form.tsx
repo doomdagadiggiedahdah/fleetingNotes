@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { YamlEditor } from "@/components/ui/yaml-editor"
-import { createProject } from "@/lib/actions/project"
-import { getOctokit, type GithubAccount } from "@/lib/auth/github"
+import { createServer } from "@/lib/actions/servers"
 import type { RepoConfig } from "@/lib/types/repo-config"
 import { RepoConfigSchema } from "@/lib/types/repo-config"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -40,8 +39,8 @@ const normalizeId = (name: string) =>
 		.replace(/^-|-$/g, "")
 
 const projectFormSchema = z.object({
-	name: z.string().min(1, "Name is required"),
-	id: z
+	displayName: z.string().min(1, "Name is required"),
+	qualifiedName: z
 		.string()
 		.min(1, "ID is required")
 		.regex(
@@ -117,8 +116,8 @@ export default function ConfigForm({ owner, repo }: Props) {
 	const form = useForm<ProjectFormData>({
 		resolver: zodResolver(projectFormSchema),
 		defaultValues: {
-			name: repo ?? "",
-			id: repo ? normalizeId(repo) : "",
+			displayName: repo ?? "",
+			qualifiedName: repo ? normalizeId(repo) : "",
 			description: `Deployed from ${owner}/${repo}`,
 			config: defaultYamlConfig(),
 		},
@@ -172,32 +171,20 @@ export default function ConfigForm({ owner, repo }: Props) {
 				throw new Error("Missing repository information")
 			}
 
-			const res = await getOctokit()
-			if (!res) throw new Error("Failed to fetch GitHub user")
-			const { octokit } = res
-
-			const installResp = await octokit.request("GET /user/installations")
-			const installationId = installResp.data.installations.find(
-				(install) =>
-					install.account && (install.account as GithubAccount).login === owner,
-			)?.id
-			if (installationId === undefined)
-				throw new Error("Failed to get GitHub installation")
-
 			// If all validation passes, proceed with form submission
 			setIsLoading(true)
-			const { error } = await createProject({
+
+			const { error } = await createServer({
 				...value,
-				owner,
-				repo,
-				installationId,
+				repoOwner: owner,
+				repoName: repo,
 			})
 
 			if (error) {
 				throw new Error(error)
 			}
 
-			router.push(`/project/${value.id}`)
+			router.push(`/project/${value.qualifiedName}`)
 		} catch (error) {
 			form.setError("root", {
 				message:
@@ -213,8 +200,8 @@ export default function ConfigForm({ owner, repo }: Props) {
 	// Combined form watching effects
 	useEffect(() => {
 		const subscription = watch((value, { name: fieldName }) => {
-			if (fieldName === "name" && value.name) {
-				setValue("id", normalizeId(value.name))
+			if (fieldName === "displayName" && value.displayName) {
+				setValue("qualifiedName", normalizeId(value.displayName))
 			}
 
 			// Validate
@@ -233,7 +220,7 @@ export default function ConfigForm({ owner, repo }: Props) {
 				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 					<FormField
 						control={form.control}
-						name="name"
+						name="displayName"
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>Name</FormLabel>
@@ -248,7 +235,7 @@ export default function ConfigForm({ owner, repo }: Props) {
 											const newId = e.target.value
 												.toLowerCase()
 												.replace(/[^a-z0-9-_]/g, "-")
-											form.setValue("id", newId)
+											form.setValue("qualifiedName", newId)
 										}}
 									/>
 								</FormControl>
@@ -262,7 +249,7 @@ export default function ConfigForm({ owner, repo }: Props) {
 
 					<FormField
 						control={form.control}
-						name="id"
+						name="qualifiedName"
 						render={({ field }) => (
 							<FormItem>
 								<FormLabel>ID</FormLabel>

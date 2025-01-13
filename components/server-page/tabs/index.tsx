@@ -3,7 +3,6 @@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
-import { isServerOwner } from "@/lib/actions/servers"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { Info, Server, Settings } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -11,6 +10,7 @@ import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings-tab"
 import { ToolsPanel } from "./tools-tab"
+import { getMyServer } from "@/lib/actions/servers"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -36,7 +36,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	// Handle admin status from search params
 	useEffect(() => {
 		const checkAdminStatus = async () => {
-			setIsAdmin(await isServerOwner(server.id))
+			setIsAdmin(!!(await getMyServer(server.id)))
 		}
 
 		checkAdminStatus()

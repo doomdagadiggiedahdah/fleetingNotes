@@ -1,3 +1,4 @@
+import { insertServerSchema } from "@/db/schema"
 import { z } from "zod"
 
 export const updateServerSchema = z
@@ -8,3 +9,20 @@ export const updateServerSchema = z
 	.strict()
 
 export type UpdateServer = z.infer<typeof updateServerSchema>
+
+export const createServerSchema = insertServerSchema
+	.pick({
+		qualifiedName: true,
+		displayName: true,
+		description: true,
+		vendor: true,
+		license: true,
+		homepage: true,
+		verified: true,
+	})
+	.extend({
+		repoOwner: z.string(),
+		repoName: z.string(),
+	})
+
+export type CreateServerInputs = z.infer<typeof createServerSchema>

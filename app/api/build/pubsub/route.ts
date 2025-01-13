@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { type Deployment, deployments } from "@/db/schema"
+import { type Deployment, deployments, servers } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 import * as cloudRun from "@google-cloud/run"
@@ -77,13 +77,19 @@ export async function POST(request: Request) {
 		}
 
 		if (data.status === "SUCCESS") {
-			const deployment = await db.query.deployments.findFirst({
-				where: eq(deployments.id, data.id),
-				columns: { projectId: true },
-			})
+			const deployment = await db
+				.select({
+					serverId: servers.id,
+					qualifiedName: servers.qualifiedName,
+				})
+				.from(deployments)
+				.innerJoin(servers, eq(deployments.serverId, servers.id))
+				.where(eq(deployments.id, data.id))
+				.limit(1)
+				.then((rows) => rows[0])
 
 			if (deployment) {
-				const cloudRunUrl = await getCloudRunUrl(deployment.projectId)
+				const cloudRunUrl = await getCloudRunUrl(deployment.qualifiedName)
 				if (cloudRunUrl) {
 					updateData.deploymentUrl = cloudRunUrl
 				}
