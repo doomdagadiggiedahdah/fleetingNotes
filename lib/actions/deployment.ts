@@ -1,14 +1,15 @@
 "use server"
 
 import { db } from "@/db"
-import { deployments } from "@/db/schema"
+import { deployments, serverRepos, servers } from "@/db/schema"
 import { createClient } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
+import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
 
-export const getDeployments = async (projectId: string) => {
+export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
 	const {
 		data: { user },
@@ -22,11 +23,12 @@ export const getDeployments = async (projectId: string) => {
 	const { data: deployments, error } = await supabase
 		.from("deployments")
 		.select("*")
-		.eq("project_id", projectId)
+		.eq("server_id", serverId)
 		.order("updated_at", { ascending: false })
 		.limit(10)
 
 	if (error) {
+		console.error(error)
 		throw new Error("Failed to fetch deployments")
 	}
 
@@ -42,7 +44,7 @@ const cloudBuildClient = new CloudBuildClient({
 })
 
 interface TriggerBuildInput {
-	projectId: string
+	serverId: string
 }
 
 function createDockerfile(baseImage: string, config: object) {
@@ -148,28 +150,33 @@ export async function createDeployment(data: TriggerBuildInput) {
 		return { error: "Unauthorized" }
 	}
 
-	// Get project details
-	const { data: project, error } = await supabase
-		.from("projects")
-		.select("*")
-		.eq("id", data.projectId)
-		.single()
+	// Get server details
+	const serverRows = await db
+		.select()
+		.from(servers)
+		.where(and(eq(servers.id, data.serverId), eq(servers.owner, user.id)))
+		.limit(1)
 
-	if (error || !project) {
-		console.error("Error:", error)
-		return { error: "Project not found" }
+	if (serverRows.length === 0) {
+		return { error: "Server not found" }
 	}
 
-	if (project.owner !== user.id) {
-		return { error: "Unauthorized" }
-	}
+	const server = serverRows[0]
 
-	// Parse repo URL to get owner and repo name
-	const repoUrlMatch = project.repo_url.match(/github\.com\/([^\/]+)\/([^\/]+)/)
-	if (!repoUrlMatch) {
-		return { error: "Invalid repository URL" }
+	// Obtain the connected repo
+	const repoRows = await db
+		.select()
+		.from(serverRepos)
+		.where(eq(serverRepos.serverId, server.id))
+		.limit(1)
+
+	if (repoRows.length === 0) {
+		return { error: "No repository connected to this server" }
 	}
-	const [, repoOwner, repoName] = repoUrlMatch
+	const serverRepo = repoRows[0]
+
+	// Get repo details
+	const { owner: repoOwner, repo: repoName } = serverRepo
 
 	// Get installation ID for the repo
 	const octokit = new Octokit({
@@ -230,7 +237,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	}
 
 	const dockerfileContents = createDockerfile(
-		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
+		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 		smitheryConfig,
 	)
 
@@ -257,7 +264,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 							"build",
 							"--pull",
 							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 							"-f",
 							"Dockerfile",
 							".",
@@ -268,7 +275,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 						name: "gcr.io/cloud-builders/docker",
 						args: [
 							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 						],
 					},
 					// Build our layer on top
@@ -281,7 +288,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 						args: [
 							"build",
 							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
 							"-f",
 							"Dockerfile.smithery",
 							".",
@@ -292,14 +299,14 @@ export async function createDeployment(data: TriggerBuildInput) {
 						name: "gcr.io/cloud-builders/docker",
 						args: [
 							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
 						],
 					},
 					{
 						name: "gcr.io/cloud-builders/gcloud",
 						script: `
-				gcloud run deploy ${data.projectId} \\
-				  --image us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.projectId}:latest \\
+				gcloud run deploy ${data.serverId} \\
+				  --image us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest \\
 				  --region us-central1 \\
 				  --platform managed \\
 				  --memory 512Mi \\
@@ -314,7 +321,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 				},
 				images: [
 					// For caching purposes
-					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.projectId}:latest`,
+					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 				],
 			},
 		})
@@ -329,12 +336,13 @@ export async function createDeployment(data: TriggerBuildInput) {
 
 		await db.insert(deployments).values({
 			id: buildId,
-			projectId: data.projectId,
+			serverId: data.serverId,
 			status: "QUEUED",
 			deploymentUrl: null,
 			commit: commitInfo.data.sha,
 			commitMessage: commitInfo.data.commit.message,
 			branch: commitInfo.branch,
+			repo: serverRepo.id,
 		})
 
 		return {

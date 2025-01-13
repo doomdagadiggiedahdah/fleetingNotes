@@ -1,5 +1,3 @@
-"use client"
-
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { ServerInstallation } from "../server-installation"
 import { ServerStats } from "../server-stats"
@@ -10,7 +8,7 @@ interface ReadingPanelProps {
 
 export function AboutPanel({ server }: ReadingPanelProps) {
 	return (
-		<div className="my-8">
+		<div>
 			<div className="grid grid-cols-1 md:grid-cols-12 gap-2">
 				<div className="md:col-span-7">{server.description}</div>
 

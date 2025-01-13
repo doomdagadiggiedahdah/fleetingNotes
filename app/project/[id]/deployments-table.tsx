@@ -1,7 +1,7 @@
 import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { Suspense } from "react"
-import { DeploymentsTableClient } from "./deployments-table-client"
+import { DeploymentsTableClient } from "../../../components/server-page/tabs/deployments/deployments-table-client"
 
 type Project = Database["public"]["Tables"]["projects"]["Row"]
 
@@ -13,10 +13,7 @@ async function DeploymentsTableContent({ project }: Props) {
 	const deployments = await getDeployments(project.id)
 
 	return (
-		<DeploymentsTableClient
-			project={project}
-			initialDeployments={deployments}
-		/>
+		<DeploymentsTableClient server={project} initialDeployments={deployments} />
 	)
 }
 

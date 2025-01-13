@@ -2,7 +2,6 @@ import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 
 export * from "./blacksmith"
 export * from "./deployments"
-export * from "./projects"
 export * from "./servers"
 
 export const events = pgTable("events", {

@@ -8,6 +8,7 @@ import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { type UpdateServer, updateServerSchema } from "./servers.schema"
 
+// TODO: should probably be a server component?
 export async function isServerOwner(serverId: string): Promise<boolean> {
 	const supabase = await createClient()
 

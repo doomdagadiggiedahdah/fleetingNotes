@@ -1,6 +1,6 @@
-import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core"
+import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-import { projects } from "./projects"
+import { serverRepos, servers } from "./servers"
 
 export const deploymentStatus = pgEnum("deployment_status", [
 	"QUEUED",
@@ -15,12 +15,15 @@ export const deployments = pgTable(
 	"deployments",
 	{
 		id: text("id").primaryKey(),
-		projectId: text("project_id")
+		serverId: uuid("server_id")
 			.notNull()
-			.references(() => projects.id),
+			.references(() => servers.id),
 		status: deploymentStatus("status").notNull(),
 		commit: text("commit").notNull(),
 		commitMessage: text("commit_message").notNull(),
+		repo: uuid("repo")
+			.notNull()
+			.references(() => serverRepos.id),
 		branch: text("branch").notNull(),
 		deploymentUrl: text("deployment_url"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),

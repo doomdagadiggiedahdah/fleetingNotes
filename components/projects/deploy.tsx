@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button"
 import { createDeployment } from "@/lib/actions/deployment"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
+import posthog from "posthog-js"
 
 export function DeployButton({
-	projectId,
+	projectId: serverId,
 	hasPendingBuilding,
 }: { projectId: string; hasPendingBuilding: boolean }) {
 	const { toast } = useToast()
@@ -18,7 +19,12 @@ export function DeployButton({
 			onClick={async () => {
 				try {
 					setIsLoading(true)
-					const { error } = await createDeployment({ projectId })
+
+					posthog.capture("Deploy Clicked", {
+						serverId: serverId,
+					})
+
+					const { error } = await createDeployment({ serverId })
 					if (error) throw new Error(error)
 					toast({
 						title: "Deployment started",

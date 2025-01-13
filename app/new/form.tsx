@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input"
 import { YamlEditor } from "@/components/ui/yaml-editor"
 import { createProject } from "@/lib/actions/project"
 import { getOctokit, type GithubAccount } from "@/lib/auth/github"
-import type { ProjectConfig } from "@/lib/types/project"
-import { ProjectConfigSchema } from "@/lib/types/project"
+import type { RepoConfig } from "@/lib/types/repo-config"
+import { RepoConfigSchema } from "@/lib/types/repo-config"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -25,7 +25,7 @@ import * as z from "zod"
 const validateYamlConfig = (value: string) => {
 	try {
 		const parsed = YAML.parse(value)
-		const result = ProjectConfigSchema.safeParse(parsed)
+		const result = RepoConfigSchema.safeParse(parsed)
 		return { isValid: true, parsed, result }
 	} catch (error) {
 		return { isValid: false, error }
@@ -73,7 +73,7 @@ const projectFormSchema = z.object({
 })
 
 function defaultYamlConfig() {
-	const defaultConfig: ProjectConfig = {
+	const defaultConfig: RepoConfig = {
 		startCommand: {
 			type: "stdio",
 			configSchema: {},

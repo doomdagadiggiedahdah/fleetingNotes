@@ -15,10 +15,10 @@ export const StartCommandSchema = z
 	})
 	.describe("Determines how to start the server.")
 
-export const ProjectConfigSchema = z
+export const RepoConfigSchema = z
 	.object({
 		startCommand: StartCommandSchema,
 	})
 	.strict()
 
-export type ProjectConfig = z.infer<typeof ProjectConfigSchema>
+export type RepoConfig = z.infer<typeof RepoConfigSchema>

@@ -5,12 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
 import { isServerOwner } from "@/lib/actions/servers"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Info, Server, Settings } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
+import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings-tab"
 import { ToolsPanel } from "./tools-tab"
-import { Info, Settings } from "lucide-react"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -49,27 +49,43 @@ export function ServerTabs({ server }: ServerTabsProps) {
 
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange}>
-			<TabsList>
-				<TabsTrigger value="about">
-					<span className="flex items-center gap-2">
-						<Info size={16} />
-						About
-					</span>
-				</TabsTrigger>
-				{capabilities?.tools && <TabsTrigger value="tools">Tools</TabsTrigger>}
-				{capabilities?.resources && (
-					<TabsTrigger value="resources">Resources</TabsTrigger>
-				)}
-				{isAdmin && (
-					<TabsTrigger value="settings">
+			<TabsList className="flex justify-between">
+				<div className="flex">
+					<TabsTrigger value="about">
 						<span className="flex items-center gap-2">
-							<Settings size={16} />
-							Settings
+							<Info size={16} />
+							About
 						</span>
 					</TabsTrigger>
+					{capabilities?.tools && (
+						<TabsTrigger value="tools">Tools</TabsTrigger>
+					)}
+					{capabilities?.resources && (
+						<TabsTrigger value="resources">Resources</TabsTrigger>
+					)}
+				</div>
+
+				{isAdmin && (
+					<div className="flex">
+						<TabsTrigger value="deployments">
+							<span className="flex items-center gap-2">
+								<Server size={16} />
+								Deployments
+								<div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
+									preview
+								</div>
+							</span>
+						</TabsTrigger>
+						<TabsTrigger value="settings">
+							<span className="flex items-center gap-2">
+								<Settings size={16} />
+								Settings
+							</span>
+						</TabsTrigger>
+					</div>
 				)}
 			</TabsList>
-			<Separator className="mt-0" />
+			<Separator className="mt-0 mb-8" />
 
 			{/* Content Grid */}
 			<TabsContent value="about">
@@ -82,15 +98,21 @@ export function ServerTabs({ server }: ServerTabsProps) {
 				</TabsContent>
 			)}
 
-			{/* {capabilities?.resources && (
-						<TabsContent value="resources" className="space-y-4">
-							<div>Resources Panel Content</div>
-						</TabsContent>
-					)} */}
-			{isAdmin && (
-				<TabsContent value="settings">
-					<SettingsPanel server={server} />
+			{capabilities?.resources && (
+				<TabsContent value="resources" className="space-y-4">
+					<div>Resources Panel Content</div>
 				</TabsContent>
+			)}
+
+			{isAdmin && (
+				<>
+					<TabsContent value="deployments">
+						<DeploymentsPanel server={server} />
+					</TabsContent>
+					<TabsContent value="settings">
+						<SettingsPanel server={server} />
+					</TabsContent>
+				</>
 			)}
 		</Tabs>
 	)
