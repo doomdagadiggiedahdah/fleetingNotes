@@ -18,8 +18,6 @@ interface ServerTabsProps {
 
 export function ServerTabs({ server }: ServerTabsProps) {
 	const { capabilities } = useMCP()
-	const searchParams = useSearchParams()
-	const router = useRouter()
 	const [activeTab, setActiveTab] = useState<string>("about")
 
 	// Determines if the user is an admin of this MCP
@@ -27,19 +25,13 @@ export function ServerTabs({ server }: ServerTabsProps) {
 
 	// Handle initial tab selection from search params
 	useEffect(() => {
-		const tab = searchParams.get("tab")
 		const availableTabs = ["about"]
 
 		if (capabilities?.tools) availableTabs.push("tools")
 		if (capabilities?.resources) availableTabs.push("resources")
 
-		// Set initial tab based on search param or first available tab
-		if (tab && availableTabs.includes(tab)) {
-			setActiveTab(tab)
-		} else {
-			setActiveTab(availableTabs[0])
-		}
-	}, [capabilities, searchParams])
+		setActiveTab(availableTabs[0])
+	}, [capabilities])
 
 	// Handle admin status from search params
 	useEffect(() => {
@@ -53,9 +45,6 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	// Update URL when tab changes
 	const handleTabChange = (value: string) => {
 		setActiveTab(value)
-		const url = new URL(window.location.href)
-		url.searchParams.set("tab", value)
-		router.push(`${url.pathname}?${url.searchParams.toString()}`)
 	}
 
 	return (
