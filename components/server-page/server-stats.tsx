@@ -28,13 +28,13 @@ const TabButton = ({ isActive, onClick, icon, children }: TabButtonProps) => {
 
 export function ServerStats({ serverId, server }: ServerStatsProps) {
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 mt-6">
 			<div className="p-4 space-y-4">
 				<h2 className="font-semibold">Server Statistics</h2>
 
 				<div className="space-y-2">
 					<div className="flex justify-between">
-						<span className="text-muted-foreground">Weekly Installs</span>
+						<span className="text-muted-foreground">Installs</span>
 						<span className="font-medium">{server.installCount}</span>
 					</div>
 					{server.license && (

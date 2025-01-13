@@ -2,9 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import * as z from "zod"
-
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
 import {
 	Form,
 	FormControl,
@@ -15,16 +13,14 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+	type UpdateServer,
+	updateServerSchema,
+} from "@/lib/actions/servers.schema"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase/client"
-
-const settingsFormSchema = z.object({
-	displayName: z.string().min(3, "Name is required"),
-	description: z.string(),
-})
-
-type SettingsFormData = z.infer<typeof settingsFormSchema>
+import { ButtonLoading } from "@/components/ui/loading-button"
+import { updateServerDetails } from "@/lib/actions/servers"
 
 interface SettingsPanelProps {
 	server: FetchedServer
@@ -32,32 +28,28 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ server }: SettingsPanelProps) {
 	const router = useRouter()
-	const form = useForm<SettingsFormData>({
-		resolver: zodResolver(settingsFormSchema),
+	const [isLoading, setIsLoading] = useState(false)
+	const form = useForm<UpdateServer>({
+		resolver: zodResolver(updateServerSchema),
 		defaultValues: {
 			displayName: server.displayName,
 			description: server.description,
 		},
 	})
 
-	async function onSubmit(data: SettingsFormData) {
+	const onSubmit = async (data: UpdateServer) => {
 		try {
-			const { error } = await supabase
-				.from("servers")
-				.update({
-					displayName: data.displayName,
-					description: data.description,
-				})
-				.eq("id", server.id)
-
-			if (error) {
-				throw error
-			}
-
+			setIsLoading(true)
+			await updateServerDetails(server.id, data)
 			router.refresh()
 		} catch (error) {
 			console.error("Failed to update server:", error)
-			// You might want to show an error toast here
+			form.setError("root", {
+				type: "manual",
+				message: "Failed to update server. Please try again.",
+			})
+		} finally {
+			setIsLoading(false)
 		}
 	}
 
@@ -93,7 +85,15 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 						)}
 					/>
 
-					<Button type="submit">Save Changes</Button>
+					{form.formState.errors.root && (
+						<p className="text-sm text-red-500">
+							{form.formState.errors.root.message}
+						</p>
+					)}
+
+					<ButtonLoading type="submit" isLoading={isLoading}>
+						Save
+					</ButtonLoading>
 				</form>
 			</Form>
 		</div>

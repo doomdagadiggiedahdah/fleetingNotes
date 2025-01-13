@@ -1,15 +1,16 @@
 "use client"
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { AboutPanel } from "./about-tab"
-import { ToolsPanel } from "./tools-tab"
-import { ServerInstallation } from "../server-installation"
-import { ServerStats } from "../server-stats"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
+import { isServerOwner } from "@/lib/actions/servers"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { AboutPanel } from "./about-tab"
+import { SettingsPanel } from "./settings-tab"
+import { ToolsPanel } from "./tools-tab"
+import { Info, Settings } from "lucide-react"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -40,9 +41,14 @@ export function ServerTabs({ server }: ServerTabsProps) {
 		}
 	}, [capabilities, searchParams])
 
-	// TODO:
 	// Handle admin status from search params
-	useEffect(() => {}, [server.id])
+	useEffect(() => {
+		const checkAdminStatus = async () => {
+			setIsAdmin(await isServerOwner(server.id))
+		}
+
+		checkAdminStatus()
+	}, [server.id])
 
 	// Update URL when tab changes
 	const handleTabChange = (value: string) => {
@@ -55,40 +61,48 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	return (
 		<Tabs value={activeTab} onValueChange={handleTabChange}>
 			<TabsList>
-				<TabsTrigger value="about">About</TabsTrigger>
+				<TabsTrigger value="about">
+					<span className="flex items-center gap-2">
+						<Info size={16} />
+						About
+					</span>
+				</TabsTrigger>
 				{capabilities?.tools && <TabsTrigger value="tools">Tools</TabsTrigger>}
 				{capabilities?.resources && (
 					<TabsTrigger value="resources">Resources</TabsTrigger>
+				)}
+				{isAdmin && (
+					<TabsTrigger value="settings">
+						<span className="flex items-center gap-2">
+							<Settings size={16} />
+							Settings
+						</span>
+					</TabsTrigger>
 				)}
 			</TabsList>
 			<Separator className="mt-0" />
 
 			{/* Content Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-				<div className="md:col-span-7">
-					<TabsContent value="about">
-						<AboutPanel server={server} />
-					</TabsContent>
+			<TabsContent value="about">
+				<AboutPanel server={server} />
+			</TabsContent>
 
-					{capabilities?.tools && (
-						<TabsContent value="tools">
-							<ToolsPanel server={server} />
-						</TabsContent>
-					)}
+			{capabilities?.tools && (
+				<TabsContent value="tools">
+					<ToolsPanel server={server} />
+				</TabsContent>
+			)}
 
-					{/* {capabilities?.resources && (
+			{/* {capabilities?.resources && (
 						<TabsContent value="resources" className="space-y-4">
 							<div>Resources Panel Content</div>
 						</TabsContent>
 					)} */}
-				</div>
-
-				{/* Side Panel */}
-				<div className="md:col-span-5">
-					<ServerInstallation server={server} />
-					<ServerStats server={server} serverId={server.qualifiedName} />
-				</div>
-			</div>
+			{isAdmin && (
+				<TabsContent value="settings">
+					<SettingsPanel server={server} />
+				</TabsContent>
+			)}
 		</Tabs>
 	)
 }

@@ -13,8 +13,8 @@ export function ServerInstallation({
 	onTabChange,
 }: Props) {
 	return (
-		<div className="my-8">
-			<h2 className="text-2xl font-bold my-4">Installation</h2>
+		<div>
+			<h2 className="text-2xl font-bold mb-4">Installation</h2>
 			<div className="bg-background p-3 rounded-lg border border-border">
 				<InstallationTabs
 					server={server}
