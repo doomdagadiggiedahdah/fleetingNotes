@@ -1,0 +1,131 @@
+"use client"
+
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { ButtonLoading } from "@/components/ui/loading-button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
+import { connectServerRepo, updateServerDetails } from "@/lib/actions/servers"
+import {
+	type UpdateServer,
+	updateServerSchema,
+} from "@/lib/actions/servers.schema"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
+import { Suspense, useState } from "react"
+import { useForm } from "react-hook-form"
+import { RepoIntegration } from "./repo-integration"
+
+interface SettingsPanelProps {
+	server: FetchedServer
+}
+
+export function SettingsPanel({ server }: SettingsPanelProps) {
+	const router = useRouter()
+	const [isLoading, setIsLoading] = useState(false)
+	const form = useForm<UpdateServer>({
+		resolver: zodResolver(updateServerSchema),
+		defaultValues: {
+			displayName: server.displayName,
+			description: server.description,
+		},
+	})
+
+	const onSubmit = async (data: UpdateServer) => {
+		try {
+			setIsLoading(true)
+			await updateServerDetails(server.id, data)
+			router.refresh()
+		} catch (error) {
+			console.error("Failed to update server:", error)
+			form.setError("root", {
+				type: "manual",
+				message: "Failed to update server. Please try again.",
+			})
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const onConnectRepo = async (repoOwner: string, repoName: string) => {
+		try {
+			setIsLoading(true)
+			await connectServerRepo(server.id, repoOwner, repoName)
+			router.refresh()
+		} catch (error) {
+			form.setError("root", {
+				type: "manual",
+				message: "Failed to connect server to repo. Please try again.",
+			})
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	return (
+		<div className="my-8 max-w-2xl space-y-12">
+			<div>
+				<h3 className="text-lg font-medium mb-4">Server Settings</h3>
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+						<FormField
+							control={form.control}
+							name="displayName"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Name</FormLabel>
+									<FormControl>
+										<Input {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Description</FormLabel>
+									<FormControl>
+										<Textarea {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						{form.formState.errors.root && (
+							<p className="text-sm text-red-500">
+								{form.formState.errors.root.message}
+							</p>
+						)}
+
+						<ButtonLoading type="submit" isLoading={isLoading}>
+							Save
+						</ButtonLoading>
+					</form>
+				</Form>
+			</div>
+
+			<div>
+				<h3 className="text-lg font-medium mb-4">GitHub Integration</h3>
+				<div className="space-y-4">
+					<Suspense fallback={<Skeleton className="h-8 w-full" />}>
+						{/* @ts-expect-error Async Server Component */}
+						<RepoIntegration server={server} />
+					</Suspense>
+				</div>
+			</div>
+		</div>
+	)
+}

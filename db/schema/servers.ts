@@ -62,13 +62,13 @@ export const providerEnum = pgEnum("provider", ["github"])
 
 // Connect repositories
 export const serverRepos = pgTable("server_repos", {
-	id: uuid("id").primaryKey(),
+	id: uuid("id").primaryKey().defaultRandom(),
 	serverId: uuid("server_id")
 		.notNull()
 		.references(() => servers.id),
 	type: providerEnum("type").notNull(),
-	owner: text("owner").notNull(),
-	repo: text("repo").notNull(),
+	repoOwner: text("repo_owner").notNull(),
+	repoName: text("repo_name").notNull(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }).enableRLS()

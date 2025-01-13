@@ -1,6 +1,7 @@
 "use client"
 import { LockClosedIcon } from "@radix-ui/react-icons"
-import Link from "next/link"
+import { useState } from "react"
+import { ButtonLoading } from "../ui/loading-button"
 
 interface GithubRepo {
 	name: string
@@ -12,12 +13,21 @@ interface GithubRepo {
 interface GithubRepoListProps {
 	repos: GithubRepo[]
 	isLoading?: boolean
+	buttonText?: string
+	onRepoSelect: (repoOwner: string, repoName: string) => void
 }
 
-export function GithubRepoList({ repos, isLoading }: GithubRepoListProps) {
+export function GithubRepoList({
+	repos,
+	isLoading: isSearching,
+	onRepoSelect,
+	buttonText = "Select",
+}: GithubRepoListProps) {
+	const [isLoading, setIsLoading] = useState(false)
+
 	return (
 		<div className="space-y-2">
-			{isLoading ? (
+			{isSearching ? (
 				<div className="flex h-32 items-center justify-center">
 					<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent" />
 				</div>
@@ -35,12 +45,20 @@ export function GithubRepoList({ repos, isLoading }: GithubRepoListProps) {
 								<LockClosedIcon className="h-4 w-4 text-neutral-400" />
 							)}
 						</div>
-						<Link
-							href={`/new?owner=${repo.owner}&repo=${repo.name}`}
+						<ButtonLoading
+							isLoading={isSearching || isLoading}
+							onClick={async () => {
+								try {
+									setIsLoading(true)
+									await onRepoSelect(repo.owner, repo.name)
+								} finally {
+									setIsLoading(false)
+								}
+							}}
 							className="flex items-center gap-2 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
 						>
-							Deploy
-						</Link>
+							{buttonText}
+						</ButtonLoading>
 					</div>
 				))
 			)}

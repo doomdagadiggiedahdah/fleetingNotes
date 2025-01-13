@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { servers } from "@/db/schema/servers"
+import { serverRepos, servers } from "@/db/schema/servers"
 import { createClient } from "@/lib/supabase/server"
 import { waitUntil } from "@vercel/functions"
 import { and, eq } from "drizzle-orm"
@@ -52,6 +52,39 @@ export async function updateServerDetails(
 		console.error("Failed to update server details:", error)
 		return false
 	}
+}
+
+export async function connectServerRepo(
+	serverId: string,
+	repoOwner: string,
+	repoName: string,
+) {
+	// Check ownership first
+	if (!(await getMyServer(serverId))) {
+		return false
+	}
+
+	try {
+		await db.insert(serverRepos).values({
+			serverId,
+			type: "github",
+			repoOwner,
+			repoName,
+		})
+	} catch (error) {
+		console.error("Failed to connect server to repo:", error)
+		return false
+	}
+}
+
+export async function getConnectedRepos(serverId: string) {
+	// Obtain the connected repo
+	const rows = await db
+		.select()
+		.from(serverRepos)
+		.where(eq(serverRepos.serverId, serverId))
+		.limit(1)
+	return rows
 }
 
 // const commitFile = async (data: CreateServerInputs) => {

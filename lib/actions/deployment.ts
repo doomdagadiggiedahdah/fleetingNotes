@@ -1,13 +1,14 @@
 "use server"
 
 import { db } from "@/db"
-import { deployments, serverRepos, servers } from "@/db/schema"
+import { deployments, servers } from "@/db/schema"
 import { createClient } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
+import { getConnectedRepos } from "./servers"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -164,11 +165,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	const server = serverRows[0]
 
 	// Obtain the connected repo
-	const repoRows = await db
-		.select()
-		.from(serverRepos)
-		.where(eq(serverRepos.serverId, server.id))
-		.limit(1)
+	const repoRows = await getConnectedRepos(server.id)
 
 	if (repoRows.length === 0) {
 		return { error: "No repository connected to this server" }
@@ -176,7 +173,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	const serverRepo = repoRows[0]
 
 	// Get repo details
-	const { owner: repoOwner, repo: repoName } = serverRepo
+	const { repoOwner, repoName } = serverRepo
 
 	// Get installation ID for the repo
 	const octokit = new Octokit({

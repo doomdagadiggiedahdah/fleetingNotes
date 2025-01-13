@@ -11,9 +11,15 @@ import { GithubUserSelector } from "./github-user-selector"
 
 interface RepoSelectorProps {
 	ghUser: GithubUser
+	onRepoSelect: (owner: string, repo: string) => void
+	buttonText?: string
 }
 
-export function RepoSelector({ ghUser }: RepoSelectorProps) {
+export function RepoSelector({
+	ghUser,
+	onRepoSelect,
+	buttonText,
+}: RepoSelectorProps) {
 	const [repos, setRepos] = useState<GithubRepository[]>([])
 	const [selectedOwner, setSelectedOwner] = useState<GithubAccount>(
 		ghUser.accounts[0],
@@ -37,7 +43,12 @@ export function RepoSelector({ ghUser }: RepoSelectorProps) {
 					/>
 				</div>
 			</div>
-			<GithubRepoList repos={repos} isLoading={searchLoading} />
+			<GithubRepoList
+				repos={repos}
+				isLoading={searchLoading}
+				onRepoSelect={onRepoSelect}
+				buttonText={buttonText}
+			/>
 		</div>
 	)
 }

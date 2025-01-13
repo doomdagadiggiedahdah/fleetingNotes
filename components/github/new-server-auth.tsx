@@ -8,10 +8,15 @@ import { useEffect, useState } from "react"
 import { GithubAuthButton } from "./github-auth-button"
 import { RepoSelector } from "./repo-selector"
 
+interface Props {
+	buttonText?: string
+	onRepoSelect: (owner: string, repo: string) => void
+}
+
 /**
  * Components for setting up a new project.
  */
-export function UserRepoPicker() {
+export function UserRepoPicker({ onRepoSelect, buttonText }: Props) {
 	const [isLoading, setIsLoading] = useState(false)
 	const [ghUser, setGhUser] = useState<GithubUser | null>(null)
 
@@ -41,5 +46,11 @@ export function UserRepoPicker() {
 			</div>
 		)
 	}
-	return <RepoSelector ghUser={ghUser} />
+	return (
+		<RepoSelector
+			ghUser={ghUser}
+			onRepoSelect={onRepoSelect}
+			buttonText={buttonText}
+		/>
+	)
 }

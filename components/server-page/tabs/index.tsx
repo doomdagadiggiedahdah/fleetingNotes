@@ -8,7 +8,7 @@ import { Info, Server, Settings } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
-import { SettingsPanel } from "./settings-tab"
+import { SettingsPanel } from "./settings/settings-tab"
 import { ToolsPanel } from "./tools-tab"
 import { getMyServer } from "@/lib/actions/servers"
 

@@ -136,17 +136,17 @@ export type Database = {
 				Row: {
 					created_at: string
 					id: string
-					owner: string
-					repo: string
+					repo_name: string
+					repo_owner: string
 					server_id: string
 					type: Database["public"]["Enums"]["provider"]
 					updated_at: string
 				}
 				Insert: {
 					created_at?: string
-					id: string
-					owner: string
-					repo: string
+					id?: string
+					repo_name: string
+					repo_owner: string
 					server_id: string
 					type: Database["public"]["Enums"]["provider"]
 					updated_at?: string
@@ -154,8 +154,8 @@ export type Database = {
 				Update: {
 					created_at?: string
 					id?: string
-					owner?: string
-					repo?: string
+					repo_name?: string
+					repo_owner?: string
 					server_id?: string
 					type?: Database["public"]["Enums"]["provider"]
 					updated_at?: string
