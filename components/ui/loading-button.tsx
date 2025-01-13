@@ -14,7 +14,7 @@ interface Props extends ButtonProps {
  */
 export function ButtonLoading({ isLoading, children, ...props }: Props) {
 	return (
-		<Button disabled={isLoading} {...props}>
+		<Button disabled={isLoading || props.disabled} {...props}>
 			{isLoading && <Loader2 className="animate-spin" />}
 			{children}
 		</Button>

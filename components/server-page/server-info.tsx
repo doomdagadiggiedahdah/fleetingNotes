@@ -2,6 +2,7 @@ import { MCPProvider } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, ExternalLink, Github } from "lucide-react"
 
+import { Suspense } from "react"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
 import { ServerFavicon } from "./server-favicon"
@@ -70,7 +71,9 @@ export function ServerPage({ server }: Props) {
 				</div>
 
 				<MCPProvider>
-					<ServerTabs server={server} />
+					<Suspense>
+						<ServerTabs server={server} />
+					</Suspense>
 				</MCPProvider>
 			</Container>
 		</>

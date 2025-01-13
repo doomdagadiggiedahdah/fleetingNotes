@@ -1,6 +1,4 @@
 "use client"
-
-import { Button } from "@/components/ui/button"
 import {
 	Form,
 	FormControl,
@@ -10,26 +8,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { YamlEditor } from "@/components/ui/yaml-editor"
+import { ButtonLoading } from "@/components/ui/loading-button"
 import { createServer } from "@/lib/actions/servers"
-import type { RepoConfig } from "@/lib/types/repo-config"
-import { RepoConfigSchema } from "@/lib/types/repo-config"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import * as YAML from "yaml"
 import * as z from "zod"
-
-const validateYamlConfig = (value: string) => {
-	try {
-		const parsed = YAML.parse(value)
-		const result = RepoConfigSchema.safeParse(parsed)
-		return { isValid: true, parsed, result }
-	} catch (error) {
-		return { isValid: false, error }
-	}
-}
 
 const normalizeId = (name: string) =>
 	name
@@ -48,61 +33,7 @@ const projectFormSchema = z.object({
 			"ID must contain only lowercase letters, numbers, hyphens, or underscores, and must start with a letter.",
 		),
 	description: z.string(),
-	config: z
-		.string()
-		.min(1, "Config is required")
-		.transform((value, ctx) => {
-			const { isValid, error, result } = validateYamlConfig(value)
-			if (!isValid) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					message: `Invalid YAML syntax: ${(error as Error).message}`,
-				})
-				return z.NEVER
-			}
-			if (!result?.success) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					message: "Configuration does not match the required schema",
-				})
-				return z.NEVER
-			}
-			return value
-		}),
 })
-
-function defaultYamlConfig() {
-	const defaultConfig: RepoConfig = {
-		startCommand: {
-			type: "stdio",
-			configSchema: {},
-			commandFunction: `(config) => (${JSON.stringify(
-				{ command: "npx", args: ["."] },
-				null,
-				2,
-			)})`,
-		},
-	}
-
-	const doc = new YAML.Document(defaultConfig)
-	const cmdFuncScalar = doc.getIn(
-		["startCommand", "commandFunction"],
-		true,
-	) as YAML.Scalar
-	const schemaScalar = doc.getIn(
-		["startCommand", "configSchema"],
-		true,
-	) as YAML.Scalar
-
-	cmdFuncScalar.commentBefore =
-		" A function that produces the CLI command to start the MCP on stdio."
-	cmdFuncScalar.type = "BLOCK_LITERAL"
-	schemaScalar.commentBefore =
-		" JSON Schema defining the configuration options for the MCP."
-
-	const yamlString = doc.toString()
-	return yamlString.trim()
-}
 
 type ProjectFormData = z.infer<typeof projectFormSchema>
 
@@ -119,7 +50,6 @@ export default function ConfigForm({ owner, repo }: Props) {
 			displayName: repo ?? "",
 			qualifiedName: repo ? normalizeId(repo) : "",
 			description: `Deployed from ${owner}/${repo}`,
-			config: defaultYamlConfig(),
 		},
 	})
 
@@ -139,23 +69,6 @@ export default function ConfigForm({ owner, repo }: Props) {
 				})
 			})
 			return false
-		}
-
-		// Additional YAML config validation
-		if (value.config) {
-			const { isValid, error, result } = validateYamlConfig(value.config)
-			if (!isValid) {
-				if (result && !result.success) {
-					form.setError("config", {
-						message: `Schema Error: ${JSON.stringify(result.error.errors[0])}`,
-					})
-				} else {
-					form.setError("config", {
-						message: `YAML Error: ${(error as Error).message}`,
-					})
-				}
-				return false
-			}
 		}
 
 		return true
@@ -279,43 +192,23 @@ export default function ConfigForm({ owner, repo }: Props) {
 						)}
 					/>
 
-					<FormField
-						control={form.control}
-						name="config"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Configuration</FormLabel>
-								<FormControl>
-									<YamlEditor
-										value={field.value}
-										onChange={field.onChange}
-										error={!!form.formState.errors.config}
-									/>
-								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
 					<div className="space-y-2">
 						<p className="text-sm text-muted-foreground mb-4">
-							Once you click &quot;Deploy&quot;, we will commit the
-							configuration file to the root of your repository&apos;s (default
-							branch) and create the project in Smithery.
+							Once you click &quot;Create&quot;, your repository will be
+							publicly listed on Smithery.
 						</p>
-						<Button
+						<ButtonLoading
 							type="submit"
+							isLoading={form.formState.isSubmitting || isLoading}
 							disabled={
-								form.formState.isSubmitting ||
-								isLoading ||
 								!form.formState.isValid ||
 								Object.keys(form.formState.errors).length > 0
 							}
 						>
 							{form.formState.isSubmitting || isLoading
 								? "Creating..."
-								: "Deploy"}
-						</Button>
+								: "Create"}
+						</ButtonLoading>
 					</div>
 
 					{form.formState.errors.root && (
