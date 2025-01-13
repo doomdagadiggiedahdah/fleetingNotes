@@ -1,5 +1,5 @@
 import { MCPProvider } from "@/context/mcp-context"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, ExternalLink, Github } from "lucide-react"
 
 import { Header } from "../header"
@@ -10,7 +10,7 @@ import { ServerTabs } from "./tabs"
 import { Suspense } from "react"
 
 interface ServerInfoProps {
-	server: ServerWithStats
+	server: FetchedServer
 	searchParams?: { [key: string]: string | string[] | undefined }
 }
 
@@ -56,15 +56,17 @@ export function ServerInfo({ server, searchParams = {} }: ServerInfoProps) {
 							<Github className="w-4 h-4 mr-1" />
 							Source
 						</a>
-						<a
-							href={server.homepage}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center hover:text-primary"
-						>
-							<ExternalLink className="w-4 h-4 mr-1" />
-							Homepage
-						</a>
+						{server.homepage && (
+							<a
+								href={server.homepage}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex items-center hover:text-primary"
+							>
+								<ExternalLink className="w-4 h-4 mr-1" />
+								Homepage
+							</a>
+						)}
 					</div>
 				</div>
 

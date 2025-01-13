@@ -1,9 +1,9 @@
 "use client"
 
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 
 interface ReadingPanelProps {
-	server: ServerWithStats
+	server: FetchedServer
 }
 
 export function AboutPanel({ server }: ReadingPanelProps) {

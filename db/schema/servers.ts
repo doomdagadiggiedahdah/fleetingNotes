@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core"
 import { authUsers } from "drizzle-orm/supabase"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-import type { z } from "zod"
+import { z } from "zod"
 
 export const servers = pgTable("servers", {
 	// Stable ID
@@ -48,11 +48,11 @@ export const servers = pgTable("servers", {
 // TODO: add pgjson schema constraint
 // Extend the auto-generated schema with our custom connections type
 export const insertServerSchema = createInsertSchema(servers).extend({
-	connections: ConnectionSchema,
+	connections: z.array(ConnectionSchema),
 })
 
 export const selectServerSchema = createSelectSchema(servers).extend({
-	connections: ConnectionSchema,
+	connections: z.array(ConnectionSchema),
 })
 
 export type Server = z.infer<typeof selectServerSchema>

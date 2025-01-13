@@ -2,7 +2,7 @@
 
 import ErrorMessage from "@/components/error-message"
 import ServerList from "@/components/list/server-list"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
 
@@ -11,7 +11,7 @@ export const HomeSearch = ({
 	error,
 	initialSearch = "",
 }: {
-	servers: ServerWithStats[]
+	servers: FetchedServer[]
 	error?: string
 	initialSearch?: string
 }) => {

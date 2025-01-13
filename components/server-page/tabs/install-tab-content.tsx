@@ -1,5 +1,5 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { AlertCircle, Bug, ExternalLink } from "lucide-react"
 import CodeBlock from "../../code-block"
@@ -7,7 +7,7 @@ import CodeBlock from "../../code-block"
 export const ClientInstallContent = ({
 	tool,
 	client,
-}: { tool: ServerWithStats; client: "claude" | "cline" }) => {
+}: { tool: FetchedServer; client: "claude" | "cline" }) => {
 	return (
 		<>
 			<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
@@ -66,7 +66,7 @@ export const ClientInstallContent = ({
 	)
 }
 
-export const BadgeContent = ({ tool }: { tool: ServerWithStats }) => {
+export const BadgeContent = ({ tool }: { tool: FetchedServer }) => {
 	return (
 		<>
 			<h4 className="font-semibold mb-2 text-primary">Github Badge</h4>
@@ -89,7 +89,7 @@ export const BadgeContent = ({ tool }: { tool: ServerWithStats }) => {
 	)
 }
 
-export const TypeScriptContent = ({ tool }: { tool: ServerWithStats }) => {
+export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
 	const connection = tool.connections[0]
 
 	if (!connection || connection.type !== "stdio") {

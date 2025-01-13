@@ -5,11 +5,11 @@ import { PlayCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import Search from "@/components/search"
 
 interface ToolsPanelProps {
-	server: ServerWithStats
+	server: FetchedServer
 }
 
 interface ToolParameter {

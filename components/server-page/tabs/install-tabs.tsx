@@ -10,12 +10,12 @@ import {
 	BadgeContent,
 	TypeScriptContent,
 } from "./install-tab-content"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 
 export type InstallTabStates = "claude" | "cline" | "code" | "badge"
 
 type InstallationTabsProps = {
-	server: ServerWithStats
+	server: FetchedServer
 	initTab?: InstallTabStates
 	className?: string
 	onTabChange?: (tab: InstallTabStates) => void

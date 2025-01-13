@@ -1,8 +1,8 @@
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 
 interface ServerStatsProps {
 	serverId: string
-	server: ServerWithStats
+	server: FetchedServer
 }
 
 interface TabButtonProps {

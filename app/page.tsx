@@ -1,6 +1,6 @@
 import { HomeSearch } from "@/components/list/home-search"
-import type { ServerWithStats } from "@/lib/types/client"
-import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import { getAllServers } from "@/lib/utils/fetch-registry"
 
 export const revalidate = 3600
 
@@ -9,12 +9,11 @@ export default async function Home({
 }: {
 	searchParams: { q?: string }
 }) {
-	let serverData: ServerWithStats[] = []
+	let serverData: FetchedServer[] = []
 	let error = ""
 
 	try {
-		const data = await getAllServers()
-		serverData = parseServerData(data)
+		serverData = await getAllServers()
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"

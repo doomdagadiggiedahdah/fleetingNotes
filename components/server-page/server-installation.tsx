@@ -1,8 +1,8 @@
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { InstallationTabs, type InstallTabStates } from "./tabs/install-tabs"
 
 type Props = {
-	server: ServerWithStats
+	server: FetchedServer
 	initTab?: InstallTabStates
 	onTabChange?: (tab: InstallTabStates) => void
 }

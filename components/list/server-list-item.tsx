@@ -1,9 +1,7 @@
 "use client"
 
-import {
-	NEW_DAYS as NEW_SERVER_DAYS,
-	type ServerWithStats,
-} from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import { SERVER_NEW_DAYS as NEW_SERVER_DAYS } from "@/lib/utils"
 import { BadgeCheck, ExternalLink, Github, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { InstallCount } from "../install-count"
@@ -11,7 +9,7 @@ import type { InstallTabStates } from "../server-page/tabs/install-tabs"
 import { InstallationTabs } from "../server-page/tabs/install-tabs"
 
 interface ToolCardProps {
-	server: ServerWithStats
+	server: FetchedServer
 	activeTab: InstallTabStates
 	isExpanded: boolean
 	expand: () => void
@@ -93,15 +91,17 @@ export function ServerListItem({
 							<Github className="w-4 h-4 mr-1" />
 							Source
 						</a>
-						<a
-							href={server.homepage}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center hover:text-primary"
-						>
-							<ExternalLink className="w-4 h-4 mr-1" />
-							Homepage
-						</a>
+						{server.homepage && (
+							<a
+								href={server.homepage}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex items-center hover:text-primary"
+							>
+								<ExternalLink className="w-4 h-4 mr-1" />
+								Homepage
+							</a>
+						)}
 					</div>
 
 					{server.connections[0]?.configSchema?.properties && (

@@ -1,6 +1,6 @@
 "use client"
 
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { useState } from "react"
 import Search from "../search"
 import type { InstallTabStates } from "../server-page/tabs/install-tabs"
@@ -9,7 +9,7 @@ import { ServerListItem } from "./server-list-item"
 export default function ServerList({
 	servers,
 	initialSearch = "",
-}: { servers: ServerWithStats[]; initialSearch?: string }) {
+}: { servers: FetchedServer[]; initialSearch?: string }) {
 	const filterTools = (query: string) => {
 		return servers.filter(
 			(tool) =>

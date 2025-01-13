@@ -6,13 +6,13 @@ import { AboutPanel } from "./about-tab"
 import { ToolsPanel } from "./tools-tab"
 import { ServerInstallation } from "../server-installation"
 import { ServerStats } from "../server-stats"
-import type { ServerWithStats } from "@/lib/types/client"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useMCP } from "@/context/mcp-context"
 
 interface ServerTabsProps {
-	server: ServerWithStats
+	server: FetchedServer
 }
 
 export function ServerTabs({ server }: ServerTabsProps) {
@@ -20,6 +20,9 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const [activeTab, setActiveTab] = useState<string>("about")
+
+	// Determines if the user is an admin of this MCP
+	const [isAdmin, setIsAdmin] = useState(false)
 
 	// Handle initial tab selection from search params
 	useEffect(() => {
@@ -36,6 +39,10 @@ export function ServerTabs({ server }: ServerTabsProps) {
 			setActiveTab(availableTabs[0])
 		}
 	}, [capabilities, searchParams])
+
+	// TODO:
+	// Handle admin status from search params
+	useEffect(() => {}, [server.id])
 
 	// Update URL when tab changes
 	const handleTabChange = (value: string) => {
