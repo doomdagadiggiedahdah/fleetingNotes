@@ -2,12 +2,11 @@
 
 import type { ServerWithStats } from "@/lib/types/client"
 import { useState } from "react"
-import Search from "./search"
-import { ToolCard } from "./tool-card"
+import Search from "../search"
+import type { InstallTabStates } from "../server-page/tabs/install-tabs"
+import { ServerListItem } from "./server-list-item"
 
-export type InstallTab = "claude" | "cline" | "code" | "json" | "badge"
-
-export default function ToolList({
+export default function ServerList({
 	servers,
 	initialSearch = "",
 }: { servers: ServerWithStats[]; initialSearch?: string }) {
@@ -31,9 +30,9 @@ export default function ToolList({
 	const [expandedToolId, setExpandedToolId] = useState<string | null>(
 		displayedTools.length > 0 ? displayedTools[0].qualifiedName : null,
 	)
-	const [activeTab, setActiveTab] = useState<InstallTab>("claude")
+	const [activeTab, setActiveTab] = useState<InstallTabStates>("claude")
 
-	const handleSearch = (query: string) => {
+	const handleSearch = async (query: string) => {
 		setSearchQuery(query)
 		setPage(1)
 	}
@@ -44,10 +43,10 @@ export default function ToolList({
 
 	return (
 		<>
-			<Search onSearch={handleSearch} initialValue={searchQuery} />
+			<Search onSearch={handleSearch} initialValue={initialSearch} />
 			<div className="space-y-4 mt-4">
 				{displayedTools.map((tool) => (
-					<ToolCard
+					<ServerListItem
 						key={tool.qualifiedName}
 						server={tool}
 						activeTab={activeTab}
@@ -64,6 +63,7 @@ export default function ToolList({
 				{displayedTools.length < filteredTools.length && (
 					<div className="text-center py-4">
 						<button
+							type="button"
 							onClick={handleLoadMore}
 							className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-2 px-4 rounded"
 						>

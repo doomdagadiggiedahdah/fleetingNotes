@@ -1,10 +1,14 @@
-import { HomeSearch } from "@/components/home-search"
+import { HomeSearch } from "@/components/list/home-search"
 import type { ServerWithStats } from "@/lib/types/client"
 import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
 
 export const revalidate = 3600
 
-export default async function Home() {
+export default async function Home({
+	searchParams,
+}: {
+	searchParams: { q?: string }
+}) {
 	let serverData: ServerWithStats[] = []
 	let error = ""
 
@@ -16,5 +20,11 @@ export default async function Home() {
 		error = "An unexpected error occurred"
 	}
 
-	return <HomeSearch servers={serverData} error={error} />
+	return (
+		<HomeSearch
+			servers={serverData}
+			error={error}
+			initialSearch={searchParams.q || ""}
+		/>
+	)
 }

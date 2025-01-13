@@ -1,19 +1,49 @@
 "use client"
 
-import { SearchIcon } from "lucide-react"
-import { useState } from "react"
+import { debounce } from "lodash"
+import { Search as SearchIcon } from "lucide-react"
+import { useCallback, useState } from "react"
 
 interface SearchProps {
-	onSearch: (query: string) => void
+	onSearch?: (query: string) => Promise<void>
 	initialValue?: string
+	autosearch?: boolean
 }
 
-export default function Search({ onSearch, initialValue = "" }: SearchProps) {
+export default function Search({
+	onSearch,
+	initialValue = "",
+	autosearch = true,
+}: SearchProps) {
 	const [query, setQuery] = useState(initialValue)
+	const [isLoading, setIsLoading] = useState(false)
 
-	const handleSearch = (e: React.FormEvent) => {
+	const debouncedSearch = useCallback(
+		debounce(async (value: string) => {
+			try {
+				setIsLoading(true)
+				await onSearch?.(value)
+			} finally {
+				setIsLoading(false)
+			}
+		}, 300),
+		[onSearch],
+	)
+
+	const handleSearch = async (e: React.FormEvent) => {
 		e.preventDefault()
-		onSearch(query)
+		try {
+			setIsLoading(true)
+			await onSearch?.(query)
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const newQuery = e.target.value
+		setQuery(newQuery)
+		if (autosearch) debouncedSearch(newQuery)
 	}
 
 	return (
@@ -23,10 +53,7 @@ export default function Search({ onSearch, initialValue = "" }: SearchProps) {
 					type="text"
 					placeholder="Search for tools..."
 					value={query}
-					onChange={(e) => {
-						setQuery(e.target.value)
-						onSearch(e.target.value)
-					}}
+					onChange={handleChange}
 					className="w-full p-4 pr-12 text-foreground border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring"
 				/>
 				<button

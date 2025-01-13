@@ -10,13 +10,13 @@ interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 const sizeClasses = {
 	sm: "max-w-[480px]",
 	md: "max-w-[640px]",
-	lg: "max-w-[1024px]",
+	lg: "max-w-[1280px]",
 }
 
 export function Container({ children, className }: ContainerProps) {
 	return (
 		<div
-			className={cn("max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4", className)}
+			className={cn("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4", className)}
 		>
 			{children}
 		</div>

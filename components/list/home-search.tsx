@@ -1,8 +1,10 @@
+"use client"
+
 import ErrorMessage from "@/components/error-message"
-import ToolList from "@/components/tool-list"
+import ServerList from "@/components/list/server-list"
 import type { ServerWithStats } from "@/lib/types/client"
-import { Header } from "./header"
-import { Container } from "./layouts/container"
+import { Header } from "../header"
+import { Container } from "../layouts/container"
 
 export const HomeSearch = ({
 	servers,
@@ -34,7 +36,7 @@ export const HomeSearch = ({
 				{error ? (
 					<ErrorMessage message={error} />
 				) : (
-					<ToolList servers={servers} initialSearch={initialSearch} />
+					<ServerList servers={servers} initialSearch={initialSearch} />
 				)}
 			</Container>
 		</main>

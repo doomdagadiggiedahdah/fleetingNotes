@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { events, servers } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/client"
 import { RegistryServerSchema } from "@/lib/types/server"
-import { sql } from "drizzle-orm"
+import { sql, eq } from "drizzle-orm"
 
 import type { InferSelectModel } from "drizzle-orm"
 
@@ -62,4 +62,33 @@ export function parseServerData(data: ServerSelection[]): ServerWithStats[] {
 			),
 		}
 	})
+}
+
+export async function getServer(qualifiedName: string) {
+	return await db
+		.select({
+			id: servers.id,
+			qualifiedName: servers.qualifiedName,
+			displayName: servers.displayName,
+			description: servers.description,
+			vendor: servers.vendor,
+			sourceUrl: servers.sourceUrl,
+			license: servers.license,
+			homepage: servers.homepage,
+			verified: servers.verified,
+			connections: servers.connections,
+			createdAt: servers.createdAt,
+			updatedAt: servers.updatedAt,
+			remote: servers.remote,
+			published: servers.published,
+			deploymentUrl: servers.deploymentUrl,
+			tags: servers.tags,
+			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
+		})
+		.from(servers)
+		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
+		.where(eq(servers.qualifiedName, qualifiedName))
+		.groupBy(servers.id)
+		.limit(1)
+		.then((rows) => rows[0])
 }

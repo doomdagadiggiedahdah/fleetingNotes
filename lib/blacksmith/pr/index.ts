@@ -160,7 +160,7 @@ export async function generatePRs() {
 			}
 
 			const entryOutput = await generatePR(
-				server.id,
+				server.qualifiedName,
 				server.qualifiedName,
 				owner,
 				repo,
@@ -176,7 +176,7 @@ export async function generatePRs() {
 			await db
 				.insert(pr_queue)
 				.values({
-					serverId: server.id,
+					serverId: server.qualifiedName,
 					processed: true,
 					prUrl,
 					errored,

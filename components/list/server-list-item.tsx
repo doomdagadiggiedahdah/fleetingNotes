@@ -4,48 +4,21 @@ import {
 	NEW_DAYS as NEW_SERVER_DAYS,
 	type ServerWithStats,
 } from "@/lib/types/client"
-import { BadgeCheck, ExternalLink, Sparkles } from "lucide-react"
+import { BadgeCheck, ExternalLink, Github, Sparkles } from "lucide-react"
 import Link from "next/link"
-import { InstallCount } from "./install-count"
-import type { InstallTab } from "./tool-list"
-
-import { Github } from "lucide-react"
-
-import {
-	SiAnthropic,
-	SiGithub,
-	SiTypescript,
-} from "@icons-pack/react-simple-icons"
-import { TabContent } from "./tool-tab"
+import { InstallCount } from "../install-count"
+import type { InstallTabStates } from "../server-page/tabs/install-tabs"
+import { InstallationTabs } from "../server-page/tabs/install-tabs"
 
 interface ToolCardProps {
 	server: ServerWithStats
-	activeTab: InstallTab
+	activeTab: InstallTabStates
 	isExpanded: boolean
 	expand: () => void
-	setActiveTab: (tab: InstallTab) => void
+	setActiveTab: (tab: InstallTabStates) => void
 }
 
-interface TabButtonProps {
-	isActive: boolean
-	onClick: (e: React.MouseEvent) => void
-	icon?: React.ReactNode
-	children: React.ReactNode
-}
-
-const TabButton = ({ isActive, onClick, icon, children }: TabButtonProps) => (
-	<button
-		className={`px-4 py-2 flex items-center gap-2 ${
-			isActive ? "border-b-2 border-primary" : ""
-		}`}
-		onClick={onClick}
-	>
-		{icon}
-		{children}
-	</button>
-)
-
-export function ToolCard({
+export function ServerListItem({
 	server,
 	activeTab,
 	isExpanded,
@@ -146,76 +119,12 @@ export function ToolCard({
 							</ul>
 						</div>
 					)}
-
 					<div className="bg-background p-3 rounded-lg border border-border">
-						<div className="flex border-b border-border mb-3">
-							<TabButton
-								isActive={activeTab === "claude"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("claude")
-								}}
-								icon={<SiAnthropic className="w-4 h-4" />}
-							>
-								Claude
-							</TabButton>
-							<TabButton
-								isActive={activeTab === "cline"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("cline")
-								}}
-								// icon={<SiAnthropic className="w-4 h-4" />}
-							>
-								Cline
-							</TabButton>
-							<TabButton
-								isActive={activeTab === "code"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("code")
-								}}
-								icon={<SiTypescript className="w-4 h-4" />}
-							>
-								Typescript
-							</TabButton>
-							<TabButton
-								isActive={activeTab === "badge"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("badge")
-								}}
-								icon={<SiGithub className="w-4 h-4" />}
-							>
-								Badge
-							</TabButton>
-							{/* <TabButton
-								isActive={activeTab === "jan"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("jan")
-								}}
-								icon="👋"
-							>
-								Jan
-							</TabButton> */}
-							{/* 
-							<TabButton
-								isActive={activeTab === "json"}
-								onClick={(e) => {
-									e.stopPropagation()
-									setActiveTab("json")
-								}}
-								icon={<FileJsonIcon className="w-4 h-4" />}
-							>
-								JSON
-							</TabButton> */}
-						</div>
-						<div className="flex items-start justify-between">
-							<div className="flex-1">
-								<TabContent tool={server} tab={activeTab || "claude"} />
-							</div>
-						</div>
+						<InstallationTabs
+							server={server}
+							initTab={activeTab}
+							onTabChange={setActiveTab}
+						/>
 					</div>
 				</div>
 			)}

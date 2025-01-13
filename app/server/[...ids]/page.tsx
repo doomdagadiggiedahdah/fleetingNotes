@@ -1,12 +1,12 @@
-import { HomeSearch } from "@/components/home-search"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { ServerWithStats } from "@/lib/types/client"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
-
-import { getAllServers, parseServerData } from "@/lib/utils/fetch-registry"
+import { parseServerData } from "@/lib/utils/fetch-registry"
 import { notFound } from "next/navigation"
+import { ServerInfo } from "@/components/server-page/server-info"
+import { getServer } from "@/lib/utils/fetch-registry"
 
 type Props = {
 	params: { ids: string[] }
@@ -28,10 +28,10 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-	const serverId = decodeURIComponent(params.ids.join("/"))
+	const qualifiedName = decodeURIComponent(params.ids.join("/"))
 	try {
 		const result = await db.query.servers.findFirst({
-			where: eq(servers.qualifiedName, serverId),
+			where: eq(servers.qualifiedName, qualifiedName),
 		})
 		if (!result) {
 			return {}
@@ -48,23 +48,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServerPage({ params }: Props) {
-	const serverId = decodeURIComponent(params.ids.join("/"))
-	let serverData: ServerWithStats[] = []
-
+	const qualifiedName = decodeURIComponent(params.ids.join("/"))
+	let serverData: ServerWithStats | null = null
 	let error = ""
+
 	try {
-		const data = await getAllServers()
-		serverData = parseServerData(data)
+		const data = await getServer(qualifiedName)
+		if (!data) {
+			notFound()
+		}
+		serverData = parseServerData([data])[0]
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
 
-	if (!serverData.find((s) => s.qualifiedName === serverId)) {
-		notFound()
-	}
-
 	return (
-		<HomeSearch servers={serverData} error={error} initialSearch={serverId} />
+		<main className="min-h-screen bg-background">
+			{error ? (
+				<div className="text-red-500">{error}</div>
+			) : (
+				<ServerInfo server={serverData!} />
+			)}
+		</main>
 	)
 }
