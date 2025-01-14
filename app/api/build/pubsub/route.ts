@@ -80,7 +80,6 @@ export async function POST(request: Request) {
 			const deployment = await db
 				.select({
 					serverId: servers.id,
-					qualifiedName: servers.qualifiedName,
 				})
 				.from(deployments)
 				.innerJoin(servers, eq(deployments.serverId, servers.id))
@@ -89,7 +88,7 @@ export async function POST(request: Request) {
 				.then((rows) => rows[0])
 
 			if (deployment) {
-				const cloudRunUrl = await getCloudRunUrl(deployment.qualifiedName)
+				const cloudRunUrl = await getCloudRunUrl(deployment.serverId)
 				if (cloudRunUrl) {
 					updateData.deploymentUrl = cloudRunUrl
 				}
