@@ -17,13 +17,15 @@ interface ServerTabsProps {
 	server: FetchedServer
 }
 
+const DEFAULT_TAB = "about"
+
 export function ServerTabs({ server }: ServerTabsProps) {
 	const { capabilities } = useMCP()
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const pathname = usePathname()
 
-	const tab = searchParams.get("tab") ?? "about"
+	const tab = searchParams.get("tab") ?? DEFAULT_TAB
 
 	// Determines if the user is an admin of this MCP
 	const [isAdmin, setIsAdmin] = useState(false)
@@ -37,7 +39,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 		checkAdminStatus()
 
 		// Prefetch tabs
-		router.prefetch(`${pathname}?tab=about`)
+		router.prefetch(`${pathname}`)
 		if (capabilities?.tools) router.prefetch(`${pathname}?tab=tools`)
 		if (capabilities?.resources) router.prefetch(`${pathname}?tab=resources`)
 	}, [server.id])
@@ -51,10 +53,14 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	}, [isAdmin])
 
 	// Update URL when tab changes
-	const handleTabChange = (value: string) => {
-		const params = new URLSearchParams(searchParams.toString())
-		params.set("tab", value)
-		router.push(`${pathname}?${params.toString()}`)
+	const handleTabChange = (newTab: string) => {
+		if (newTab === DEFAULT_TAB) {
+			router.push(`${pathname}`)
+		} else {
+			const params = new URLSearchParams(searchParams.toString())
+			params.set("tab", newTab)
+			router.push(`${pathname}?${params.toString()}`)
+		}
 	}
 
 	return (

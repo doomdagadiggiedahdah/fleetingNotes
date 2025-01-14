@@ -26,10 +26,13 @@ interface Props {
 // TODO: this isn't better than directly using a client component
 export function DeploymentsTable({ server }: Props) {
 	const [deployments, setDeployments] = useState<Deployment[]>([])
+	const [isLoading, setIsLoading] = useState(true)
 
 	useEffect(() => {
 		;(async () => {
+			setIsLoading(true)
 			setDeployments(await getDeployments(server.id))
+			setIsLoading(false)
 		})()
 
 		const supabase = createClient()
@@ -114,7 +117,14 @@ export function DeploymentsTable({ server }: Props) {
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{deployments.length === 0 ? (
+						{isLoading ? (
+							<>
+								{[...Array(3)].map((_, i) => (
+									// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+									<SkeletonRow key={i} />
+								))}
+							</>
+						) : deployments.length === 0 ? (
 							<TableRow>
 								<TableCell
 									colSpan={4}
@@ -206,3 +216,23 @@ export function DeploymentsTable({ server }: Props) {
 		</div>
 	)
 }
+
+const SkeletonRow = () => (
+	<TableRow>
+		<TableCell>
+			<div className="flex items-center gap-2">
+				<div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+				<div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+			</div>
+		</TableCell>
+		<TableCell>
+			<div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+		</TableCell>
+		<TableCell>
+			<div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse" />
+		</TableCell>
+		<TableCell>
+			<div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+		</TableCell>
+	</TableRow>
+)
