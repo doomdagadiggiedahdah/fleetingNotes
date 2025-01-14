@@ -1,6 +1,15 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+	pgEnum,
+	pgPolicy,
+	pgTable,
+	text,
+	timestamp,
+	uuid,
+} from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import { serverRepos, servers } from "./servers"
+import { authenticatedRole } from "drizzle-orm/supabase"
+import { sql } from "drizzle-orm"
 
 export const deploymentStatus = pgEnum("deployment_status", [
 	"QUEUED",
@@ -29,18 +38,19 @@ export const deployments = pgTable(
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
-	// (table) => [
-	// 	pgPolicy("Users can read deployments from their projects", {
-	// 		for: "select",
-	// 		to: authenticatedRole,
-	// using: sql`true`,
-	// using: sql`EXISTS (
-	// 	SELECT 1 FROM ${projects}
-	// 	WHERE ${projects.id} = ${table.projectId}
-	// 	AND ${projects.owner} = auth.uid()
-	// )`,
-	// 	}),
-	// ],
+	(table) => [
+		pgPolicy("Users can read deployments for their servers", {
+			as: "permissive",
+			for: "select",
+			to: authenticatedRole,
+			using: sql`
+			EXISTS (
+				SELECT 1 FROM ${servers}
+				WHERE ${servers.id} = ${table.serverId}
+				AND ${servers.owner} = auth.uid()
+			)`,
+		}),
+	],
 ).enableRLS()
 
 // Zod schemas for type safety
