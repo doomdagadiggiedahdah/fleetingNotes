@@ -19,12 +19,13 @@ import { getOctokit } from "../auth/github/server"
 export async function updateServerDetails(
 	serverId: string,
 	updates: UpdateServer,
-): Promise<boolean> {
+) {
 	const updatesParsed = updateServerSchema.parse(updates)
 
 	// Check ownership first
-	if (!(await getMyServer(serverId))) {
-		return false
+	const { server } = await getMyServer(serverId)
+	if (!server) {
+		return { error: "Unauthorized" }
 	}
 
 	try {
@@ -48,10 +49,10 @@ export async function updateServerDetails(
 				revalidatePath(`/server/${qualifiedName}`)
 			})(),
 		)
-		return true
+		return {}
 	} catch (error) {
 		console.error("Failed to update server details:", error)
-		return false
+		return { error: "Internal error." }
 	}
 }
 
@@ -61,7 +62,8 @@ export async function connectServerRepo(
 	repoName: string,
 ) {
 	// Check ownership first
-	if (!(await getMyServer(serverId))) {
+	const { server } = await getMyServer(serverId)
+	if (!server) {
 		return false
 	}
 
@@ -224,10 +226,13 @@ export async function getMyServer(serverId: string) {
 	if (!user) {
 		return { error: "Unauthorized" }
 	}
+	console.log("checking my server")
 
 	const server = await db.query.servers.findFirst({
 		where: and(eq(servers.id, serverId), eq(servers.owner, user.id)),
 	})
+
+	console.log("checked my server", server)
 
 	if (!server) {
 		return { error: "Server not found" }

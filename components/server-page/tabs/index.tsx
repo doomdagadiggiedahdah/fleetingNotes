@@ -33,7 +33,8 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	// Handle admin status from search params
 	useEffect(() => {
 		const checkAdminStatus = async () => {
-			setIsAdmin(!!(await getMyServer(server.id)))
+			const res = await getMyServer(server.id)
+			setIsAdmin(!!res.server)
 		}
 
 		checkAdminStatus()

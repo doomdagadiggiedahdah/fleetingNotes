@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
-import { connectServerRepo, updateServerDetails } from "@/lib/actions/servers"
+import { updateServerDetails } from "@/lib/actions/servers"
 import {
 	type UpdateServer,
 	updateServerSchema,
@@ -42,28 +42,14 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 	const onSubmit = async (data: UpdateServer) => {
 		try {
 			setIsLoading(true)
-			await updateServerDetails(server.id, data)
+			const { error } = await updateServerDetails(server.id, data)
+			if (error) throw new Error(error)
 			router.refresh()
 		} catch (error) {
 			console.error("Failed to update server:", error)
 			form.setError("root", {
 				type: "manual",
-				message: "Failed to update server. Please try again.",
-			})
-		} finally {
-			setIsLoading(false)
-		}
-	}
-
-	const onConnectRepo = async (repoOwner: string, repoName: string) => {
-		try {
-			setIsLoading(true)
-			await connectServerRepo(server.id, repoOwner, repoName)
-			router.refresh()
-		} catch (error) {
-			form.setError("root", {
-				type: "manual",
-				message: "Failed to connect server to repo. Please try again.",
+				message: `Failed to update server: ${error}`,
 			})
 		} finally {
 			setIsLoading(false)

@@ -1,6 +1,6 @@
 "use server"
 import { db } from "@/db"
-import { servers } from "@/db/schema/servers"
+import { serverRepos, servers } from "@/db/schema/servers"
 import { Octokit } from "@octokit/rest"
 
 import { and, inArray, isNull } from "drizzle-orm"
@@ -101,15 +101,19 @@ export async function assignUnclaimedServers(
 	).flat()
 
 	// Filter servers that match the user's repositories
-	const serversToAssign = unclaimedServers.filter((server) => {
-		if (!server.crawlUrl?.startsWith("https://github.com/")) return false
-		const path = server.crawlUrl.replace("https://github.com/", "").split("/")
-		const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
-		return repoPath && accessibleRepos.includes(repoPath)
-	})
+	const serversToAssign = unclaimedServers
+		.map((server) => {
+			if (!server.crawlUrl?.startsWith("https://github.com/")) return null
+			const path = server.crawlUrl.replace("https://github.com/", "").split("/")
+			const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
+			if (!repoPath || !accessibleRepos.includes(repoPath)) return null
+			return { server, repoOwner: path[0], repoName: path[1] }
+		})
+		.filter((s): s is NonNullable<typeof s> => s !== null)
 
 	console.log("serversToAssign", serversToAssign.length)
 	if (serversToAssign.length > 0) {
+		// Assign all owners
 		await db
 			.update(servers)
 			.set({
@@ -121,10 +125,22 @@ export async function assignUnclaimedServers(
 					isNull(servers.owner),
 					inArray(
 						servers.id,
-						serversToAssign.map((s) => s.id),
+						serversToAssign.map((s) => s.server.id),
 					),
 				),
 			)
+		// Connect all repos
+		await db
+			.insert(serverRepos)
+			.values(
+				serversToAssign.map((s) => ({
+					serverId: s.server.id,
+					type: "github" as const,
+					repoOwner: s.repoOwner,
+					repoName: s.repoName,
+				})),
+			)
+			.onConflictDoNothing()
 	}
 
 	return {}

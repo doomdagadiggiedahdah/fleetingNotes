@@ -8,6 +8,13 @@
 			"when": 1736828744432,
 			"tag": "0001_slow_prowler",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1736831316992,
+			"tag": "0002_right_iron_fist",
+			"breakpoints": true
 		}
 	]
 }

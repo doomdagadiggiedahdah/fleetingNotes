@@ -44,7 +44,7 @@ export function DeploymentsTable({ server }: Props) {
 					event: "INSERT",
 					schema: "public",
 					table: "deployments",
-					filter: `project_id=eq.${server.id}`,
+					filter: `server_id=eq.${server.id}`,
 				},
 				(payload) => {
 					setDeployments((prev) => [payload.new as Deployment, ...prev])
@@ -56,7 +56,7 @@ export function DeploymentsTable({ server }: Props) {
 					event: "UPDATE",
 					schema: "public",
 					table: "deployments",
-					filter: `project_id=eq.${server.id}`,
+					filter: `server_id=eq.${server.id}`,
 				},
 				(payload) => {
 					setDeployments((prev) =>

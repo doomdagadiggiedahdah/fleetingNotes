@@ -9,6 +9,7 @@ import {
 	text,
 	timestamp,
 	uuid,
+	unique,
 } from "drizzle-orm/pg-core"
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
@@ -74,14 +75,20 @@ export type NewServer = z.infer<typeof insertServerSchema>
 export const providerEnum = pgEnum("provider", ["github"])
 
 // Connect repositories
-export const serverRepos = pgTable("server_repos", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	serverId: uuid("server_id")
-		.notNull()
-		.references(() => servers.id),
-	type: providerEnum("type").notNull(),
-	repoOwner: text("repo_owner").notNull(),
-	repoName: text("repo_name").notNull(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}).enableRLS()
+export const serverRepos = pgTable(
+	"server_repos",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		serverId: uuid("server_id")
+			.notNull()
+			.references(() => servers.id),
+		type: providerEnum("type").notNull(),
+		repoOwner: text("repo_owner").notNull(),
+		repoName: text("repo_name").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	},
+	(table) => ({
+		serverIdTypeUnique: unique().on(table.serverId, table.type),
+	}),
+).enableRLS()
