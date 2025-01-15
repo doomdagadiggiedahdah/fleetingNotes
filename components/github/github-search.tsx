@@ -8,7 +8,7 @@ import { useEffect, useState } from "react"
 
 interface GithubSearchProps {
 	ghUser: GithubUser
-	selectedAccount: GithubAccount
+	selectedAccount: GithubAccount | null
 	onReposChange: (
 		repos: Array<{
 			name: string
@@ -52,6 +52,8 @@ export function GithubSearch({
 		}
 
 		const searchRepos = async () => {
+			if (!selectedAccount) return
+
 			onLoadingChange(true)
 
 			if (!searchQuery.trim()) {
@@ -110,6 +112,7 @@ export function GithubSearch({
 				type="text"
 				placeholder="Search repositories..."
 				value={searchQuery}
+				disabled={!selectedAccount}
 				onChange={(e) => setSearchQuery(e.target.value)}
 				className="w-full rounded-md border border-neutral-800 bg-neutral-900 px-4 py-2 text-sm text-white placeholder-neutral-400 focus:border-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-700"
 			/>

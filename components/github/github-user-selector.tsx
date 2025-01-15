@@ -7,7 +7,7 @@ import { Plus } from "lucide-react"
 
 interface GithubUserHeaderProps {
 	user: GithubUser
-	selectedAccount: GithubAccount
+	selectedAccount: GithubAccount | null
 	onOwnerChange: (owner: GithubAccount) => void
 }
 

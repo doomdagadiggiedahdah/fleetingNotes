@@ -15,7 +15,7 @@ export function RepoSelector({ onRepoSelect, buttonText }: RepoSelectorProps) {
 	const ghUser = useContext(GithubUserContext)
 	if (!ghUser) throw new Error("Github context not setup")
 	const [repos, setRepos] = useState<GithubRepository[]>([])
-	const [selectedOwner, setSelectedOwner] = useState<GithubAccount>(
+	const [selectedOwner, setSelectedOwner] = useState<GithubAccount | null>(
 		ghUser.accounts[0],
 	)
 	const [searchLoading, setSearchLoading] = useState(false)
