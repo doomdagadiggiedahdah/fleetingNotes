@@ -42,10 +42,12 @@ export async function getServer(qualifiedName: string) {
 		.groupBy(servers.id)
 		.limit(1)
 
-	return selectFetchedServerSchema.parse(rows[0])
+	const data = rows[0]
+	if (!data) return null
+	return selectFetchedServerSchema.parse(data)
 }
 
-export type FetchedServer = Awaited<ReturnType<typeof getServer>>
+export type FetchedServer = NonNullable<Awaited<ReturnType<typeof getServer>>>
 
 export async function getAllServers(): Promise<FetchedServer[]> {
 	const rows = await db
