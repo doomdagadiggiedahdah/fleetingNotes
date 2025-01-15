@@ -1,9 +1,6 @@
 "use client"
-import {
-	openGithubAppInstall,
-	type GithubAccount,
-	type GithubUser,
-} from "@/lib/auth/github/client"
+import { openGithubAppInstall } from "@/lib/auth/github/client"
+import type { GithubAccount, GithubUser } from "@/lib/auth/github/common"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
 import { ChevronDownIcon } from "@radix-ui/react-icons"
 import { Plus } from "lucide-react"

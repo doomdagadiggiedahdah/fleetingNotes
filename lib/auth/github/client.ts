@@ -1,37 +1,9 @@
 "use client"
 import { supabase } from "@/lib/supabase/client"
-import type { components } from "@octokit/openapi-types"
 import { Octokit } from "@octokit/rest"
-import { assignUnclaimedServers } from "../../utils/assign-server-owners"
-const GITHUB_APP_ID = process.env.NEXT_PUBLIC_GITHUB_APP_ID!
+import type { GithubAccount, GithubRepository, GithubUser } from "./common"
+
 const GITHUB_APP_NAME = process.env.NEXT_PUBLIC_GITHUB_APP_NAME!
-
-export interface GithubRepository {
-	name: string
-	private: boolean
-	updatedAt: string | null
-	owner: string
-}
-
-export type GithubAccount =
-	| components["schemas"]["simple-user"]
-	| components["schemas"]["organization"]
-// TODO: Support enterprise?
-
-export interface GithubUser {
-	login: string
-	name: string | null
-	avatarUrl: string
-	accounts: GithubAccount[]
-}
-
-export interface GithubInstallation {
-	id: number
-	account: {
-		login: string
-		type: "User" | "Organization"
-	}
-}
 
 export async function getOctokit() {
 	const {
@@ -68,31 +40,6 @@ export async function getGithubUser(): Promise<GithubUser | null> {
 	} catch (error) {
 		console.error("Failed to fetch GitHub user:", error)
 		return null
-	}
-}
-
-export async function claimRepoOwnership(user: GithubUser) {
-	// If user is logged in, check for unclaimed servers
-	if (user) {
-		const octokitRes = await getOctokit()
-		if (!octokitRes) return
-
-		const { octokit } = octokitRes
-
-		// Get user's GitHub installations
-		const { data: installationsData } = await octokit.request(
-			"GET /user/installations",
-		)
-
-		if (installationsData.installations.length > 0) {
-			// Call server action with installation IDs (in background)
-			await assignUnclaimedServers(
-				installationsData.installations.map((install) => ({
-					id: install.id,
-					account: install.account as GithubAccount,
-				})),
-			)
-		}
 	}
 }
 

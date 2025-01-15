@@ -3,15 +3,15 @@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
-import { getMyServer } from "@/lib/actions/servers"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import { Info, Server, Settings } from "lucide-react"
+import { Info, Settings } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings/settings-tab"
 import { ToolsPanel } from "./tools-tab"
+import { supabase } from "@/lib/supabase/client"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -33,8 +33,10 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	// Handle admin status from search params
 	useEffect(() => {
 		const checkAdminStatus = async () => {
-			const res = await getMyServer(server.id)
-			setIsAdmin(!!res.server)
+			const {
+				data: { user },
+			} = await supabase.auth.getUser()
+			setIsAdmin(user?.id === server.owner)
 		}
 
 		checkAdminStatus()
@@ -84,7 +86,8 @@ export function ServerTabs({ server }: ServerTabsProps) {
 
 				{isAdmin && (
 					<div className="flex">
-						<TabsTrigger value="deployments">
+						{/* Hide until release */}
+						{/* <TabsTrigger value="deployments">
 							<span className="flex items-center gap-2">
 								<Server size={16} />
 								Deployments
@@ -92,7 +95,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 									preview
 								</div>
 							</span>
-						</TabsTrigger>
+						</TabsTrigger> */}
 						<TabsTrigger value="settings">
 							<span className="flex items-center gap-2">
 								<Settings size={16} />

@@ -5,6 +5,7 @@ import { BadgeCheck, ExternalLink, Github } from "lucide-react"
 import { Suspense } from "react"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
+import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import ServerSearch from "./server-search"
 import { ServerTabs } from "./tabs"
@@ -44,6 +45,9 @@ export function ServerPage({ server }: Props) {
 								{server.qualifiedName}
 							</div>
 						</div>
+						<Suspense>
+							<ClaimButton server={server} />
+						</Suspense>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
 						<span>Vendor: {server.vendor}</span>

@@ -1,25 +1,19 @@
 "use client"
-import type {
-	GithubAccount,
-	GithubRepository,
-	GithubUser,
-} from "@/lib/auth/github/client"
-import { useState } from "react"
+import type { GithubAccount, GithubRepository } from "@/lib/auth/github/common"
+import { useContext, useState } from "react"
 import { GithubRepoList } from "./github-repo-list"
 import { GithubSearch } from "./github-search"
+import { GithubUserContext } from "./github-user-provider"
 import { GithubUserSelector } from "./github-user-selector"
 
 interface RepoSelectorProps {
-	ghUser: GithubUser
 	onRepoSelect: (owner: string, repo: string) => void
 	buttonText?: string
 }
 
-export function RepoSelector({
-	ghUser,
-	onRepoSelect,
-	buttonText,
-}: RepoSelectorProps) {
+export function RepoSelector({ onRepoSelect, buttonText }: RepoSelectorProps) {
+	const ghUser = useContext(GithubUserContext)
+	if (!ghUser) throw new Error("Github context not setup")
 	const [repos, setRepos] = useState<GithubRepository[]>([])
 	const [selectedOwner, setSelectedOwner] = useState<GithubAccount>(
 		ghUser.accounts[0],

@@ -2,9 +2,8 @@
 import {
 	getOctokit,
 	getRecentGithubRepositories,
-	type GithubAccount,
-	type GithubUser,
 } from "@/lib/auth/github/client"
+import type { GithubAccount, GithubUser } from "@/lib/auth/github/common"
 import { useEffect, useState } from "react"
 
 interface GithubSearchProps {

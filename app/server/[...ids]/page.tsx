@@ -57,9 +57,10 @@ function parsePathParams(ids: string[]) {
 		part = decodeURIComponent(part)
 		idParts.push(part)
 
-		if (!part.startsWith("@")) {
-			break
-		}
+		// TODO: Currently, some servers don't start with `@`. We'll have to fix that in the future.
+		// if (!part.startsWith("@")) {
+		// 	break
+		// }
 	}
 
 	const qualifiedName = idParts.join("/")

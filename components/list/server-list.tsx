@@ -24,7 +24,7 @@ export default function ServerList({
 
 	// Tools displayed on the page
 	const filteredTools = filterTools(searchQuery)
-	const displayedTools = filterTools(searchQuery).slice(0, page * 3 * 4)
+	const displayedTools = filterTools(searchQuery).slice(0, page * 3 * 5)
 
 	const handleSearch = async (query: string) => {
 		setSearchQuery(query)

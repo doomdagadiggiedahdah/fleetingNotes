@@ -5,12 +5,13 @@ import { Octokit } from "@octokit/rest"
 
 import { and, inArray, isNull } from "drizzle-orm"
 
-import type { GithubAccount } from "../auth/github/client"
+import type { GithubAccount } from "../auth/github/common"
 import { createClient } from "../supabase/server"
 
-export async function assignUnclaimedServers(
-	installations: { id: number; account: GithubAccount }[],
-) {
+/**
+ * Assigns all unclaimed servers to the current user based on their GitHub App installation
+ */
+export async function assignUnclaimedServers() {
 	const supabase = await createClient()
 	// Get the GitHub access token from the session
 	const {
@@ -26,11 +27,24 @@ export async function assignUnclaimedServers(
 		auth: session.provider_token,
 	})
 
+	// Get the user's GitHub installations
+	const { data: installationsData } = await octokit.request(
+		"GET /user/installations",
+	)
+	const installations: { id: number; account: GithubAccount }[] =
+		installationsData.installations.map((installation) => ({
+			id: installation.id,
+			account: installation.account as GithubAccount,
+		}))
+	if (installations.length === 0) {
+		return { error: "No GitHub installations detected." }
+	}
+
 	// Get all unclaimed servers first
 	const unclaimedServers = await db
 		.select({
 			id: servers.id,
-			crawlUrl: servers.crawlUrl,
+			sourceUrl: servers.sourceUrl,
 		})
 		.from(servers)
 		.where(isNull(servers.owner))
@@ -38,8 +52,10 @@ export async function assignUnclaimedServers(
 	// Extract GitHub repository paths from unclaimed servers
 	const unclaimedRepoPaths = unclaimedServers
 		.map((server) => {
-			if (!server.crawlUrl?.startsWith("https://github.com/")) return null
-			const path = server.crawlUrl.replace("https://github.com/", "").split("/")
+			if (!server.sourceUrl?.startsWith("https://github.com/")) return null
+			const path = server.sourceUrl
+				.replace("https://github.com/", "")
+				.split("/")
 			return path.length >= 2 ? `${path[0]}/${path[1]}` : null
 		})
 		.filter((path): path is string => path !== null)
@@ -103,15 +119,16 @@ export async function assignUnclaimedServers(
 	// Filter servers that match the user's repositories
 	const serversToAssign = unclaimedServers
 		.map((server) => {
-			if (!server.crawlUrl?.startsWith("https://github.com/")) return null
-			const path = server.crawlUrl.replace("https://github.com/", "").split("/")
+			if (!server.sourceUrl?.startsWith("https://github.com/")) return null
+			const path = server.sourceUrl
+				.replace("https://github.com/", "")
+				.split("/")
 			const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
 			if (!repoPath || !accessibleRepos.includes(repoPath)) return null
 			return { server, repoOwner: path[0], repoName: path[1] }
 		})
 		.filter((s): s is NonNullable<typeof s> => s !== null)
 
-	console.log("serversToAssign", serversToAssign.length)
 	if (serversToAssign.length > 0) {
 		// Assign all owners
 		await db
@@ -143,5 +160,5 @@ export async function assignUnclaimedServers(
 			.onConflictDoNothing()
 	}
 
-	return {}
+	return { claimedCount: serversToAssign.length }
 }

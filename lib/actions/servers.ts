@@ -13,7 +13,7 @@ import {
 	updateServerSchema,
 } from "./servers.schema"
 
-import type { GithubAccount } from "../auth/github/client"
+import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
 
 export async function updateServerDetails(

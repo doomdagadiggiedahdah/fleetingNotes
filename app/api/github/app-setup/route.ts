@@ -1,6 +1,4 @@
-import { getOctokit, type GithubAccount } from "@/lib/auth/github/client"
 import { createClient } from "@/lib/supabase/server"
-import { assignUnclaimedServers } from "@/lib/actions/claim-servers"
 
 export const dynamic = "force-dynamic"
 
@@ -24,23 +22,6 @@ export async function GET(request: Request) {
 
 		if (!session?.user) {
 			return new Response("Unauthorized", { status: 401 })
-		}
-
-		const octokitRes = await getOctokit()
-		if (!octokitRes) return
-
-		const { octokit } = octokitRes
-
-		const { data: installationsData } = await octokit.request(
-			"GET /user/installations",
-		)
-		if (installationsData.installations.length > 0) {
-			await assignUnclaimedServers(
-				installationsData.installations.map((install) => ({
-					id: install.id,
-					account: install.account as GithubAccount,
-				})),
-			)
 		}
 
 		// Store the installation in Supabase

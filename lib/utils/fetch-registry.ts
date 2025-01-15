@@ -10,7 +10,6 @@ const selectFetchedServerSchema = selectServerSchema
 		crawlUrl: true,
 		checked: true,
 		tags: true,
-		owner: true,
 	})
 	.extend({
 		installCount: z.number(),
@@ -34,6 +33,7 @@ export async function getServer(qualifiedName: string) {
 			remote: servers.remote,
 			published: servers.published,
 			deploymentUrl: servers.deploymentUrl,
+			owner: servers.owner,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
 		})
 		.from(servers)
@@ -41,6 +41,7 @@ export async function getServer(qualifiedName: string) {
 		.where(eq(servers.qualifiedName, qualifiedName))
 		.groupBy(servers.id)
 		.limit(1)
+
 	return selectFetchedServerSchema.parse(rows[0])
 }
 
@@ -64,6 +65,7 @@ export async function getAllServers(): Promise<FetchedServer[]> {
 			remote: servers.remote,
 			published: servers.published,
 			deploymentUrl: servers.deploymentUrl,
+			owner: servers.owner,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
 		})
 		.from(servers)

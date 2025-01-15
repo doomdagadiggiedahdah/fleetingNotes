@@ -1,6 +1,7 @@
 "use client"
 
-import { UserRepoPicker } from "@/components/github/new-server-auth"
+import { GithubAuthProvider } from "@/components/github/github-user-provider"
+import { RepoSelector } from "@/components/github/repo-selector"
 import { useToast } from "@/hooks/use-toast"
 import { connectServerRepo } from "@/lib/actions/servers"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
@@ -29,7 +30,9 @@ export function RepoConnector({ server }: Props) {
 			<p className="text-sm text-neutral-400">
 				Connect this server to a GitHub repository to create deployments.
 			</p>
-			<UserRepoPicker onRepoSelect={onConnectRepo} buttonText="Connect" />
+			<GithubAuthProvider>
+				<RepoSelector onRepoSelect={onConnectRepo} buttonText="Connect" />
+			</GithubAuthProvider>
 		</>
 	)
 }
