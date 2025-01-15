@@ -1,6 +1,6 @@
 import { getOctokit, type GithubAccount } from "@/lib/auth/github/client"
 import { createClient } from "@/lib/supabase/server"
-import { assignUnclaimedServers } from "@/lib/utils/assign-server-owners"
+import { assignUnclaimedServers } from "@/lib/actions/claim-servers"
 
 export const dynamic = "force-dynamic"
 

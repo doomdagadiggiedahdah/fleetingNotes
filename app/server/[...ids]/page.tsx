@@ -1,12 +1,12 @@
+import ErrorMessage from "@/components/error-message"
+import { ServerPage } from "@/components/server-page/server-info"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import { getServer } from "@/lib/utils/fetch-registry"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { ServerPage } from "@/components/server-page/server-info"
-import { getServer } from "@/lib/utils/fetch-registry"
-import ErrorMessage from "@/components/error-message"
 
 type Props = {
 	params: { ids: string[] }
@@ -14,6 +14,7 @@ type Props = {
 }
 
 export const revalidate = 3600
+export const dynamicParams = true
 
 export async function generateStaticParams() {
 	// Get all server IDs from the database
@@ -48,8 +49,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 	}
 }
 
+function parsePathParams(ids: string[]) {
+	// The first part has to start with @
+	const idParts = []
+
+	for (let part of ids.slice(0, 2)) {
+		part = decodeURIComponent(part)
+		idParts.push(part)
+
+		if (!part.startsWith("@")) {
+			break
+		}
+	}
+
+	const qualifiedName = idParts.join("/")
+	return { qualifiedName, remaining: ids.slice(idParts.length) }
+}
+
 export default async function Page({ params }: Props) {
-	const qualifiedName = decodeURIComponent(params.ids.join("/"))
+	const { qualifiedName } = parsePathParams(params.ids)
 
 	let serverData: FetchedServer | null = null
 	let error = ""

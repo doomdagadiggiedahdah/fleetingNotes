@@ -226,13 +226,10 @@ export async function getMyServer(serverId: string) {
 	if (!user) {
 		return { error: "Unauthorized" }
 	}
-	console.log("checking my server")
 
 	const server = await db.query.servers.findFirst({
 		where: and(eq(servers.id, serverId), eq(servers.owner, user.id)),
 	})
-
-	console.log("checked my server", server)
 
 	if (!server) {
 		return { error: "Server not found" }
