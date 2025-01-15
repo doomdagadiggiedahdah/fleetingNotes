@@ -43,9 +43,7 @@ export function ClaimServerDialog({
 				setShowInstall(false)
 			} else {
 				setClaimResult({ claimedCount: result.claimedCount })
-				setTimeout(() => {
-					router.refresh()
-				}, 3000)
+				router.refresh()
 			}
 		} catch (error) {
 			setClaimResult({ error: "An unexpected error occurred" })

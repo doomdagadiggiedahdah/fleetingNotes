@@ -7,6 +7,7 @@ import { and, inArray, isNull } from "drizzle-orm"
 
 import type { GithubAccount } from "../auth/github/common"
 import { createClient } from "../supabase/server"
+import { revalidatePath } from "next/cache"
 
 /**
  * Assigns all unclaimed servers to the current user based on their GitHub App installation
@@ -44,6 +45,7 @@ export async function assignUnclaimedServers() {
 	const unclaimedServers = await db
 		.select({
 			id: servers.id,
+			qualifiedName: servers.qualifiedName,
 			sourceUrl: servers.sourceUrl,
 		})
 		.from(servers)
@@ -158,6 +160,11 @@ export async function assignUnclaimedServers() {
 				})),
 			)
 			.onConflictDoNothing()
+
+		// Revalidate all paths
+		for (const server of serversToAssign) {
+			revalidatePath(`/server/${server.server.qualifiedName}`)
+		}
 	}
 
 	return { claimedCount: serversToAssign.length }

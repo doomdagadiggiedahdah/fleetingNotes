@@ -11,10 +11,13 @@ export default function ServerList({
 }: { servers: FetchedServer[]; initialSearch?: string }) {
 	const filterTools = (query: string) => {
 		return servers.filter(
-			(tool) =>
-				tool.qualifiedName.toLowerCase().includes(query.toLowerCase()) ||
-				tool.displayName.toLowerCase().includes(query.toLowerCase()) ||
-				(tool.description ?? "").toLowerCase().includes(query.toLowerCase()),
+			(server) =>
+				server.qualifiedName.toLowerCase().includes(query.toLowerCase()) ||
+				server.displayName.toLowerCase().includes(query.toLowerCase()) ||
+				(server.description ?? "")
+					.toLowerCase()
+					.includes(query.toLowerCase()) ||
+				server.sourceUrl.toLowerCase().includes(query.toLowerCase()),
 		)
 	}
 
