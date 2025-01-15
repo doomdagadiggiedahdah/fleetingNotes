@@ -5,10 +5,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	// Get all server IDs from the database
 	const servers = await db.query.servers.findMany({
 		columns: {
-			id: true,
+			qualifiedName: true,
 		},
 	})
-	const serverIds = servers.map((s) => s.id)
+	const serverIds = servers.map((s) => s.qualifiedName)
 
 	// Base URL - replace with your actual production URL
 	const baseUrl = "https://smithery.ai"

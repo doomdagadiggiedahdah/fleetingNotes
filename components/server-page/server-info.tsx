@@ -16,6 +16,10 @@ interface Props {
 }
 
 export function ServerPage({ server }: Props) {
+	const urlParts = server.sourceUrl.split("/")
+	const owner = urlParts[3]
+	const repoName = urlParts[4]
+
 	return (
 		<>
 			<Header />
@@ -50,7 +54,6 @@ export function ServerPage({ server }: Props) {
 						</Suspense>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
-						<span>Vendor: {server.vendor}</span>
 						<a
 							href={server.sourceUrl}
 							target="_blank"
@@ -58,7 +61,7 @@ export function ServerPage({ server }: Props) {
 							className="flex items-center hover:text-primary"
 						>
 							<Github className="w-4 h-4 mr-1" />
-							Source
+							{owner} / {repoName}
 						</a>
 						{server.homepage && (
 							<a

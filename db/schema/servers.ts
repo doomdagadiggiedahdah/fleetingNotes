@@ -24,7 +24,6 @@ export const servers = pgTable(
 		qualifiedName: text("qualifiedName").notNull().unique(),
 		displayName: text("displayName").notNull(),
 		description: text("description").notNull(),
-		vendor: text("vendor"),
 		sourceUrl: text("source_url").notNull(),
 		// The URL this repo was crawled from
 		crawlUrl: text("crawl_url"),

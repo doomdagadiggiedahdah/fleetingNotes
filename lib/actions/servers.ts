@@ -188,7 +188,6 @@ export async function createServer(rawData: CreateServerInputs) {
 					connections: [],
 					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
 					verified: false,
-					vendor: null,
 					license: null,
 					// User passed
 					qualifiedName: insertData.qualifiedName,
