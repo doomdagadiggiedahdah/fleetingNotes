@@ -1,6 +1,7 @@
 "use client"
 
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import posthog from "posthog-js"
 import { useState } from "react"
 import Search from "../search"
 import { ServerListItem } from "./server-list-item"
@@ -32,6 +33,13 @@ export default function ServerList({
 	const handleSearch = async (query: string) => {
 		setSearchQuery(query)
 		setPage(1)
+
+		if (query.length > 0) {
+			posthog.capture("Servers Searched", {
+				source: "search_server",
+				query,
+			})
+		}
 	}
 
 	const handleLoadMore = () => {
