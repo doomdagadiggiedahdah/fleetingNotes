@@ -27,13 +27,13 @@ export const deployments = pgTable(
 		id: text("id").primaryKey(),
 		serverId: uuid("server_id")
 			.notNull()
-			.references(() => servers.id),
+			.references(() => servers.id, { onDelete: "cascade" }),
 		status: deploymentStatus("status").notNull(),
 		commit: text("commit").notNull(),
 		commitMessage: text("commit_message").notNull(),
 		repo: uuid("repo")
 			.notNull()
-			.references(() => serverRepos.id),
+			.references(() => serverRepos.id, { onDelete: "cascade" }),
 		branch: text("branch").notNull(),
 		deploymentUrl: text("deployment_url"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),

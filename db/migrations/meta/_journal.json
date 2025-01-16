@@ -50,6 +50,20 @@
 			"when": 1737041312025,
 			"tag": "0007_striped_network",
 			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1737043668017,
+			"tag": "0008_lethal_stingray",
+			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1737046183319,
+			"tag": "0009_classy_spot",
+			"breakpoints": true
 		}
 	]
 }

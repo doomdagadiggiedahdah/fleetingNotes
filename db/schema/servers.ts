@@ -81,7 +81,7 @@ export const serverRepos = pgTable(
 		id: uuid("id").primaryKey().defaultRandom(),
 		serverId: uuid("server_id")
 			.notNull()
-			.references(() => servers.id),
+			.references(() => servers.id, { onDelete: "cascade" }),
 		type: providerEnum("type").notNull(),
 		repoOwner: text("repo_owner").notNull(),
 		repoName: text("repo_name").notNull(),
