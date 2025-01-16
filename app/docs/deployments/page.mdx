@@ -1,0 +1,101 @@
+import { CircleAlert } from "lucide-react"
+import { Maintainers } from "@/components/docs/maintainers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export const metadata = {
+  title: 'Deployments | Smithery Documentation',
+  description: 'Learn how to deploy your Message Control Protocol (MCP) server on Smithery.',
+}
+
+# Deployments
+
+<div className="inline-flex items-center mb-4"><CircleAlert className="w-4 h-4 mr-1" /> _Deployments is in early preview and we're rapidly improving it. Please report bugs to our Discord!_</div>
+
+Smithery Deployments allow you to host your [STDIO](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server as a [server-side event (SSE)](https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse) server on Smithery.
+
+Benefits of hosting:
+- Smithery will show an MCP playground on your server page, allowing users to try your tool calls before installing.
+- Clients can use your server without needing to install dependencies.
+- Smithery will rank hosted servers higher in our search results.
+
+## Overview
+
+Deploying on Smithery is straightforward:
+
+1. Create your server on the Smithery registry
+2. Connect the server with your Github repository
+3. Commit a Dockerfile and `smithery.yaml` to your connected repository
+4. Click Deploy on Smithery Deployments on your server page
+
+That's it! Your MCP server will be built and deployed according to your configuration.
+
+## Required Files
+There are two files required in your repository in order to deploy:
+
+### Dockerfile
+
+Create a `Dockerfile` in your repository root that defines how to build your MCP server. Your Dockerfile should be created such that running your Docker image will start your [STDIO server](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio).
+
+Here's an example Dockerfile that builds a Node-based MCP server:
+
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Command will be provided by smithery.yaml
+CMD ["node", "dist/index.js"]
+```
+
+You can find more examples of Dockerfiles in MCP's [official reference implementations](https://github.com/modelcontextprotocol/servers/tree/main/src).
+
+### smithery.yaml
+
+Create a `smithery.yaml` file in your repository root. This file defines how your MCP server should be started.
+
+Here's a minimal example of a server with no configuration options:
+
+```yaml
+# Smithery.ai configuration
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    {}
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({
+      "command": "node",
+      "args": [
+        "dist/index.js"
+      ]
+    })
+```
+
+The `startCommand` object consists of:
+- `type: stdio`: Specifies that your repository is a standard I/O based MCP server
+- `configSchema`: Defines the JSON Schema for your server's configuration options. Users will configure this your server using this schema. We will reject invalid configurations.
+- `commandFunction`: A JavaScript function that returns the command and arguments to start your server. This function is run within your server's sandbox during runtime to parse the config specified by clients. You can trust that `config` input argument conforms to your `configSchema`.
+
+{/* ## Subdirectories
+If your package is not in the root directory of your repository (in the case of a monorepo), you should place your Dockerfile and `smithery.yaml` in the subdirectory that contains your package. You will have to specify in your server page settings which subdirectory Smithery should pull from. */}
+
+## Best Practices
+
+1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
+2. **Configuration**: Use the `configSchema` to properly define and validate your server's configuration options
+3. **Docker Optimization**: Keep your Docker image size minimal by using appropriate base images and multi-stage builds
+

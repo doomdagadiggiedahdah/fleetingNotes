@@ -1,5 +1,6 @@
-import type { MetadataRoute } from "next"
+import { navigation } from "@/components/docs/sidebar"
 import { db } from "@/db"
+import type { MetadataRoute } from "next"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	// Get all server IDs from the database
@@ -18,16 +19,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		{
 			url: baseUrl,
 			lastModified: new Date(),
-			changeFrequency: "weekly",
-			priority: 1,
-		},
-		{
-			url: `${baseUrl}/about`,
-			lastModified: new Date(),
-			changeFrequency: "weekly",
+			changeFrequency: "daily",
 			priority: 1,
 		},
 	] as const
+
+	const docRoutes = navigation.flatMap((section) =>
+		section.links.map((link) => ({
+			url: `${baseUrl}${link.href}`,
+			lastModified: new Date(),
+			changeFrequency: "weekly" as const,
+			priority: 0.5,
+		})),
+	)
 
 	// Dynamic protocol routes
 	const protocolRoutes = serverIds.map(
@@ -35,10 +39,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			({
 				url: `${baseUrl}/server/${id}`,
 				lastModified: new Date(),
-				changeFrequency: "weekly",
+				changeFrequency: "daily",
 				priority: 0.8,
 			}) as const,
 	)
 
-	return [...staticRoutes, ...protocolRoutes]
+	return [...staticRoutes, ...docRoutes, ...protocolRoutes]
 }

@@ -35,10 +35,10 @@ export function Header() {
 							</a>
 						</div>
 						<Link
-							href="/about"
+							href="/docs"
 							className="text-muted-foreground hover:text-foreground transition-colors"
 						>
-							About
+							Docs
 						</Link>
 						<Link
 							href="/new"

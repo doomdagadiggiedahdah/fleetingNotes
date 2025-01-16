@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Unsure why Tailwind's list classNames don't work */
+@layer base {
+  ul {
+    @apply list-disc list-inside;
+  }
+  ol {
+    @apply list-decimal list-inside;
+  }
+}
+
 :root {
   --radius: 0.4rem;
   --background: 20 14% 4%;

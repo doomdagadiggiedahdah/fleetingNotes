@@ -1,4 +1,5 @@
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import Link from "next/link"
 import { DeploymentsTable } from "./deployments-table"
 
 interface Props {
@@ -8,15 +9,20 @@ interface Props {
 export function DeploymentsPanel({ server }: Props) {
 	return (
 		<div>
-			<p className="text-sm ">
-				Deployments allow you to deploy your standard IO (stdio) server into an
-				hosted server-side event (SSE) server. This makes it easy for clients to
-				consume your MCP. If you deploy your server, Smithery will install the
-				hosted edition for end-users.
-			</p>
-			<p className="text-sm text-muted-foreground my-2">
-				This feature is currently in preview. Please report bugs to our Discord!
-			</p>
+			<div className="flex justify-between items-center">
+				<p className="text-sm">
+					<Link
+						href="/docs/deployments"
+						className="text-sm text-primary hover:underline"
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						Deployments
+					</Link>{" "}
+					allow you to deploy your standard IO (stdio) server into a hosted
+					server-side event (SSE) server.
+				</p>
+			</div>
 			<div className="my-4">
 				<DeploymentsTable server={server} />
 			</div>
