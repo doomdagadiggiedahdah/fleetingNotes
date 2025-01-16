@@ -1,15 +1,37 @@
+"use client"
+
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { getConnectedRepos } from "@/lib/actions/servers"
 import { RepoConnectionForm } from "./repo-connection-form"
 import { RepoConnector } from "./repo-connector"
-import { use } from "react"
+import { useEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Props {
 	server: FetchedServer
 }
 
 export function RepoIntegration({ server }: Props) {
-	const connectedRepos = use(getConnectedRepos(server.id))
+	const [isLoading, setIsLoading] = useState(true)
+	const [connectedRepos, setConnectedRepos] = useState<
+		Awaited<ReturnType<typeof getConnectedRepos>>
+	>([])
+
+	useEffect(() => {
+		async function fetchRepos() {
+			try {
+				const repos = await getConnectedRepos(server.id)
+				setConnectedRepos(repos)
+			} finally {
+				setIsLoading(false)
+			}
+		}
+		fetchRepos()
+	}, [server.id])
+
+	if (isLoading) {
+		return <Skeleton className="h-[200px] w-full" />
+	}
 
 	if (connectedRepos.length > 0) {
 		const repo = connectedRepos[0]

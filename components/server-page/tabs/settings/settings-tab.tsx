@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { updateServerDetails } from "@/lib/actions/servers"
 import {
@@ -20,7 +19,7 @@ import {
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
-import { Suspense, useState } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { RepoIntegration } from "./repo-integration"
 
@@ -106,10 +105,7 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 			<div>
 				<h3 className="text-lg font-medium mb-4">GitHub Integration</h3>
 				<div className="space-y-4">
-					<Suspense fallback={<Skeleton className="h-8 w-full" />}>
-						{/* @ts-expect-error Async Server Component */}
-						<RepoIntegration server={server} />
-					</Suspense>
+					<RepoIntegration server={server} />
 				</div>
 			</div>
 		</div>
