@@ -21,8 +21,8 @@ export const servers = pgTable(
 		// Stable ID
 		id: uuid("id").primaryKey().defaultRandom(),
 		// Qualified name of the server
-		qualifiedName: text("qualifiedName").notNull().unique(),
-		displayName: text("displayName").notNull(),
+		qualifiedName: text("qualified_name").notNull().unique(),
+		displayName: text("display_name").notNull(),
 		description: text("description").notNull(),
 		sourceUrl: text("source_url").notNull(),
 		// The URL this repo was crawled from
@@ -43,8 +43,8 @@ export const servers = pgTable(
 		owner: uuid("owner").references(() => authUsers.id),
 
 		connections: jsonb("connections").notNull(),
-		createdAt: timestamp("created_at").defaultNow(),
-		updatedAt: timestamp("updated_at").defaultNow(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
 	(table) => [
 		pgPolicy("Users can read their servers", {
