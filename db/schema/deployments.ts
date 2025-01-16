@@ -17,6 +17,7 @@ export const deploymentStatus = pgEnum("deployment_status", [
 	"SUCCESS",
 	"FAILURE",
 	"INTERNAL_ERROR",
+	"CANCELLED",
 ])
 
 // Track build history for projects

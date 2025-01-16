@@ -41,6 +41,7 @@ const PubSubBuildSchema = z
 			"SUCCESS",
 			"FAILURE",
 			"INTERNAL_ERROR",
+			"CANCELLED",
 		]),
 		createTime: z.string().datetime(),
 		steps: z.array(BuildStepSchema),
