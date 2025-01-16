@@ -1,5 +1,5 @@
-"use client";
-import { use } from "react";
+"use client"
+import { use } from "react"
 import { useRouter } from "next/navigation"
 import NewServerForm from "./new-server-form"
 import { GithubAuthProvider } from "@/components/github/github-user-provider"
@@ -13,12 +13,12 @@ interface Props {
 }
 
 export default function NewPage(props: Props) {
-    const searchParams = use(props.searchParams);
-    const router = useRouter()
-    const owner = searchParams.owner
-    const repo = searchParams.repo
+	const searchParams = use(props.searchParams)
+	const router = useRouter()
+	const owner = searchParams.owner
+	const repo = searchParams.repo
 
-    if (!owner || !repo) {
+	if (!owner || !repo) {
 		return (
 			<GithubAuthProvider>
 				<RepoSelector
@@ -31,5 +31,5 @@ export default function NewPage(props: Props) {
 		)
 	}
 
-    return <NewServerForm owner={owner} repo={repo} />
+	return <NewServerForm owner={owner} repo={repo} />
 }

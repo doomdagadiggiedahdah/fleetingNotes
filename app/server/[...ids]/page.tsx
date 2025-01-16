@@ -30,9 +30,9 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
-    const params = await props.params;
-    const qualifiedName = decodeURIComponent(params.ids.join("/"))
-    try {
+	const params = await props.params
+	const qualifiedName = decodeURIComponent(params.ids.join("/"))
+	try {
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.qualifiedName, qualifiedName),
 		})
@@ -69,22 +69,22 @@ function parsePathParams(ids: string[]) {
 }
 
 export default async function Page(props: Props) {
-    const params = await props.params;
-    const { qualifiedName } = parsePathParams(params.ids)
+	const params = await props.params
+	const { qualifiedName } = parsePathParams(params.ids)
 
-    let serverData: FetchedServer | null = null
-    let error = ""
+	let serverData: FetchedServer | null = null
+	let error = ""
 
-    try {
+	try {
 		serverData = await getServer(qualifiedName)
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
-    if (!serverData) {
+	if (!serverData) {
 		notFound()
 	}
-    return (
+	return (
 		<main className="min-h-screen bg-background">
 			{error ? (
 				<ErrorMessage message={error} />

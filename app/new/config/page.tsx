@@ -8,9 +8,9 @@ interface Props {
 }
 
 export default async function ConfigPage(props: Props) {
-    const searchParams = await props.searchParams;
-    const owner = searchParams.owner
-    const repo = searchParams.repo
+	const searchParams = await props.searchParams
+	const owner = searchParams.owner
+	const repo = searchParams.repo
 
-    return <NewServerForm owner={owner} repo={repo} />
+	return <NewServerForm owner={owner} repo={repo} />
 }

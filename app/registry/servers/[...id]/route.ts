@@ -22,9 +22,12 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	),
 })
 
-export async function GET(request: Request, props: { params: Promise<{ id: string[] }> }) {
-    const params = await props.params;
-    try {
+export async function GET(
+	request: Request,
+	props: { params: Promise<{ id: string[] }> },
+) {
+	const params = await props.params
+	try {
 		const serverId = params.id.join("/")
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.qualifiedName, serverId),
@@ -59,10 +62,13 @@ const RequestSchema = z.object({
 	config: z.record(z.unknown()),
 })
 
-export async function POST(request: Request, props: { params: Promise<{ id: string[] }> }) {
-    const params = await props.params;
-    const serverId = params.id.join("/")
-    try {
+export async function POST(
+	request: Request,
+	props: { params: Promise<{ id: string[] }> },
+) {
+	const params = await props.params
+	const serverId = params.id.join("/")
+	try {
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.qualifiedName, serverId),
 		})
