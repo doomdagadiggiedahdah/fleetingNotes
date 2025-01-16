@@ -90,12 +90,16 @@ The `startCommand` object consists of:
 - `configSchema`: Defines the JSON Schema for your server's configuration options. Users will configure this your server using this schema. We will reject invalid configurations.
 - `commandFunction`: A JavaScript function that returns the command and arguments to start your server. This function is run within your server's sandbox during runtime to parse the config specified by clients. You can trust that `config` input argument conforms to your `configSchema`.
 
-{/* ## Subdirectories
-If your package is not in the root directory of your repository (in the case of a monorepo), you should place your Dockerfile and `smithery.yaml` in the subdirectory that contains your package. You will have to specify in your server page settings which subdirectory Smithery should pull from. */}
+## Subdirectories
+If your package is not in the root directory of your repository (in the case of a monorepo), you should place your Dockerfile and `smithery.yaml` in the subdirectory that contains your package. You will need to specify the base directory in your server settings on Smithery.
+
+For example, if your MCP server is in the `packages/mcp-server` directory, you would:
+
+1. Place your `Dockerfile` and `smithery.yaml` in the `packages/mcp-server` directory
+2. Set the base directory to `packages/mcp-server` in your server settings under Github integration
 
 ## Best Practices
 
 1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
 2. **Configuration**: Use the `configSchema` to properly define and validate your server's configuration options
 3. **Docker Optimization**: Keep your Docker image size minimal by using appropriate base images and multi-stage builds
-

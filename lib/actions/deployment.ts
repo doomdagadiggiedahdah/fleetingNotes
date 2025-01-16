@@ -9,6 +9,7 @@ import { Octokit } from "@octokit/core"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
 import { getConnectedRepos } from "./servers"
+import { joinGithubPath } from "@/lib/utils"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -213,8 +214,18 @@ export async function createDeployment(data: TriggerBuildInput) {
 	})
 
 	const [smitheryFile, dockerfile, commitInfo] = await Promise.all([
-		getGithubFile(installationOctokit, repoOwner, repoName, "smithery.yaml"),
-		getGithubFile(installationOctokit, repoOwner, repoName, "Dockerfile"),
+		getGithubFile(
+			installationOctokit,
+			repoOwner,
+			repoName,
+			joinGithubPath(serverRepo.baseDirectory, "smithery.yaml"),
+		),
+		getGithubFile(
+			installationOctokit,
+			repoOwner,
+			repoName,
+			joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
+		),
 		getCommitInfo(installationOctokit, repoOwner, repoName),
 	])
 
@@ -263,8 +274,8 @@ export async function createDeployment(data: TriggerBuildInput) {
 							"-t",
 							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 							"-f",
-							"Dockerfile",
-							".",
+							joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
+							serverRepo.baseDirectory || ".",
 						],
 					},
 					// Push user's image

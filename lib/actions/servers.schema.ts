@@ -22,3 +22,13 @@ export const createServerSchema = insertServerSchema
 	})
 
 export type CreateServerInputs = z.infer<typeof createServerSchema>
+
+export const updateBaseDirectorySchema = z.object({
+	baseDirectory: z
+		.string()
+		.min(1, "Base directory cannot be empty")
+		.refine(
+			(val) => !val.endsWith("/"),
+			"Base directory cannot end with a trailing slash",
+		),
+})

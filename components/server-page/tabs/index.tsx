@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import { Info, Settings } from "lucide-react"
+import { Info, Server, Settings } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
@@ -86,8 +86,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 
 				{isAdmin && (
 					<div className="flex">
-						{/* Hide until release */}
-						{/* <TabsTrigger value="deployments">
+						<TabsTrigger value="deployments">
 							<span className="flex items-center gap-2">
 								<Server size={16} />
 								Deployments
@@ -95,7 +94,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 									preview
 								</div>
 							</span>
-						</TabsTrigger> */}
+						</TabsTrigger>
 						<TabsTrigger value="settings">
 							<span className="flex items-center gap-2">
 								<Settings size={16} />

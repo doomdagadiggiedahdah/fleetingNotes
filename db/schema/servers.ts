@@ -84,6 +84,7 @@ export const serverRepos = pgTable(
 		type: providerEnum("type").notNull(),
 		repoOwner: text("repo_owner").notNull(),
 		repoName: text("repo_name").notNull(),
+		baseDirectory: text("base_directory").notNull().default("."),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},
@@ -91,3 +92,17 @@ export const serverRepos = pgTable(
 		serverIdTypeUnique: unique().on(table.serverId, table.type),
 	}),
 ).enableRLS()
+
+export const insertServerRepoSchema = createInsertSchema(serverRepos).extend({
+	baseDirectory: z
+		.string()
+		.min(1, "Base directory cannot be empty")
+		.refine(
+			(val) => !val.endsWith("/"),
+			"Base directory cannot end with a trailing slash",
+		),
+})
+export const selectServerRepoSchema = createSelectSchema(serverRepos)
+
+export type ServerRepo = z.infer<typeof selectServerRepoSchema>
+export type NewServerRepo = z.infer<typeof insertServerRepoSchema>

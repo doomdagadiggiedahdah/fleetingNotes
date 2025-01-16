@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache"
 import {
 	type CreateServerInputs,
 	createServerSchema,
+	updateBaseDirectorySchema,
 	type UpdateServer,
 	updateServerSchema,
 } from "./servers.schema"
@@ -234,4 +235,30 @@ export async function getMyServer(serverId: string) {
 		return { error: "Server not found" }
 	}
 	return { server }
+}
+
+export async function updateBaseDirectory(serverId: string, formData: unknown) {
+	const { baseDirectory } = updateBaseDirectorySchema.parse(formData)
+
+	// Check ownership first
+	const { server } = await getMyServer(serverId)
+	if (!server) {
+		return { error: "Unauthorized" }
+	}
+
+	try {
+		await db
+			.update(serverRepos)
+			.set({
+				baseDirectory,
+				updatedAt: new Date(),
+			})
+			.where(eq(serverRepos.serverId, serverId))
+
+		revalidatePath(`/server/${server.qualifiedName}`)
+		return { success: true }
+	} catch (error) {
+		console.error("Error updating base directory:", error)
+		return { error: "Failed to update base directory" }
+	}
 }

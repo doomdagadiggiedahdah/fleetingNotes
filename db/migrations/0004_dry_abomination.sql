@@ -1,0 +1,1 @@
+ALTER TABLE "server_repos" ADD COLUMN "base_directory" text DEFAULT '.' NOT NULL;
