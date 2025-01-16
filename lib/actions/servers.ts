@@ -3,7 +3,6 @@
 import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema/servers"
 import { createClient } from "@/lib/supabase/server"
-import { waitUntil } from "@vercel/functions"
 import { and, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import {
@@ -13,6 +12,7 @@ import {
 	type UpdateServer,
 	updateServerSchema,
 } from "./servers.schema"
+import { omit } from "lodash"
 
 import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
@@ -30,26 +30,18 @@ export async function updateServerDetails(
 	}
 
 	try {
-		await db
+		const rows = await db
 			.update(servers)
 			.set({
-				...updatesParsed,
+				...omit(updatesParsed, "local"),
+				remote: !updatesParsed.local,
 				updatedAt: new Date(),
 			})
 			.where(eq(servers.id, serverId))
+			.returning({ qualifiedName: servers.qualifiedName })
 
-		waitUntil(
-			(async () => {
-				const qualifiedName = await db
-					.select({ qualifiedName: servers.qualifiedName })
-					.from(servers)
-					.where(eq(servers.id, serverId))
-					.limit(1)
-					.then((res) => res[0].qualifiedName)
+		revalidatePath(`/server/${rows[0].qualifiedName}`)
 
-				revalidatePath(`/server/${qualifiedName}`)
-			})(),
-		)
 		return {}
 	} catch (error) {
 		console.error("Failed to update server details:", error)

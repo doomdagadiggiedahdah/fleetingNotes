@@ -7,10 +7,12 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
+	FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import { updateServerDetails } from "@/lib/actions/servers"
 import {
 	type UpdateServer,
@@ -35,6 +37,7 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 		defaultValues: {
 			displayName: server.displayName,
 			description: server.description,
+			local: !server.remote,
 		},
 	})
 
@@ -85,6 +88,28 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 										<Textarea {...field} />
 									</FormControl>
 									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="local"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center space-x-3 space-y-0">
+									<FormControl>
+										<Checkbox
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+									<div className="leading-none">
+										<FormLabel>Local Only</FormLabel>
+										<FormDescription>
+											Enable this if your MCP requires local access (i.e.,
+											end-user file system access).
+										</FormDescription>
+									</div>
 								</FormItem>
 							)}
 						/>
