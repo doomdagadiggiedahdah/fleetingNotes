@@ -41,8 +41,6 @@ export const servers = pgTable(
 
 		// User who owns this server. Some servers are "unclaimed".
 		owner: uuid("owner").references(() => authUsers.id),
-		// URL of the deployed server
-		deploymentUrl: text("deployment_url"),
 
 		connections: jsonb("connections").notNull(),
 		createdAt: timestamp("created_at").defaultNow(),

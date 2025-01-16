@@ -1,5 +1,5 @@
 import { SERVER_NEW_DAYS as NEW_SERVER_DAYS } from "@/lib/utils"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServers } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, Sparkles } from "lucide-react"
 import Link from "next/link"
 
@@ -7,7 +7,7 @@ import { InstallCount } from "../install-count"
 import { useRouter } from "next/navigation"
 
 interface ToolCardProps {
-	server: FetchedServer
+	server: FetchedServers[number]
 }
 
 export function ServerListItem({ server }: ToolCardProps) {
@@ -21,7 +21,6 @@ export function ServerListItem({ server }: ToolCardProps) {
 	return (
 		<div
 			role="listitem"
-			key={server.qualifiedName}
 			className="bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors h-full flex flex-col"
 			onClick={(evt) => {
 				evt.preventDefault()

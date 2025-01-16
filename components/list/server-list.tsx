@@ -1,6 +1,6 @@
 "use client"
 
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServers } from "@/lib/utils/fetch-registry"
 import posthog from "posthog-js"
 import { useState } from "react"
 import Search from "../search"
@@ -9,7 +9,7 @@ import { ServerListItem } from "./server-list-item"
 export default function ServerList({
 	servers,
 	initialSearch = "",
-}: { servers: FetchedServer[]; initialSearch?: string }) {
+}: { servers: FetchedServers; initialSearch?: string }) {
 	const filterTools = (query: string) => {
 		return servers.filter(
 			(server) =>
@@ -55,8 +55,8 @@ export default function ServerList({
 			/>
 			<div className="space-y-4 mt-4">
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-					{displayedTools.map((tool) => (
-						<ServerListItem key={tool.qualifiedName} server={tool} />
+					{displayedTools.map((server) => (
+						<ServerListItem key={server.qualifiedName} server={server} />
 					))}
 				</div>
 				{filteredTools.length === 0 && (

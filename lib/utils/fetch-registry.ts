@@ -1,6 +1,6 @@
 "use server"
 import { db } from "@/db"
-import { events, selectServerSchema, servers } from "@/db/schema"
+import { deployments, events, selectServerSchema, servers } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
 
@@ -15,6 +15,10 @@ const selectFetchedServerSchema = selectServerSchema
 		installCount: z.number(),
 	})
 
+/**
+ * Gets a single server
+ * @returns The server or null if not found
+ */
 export async function getServer(qualifiedName: string) {
 	const rows = await db
 		.select({
@@ -31,8 +35,15 @@ export async function getServer(qualifiedName: string) {
 			updatedAt: servers.updatedAt,
 			remote: servers.remote,
 			published: servers.published,
-			deploymentUrl: servers.deploymentUrl,
 			owner: servers.owner,
+			deploymentUrl: sql<string>`(
+				SELECT ${deployments.deploymentUrl}
+				FROM ${deployments}
+				WHERE ${deployments.serverId} = ${servers.id}
+				AND ${deployments.status} = 'SUCCESS'
+				ORDER BY ${deployments.createdAt} DESC
+				LIMIT 1
+			)`,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
 		})
 		.from(servers)
@@ -48,6 +59,9 @@ export async function getServer(qualifiedName: string) {
 
 export type FetchedServer = NonNullable<Awaited<ReturnType<typeof getServer>>>
 
+/**
+ * @returns A list of all servers for the landing page
+ */
 export async function getAllServers(): Promise<FetchedServer[]> {
 	const rows = await db
 		.select({
@@ -55,16 +69,7 @@ export async function getAllServers(): Promise<FetchedServer[]> {
 			qualifiedName: servers.qualifiedName,
 			displayName: servers.displayName,
 			description: servers.description,
-			sourceUrl: servers.sourceUrl,
-			license: servers.license,
-			homepage: servers.homepage,
-			verified: servers.verified,
-			connections: servers.connections,
 			createdAt: servers.createdAt,
-			updatedAt: servers.updatedAt,
-			remote: servers.remote,
-			published: servers.published,
-			deploymentUrl: servers.deploymentUrl,
 			owner: servers.owner,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
 		})
@@ -82,3 +87,5 @@ export async function getAllServers(): Promise<FetchedServer[]> {
 
 	return rows.map((row) => selectFetchedServerSchema.parse(row))
 }
+
+export type FetchedServers = Awaited<ReturnType<typeof getAllServers>>

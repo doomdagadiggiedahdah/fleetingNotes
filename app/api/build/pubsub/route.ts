@@ -91,12 +91,6 @@ export async function POST(request: Request) {
 				const cloudRunUrl = await getCloudRunUrl(deployment.serverId)
 				if (cloudRunUrl) {
 					updateData.deploymentUrl = cloudRunUrl
-
-					// Update latest deployment_url on the server
-					await db
-						.update(servers)
-						.set({ deploymentUrl: cloudRunUrl })
-						.where(eq(servers.id, deployment.serverId))
 				}
 			}
 		}
