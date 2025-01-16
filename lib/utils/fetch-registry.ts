@@ -2,7 +2,9 @@
 import { db } from "@/db"
 import { deployments, events, selectServerSchema, servers } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
+import { shuffle } from "lodash"
 import { z } from "zod"
+import { SERVER_NEW_DAYS } from "../utils"
 
 // We have a special schema for selecting servers for rendering
 const selectFetchedServerSchema = selectServerSchema
@@ -62,14 +64,17 @@ export type FetchedServer = NonNullable<Awaited<ReturnType<typeof getServer>>>
 /**
  * @returns A list of all servers for the landing page
  */
-export async function getAllServers(): Promise<FetchedServer[]> {
-	const rows = await db
+export async function getAllServers() {
+	const data = await db
 		.select({
 			id: servers.id,
 			qualifiedName: servers.qualifiedName,
 			displayName: servers.displayName,
 			description: servers.description,
 			createdAt: servers.createdAt,
+			sourceUrl: servers.sourceUrl,
+			homepage: servers.homepage,
+			verified: servers.verified,
 			owner: servers.owner,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
 		})
@@ -79,13 +84,37 @@ export async function getAllServers(): Promise<FetchedServer[]> {
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
-			sql`CASE WHEN ${servers.createdAt} >= NOW() - INTERVAL '2 days' AND ${servers.createdAt} >= (SELECT created_at FROM servers ORDER BY created_at DESC LIMIT 1 OFFSET 2) THEN 0 ELSE 1 END`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
 		)
 
-	return rows.map((row) => selectFetchedServerSchema.parse(row))
+	const currentDate = new Date()
+	const newServerThreshold = new Date(
+		currentDate.getTime() - SERVER_NEW_DAYS * 24 * 60 * 60 * 1000,
+	)
+	// Pick 3 new servers randomly to put in front
+	const newServers = new Set(
+		shuffle(
+			data
+				.filter(
+					(server) => server.createdAt && server.createdAt > newServerThreshold,
+				)
+				.map((server) => server.qualifiedName),
+		).slice(0, 3),
+	)
+
+	data.sort((a, b) => {
+		const aIsNew = newServers.has(a.qualifiedName)
+		const bIsNew = newServers.has(b.qualifiedName)
+
+		if (aIsNew && !bIsNew) return -1
+		if (!aIsNew && bIsNew) return 1
+		if (aIsNew && bIsNew) return Math.random() - 0.5
+		return 0
+	})
+
+	return data
 }
 
 export type FetchedServers = Awaited<ReturnType<typeof getAllServers>>

@@ -1,4 +1,4 @@
-import { SERVER_NEW_DAYS as NEW_SERVER_DAYS } from "@/lib/utils"
+import { SERVER_NEW_DAYS } from "@/lib/utils"
 import type { FetchedServers } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, Sparkles } from "lucide-react"
 import Link from "next/link"
@@ -14,7 +14,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 	const router = useRouter()
 	const isNew = (createdAt: Date) => {
 		const twoDaysAgo = new Date()
-		twoDaysAgo.setDate(twoDaysAgo.getDate() - NEW_SERVER_DAYS)
+		twoDaysAgo.setDate(twoDaysAgo.getDate() - SERVER_NEW_DAYS)
 		return new Date(createdAt) >= twoDaysAgo
 	}
 
@@ -30,10 +30,10 @@ export function ServerListItem({ server }: ToolCardProps) {
 			<div className="flex-1">
 				<div className="cursor-pointer">
 					<div className="flex items-baseline justify-between mb-1">
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 min-w-0 flex-1">
 							<Link
 								href={`/server/${server.qualifiedName}`}
-								className="text-lg font-semibold text-primary hover:underline flex items-center gap-2"
+								className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 min-w-0 truncate"
 							>
 								{server.homepage && (
 									// eslint-disable-next-line @next/next/no-img-element
@@ -59,7 +59,9 @@ export function ServerListItem({ server }: ToolCardProps) {
 								</div>
 							)}
 						</div>
-						<InstallCount count={server.installCount} />
+						<div className="flex-shrink-0 ml-4">
+							<InstallCount count={server.installCount} />
+						</div>
 					</div>
 					<div className="text-muted-foreground text-sm my-2">
 						{server.qualifiedName}

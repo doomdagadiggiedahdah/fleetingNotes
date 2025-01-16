@@ -1,6 +1,7 @@
 "use client"
 
 import type { FetchedServers } from "@/lib/utils/fetch-registry"
+import { useRouter } from "next/navigation"
 import posthog from "posthog-js"
 import { useState } from "react"
 import Search from "../search"
@@ -22,6 +23,8 @@ export default function ServerList({
 		)
 	}
 
+	const router = useRouter()
+
 	// Page we've opened
 	const [page, setPage] = useState(1)
 	const [searchQuery, setSearchQuery] = useState(initialSearch)
@@ -40,6 +43,14 @@ export default function ServerList({
 				query,
 			})
 		}
+
+		const searchParams = new URLSearchParams(window.location.search)
+		if (query.trim() === "") {
+			searchParams.delete("q")
+		} else {
+			searchParams.set("q", query)
+		}
+		router.push(`/?${searchParams.toString()}`)
 	}
 
 	const handleLoadMore = () => {
