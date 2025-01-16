@@ -111,12 +111,13 @@ async function getGithubFile(
 	return null
 }
 
-async function getCommitInfo(
-	octokit: Octokit,
-	owner: string,
-	repo: string,
-	ref = "main",
-) {
+async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
+	const repoData = await octokit.request("GET /repos/{owner}/{repo}", {
+		owner,
+		repo,
+	})
+	const ref = repoData.data.default_branch
+
 	const commit = await octokit.request(
 		"GET /repos/{owner}/{repo}/commits/{ref}",
 		{
@@ -125,19 +126,9 @@ async function getCommitInfo(
 			ref,
 		},
 	)
-
-	// Get the branches this commit belongs to
-	const branches = await octokit.request(
-		"GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head",
-		{
-			owner,
-			repo,
-			commit_sha: commit.data.sha,
-		},
-	)
 	return {
 		...commit,
-		branch: branches.data[0]?.name || "main",
+		branch: ref,
 	}
 }
 
