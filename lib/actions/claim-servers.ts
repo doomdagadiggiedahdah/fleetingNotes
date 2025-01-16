@@ -8,6 +8,7 @@ import { and, inArray, isNull } from "drizzle-orm"
 import type { GithubAccount } from "../auth/github/common"
 import { createClient } from "../supabase/server"
 import { revalidatePath } from "next/cache"
+import { getGithubBaseDirectory } from "@/lib/utils/github"
 
 /**
  * Assigns all unclaimed servers to the current user based on their GitHub App installation
@@ -127,7 +128,12 @@ export async function assignUnclaimedServers() {
 				.split("/")
 			const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
 			if (!repoPath || !accessibleRepos.includes(repoPath)) return null
-			return { server, repoOwner: path[0], repoName: path[1] }
+			return {
+				server,
+				repoOwner: path[0],
+				repoName: path[1],
+				baseDirectory: getGithubBaseDirectory(path),
+			}
 		})
 		.filter((s): s is NonNullable<typeof s> => s !== null)
 
@@ -157,6 +163,7 @@ export async function assignUnclaimedServers() {
 					type: "github" as const,
 					repoOwner: s.repoOwner,
 					repoName: s.repoName,
+					baseDirectory: s.baseDirectory,
 				})),
 			)
 			.onConflictDoNothing()

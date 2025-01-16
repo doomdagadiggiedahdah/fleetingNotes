@@ -9,7 +9,7 @@ import { Octokit } from "@octokit/core"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
 import { getConnectedRepos } from "./servers"
-import { joinGithubPath } from "@/lib/utils"
+import { joinGithubPath } from "../utils/github"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
