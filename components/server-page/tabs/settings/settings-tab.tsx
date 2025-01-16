@@ -37,6 +37,7 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 		defaultValues: {
 			displayName: server.displayName,
 			description: server.description,
+			homepage: server.homepage ?? undefined,
 			local: !server.remote,
 		},
 	})
@@ -87,6 +88,24 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 									<FormControl>
 										<Textarea {...field} />
 									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="homepage"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Homepage</FormLabel>
+									<FormControl>
+										<Input {...field} placeholder="https://smithery.ai" />
+									</FormControl>
+									<FormDescription>
+										The URL where users can find more information about this
+										server
+									</FormDescription>
 									<FormMessage />
 								</FormItem>
 							)}
