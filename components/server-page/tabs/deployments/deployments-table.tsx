@@ -23,7 +23,6 @@ interface Props {
 	server: FetchedServer
 }
 
-// TODO: this isn't better than directly using a client component
 export function DeploymentsTable({ server }: Props) {
 	const [deployments, setDeployments] = useState<Deployment[]>([])
 	const [isLoading, setIsLoading] = useState(true)

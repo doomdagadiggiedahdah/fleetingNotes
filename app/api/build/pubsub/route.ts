@@ -7,7 +7,7 @@ import * as cloudRun from "@google-cloud/run"
 const KEY = "A2aC3mQN%GImJ7yj"
 
 // Shared utility for getting Cloud Run URL
-async function getCloudRunUrl(projectId: string) {
+async function getCloudRunUrl(serverId: string) {
 	const cloudCredentials = JSON.parse(
 		process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
 	)
@@ -15,7 +15,7 @@ async function getCloudRunUrl(projectId: string) {
 
 	try {
 		const [service] = await run.getService({
-			name: `projects/${cloudCredentials.project_id}/locations/us-central1/services/${projectId}`,
+			name: `projects/${cloudCredentials.project_id}/locations/us-central1/services/app-${serverId}`,
 		})
 		return service.uri || null
 	} catch (error) {

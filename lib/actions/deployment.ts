@@ -147,6 +147,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	const serverRows = await db
 		.select()
 		.from(servers)
+		// Ensures logged-in user owns this server
 		.where(and(eq(servers.id, data.serverId), eq(servers.owner, user.id)))
 		.limit(1)
 
@@ -303,15 +304,22 @@ export async function createDeployment(data: TriggerBuildInput) {
 					},
 					{
 						name: "gcr.io/cloud-builders/gcloud",
-						script: `
-				gcloud run deploy ${data.serverId} \\
-				  --image us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest \\
-				  --region us-central1 \\
-				  --platform managed \\
-				  --memory 512Mi \\
-				  --max-instances 1 \\
-				  --allow-unauthenticated
-			  `,
+						args: [
+							"run",
+							"deploy",
+							`app-${data.serverId}`,
+							"--image",
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
+							"--region",
+							"us-central1",
+							"--platform",
+							"managed",
+							"--memory",
+							"512Mi",
+							"--max-instances",
+							"1",
+							"--allow-unauthenticated",
+						],
 					},
 				],
 				options: {
