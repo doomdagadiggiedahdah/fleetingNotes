@@ -20,7 +20,7 @@ export const HomeSearch = ({
 			<Header />
 			<Container className="mt-4">
 				<div className="mb-8">
-					<p className="text-lg text-muted-foreground">
+					<p className="text-lg text-muted-foreground text-center">
 						Extend your language model with {servers.length} capabilities via{" "}
 						<a
 							href="https://modelcontextprotocol.io/"
