@@ -9,8 +9,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 type Props = {
-	params: { ids: string[] }
-	searchParams: { tab?: string }
+	params: Promise<{ ids: string[] }>
+	searchParams: Promise<{ tab?: string }>
 }
 
 export const revalidate = 3600
@@ -29,9 +29,10 @@ export async function generateStaticParams() {
 	}))
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-	const qualifiedName = decodeURIComponent(params.ids.join("/"))
-	try {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+    const params = await props.params;
+    const qualifiedName = decodeURIComponent(params.ids.join("/"))
+    try {
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.qualifiedName, qualifiedName),
 		})
@@ -67,22 +68,23 @@ function parsePathParams(ids: string[]) {
 	return { qualifiedName, remaining: ids.slice(idParts.length) }
 }
 
-export default async function Page({ params }: Props) {
-	const { qualifiedName } = parsePathParams(params.ids)
+export default async function Page(props: Props) {
+    const params = await props.params;
+    const { qualifiedName } = parsePathParams(params.ids)
 
-	let serverData: FetchedServer | null = null
-	let error = ""
+    let serverData: FetchedServer | null = null
+    let error = ""
 
-	try {
+    try {
 		serverData = await getServer(qualifiedName)
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
-	if (!serverData) {
+    if (!serverData) {
 		notFound()
 	}
-	return (
+    return (
 		<main className="min-h-screen bg-background">
 			{error ? (
 				<ErrorMessage message={error} />

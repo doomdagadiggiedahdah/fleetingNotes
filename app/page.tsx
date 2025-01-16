@@ -4,22 +4,23 @@ import { getAllServers } from "@/lib/utils/fetch-registry"
 
 export const revalidate = 3600
 
-export default async function Home({
-	searchParams,
-}: {
-	searchParams: { q?: string }
-}) {
-	let serverData: FetchedServer[] = []
-	let error = ""
+export default async function Home(
+    props: {
+        searchParams: Promise<{ q?: string }>
+    }
+) {
+    const searchParams = await props.searchParams;
+    let serverData: FetchedServer[] = []
+    let error = ""
 
-	try {
+    try {
 		serverData = await getAllServers()
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
 
-	return (
+    return (
 		<HomeSearch
 			servers={serverData}
 			error={error}
