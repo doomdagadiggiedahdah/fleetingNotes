@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-import ConfigForm from "./form"
+import NewServerForm from "./new-server-form"
 import { GithubAuthProvider } from "@/components/github/github-user-provider"
 import { RepoSelector } from "@/components/github/repo-selector"
 
@@ -29,5 +29,5 @@ export default function NewPage({ searchParams }: Props) {
 		)
 	}
 
-	return <ConfigForm owner={owner} repo={repo} />
+	return <NewServerForm owner={owner} repo={repo} />
 }

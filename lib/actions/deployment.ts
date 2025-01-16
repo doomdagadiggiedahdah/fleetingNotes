@@ -230,10 +230,10 @@ export async function createDeployment(data: TriggerBuildInput) {
 	])
 
 	if (!smitheryFile) {
-		return { error: "Failed to fetch smithery.yaml from repository root" }
+		return { error: "Failed to fetch smithery.yaml from repository" }
 	}
 	if (!dockerfile) {
-		return { error: "Failed to fetch Dockerfile from repository root" }
+		return { error: "Failed to fetch Dockerfile from repository" }
 	}
 
 	let smitheryConfig: object

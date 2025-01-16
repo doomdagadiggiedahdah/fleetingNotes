@@ -12,6 +12,7 @@ import { ButtonLoading } from "@/components/ui/loading-button"
 import { createServer } from "@/lib/actions/servers"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
+import posthog from "posthog-js"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -41,7 +42,7 @@ interface Props {
 	owner: string | null
 	repo: string | null
 }
-export default function ConfigForm({ owner, repo }: Props) {
+export default function NewServerForm({ owner, repo }: Props) {
 	const router = useRouter()
 
 	const form = useForm<ProjectFormData>({
@@ -96,6 +97,12 @@ export default function ConfigForm({ owner, repo }: Props) {
 			if (error) {
 				throw new Error(error)
 			}
+
+			posthog.capture("Server Created", {
+				...value,
+				repoOwner: owner,
+				repoName: repo,
+			})
 
 			router.push(`/server/${value.qualifiedName}`)
 		} catch (error) {
