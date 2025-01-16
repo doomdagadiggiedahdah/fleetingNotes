@@ -8,13 +8,25 @@ import { SERVER_NEW_DAYS } from "../utils"
 
 // We have a special schema for selecting servers for rendering
 const selectFetchedServerSchema = selectServerSchema
-	.omit({
-		crawlUrl: true,
-		checked: true,
-		tags: true,
+	.pick({
+		id: true,
+		qualifiedName: true,
+		displayName: true,
+		description: true,
+		sourceUrl: true,
+		license: true,
+		homepage: true,
+		verified: true,
+		connections: true,
+		createdAt: true,
+		updatedAt: true,
+		remote: true,
+		published: true,
+		owner: true,
 	})
 	.extend({
 		installCount: z.number(),
+		deploymentUrl: z.string().nullable(),
 	})
 
 /**

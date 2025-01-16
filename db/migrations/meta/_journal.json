@@ -36,6 +36,13 @@
 			"when": 1737031450952,
 			"tag": "0005_stale_paladin",
 			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1737032032498,
+			"tag": "0006_dapper_gressill",
+			"breakpoints": true
 		}
 	]
 }
