@@ -50,37 +50,60 @@ interface TriggerBuildInput {
 }
 
 function createDockerfile(baseImage: string, config: object) {
+	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-# Stage 1: Use the developer's original image
+FROM us-central1-docker.pkg.dev/smithery-ai/smithery/gateway as gateway_image
+
+# User's original image
 FROM ${baseImage} as userimage
 
-# Stage 2: Add Smithery gateway
-FROM userimage
+COPY --from=gateway_image /app/gateway-app-glibc /tmp/smithery-gateway-glibc
+COPY --from=gateway_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
 
-# Install Node.js and npm if not already present
-RUN if ! command -v node > /dev/null; then \
-      if command -v apt-get > /dev/null; then \
-        apt-get update && apt-get install -y nodejs npm; \
-      elif command -v apk > /dev/null; then \
-        apk add --no-cache nodejs npm; \
-      elif command -v yum > /dev/null; then \
-        yum install -y nodejs npm; \
-      elif command -v dnf > /dev/null; then \
-        dnf install -y nodejs npm; \
-      else \
-        echo "No supported package manager found (tried: apt-get, apk, yum, dnf)" && exit 1; \
-      fi \
-    fi
+# "Detect" script: tries ldd on /bin/sh (or /usr/bin/env) to see if it's musl or glibc.
+# If ldd or /bin/sh doesn't exist, this might fail.
+# We store the result in /tmp/os-family.
+RUN /bin/sh -c 'set -eux && \
+  if [ ! -x /bin/sh ] && [ ! -x /usr/bin/env ]; then \
+    echo "ERROR: No shell found in the user image. Can not detect OS family." >&2 && \
+    exit 1; \
+  fi && \
+  shell_to_check="/bin/sh" && \
+  if [ ! -x "$shell_to_check" ]; then \
+    shell_to_check="/usr/bin/env"; \
+  fi && \
+  if ! command -v ldd >/dev/null 2>&1; then \
+    echo "ERROR: ldd not found in the user image. Can not detect OS family." >&2 && \
+    exit 1; \
+  fi && \
+  if ldd "$shell_to_check" 2>&1 | grep -qi musl; then \
+    echo "musl detected" && \
+    echo "musl" > /tmp/os-family; \
+  else \
+    echo "glibc detected" && \
+    echo "glibc" > /tmp/os-family; \
+  fi'
 
-# Install Smithery gateway
-RUN npm install -g @smithery/gateway
+# Pick the correct binary based on /tmp/os-family
+RUN /bin/sh -c 'set -eux && \
+  os_family="$(cat /tmp/os-family)" && \
+  case "$os_family" in \
+    musl)  mv /tmp/smithery-gateway-musl /usr/local/bin/smithery-gateway ;; \
+    glibc) mv /tmp/smithery-gateway-glibc /usr/local/bin/smithery-gateway ;; \
+    *) \
+      echo "Unknown OS family: $os_family" >&2 && \
+      exit 1 ;; \
+  esac && \
+  chmod +x /usr/local/bin/smithery-gateway && \
+  rm -f /tmp/smithery-gateway-*'
 
 # Expose port for gateway
 EXPOSE 8080
 
-# Use gateway as the entrypoint, which will manage the original command
-ENTRYPOINT ["npx", "@smithery/gateway"]
-CMD ["--port", "8080", "--configb64", "${Buffer.from(JSON.stringify(config)).toString("base64")}"]`
+# Use Smithery Gateway as the entrypoint
+ENTRYPOINT ["/usr/local/bin/smithery-gateway"]
+CMD ["--port", "8080", "--configb64", "${configb64}"]
+`
 }
 
 async function getGithubFile(
@@ -315,7 +338,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 							"--platform",
 							"managed",
 							"--memory",
-							"512Mi",
+							"1Gi",
 							"--max-instances",
 							"1",
 							"--allow-unauthenticated",

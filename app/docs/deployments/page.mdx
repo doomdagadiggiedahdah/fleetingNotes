@@ -59,6 +59,8 @@ RUN npm run build
 CMD ["node", "dist/index.js"]
 ```
 
+**We only support Linux Docker images on major distros (Alpine/Debian-based) and expect `sh` to run in your container. Other distros are untested and may not deploy.**
+
 You can find more examples of Dockerfiles in MCP's [official reference implementations](https://github.com/modelcontextprotocol/servers/tree/main/src).
 
 ### smithery.yaml
