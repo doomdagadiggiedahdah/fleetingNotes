@@ -12,15 +12,25 @@ import type { z } from "zod"
 import {
 	ListToolsResultSchema,
 	type ServerCapabilities,
+	// CompatibilityCallToolResultSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 
 interface MCPContextType {
 	client: MCPClient | null
 	status: "disconnected" | "connected" | "error"
 	tools: z.infer<typeof ListToolsResultSchema>["tools"]
-	connect: () => Promise<void>
+	connect: (
+		sseUrl: string,
+		options?: { config?: Record<string, any> },
+	) => Promise<void>
 	listTools: () => Promise<void>
-	makeRequestTo: (request: any, schema: z.ZodType) => Promise<any>
+	makeRequestTo: <T>(
+		request: {
+			method: string
+			params: Record<string, unknown>
+		},
+		schema: z.ZodType<T>,
+	) => Promise<T>
 	getStatus: () => "disconnected" | "connected" | "error"
 	capabilities: ServerCapabilities | null
 	getCapabilities: () => ServerCapabilities | null
@@ -30,10 +40,8 @@ const MCPContext = createContext<MCPContextType | null>(null)
 
 export function MCPProvider({
 	children,
-	config = { sseUrl: "http://localhost:8080" },
 }: {
 	children: ReactNode
-	config?: ConstructorParameters<typeof MCPClient>[0]
 }) {
 	const [client, setClient] = useState<MCPClient | null>(null)
 	const [status, setStatus] = useState<"disconnected" | "connected" | "error">(
@@ -46,17 +54,24 @@ export function MCPProvider({
 		null,
 	)
 
-	const connect = async () => {
+	const connect = async (
+		sseUrl: string,
+		options?: { config?: Record<string, any> },
+	) => {
 		try {
-			const mcpClient = new MCPClient(config)
+			const mcpClient = new MCPClient({
+				sseUrl,
+				config: options?.config, // Pass through any config
+			})
+
 			await mcpClient.connect()
+
 			setClient(mcpClient)
 			setStatus("connected")
 
 			const serverCapabilities = mcpClient.getCapabilities()
 			setCapabilities(serverCapabilities)
 		} catch (error) {
-			console.error("Failed to connect MCP client:", error)
 			setStatus("error")
 			throw error
 		}
@@ -66,7 +81,6 @@ export function MCPProvider({
 		if (!client || status !== "connected") {
 			throw new Error("Client not connected")
 		}
-
 		const response = await client.makeRequestTo(
 			{
 				method: "tools/list" as const,
@@ -78,6 +92,23 @@ export function MCPProvider({
 		setTools(response.tools)
 	}, [client, status])
 
+	const makeRequestTo = useCallback(
+		async <T,>(
+			request: {
+				method: string
+				params: Record<string, unknown>
+			},
+			schema: z.ZodType<T>,
+		): Promise<T> => {
+			if (!client || status !== "connected") {
+				throw new Error("Client not connected")
+			}
+			const response = await client.makeRequestTo(request, schema)
+			return response
+		},
+		[client, status],
+	)
+
 	return (
 		<MCPContext.Provider
 			value={{
@@ -86,9 +117,7 @@ export function MCPProvider({
 				tools,
 				connect,
 				listTools,
-				makeRequestTo: (request, schema) =>
-					client?.makeRequestTo(request, schema) ??
-					Promise.reject(new Error("Client not initialized")),
+				makeRequestTo,
 				getStatus: () => status,
 				capabilities,
 				getCapabilities: () => capabilities,

@@ -1,27 +1,38 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { PlayCircle, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import Search from "@/components/search"
+import {
+	type Tool,
+	type CompatibilityCallToolResult,
+	CompatibilityCallToolResultSchema,
+} from "@modelcontextprotocol/sdk/types.js"
+import { ToolCard } from "./tool-card"
+import { ToolResults } from "./tool-results"
 
 interface ToolsPanelProps {
 	server: FetchedServer
 }
 
-interface ToolParameter {
-	description: string
-	// Add other parameter properties if needed
-}
-
 export function ToolsPanel({ server }: ToolsPanelProps) {
-	const { status, connect, listTools, tools } = useMCP()
+	const { status, listTools, tools, makeRequestTo } = useMCP()
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [searchQuery, setSearchQuery] = useState("")
+	const [isExpanded, setIsExpanded] = useState(false)
+	const [activeExecution, setActiveExecution] = useState<{
+		isExecuting: boolean
+		result: CompatibilityCallToolResult | null
+		error: string | null
+	}>({
+		isExecuting: false,
+		result: null,
+		error: null,
+	})
 
 	useEffect(() => {
 		async function loadTools() {
@@ -42,18 +53,6 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 		loadTools()
 	}, [status, listTools])
 
-	const handleConnect = async () => {
-		setIsLoading(true)
-		setError(null)
-		try {
-			await connect() //(server.url) // Modified to use server.url
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to connect")
-		} finally {
-			setIsLoading(false)
-		}
-	}
-
 	const handleSearch = async (query: string) => {
 		setSearchQuery(query)
 	}
@@ -64,23 +63,38 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 			tool.description?.toLowerCase().includes(searchQuery.toLowerCase()),
 	)
 
+	const executeTool = async (tool: Tool, inputs: Record<string, unknown>) => {
+		try {
+			const result = await makeRequestTo(
+				{
+					method: "tools/call",
+					params: {
+						name: tool.name,
+						arguments: inputs,
+					},
+				},
+				CompatibilityCallToolResultSchema,
+			)
+			return result
+		} catch (err) {
+			console.error("Tool execution error:", {
+				tool: tool.name,
+				error: err,
+				errorType: typeof err,
+				errorString: JSON.stringify(err, Object.getOwnPropertyNames(err), 2),
+			})
+			throw err
+		}
+	}
+
 	if (status === "disconnected") {
 		return (
-			<Card className="p-6 border-0">
+			<Card className="p-6">
 				<div className="flex flex-col items-center justify-center space-y-4">
 					<p className="text-sm text-muted-foreground">
-						Not connected to {server.displayName}
+						Connecting to {server.displayName}...
 					</p>
-					{error && <p className="text-sm text-red-500">{error}</p>}
-					<Button
-						variant="outline"
-						onClick={handleConnect}
-						disabled={isLoading}
-						className="flex items-center gap-2"
-					>
-						{isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-						{isLoading ? "Connecting..." : "Connect to Server"}
-					</Button>
+					<Loader2 className="w-4 h-4 animate-spin" />
 				</div>
 			</Card>
 		)
@@ -88,7 +102,7 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 
 	if (isLoading) {
 		return (
-			<Card className="p-6 border-0">
+			<Card className="p-6">
 				<div className="flex items-center justify-center">
 					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
 				</div>
@@ -98,70 +112,58 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 
 	return (
 		<div className="space-y-6">
-			<Card className="p-6 border-0">
+			<div className="w-1/2">
 				<Search
 					onSearch={handleSearch}
 					initialValue={searchQuery}
 					placeholder="Search for tools..."
 				/>
+			</div>
 
-				{filteredTools.length === 0 ? (
-					<div className="text-sm text-muted-foreground text-center py-4">
-						{searchQuery
-							? "No tools found matching your search"
-							: "No tools available"}
-					</div>
-				) : (
-					<div className="space-y-4 mt-4">
-						{filteredTools.map((tool) => (
-							<div
-								key={tool.name}
-								className="border border-border rounded-lg p-4 bg-background"
-							>
-								<div className="flex items-start justify-between">
-									<div>
-										<h3 className="font-semibold text-primary">{tool.name}</h3>
-										<p className="text-sm text-muted-foreground mt-1">
-											{tool.description}
-										</p>
-									</div>
-									<Button
-										variant="outline"
-										size="sm"
-										className="flex items-center gap-2"
-									>
-										<PlayCircle className="w-4 h-4" />
-										Run
-									</Button>
-								</div>
-
-								{Object.keys(tool.parameters || {}).length > 0 && (
-									<div className="mt-4">
-										<h4 className="text-sm font-medium mb-2">Parameters:</h4>
-										<div className="space-y-2">
-											{Object.entries(tool.parameters || {}).map(
-												([name, param]: [string, ToolParameter]) => (
-													<div
-														key={name}
-														className="text-sm grid grid-cols-[100px,1fr] gap-2"
-													>
-														<span className="font-mono text-primary">
-															{name}
-														</span>
-														<span className="text-muted-foreground">
-															{param.description}
-														</span>
-													</div>
-												),
-											)}
-										</div>
-									</div>
-								)}
+			<div className="flex gap-6">
+				<div className="w-1/2">
+					{filteredTools.length === 0 ? (
+						<Card className="p-6">
+							<div className="text-sm text-muted-foreground text-center">
+								{searchQuery
+									? "No tools found matching your search"
+									: "No tools available"}
 							</div>
-						))}
-					</div>
-				)}
-			</Card>
+						</Card>
+					) : (
+						<div className="space-y-4">
+							{filteredTools.map((tool) => (
+								<Card
+									className="p-0 transition-all duration-200"
+									key={tool.name}
+								>
+									<ToolCard
+										key={tool.name}
+										tool={tool}
+										onExecute={executeTool}
+										onExpandedChange={setIsExpanded}
+										onExecutionChange={setActiveExecution}
+									/>
+								</Card>
+							))}
+						</div>
+					)}
+				</div>
+
+				<div className="w-1/2">
+					{isExpanded ? (
+						<Card className="p-6">
+							<ToolResults
+								isExecuting={activeExecution.isExecuting}
+								error={activeExecution.error}
+								result={activeExecution.result}
+							/>
+						</Card>
+					) : (
+						<div className="h-full" />
+					)}
+				</div>
+			</div>
 		</div>
 	)
 }

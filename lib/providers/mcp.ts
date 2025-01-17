@@ -11,6 +11,7 @@ import {
 	ListRootsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
+import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 export class MCPError extends Error {
 	constructor(
@@ -25,12 +26,10 @@ export class MCPError extends Error {
 
 interface MCPClientConfig {
 	sseUrl: string
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	config?: Record<string, any>
 	onNotification?: (notification: Notification) => void
 	onStdErrNotification?: (notification: Notification) => void
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onPendingRequest?: (request: any, resolve: any, reject: any) => void
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	getRoots?: () => any[]
 }
 
@@ -58,12 +57,12 @@ export class MCPClient {
 				},
 			)
 
-			// const backendUrl = new URL(`${this.config.proxyServerUrl}/sse`)
-			// backendUrl.searchParams.append("url", this.config.sseUrl)
-
-			const clientTransport = new SSEClientTransport(
-				new URL("http://localhost:8000/sse"),
+			const connectionUrl = createSmitheryUrl(
+				this.config.sseUrl,
+				this.config.config || {},
 			)
+
+			const clientTransport = new SSEClientTransport(connectionUrl)
 
 			if (this.config.onNotification) {
 				this.client.setNotificationHandler(
@@ -107,12 +106,17 @@ export class MCPClient {
 		schema: T,
 	): Promise<z.infer<T>> {
 		if (!this.client || this.connectionStatus !== "connected") {
+			console.warn("[MCP] makeRequestTo failed: Client not connected", {
+				status: this.connectionStatus,
+				hasClient: !!this.client,
+			})
 			throw new MCPError("Client not connected")
 		}
 
 		try {
 			const abortController = new AbortController()
 			const timeoutId = setTimeout(() => {
+				console.warn("[MCP] Request timed out")
 				abortController.abort("Request timed out")
 			}, 10000)
 
@@ -125,6 +129,7 @@ export class MCPClient {
 				clearTimeout(timeoutId)
 			}
 		} catch (error) {
+			console.error("[MCP] Request failed:", error)
 			if (error instanceof z.ZodError) {
 				throw new MCPError("Invalid response format from server", error)
 			}
