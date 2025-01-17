@@ -39,7 +39,7 @@ export const ClientInstallContent = ({
 					serverId={tool.qualifiedName}
 					eventTag="install_command"
 				>
-					{`npx -y @smithery/cli install ${tool.qualifiedName} --client ${client}`}
+					{`npx -y @smithery/cli@latest install ${tool.qualifiedName} --client ${client}`}
 				</CodeBlock>
 			) : (
 				<Alert>
