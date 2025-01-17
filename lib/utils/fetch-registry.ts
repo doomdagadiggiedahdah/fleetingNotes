@@ -1,6 +1,7 @@
 "use server"
 import { db } from "@/db"
-import { deployments, events, selectServerSchema, servers } from "@/db/schema"
+import { deployments, selectServerSchema, servers } from "@/db/schema"
+import { events } from "@/db/schema/events"
 import { eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 import { z } from "zod"

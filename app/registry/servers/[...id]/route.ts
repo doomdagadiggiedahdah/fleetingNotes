@@ -1,5 +1,6 @@
 import { db } from "@/db"
-import { events, servers } from "@/db/schema"
+import { servers } from "@/db/schema"
+import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
 import { JSONSchemaSchema, RegistryServerSchema } from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"

@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { events } from "@/db/schema"
+import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
