@@ -1,7 +1,9 @@
 import { SiDiscord, SiGithub } from "@icons-pack/react-simple-icons"
 import { Anvil, Plus } from "lucide-react"
 import Link from "next/link"
+import { LoginButton } from "./auth/login-button"
 import { Container } from "./layouts/container"
+
 export function Header() {
 	return (
 		<header className="bg-card border-b border-border">
@@ -47,6 +49,7 @@ export function Header() {
 							<Plus className="w-4 h-4" />
 							Add Server
 						</Link>
+						<LoginButton />
 					</div>
 				</div>
 			</Container>
