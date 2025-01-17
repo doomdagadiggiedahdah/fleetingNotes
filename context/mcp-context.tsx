@@ -17,7 +17,7 @@ import {
 
 interface MCPContextType {
 	client: MCPClient | null
-	status: "disconnected" | "connected" | "error"
+	status: "disconnected" | "connected" | "connecting" | "error"
 	tools: z.infer<typeof ListToolsResultSchema>["tools"]
 	connect: (
 		sseUrl: string,
@@ -31,7 +31,7 @@ interface MCPContextType {
 		},
 		schema: z.ZodType<T>,
 	) => Promise<T>
-	getStatus: () => "disconnected" | "connected" | "error"
+	getStatus: () => "disconnected" | "connected" | "connecting" | "error"
 	capabilities: ServerCapabilities | null
 	getCapabilities: () => ServerCapabilities | null
 }
@@ -44,9 +44,9 @@ export function MCPProvider({
 	children: ReactNode
 }) {
 	const [client, setClient] = useState<MCPClient | null>(null)
-	const [status, setStatus] = useState<"disconnected" | "connected" | "error">(
-		"disconnected",
-	)
+	const [status, setStatus] = useState<
+		"disconnected" | "connected" | "connecting" | "error"
+	>("disconnected")
 	const [tools, setTools] = useState<
 		z.infer<typeof ListToolsResultSchema>["tools"]
 	>([])
@@ -59,6 +59,7 @@ export function MCPProvider({
 		options?: { config?: Record<string, any> },
 	) => {
 		try {
+			setStatus("connecting")
 			const mcpClient = new MCPClient({
 				sseUrl,
 				config: options?.config, // Pass through any config

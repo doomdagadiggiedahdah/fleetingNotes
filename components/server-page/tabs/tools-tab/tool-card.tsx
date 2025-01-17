@@ -123,7 +123,7 @@ export function ToolCard({
 														[key]: e.target.value,
 													}))
 												}
-												className="min-h-[80px] resize-y"
+												className="min-h-[40px] resize-none hover:resize-y"
 											/>
 										) : value.type === "object" ? (
 											<Textarea
@@ -144,7 +144,7 @@ export function ToolCard({
 														}))
 													}
 												}}
-												className="min-h-[80px] resize-y font-mono text-sm"
+												className="min-h-[40px] resize-none hover:resize-y font-mono text-sm"
 											/>
 										) : value.type === "number" ? (
 											<div className="flex items-center space-x-2">

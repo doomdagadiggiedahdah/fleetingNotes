@@ -10,7 +10,7 @@ import { useEffect, useState } from "react"
 import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings/settings-tab"
-import { ToolsPanel } from "./tools-tab"
+import { ToolsPanel } from "@/components/server-page/tabs/tools-tab"
 import { supabase } from "@/lib/supabase/client"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -43,7 +43,8 @@ export function ServerTabs({ server }: ServerTabsProps) {
 	// Determines if the user is an admin of this MCP
 	const [isAdmin, setIsAdmin] = useState(false)
 	const [configSchema, setConfigSchema] = useState<ConfigSchema | null>(null)
-	const [showConfigForm, setShowConfigForm] = useState(false)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const [currentConfig, setCurrentConfig] = useState<Record<string, any>>({})
 
 	// Handle admin status from search params
 	useEffect(() => {
@@ -89,7 +90,6 @@ export function ServerTabs({ server }: ServerTabsProps) {
 		async function initializeConnection() {
 			if (server.deploymentUrl && status !== "connected") {
 				try {
-					// fetch config schema
 					const schemaUrl = new URL(
 						"/.well-known/mcp/smithery.json",
 						server.deploymentUrl,
@@ -101,20 +101,14 @@ export function ServerTabs({ server }: ServerTabsProps) {
 					}
 
 					const data = await response.json()
-
 					const { configSchema } = data
 
-					// if schema exists and has requirements
-					if (configSchema && Object.keys(configSchema).length > 0) {
-						setConfigSchema(configSchema)
-						setShowConfigForm(true)
-						// connection will be handled after config collection
-						return
-					}
+					setConfigSchema(configSchema || {})
 
-					// if no config needed, connect directly
-					const sseUrl = new URL("/sse", server.deploymentUrl).toString()
-					await connect(sseUrl)
+					if (!configSchema || Object.keys(configSchema).length === 0) {
+						const sseUrl = new URL("/sse", server.deploymentUrl).toString()
+						await connect(sseUrl)
+					}
 				} catch (error) {
 					console.error("[MCP] Connection initialization error:", error)
 				}
@@ -129,9 +123,9 @@ export function ServerTabs({ server }: ServerTabsProps) {
 		if (!server.deploymentUrl) return
 
 		try {
+			setCurrentConfig(config) // Store the current config
 			const sseUrl = new URL("/sse", server.deploymentUrl).toString()
 			await connect(sseUrl, { config })
-			setShowConfigForm(false)
 		} catch (error) {
 			console.error("[MCP] Config connection error:", error)
 		}
@@ -148,7 +142,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 								About
 							</span>
 						</TabsTrigger>
-						{server.deploymentUrl && status !== "connected" ? (
+						{server.deploymentUrl && status === "connecting" ? (
 							<>
 								<TabsTrigger value="tools" disabled>
 									<Skeleton className="h-4 w-16" />
@@ -194,14 +188,18 @@ export function ServerTabs({ server }: ServerTabsProps) {
 				<TabsContent value="about">
 					<AboutPanel
 						server={server}
-						showConfigForm={showConfigForm}
+						showConfigForm={
+							configSchema !== null && Object.keys(configSchema).length > 0
+						}
 						configSchema={configSchema || undefined}
 						onConfigSubmit={handleConfigSubmit}
-						onConfigCancel={() => setShowConfigForm(false)}
+						onConfigCancel={() => {}}
+						initialConfig={currentConfig}
+						onConfigSuccess={() => handleTabChange("tools")}
 					/>
 				</TabsContent>
 
-				{server.deploymentUrl && status !== "connected" ? (
+				{status === "connecting" ? (
 					<>
 						<TabsContent value="tools">
 							<TabsSkeleton />
