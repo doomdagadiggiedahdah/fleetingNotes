@@ -1,0 +1,1 @@
+ALTER TABLE "servers" ALTER COLUMN "remote" SET DEFAULT true;

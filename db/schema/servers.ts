@@ -37,7 +37,7 @@ export const servers = pgTable(
 		// True if this entry has been checked by a human
 		checked: boolean("checked").notNull().default(false),
 		// True if this server doesn't require local access
-		remote: boolean("remote").notNull().default(false),
+		remote: boolean("remote").notNull().default(true),
 		// True if this server has any connection published to npm/pypi
 		published: boolean("published").notNull().default(false),
 		tags: jsonb("tags").notNull().default([]),
