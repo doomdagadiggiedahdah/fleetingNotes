@@ -10,12 +10,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { createServer } from "@/lib/actions/servers"
+import { createServerSchema } from "@/lib/actions/servers.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import * as z from "zod"
+import type * as z from "zod"
 
 const normalizeId = (name: string) =>
 	name
@@ -24,16 +25,9 @@ const normalizeId = (name: string) =>
 		.replace(/-+/g, "-")
 		.replace(/^-|-$/g, "")
 
-const projectFormSchema = z.object({
-	displayName: z.string().min(1, "Name is required"),
-	qualifiedName: z
-		.string()
-		.min(1, "ID is required")
-		.regex(
-			/^[a-z]+[a-z0-9-_]+$/,
-			"ID must contain only lowercase letters, numbers, hyphens, or underscores, and must start with a letter.",
-		),
-	description: z.string(),
+const projectFormSchema = createServerSchema.pick({
+	qualifiedName: true,
+	baseDirectory: true,
 })
 
 type ProjectFormData = z.infer<typeof projectFormSchema>
@@ -48,9 +42,8 @@ export default function NewServerForm({ owner, repo }: Props) {
 	const form = useForm<ProjectFormData>({
 		resolver: zodResolver(projectFormSchema),
 		defaultValues: {
-			displayName: repo ?? "",
 			qualifiedName: repo ? normalizeId(repo) : "",
-			description: `Deployed from ${owner}/${repo}`,
+			baseDirectory: ".",
 		},
 	})
 
@@ -88,13 +81,13 @@ export default function NewServerForm({ owner, repo }: Props) {
 			// If all validation passes, proceed with form submission
 			setIsLoading(true)
 
-			const { error } = await createServer({
+			const { server, error } = await createServer({
 				...value,
 				repoOwner: owner,
 				repoName: repo,
 			})
 
-			if (error) {
+			if (error || !server) {
 				throw new Error(error)
 			}
 
@@ -104,7 +97,9 @@ export default function NewServerForm({ owner, repo }: Props) {
 				repoName: repo,
 			})
 
-			router.push(`/server/${value.qualifiedName}`)
+			router.push(`/server/${server.qualifiedName}`)
+
+			// Don't set loading false because we're redirecting
 		} catch (error) {
 			form.setError("root", {
 				message:
@@ -112,18 +107,12 @@ export default function NewServerForm({ owner, repo }: Props) {
 						? error.message
 						: "An unexpected error occurred",
 			})
-		} finally {
 			setIsLoading(false)
 		}
 	}
 
-	// Combined form watching effects
 	useEffect(() => {
-		const subscription = watch((value, { name: fieldName }) => {
-			if (fieldName === "displayName" && value.displayName) {
-				setValue("qualifiedName", normalizeId(value.displayName))
-			}
-
+		const subscription = watch((value) => {
 			// Validate
 			if (value) {
 				validateFormData(value as ProjectFormData)
@@ -143,27 +132,24 @@ export default function NewServerForm({ owner, repo }: Props) {
 				>
 					<FormField
 						control={form.control}
-						name="displayName"
+						name="qualifiedName"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>Name</FormLabel>
+								<FormLabel>ID</FormLabel>
 								<FormControl>
-									<Input
-										placeholder="Project name"
-										{...field}
-										data-lpignore="true"
-										onChange={(e) => {
-											field.onChange(e)
-											// Auto-update ID when name changes
-											const newId = e.target.value
-												.toLowerCase()
-												.replace(/[^a-z0-9-_]/g, "-")
-											form.setValue("qualifiedName", newId)
-										}}
-									/>
+									<div className="flex">
+										<div className="bg-[#1C1C1C] px-3 flex items-center text-sm text-muted-foreground rounded-l-md border border-r-0 border-input text-nowrap">
+											@{owner} /
+										</div>
+										<Input
+											placeholder="project-id"
+											{...field}
+											className="font-mono rounded-l-none focus:ring-offset-0"
+										/>
+									</div>
 								</FormControl>
 								<p className="text-sm text-muted-foreground">
-									Display name for your project
+									Unique ID for your project (a package name identifer).
 								</p>
 								<FormMessage />
 							</FormItem>
@@ -172,31 +158,19 @@ export default function NewServerForm({ owner, repo }: Props) {
 
 					<FormField
 						control={form.control}
-						name="qualifiedName"
+						name="baseDirectory"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>ID</FormLabel>
+								<FormLabel>Base Directory</FormLabel>
 								<FormControl>
-									<Input
-										placeholder="project-id"
-										{...field}
-										className="font-mono"
-									/>
+									<Input {...field} />
 								</FormControl>
-								<FormMessage />
-							</FormItem>
-						)}
-					/>
-
-					<FormField
-						control={form.control}
-						name="description"
-						render={({ field }) => (
-							<FormItem>
-								<FormLabel>Description</FormLabel>
-								<FormControl>
-									<Input placeholder="Project description" {...field} />
-								</FormControl>
+								<p className="text-sm text-muted-foreground">
+									The directory your project is located within your repository.
+									This is usually the directory containing your Dockerfile,
+									package.json or pyproject.toml. Use &quot;.&quot; for the root
+									directory.
+								</p>
 								<FormMessage />
 							</FormItem>
 						)}
@@ -205,8 +179,7 @@ export default function NewServerForm({ owner, repo }: Props) {
 					<div className="space-y-2">
 						<p className="text-sm text-muted-foreground mb-4">
 							Once you click &quot;Create&quot;, your repository will be
-							publicly listed on Smithery. We reserve the right to remove
-							servers that don&apos;t meet our standard.
+							publicly listed on Smithery.
 						</p>
 						<ButtonLoading
 							type="submit"

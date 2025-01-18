@@ -88,6 +88,7 @@ export const ConnectionSchema = z
 
 export type Connection = z.infer<typeof ConnectionSchema>
 
+// @deprecated
 export const RegistryServerSchema = z.object({
 	qualifiedName: z
 		.string()

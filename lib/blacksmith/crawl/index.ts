@@ -4,7 +4,7 @@ import { candidate_urls, servers } from "@/db/schema"
 import { and, eq, sql } from "drizzle-orm"
 import { extractServer } from "./extract-server"
 import { shuffle } from "lodash"
-import { canonicalizeGithubUrl } from "../github"
+import { canonicalizeGithubUrl } from "@/lib/utils/github"
 
 /**
  * Goes through all unprocessed URLs and generates entries for each

@@ -6,6 +6,7 @@ import { wrapOpenAI, wrapTraced } from "braintrust"
 import * as Diff from "diff"
 
 export const createPRMessage = wrapTraced(async function createPRMessage(
+	// TODO: This ID is wrong
 	serverId: string,
 	serverName: string,
 	oldReadme: string,

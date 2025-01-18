@@ -101,6 +101,17 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 				</code>
 			)
 		},
+		img: ({ src, alt }) => (
+			<img
+				src={src}
+				alt={alt}
+				className="inline-block max-w-full h-auto my-2 rounded-lg"
+			/>
+		),
 		...components,
 	}
+}
+
+export function getMdxComponents() {
+	return useMDXComponents({})
 }

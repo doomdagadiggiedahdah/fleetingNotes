@@ -19,7 +19,10 @@ export default function ServerList({
 				(server.description ?? "")
 					.toLowerCase()
 					.includes(query.toLowerCase()) ||
-				server.sourceUrl.toLowerCase().includes(query.toLowerCase()),
+				server.sourceUrl
+					.replace("https://github.com", "")
+					.toLowerCase()
+					.includes(query.toLowerCase()),
 		)
 	}
 

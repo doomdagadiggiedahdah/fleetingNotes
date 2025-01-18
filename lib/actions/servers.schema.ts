@@ -1,4 +1,3 @@
-import { insertServerSchema } from "@/db/schema"
 import { z } from "zod"
 
 export const updateServerSchema = z
@@ -12,16 +11,32 @@ export const updateServerSchema = z
 
 export type UpdateServer = z.infer<typeof updateServerSchema>
 
-export const createServerSchema = insertServerSchema
-	.pick({
-		qualifiedName: true,
-		displayName: true,
-		description: true,
-	})
-	.extend({
-		repoOwner: z.string(),
-		repoName: z.string(),
-	})
+export const createServerSchema = z.object({
+	repoOwner: z.string(),
+	repoName: z.string(),
+	qualifiedName: z
+		.string()
+		.min(1, "ID is required")
+		.regex(
+			/^[a-z]+[a-z0-9-_]+$/,
+			"ID must contain only lowercase letters, numbers, hyphens, or underscores, and must start with a letter.",
+		),
+	baseDirectory: z
+		.string()
+		.min(1, "Base directory is required")
+		.refine(
+			(path) => !path.includes(" "),
+			"Base directory cannot contain spaces",
+		)
+		.refine(
+			(path) => !path.endsWith("/"),
+			"Base directory cannot end with a trailing slash",
+		)
+		.refine(
+			(path) => !path.includes(".."),
+			"Base directory cannot contain parent directory references",
+		),
+})
 
 export type CreateServerInputs = z.infer<typeof createServerSchema>
 

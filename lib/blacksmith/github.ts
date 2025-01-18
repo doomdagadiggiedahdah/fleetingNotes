@@ -1,35 +1,9 @@
+// @deprecated. Use github in utils
 import { Octokit } from "@octokit/core"
 
 export const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
 })
-
-/**
- * Resolves a GitHub URL to its canonical form by following redirects
- * @param url The GitHub URL to canonicalize
- * @returns The canonical GitHub URL after following redirects
- */
-export async function canonicalizeGithubUrl(url: string): Promise<string> {
-	if (!url.toLowerCase().includes("github.com")) {
-		return url
-	}
-
-	try {
-		const response = await fetch(url, {
-			method: "HEAD",
-			redirect: "follow",
-		})
-
-		// Get the final URL after all redirects
-		const canonicalUrl = response.url
-
-		// Remove any trailing slashes for consistency
-		return canonicalUrl.replace(/\/+$/, "")
-	} catch (error) {
-		console.error(`Failed to canonicalize GitHub URL: ${url}`, error)
-		return url // Return original URL if canonicalization fails
-	}
-}
 
 /**
  * Checks if a repository is a fork by querying the GitHub API

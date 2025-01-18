@@ -8,8 +8,9 @@ import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
+import { type ServerConfig, ServerConfigSchema } from "../types/server-config"
+import { getGithubFile, joinGithubPath } from "../utils/github"
 import { getConnectedRepos } from "./servers"
-import { joinGithubPath } from "../utils/github"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -104,34 +105,6 @@ EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/smithery-gateway"]
 CMD ["--port", "8080", "--configb64", "${configb64}"]
 `
-}
-
-async function getGithubFile(
-	octokit: Octokit,
-	owner: string,
-	repo: string,
-	path: string,
-	ref: string | undefined = undefined,
-) {
-	try {
-		const response = await octokit.request(
-			"GET /repos/{owner}/{repo}/contents/{path}",
-			{
-				owner,
-				repo,
-				path,
-				ref,
-			},
-		)
-
-		if (!Array.isArray(response.data) && response.data.type === "file") {
-			const content = Buffer.from(response.data.content, "base64").toString()
-			return content
-		}
-	} catch (error) {
-		console.error("Error fetching smithery.yaml:", error)
-	}
-	return null
 }
 
 async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
@@ -251,9 +224,9 @@ export async function createDeployment(data: TriggerBuildInput) {
 		return { error: "Failed to fetch Dockerfile from repository" }
 	}
 
-	let smitheryConfig: object
+	let smitheryConfig: ServerConfig
 	try {
-		smitheryConfig = YAML.parse(smitheryFile)
+		smitheryConfig = ServerConfigSchema.parse(YAML.parse(smitheryFile))
 	} catch (e) {
 		console.error(e)
 		return { error: "Unable to parse YAML file." }
@@ -289,8 +262,15 @@ export async function createDeployment(data: TriggerBuildInput) {
 							"-t",
 							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
 							"-f",
-							joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
-							serverRepo.baseDirectory || ".",
+							joinGithubPath(
+								serverRepo.baseDirectory,
+								smitheryConfig.build?.dockerfile ?? "",
+								"Dockerfile",
+							),
+							joinGithubPath(
+								serverRepo.baseDirectory,
+								smitheryConfig.build?.dockerBuildPath ?? "",
+							) || ".",
 						],
 					},
 					// Push user's image

@@ -7,6 +7,8 @@ import { getServer } from "@/lib/utils/fetch-registry"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { compileMDX } from "next-mdx-remote/rsc"
+import { getMdxComponents } from "@/mdx-components"
 
 type Props = {
 	params: Promise<{ ids: string[] }>
@@ -72,24 +74,32 @@ export default async function Page(props: Props) {
 	const params = await props.params
 	const { qualifiedName } = parsePathParams(params.ids)
 
-	let serverData: FetchedServer | null = null
+	let server: FetchedServer | null = null
 	let error = ""
 
 	try {
-		serverData = await getServer(qualifiedName)
+		server = await getServer(qualifiedName)
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"
 	}
-	if (!serverData) {
+	if (!server) {
 		notFound()
+	}
+	if (server.descriptionLong) {
+		// Compile the MDX on the server
+		const { content } = await compileMDX({
+			source: server.descriptionLong,
+			components: getMdxComponents(),
+		})
+		server.descriptionLongMdx = content
 	}
 	return (
 		<main className="min-h-screen bg-background">
 			{error ? (
 				<ErrorMessage message={error} />
 			) : (
-				<ServerPage server={serverData} />
+				<ServerPage server={server} />
 			)}
 		</main>
 	)

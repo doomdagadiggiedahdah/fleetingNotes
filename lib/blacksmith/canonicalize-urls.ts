@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
-import { canonicalizeGithubUrl } from "./github"
+import { canonicalizeGithubUrl } from "../utils/github"
 
 /**
  * Updates all GitHub URLs in the servers table to their canonical form

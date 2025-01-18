@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema/servers"
 import { createClient } from "@/lib/supabase/server"
 import { and, eq } from "drizzle-orm"
+import { omit } from "lodash"
 import { revalidatePath } from "next/cache"
 import {
 	type CreateServerInputs,
@@ -12,10 +13,12 @@ import {
 	type UpdateServer,
 	updateServerSchema,
 } from "./servers.schema"
-import { omit } from "lodash"
 
+import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
+import { runConfigPR } from "../blacksmith/config"
+import { extractServer } from "../blacksmith/extract-server"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -83,67 +86,6 @@ export async function getConnectedRepos(serverId: string) {
 	return rows
 }
 
-// const commitFile = async (data: CreateServerInputs) => {
-// 	// Create Octokit instance with installation token
-// 	const octokit = new Octokit({
-// 		authStrategy: createAppAuth,
-// 		auth: {
-// 			appId: process.env.GITHUB_APP_ID!,
-// 			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-// 			installationId: data.installationId,
-// 		},
-// 	})
-
-// 	// Check if file exists and get its content
-// 	try {
-// 		const existingFile = await octokit.request(
-// 			"GET /repos/{owner}/{repo}/contents/{path}",
-// 			{
-// 				owner: data.owner,
-// 				repo: data.repo,
-// 				path: "smithery.yaml",
-// 			},
-// 		)
-
-// 		if (Array.isArray(existingFile.data) || existingFile.data.type !== "file") {
-// 			throw new Error("We were unable to parse or update smithery.yaml.")
-// 		}
-
-// 		const existingContent = Buffer.from(
-// 			existingFile.data.content,
-// 			"base64",
-// 		).toString()
-// 		if (existingContent === data.config) {
-// 			// File exists and content is identical, skip update
-// 			console.log("File exists with identical content, skipping update")
-// 			return
-// 		}
-
-// 		// Update existing file
-// 		await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
-// 			owner: data.owner,
-// 			repo: data.repo,
-// 			path: "smithery.yaml",
-// 			message: "Update Smithery configuration",
-// 			content: Buffer.from(data.config).toString("base64"),
-// 			sha: existingFile.data.sha,
-// 		})
-// 	} catch (error: unknown) {
-// 		if ((error as RequestError).status === 404) {
-// 			// File doesn't exist, create it
-// 			await octokit.request("PUT /repos/{owner}/{repo}/contents/{path}", {
-// 				owner: data.owner,
-// 				repo: data.repo,
-// 				path: "smithery.yaml",
-// 				message: "Add Smithery configuration",
-// 				content: Buffer.from(data.config).toString("base64"),
-// 			})
-// 		} else {
-// 			throw error
-// 		}
-// 	}
-// }
-
 // Server action to create project and commit config
 export async function createServer(rawData: CreateServerInputs) {
 	// Validate
@@ -159,6 +101,11 @@ export async function createServer(rawData: CreateServerInputs) {
 		return { error: "Unauthorized" }
 	}
 
+	const serverExtractionPromise = extractServer(octokit)({
+		repoOwner: insertData.repoOwner,
+		repoName: insertData.repoName,
+		baseDirectory: insertData.baseDirectory,
+	})
 	const installResp = await octokit.request("GET /user/installations")
 	const installationId = installResp.data.installations.find(
 		(install) =>
@@ -169,10 +116,11 @@ export async function createServer(rawData: CreateServerInputs) {
 	if (installationId === undefined)
 		return { error: "Failed to validate GitHub installation." }
 
+	// let newServer: Pick<Server, "id" | "qualifiedName"> | null = null
 	try {
 		// Create both the server and repo connection in a single transaction
-		await db.transaction(async (tx) => {
-			const [newServer] = await tx
+		const newServer = await db.transaction(async (tx) => {
+			const [server] = await tx
 				.insert(servers)
 				.values({
 					owner: user.id,
@@ -182,26 +130,33 @@ export async function createServer(rawData: CreateServerInputs) {
 					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
 					verified: false,
 					license: null,
-					// User passed
-					qualifiedName: insertData.qualifiedName,
-					displayName: insertData.displayName,
-					description: insertData.description,
+					displayName: insertData.qualifiedName,
+					description: "",
+					...(await serverExtractionPromise).server,
+					// User specified data
+					// TODO: Allow usernames
+					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
 				})
-				.returning({ id: servers.id })
+				.returning({ id: servers.id, qualifiedName: servers.qualifiedName })
 
 			await tx.insert(serverRepos).values({
-				serverId: newServer.id,
+				serverId: server.id,
 				type: "github",
 				repoOwner: insertData.repoOwner,
 				repoName: insertData.repoName,
+				baseDirectory: insertData.baseDirectory,
 			})
+
+			return server
 		})
+		// Generate PR
+		waitUntil(runConfigPR(newServer.id))
+
+		return { server: newServer }
 	} catch (error) {
 		console.error(error)
 		return { error: "Server ID already taken." }
 	}
-
-	return {}
 }
 
 /**

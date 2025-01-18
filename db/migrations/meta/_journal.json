@@ -64,6 +64,13 @@
 			"when": 1737046183319,
 			"tag": "0009_classy_spot",
 			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1737202048102,
+			"tag": "0010_gigantic_red_shift",
+			"breakpoints": true
 		}
 	]
 }

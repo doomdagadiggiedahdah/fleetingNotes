@@ -14,6 +14,7 @@ const selectFetchedServerSchema = selectServerSchema
 		qualifiedName: true,
 		displayName: true,
 		description: true,
+		descriptionLong: true,
 		sourceUrl: true,
 		license: true,
 		homepage: true,
@@ -26,6 +27,8 @@ const selectFetchedServerSchema = selectServerSchema
 		owner: true,
 	})
 	.extend({
+		// The compiled Markdown component passed to the page
+		descriptionLongMdx: z.any().optional(),
 		installCount: z.number(),
 		deploymentUrl: z.string().nullable(),
 	})
@@ -41,6 +44,7 @@ export async function getServer(qualifiedName: string) {
 			qualifiedName: servers.qualifiedName,
 			displayName: servers.displayName,
 			description: servers.description,
+			descriptionLong: servers.descriptionLong,
 			sourceUrl: servers.sourceUrl,
 			license: servers.license,
 			homepage: servers.homepage,
