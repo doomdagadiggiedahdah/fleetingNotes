@@ -28,3 +28,15 @@ export async function createClient() {
 		},
 	)
 }
+/**
+ * Gets the current user authenticated via Supabase
+ * @returns User
+ */
+
+export async function getMe() {
+	const supabase = await createClient()
+	const {
+		data: { user },
+	} = await supabase.auth.getUser()
+	return user
+}

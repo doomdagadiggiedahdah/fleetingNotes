@@ -2,7 +2,6 @@
 
 import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema/servers"
-import { createClient } from "@/lib/supabase/server"
 import { and, eq } from "drizzle-orm"
 import { omit } from "lodash"
 import { revalidatePath } from "next/cache"
@@ -17,6 +16,7 @@ import {
 import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
+import { getMe } from "../supabase/server"
 import { runConfigPR } from "../blacksmith/config"
 import { extractServer } from "../blacksmith/extract-server"
 import { joinGithubPath } from "../utils/github"
@@ -77,6 +77,7 @@ export async function connectServerRepo(
 	}
 }
 
+// TODO: By passes security? Should use static types to ensure security
 export async function getConnectedRepos(serverId: string) {
 	// Obtain the connected repo
 	const rows = await db
@@ -156,7 +157,7 @@ export async function createServer(rawData: CreateServerInputs) {
 			return server
 		})
 		// Generate PR
-		waitUntil(runConfigPR(newServer.id))
+		waitUntil(runConfigPR(newServer))
 
 		return { server: newServer }
 	} catch (error) {
@@ -171,10 +172,7 @@ export async function createServer(rawData: CreateServerInputs) {
  * @returns The server object if found, otherwise undefined
  */
 export async function getMyServer(serverId: string) {
-	const supabase = await createClient()
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const user = await getMe()
 
 	if (!user) {
 		return { error: "Unauthorized" }

@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { servers } from "@/db/schema"
+import type { Server } from "@/db/schema"
 import { pullRequests } from "@/db/schema/blacksmith"
 import { getConnectedRepos } from "@/lib/actions/servers"
 import {
@@ -192,22 +192,21 @@ Please review these changes to ensure they're correct for your server.`
 
 	return prRes.data.html_url
 }
-
 /**
- * Performs a PR to add the Smithery configuration
- * You should check auth before calling.
- * @param serverId The server ID
- * @returns The PR URL
+ * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
+ * Assumes authenticated state.
  */
-export async function runConfigPR(serverId: string) {
-	// Check if we already have a config PR for this server
+export async function runConfigPR(
+	server: Pick<Server, "id" | "qualifiedName">,
+) {
+	// TODO: Combine queries
+	// Early return if a config PR already exists
 	const existingPR = await db.query.pullRequests.findFirst({
 		where: and(
-			eq(pullRequests.serverId, serverId),
+			eq(pullRequests.serverId, server.id),
 			eq(pullRequests.task, "config"),
 		),
 	})
-
 	if (existingPR) {
 		return {
 			error: "A config PR already exists for this server",
@@ -215,82 +214,67 @@ export async function runConfigPR(serverId: string) {
 		}
 	}
 
-	const server = await db.query.servers.findFirst({
-		where: and(eq(servers.id, serverId)),
-	})
-
-	if (!server) return { error: "Server not found" }
-
-	// Obtain the connected repo
-	const repoRows = await getConnectedRepos(serverId)
-
-	if (repoRows.length === 0) {
+	// Get the connected repo (also early return if missing)
+	const [serverRepo] = await getConnectedRepos(server.id)
+	if (!serverRepo) {
 		return { error: "No repository connected to this server" }
 	}
-	const serverRepo = repoRows[0]
-	const { repoOwner, repoName } = serverRepo
+	const { repoOwner, repoName, baseDirectory } = serverRepo
 
-	// Create App Auth
-	const appAuthOctokit = new Octokit({
-		authStrategy: createAppAuth,
-		auth: {
-			appId: process.env.GITHUB_APP_ID!,
-			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-			clientId: process.env.GITHUB_APP_CLIENT_ID!,
-			clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
-		},
-	})
-	// Get installation ID for the specific repository
-	const { data: repoInstallation } =
-		await appAuthOctokit.rest.apps.getRepoInstallation({
-			owner: repoOwner,
-			repo: repoName,
-		})
-
-	// Auth via Installation ID
-	const installationOctokit = new Octokit({
-		authStrategy: createAppAuth,
-		auth: {
-			appId: process.env.GITHUB_APP_ID!,
-			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-			installationId: repoInstallation.id,
-		},
-	})
-
+	// Create an app-level Octokit to fetch the installation ID
 	const auth = createAppAuth({
 		appId: process.env.GITHUB_APP_ID!,
 		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
 		clientId: process.env.GITHUB_APP_CLIENT_ID!,
 		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
 	})
-	// Retrieve installation access token
-	const { token } = await auth({
+	const { token: appToken } = await auth({ type: "app" })
+
+	const appOctokit = new Octokit({
+		auth: appToken,
+	})
+
+	const { data: repoInstallation } =
+		await appOctokit.rest.apps.getRepoInstallation({
+			owner: repoOwner,
+			repo: repoName,
+		})
+
+	// Generate an installation token, then create an Octokit with it
+	const { token: installationToken } = await auth({
 		type: "installation",
 		installationId: repoInstallation.id,
 	})
 
+	const installationOctokit = new Octokit({
+		auth: installationToken,
+	})
+
 	const { newDockerFile, newSmitheryConfig } = await generateConfigPR(
 		installationOctokit,
-		token,
-	)({ repoOwner, repoName, basePath: serverRepo.baseDirectory })
+		installationToken,
+	)({
+		repoOwner,
+		repoName,
+		basePath: baseDirectory,
+	})
 
 	const prUrl = await applyConfigPR(
 		installationOctokit,
 		server.qualifiedName,
 		repoOwner,
 		repoName,
-		serverRepo.baseDirectory,
+		baseDirectory,
 		newDockerFile,
 		newSmitheryConfig,
 	)
-
 	if (!prUrl) {
 		return {
 			error: "No changes were made to the server",
 		}
 	}
 
-	// Insert the PR record into the database
+	// Record the new PR in your database and return the URL
 	await db.insert(pullRequests).values({
 		serverId: server.id,
 		task: "config",
