@@ -38,7 +38,7 @@ async function applyConfigPR(
 		return err("No changes to apply")
 	}
 
-	const changeBranchName = `smithery/config/${Math.random().toString(36).slice(2, 6)}`
+	const changeBranchName = `smithery/config-${Math.random().toString(36).slice(2, 6)}`
 
 	const repoInfo = await octokit.request("GET /repos/{owner}/{repo}", {
 		owner: repoOwner,
