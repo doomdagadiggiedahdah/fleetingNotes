@@ -21,7 +21,6 @@ import { runConfigPR } from "../blacksmith/config"
 import { extractServer } from "../blacksmith/extract-server"
 import { joinGithubPath } from "../utils/github"
 import { err, ok } from "../utils/result"
-export const maxDuration = 60
 
 export async function updateServerDetails(
 	serverId: string,

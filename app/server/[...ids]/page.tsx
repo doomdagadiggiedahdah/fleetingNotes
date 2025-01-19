@@ -15,6 +15,7 @@ type Props = {
 	searchParams: Promise<{ tab?: string }>
 }
 
+export const maxDuration = 60
 export const revalidate = 3600
 export const dynamicParams = true
 
