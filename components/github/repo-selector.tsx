@@ -21,28 +21,35 @@ export function RepoSelector({ onRepoSelect, buttonText }: RepoSelectorProps) {
 	const [searchLoading, setSearchLoading] = useState(false)
 
 	return (
-		<div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
-			<div className="flex justify-between items-center gap-4 p-3">
-				<GithubUserSelector
-					user={ghUser}
-					selectedAccount={selectedOwner}
-					onOwnerChange={setSelectedOwner}
-				/>
-				<div className="flex-grow">
-					<GithubSearch
-						ghUser={ghUser}
+		<div className="space-y-4">
+			<div className="space-y-4 rounded-lg border border-neutral-800 bg-neutral-900/50 p-3">
+				<div className="flex justify-between items-center gap-4 p-3">
+					<GithubUserSelector
+						user={ghUser}
 						selectedAccount={selectedOwner}
-						onReposChange={setRepos}
-						onLoadingChange={setSearchLoading}
+						onOwnerChange={setSelectedOwner}
 					/>
+					<div className="flex-grow">
+						<GithubSearch
+							ghUser={ghUser}
+							selectedAccount={selectedOwner}
+							onReposChange={setRepos}
+							onLoadingChange={setSearchLoading}
+						/>
+					</div>
 				</div>
+				<GithubRepoList
+					repos={repos}
+					isLoading={searchLoading}
+					onRepoSelect={onRepoSelect}
+					buttonText={buttonText}
+				/>
 			</div>
-			<GithubRepoList
-				repos={repos}
-				isLoading={searchLoading}
-				onRepoSelect={onRepoSelect}
-				buttonText={buttonText}
-			/>
+			<p className="text-sm text-muted-foreground max-w-md">
+				We ask for write permission on your repository to create automated
+				pull-requests for faster setup. These pull requests are created on
+				dedicated `smithery/*` branches.
+			</p>
 		</div>
 	)
 }
