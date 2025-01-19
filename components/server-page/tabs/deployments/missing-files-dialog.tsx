@@ -50,7 +50,6 @@ export function MissingFilesDialog({
 				} else {
 					setPermissionError(null)
 				}
-				console.log("openPrResult", openPrResult)
 				if (openPrResult.ok) {
 					setPrUrl(openPrResult.value.prUrl)
 				}

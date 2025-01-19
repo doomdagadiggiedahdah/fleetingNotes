@@ -216,13 +216,16 @@ export async function updateRepoConnection(
 					repoName: serverRepos.repoName,
 				})
 
-			await tx.update(servers).set({
-				sourceUrl: joinGithubPath(
-					`https://github.com/${serverRepo.repoOwner}/${serverRepo.repoName}`,
-					baseDirectory !== "." ? `tree/main/${baseDirectory}` : "",
-				),
-				updatedAt: new Date(),
-			})
+			await tx
+				.update(servers)
+				.set({
+					sourceUrl: joinGithubPath(
+						`https://github.com/${serverRepo.repoOwner}/${serverRepo.repoName}`,
+						baseDirectory !== "." ? `tree/main/${baseDirectory}` : "",
+					),
+					updatedAt: new Date(),
+				})
+				.where(eq(servers.id, serverId))
 		})
 		revalidatePath(`/server/${server.qualifiedName}`)
 		return { success: true }
