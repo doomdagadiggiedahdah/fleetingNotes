@@ -2,6 +2,7 @@ import { db } from "@/db"
 import type { Server } from "@/db/schema"
 import { pullRequests } from "@/db/schema/blacksmith"
 import { getConnectedRepos } from "@/lib/actions/servers"
+import { getInstallationToken } from "@/lib/auth/github/server"
 import {
 	commitFile,
 	createBranch,
@@ -9,7 +10,7 @@ import {
 	getREADME,
 	joinGithubPath,
 } from "@/lib/utils/github"
-import { createAppAuth } from "@octokit/auth-app"
+import { err, ok } from "@/lib/utils/result"
 import { Octokit } from "@octokit/rest"
 import { initLogger, wrapTraced } from "braintrust"
 import { and, eq } from "drizzle-orm"
@@ -208,43 +209,22 @@ export async function runConfigPR(
 		),
 	})
 	if (existingPR) {
-		return {
-			error: "A config PR already exists for this server",
-			prUrl: existingPR.prUrl,
-		}
+		return err("A config PR already exists for this server")
 	}
 
-	// Get the connected repo (also early return if missing)
 	const [serverRepo] = await getConnectedRepos(server.id)
 	if (!serverRepo) {
-		return { error: "No repository connected to this server" }
+		return err("No repository connected to this server")
 	}
 	const { repoOwner, repoName, baseDirectory } = serverRepo
 
 	// Create an app-level Octokit to fetch the installation ID
-	const auth = createAppAuth({
-		appId: process.env.GITHUB_APP_ID!,
-		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-		clientId: process.env.GITHUB_APP_CLIENT_ID!,
-		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
-	})
-	const { token: appToken } = await auth({ type: "app" })
-
-	const appOctokit = new Octokit({
-		auth: appToken,
-	})
-
-	const { data: repoInstallation } =
-		await appOctokit.rest.apps.getRepoInstallation({
-			owner: repoOwner,
-			repo: repoName,
-		})
-
-	// Generate an installation token, then create an Octokit with it
-	const { token: installationToken } = await auth({
-		type: "installation",
-		installationId: repoInstallation.id,
-	})
+	const installationTokenResult = await getInstallationToken(
+		repoOwner,
+		repoName,
+	)
+	if (!installationTokenResult.ok) return err(installationTokenResult.error)
+	const installationToken = installationTokenResult.value
 
 	const installationOctokit = new Octokit({
 		auth: installationToken,
@@ -269,17 +249,14 @@ export async function runConfigPR(
 		newSmitheryConfig,
 	)
 	if (!prUrl) {
-		return {
-			error: "No changes were made to the server",
-		}
+		return err("No changes were made to the server")
 	}
 
-	// Record the new PR in your database and return the URL
 	await db.insert(pullRequests).values({
 		serverId: server.id,
 		task: "config",
 		prUrl,
 	})
 
-	return { prUrl }
+	return ok({ prUrl })
 }

@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { err, ok, toResult } from "@/lib/utils/result"
+import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 
 export async function getOctokit() {
@@ -22,4 +24,75 @@ export async function getOctokit() {
 			auth: session.provider_token,
 		}),
 	}
+}
+
+export function getAuthApp() {
+	return createAppAuth({
+		appId: process.env.GITHUB_APP_ID!,
+		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+		clientId: process.env.GITHUB_APP_CLIENT_ID!,
+		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
+	})
+}
+export function getAppOctokit() {
+	return new Octokit({
+		authStrategy: createAppAuth,
+		auth: {
+			appId: process.env.GITHUB_APP_ID!,
+			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
+			clientId: process.env.GITHUB_APP_CLIENT_ID!,
+			clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
+		},
+	})
+}
+
+export async function getInstallationToken(
+	repoOwner: string,
+	repoName: string,
+) {
+	// Create an app-level Octokit to fetch the installation ID
+	const auth = getAuthApp()
+	const { token: appToken } = await auth({ type: "app" })
+
+	const appOctokit = new Octokit({
+		auth: appToken,
+	})
+
+	const result = await toResult(
+		appOctokit.rest.apps.getRepoInstallation({
+			owner: repoOwner,
+			repo: repoName,
+		}),
+	)
+
+	if (!result.ok) {
+		return err("Github App Installation not found")
+	}
+
+	// Generate an installation token, then create an Octokit with it
+	const { token: installationToken } = await auth({
+		type: "installation",
+		installationId: result.value.data.id,
+	})
+
+	return ok(installationToken)
+}
+
+export async function getInstallationOctokit(
+	repoOwner: string,
+	repoName: string,
+) {
+	// Create an app-level Octokit to fetch the installation ID
+	const installationTokenResult = await getInstallationToken(
+		repoOwner,
+		repoName,
+	)
+	if (!installationTokenResult.ok) return err(installationTokenResult.error)
+	const installationToken = installationTokenResult.value
+
+	return ok(
+		new Octokit({
+			auth: installationToken,
+		}),
+	)
 }
