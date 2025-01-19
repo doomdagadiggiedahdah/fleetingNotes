@@ -1,6 +1,6 @@
 import { MCPProvider } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import { BadgeCheck, ExternalLink, Github } from "lucide-react"
+import { BadgeCheck, ExternalLink } from "lucide-react"
 
 import { Suspense } from "react"
 import { Header } from "../header"
@@ -9,6 +9,7 @@ import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import ServerSearch from "./server-search"
 import { ServerTabs } from "./tabs"
+import { SiGithub } from "@icons-pack/react-simple-icons"
 
 interface Props {
 	server: FetchedServer
@@ -45,23 +46,23 @@ export function ServerPage({ server }: Props) {
 							{server.verified && (
 								<BadgeCheck className="w-4 h-4 text-primary" />
 							)}
-							<div className="text-muted-foreground text-sm">
-								{server.qualifiedName}
-							</div>
 						</div>
 						<Suspense>
 							<ClaimButton server={server} />
 						</Suspense>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
+						<div className="text-muted-foreground text-sm">
+							{server.qualifiedName}
+						</div>
 						<a
 							href={server.sourceUrl}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="flex items-center hover:text-primary"
 						>
-							<Github className="w-4 h-4 mr-1" />
-							{owner} / {repoName}
+							<SiGithub className="w-4 h-4 mr-1" />
+							{owner}/{repoName}
 						</a>
 						{server.homepage && (
 							<a

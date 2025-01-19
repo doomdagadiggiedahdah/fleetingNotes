@@ -5,6 +5,7 @@ import Link from "next/link"
 
 import { InstallCount } from "../install-count"
 import { useRouter } from "next/navigation"
+import { ServerFavicon } from "../server-page/server-favicon"
 
 interface ToolCardProps {
 	server: FetchedServers[number]
@@ -35,18 +36,10 @@ export function ServerListItem({ server }: ToolCardProps) {
 								href={`/server/${server.qualifiedName}`}
 								className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 min-w-0 truncate"
 							>
-								{server.homepage && (
-									// eslint-disable-next-line @next/next/no-img-element
-									<img
-										src={`https://api.faviconkit.com/${new URL(server.homepage).hostname}/`}
-										onError={(e) => {
-											if (server.homepage)
-												e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${new URL(server.homepage).hostname}.ico`
-										}}
-										alt={server.displayName}
-										className="w-4 h-4"
-									/>
-								)}
+								<ServerFavicon
+									homepage={server.homepage}
+									displayName={server.displayName}
+								/>
 								{server.displayName}
 							</Link>
 							{server.verified && (
