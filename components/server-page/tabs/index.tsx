@@ -102,7 +102,7 @@ export function ServerTabs({ server }: ServerTabsProps) {
 
 					const data = await response.json()
 					const { configSchema } = data
-
+					
 					setConfigSchema(configSchema || {})
 
 					if (!configSchema || Object.keys(configSchema).length === 0) {
@@ -189,7 +189,9 @@ export function ServerTabs({ server }: ServerTabsProps) {
 					<AboutPanel
 						server={server}
 						showConfigForm={
-							configSchema !== null && Object.keys(configSchema).length > 0
+							configSchema !== null && 
+							configSchema.properties && 
+							Object.keys(configSchema.properties).length > 0
 						}
 						configSchema={configSchema || undefined}
 						onConfigSubmit={handleConfigSubmit}
