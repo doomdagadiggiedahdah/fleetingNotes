@@ -6,11 +6,17 @@ export type Err<E = unknown> = { ok: false; error: E }
 export type Result<T, E = unknown> = Ok<T> | Err<E>
 
 // Type guard for checking if something is promise-like
-function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+function isPromiseLike<T>(
+	value: T | PromiseLike<T> | (() => T),
+): value is PromiseLike<T> {
+	if (typeof value === "function" && !("then" in value)) {
+		return false
+	}
 	return (
 		value !== null &&
-		(typeof value === "object" || typeof value === "function") &&
-		typeof (value as any).then === "function"
+		typeof value === "object" &&
+		"then" in value &&
+		typeof value.then === "function"
 	)
 }
 
@@ -22,28 +28,29 @@ export function err<E>(error: E): Err<E> {
 }
 
 /**
- * Wraps a promise so we'll never throw an error, but instead return the `error` object.
- * @param promise
- * @returns
+ * Wraps a promise or function so we'll never throw an error, but instead return the `error` object.
  */
 export function toResult<T>(input: PromiseLike<T>): Promise<Result<T>>
-export function toResult<T>(input: T): Result<T>
+export function toResult<T>(fn: () => T): Result<T>
 
 /**
- * Overloaded function. If given a Promise-like input,
+ * Overloaded function. If given a function that returns a Promise-like input,
  * returns a Promise<Result<T>>, otherwise returns a
  * plain Result<T>.
  */
 export function toResult<T>(
-	input: T | PromiseLike<T>,
+	input: PromiseLike<T> | (() => T),
 ): Result<T> | Promise<Result<T>> {
 	if (isPromiseLike(input)) {
 		// "Upgrade" to a real Promise before .catch()
 		return Promise.resolve(input)
-			.then((value) => ({ ok: true, value }) as const)
-			.catch((error) => ({ ok: false, error }) as const)
+			.then((value) => ok(value))
+			.catch((error) => err(error))
 	}
 
-	// Synchronous
-	return { ok: true, value: input }
+	try {
+		return ok(input())
+	} catch (error) {
+		return err(error)
+	}
 }

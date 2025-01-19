@@ -128,6 +128,11 @@ async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
 	}
 }
 
+export interface DeploymentMissingFiles {
+	smitheryFile: boolean
+	dockerfile: boolean
+}
+
 export async function createDeployment(data: TriggerBuildInput) {
 	const supabase = await createClient()
 
@@ -217,11 +222,16 @@ export async function createDeployment(data: TriggerBuildInput) {
 		getCommitInfo(installationOctokit, repoOwner, repoName),
 	])
 
-	if (!smitheryFile) {
-		return { error: "Failed to fetch smithery.yaml from repository" }
-	}
-	if (!dockerfile) {
-		return { error: "Failed to fetch Dockerfile from repository" }
+	if (!smitheryFile || !dockerfile) {
+		return {
+			error: !smitheryFile
+				? "Failed to find smithery.yaml from repository"
+				: "Failed to find Dockerfile from repository",
+			missing: {
+				smitheryFile: !smitheryFile,
+				dockerfile: !dockerfile,
+			} as DeploymentMissingFiles,
+		}
 	}
 
 	let smitheryConfig: ServerConfig
