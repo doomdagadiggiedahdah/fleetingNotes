@@ -28,7 +28,7 @@ ${mcpInfo}
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt).
 
-Your goal is to explore a given MCP server's Github repository, extract the information necessary to start the MCP server, and finally, outputting it to the \`${FINAL_FUNC_NAME}\` tool as a config JSON when you've completed your research.
+Your goal is to explore a given MCP server's Github repository, extract the information necessary to build and start the MCP server, and finally, outputting it to the \`${FINAL_FUNC_NAME}\` tool as a config JSON when you've completed your research.
 
 A Github URL and its README will be provided to you as a starting point for you to explore. You will navigate this repository to examine the source code and documentation for the MCP. Leverage the README to guide your research but you should also double-check the code because READMEs can contain mistakes.
 </task>
@@ -124,7 +124,7 @@ let requestCount = {
 ...
 </index.ts>
 
-The index.ts confirms that the BRAVE_API_KEY env variable is required. Finally, let's take a look at the Dockerfile to be very sure about the entrypoint definition:
+The index.ts confirms that the BRAVE_API_KEY env variable is required. Finally, let's take a look at the Dockerfile to be very sure about the entrypoint definition and to understand how to build this project:
 
 <Dockerfile>
 FROM node:22.12-alpine AS builder
@@ -151,10 +151,19 @@ RUN npm ci --ignore-scripts --omit-dev
 ENTRYPOINT ["node", "dist/index.js"]
 </Dockerfile>
 
-The Dockerfile confirms this. Based on the above, the correct entry definition for this example is:
+The Dockerfile confirms this.
+
+I notice that the Dockerfile is located in src/brave-search of the repository with a default name, which is the same as the base path, so no override is required for the \`dockerfile\` field.
+
+Based on how the Dockerfile build step, it uses a \`COPY src/brave-search /app\` step. This implies the \`dockerBuildPath\` should be set to "../../" so it will execute in the root of the repository.
+
+Based on the above, the correct entry definition for this example is:
 
 <output.json>
 {
+	"build": {
+		"dockerBuildPath": "../../",
+	},
     "startCommand": {
         "configSchema": {
             "type": "object",

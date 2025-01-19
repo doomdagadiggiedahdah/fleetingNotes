@@ -21,13 +21,17 @@ export const ServerConfigSchema = z
 			.object({
 				dockerfile: z
 					.string()
-					.describe("Path to Dockerfile, relative to this config file.")
+					.describe(
+						"Path to Dockerfile, relative to this config file (base path). Defaults to the Dockerfile in the current directory.",
+					)
+					.default("Dockerfile")
 					.optional(),
 				dockerBuildPath: z
 					.string()
 					.describe(
-						"Path to docker build context, relative to this config file.",
+						"Path to docker build context, relative to this config file (base path). Defaults to the current directory.",
 					)
+					.default(".")
 					.optional(),
 			})
 			.optional(),

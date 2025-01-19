@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { RepoIntegration } from "./repo-integration"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface SettingsPanelProps {
 	server: FetchedServer
@@ -63,89 +64,95 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 		<div className="my-8 max-w-2xl space-y-12">
 			<div>
 				<h3 className="text-lg font-medium mb-4">Server Settings</h3>
-				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-						<FormField
-							control={form.control}
-							name="displayName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Name</FormLabel>
-									<FormControl>
-										<Input {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+				<Card>
+					<CardContent className="space-y-4 pt-4">
+						<Form {...form}>
+							<form
+								onSubmit={form.handleSubmit(onSubmit)}
+								className="space-y-6"
+							>
+								<FormField
+									control={form.control}
+									name="displayName"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Name</FormLabel>
+											<FormControl>
+												<Input {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-						<FormField
-							control={form.control}
-							name="description"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Description</FormLabel>
-									<FormControl>
-										<Textarea {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								<FormField
+									control={form.control}
+									name="description"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Description</FormLabel>
+											<FormControl>
+												<Textarea {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-						<FormField
-							control={form.control}
-							name="homepage"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Homepage</FormLabel>
-									<FormControl>
-										<Input {...field} placeholder="https://smithery.ai" />
-									</FormControl>
-									<FormDescription>
-										The URL where users can find more information about this
-										server
-									</FormDescription>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								<FormField
+									control={form.control}
+									name="homepage"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Homepage</FormLabel>
+											<FormControl>
+												<Input {...field} placeholder="https://smithery.ai" />
+											</FormControl>
+											<FormDescription>
+												The URL where users can find more information about this
+												server
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-						<FormField
-							control={form.control}
-							name="local"
-							render={({ field }) => (
-								<FormItem className="flex flex-row items-center space-x-3 space-y-0">
-									<FormControl>
-										<Checkbox
-											checked={field.value}
-											onCheckedChange={field.onChange}
-										/>
-									</FormControl>
-									<div className="leading-none">
-										<FormLabel>Local Only</FormLabel>
-										<FormDescription>
-											Enable this if your MCP requires local access (i.e.,
-											end-user file system access).
-										</FormDescription>
-									</div>
-								</FormItem>
-							)}
-						/>
+								<FormField
+									control={form.control}
+									name="local"
+									render={({ field }) => (
+										<FormItem className="flex flex-row items-center space-x-3 space-y-0">
+											<FormControl>
+												<Checkbox
+													checked={field.value}
+													onCheckedChange={field.onChange}
+												/>
+											</FormControl>
+											<div className="leading-none space-y-1">
+												<FormLabel>Local Only</FormLabel>
+												<FormDescription>
+													Enable this if your MCP requires local access (i.e.,
+													end-user file system access).
+												</FormDescription>
+											</div>
+										</FormItem>
+									)}
+								/>
 
-						{form.formState.errors.root && (
-							<p className="text-sm text-red-500">
-								{form.formState.errors.root.message}
-							</p>
-						)}
+								{form.formState.errors.root && (
+									<p className="text-sm text-red-500">
+										{form.formState.errors.root.message}
+									</p>
+								)}
 
-						<ButtonLoading type="submit" isLoading={isLoading}>
-							Save
-						</ButtonLoading>
-					</form>
-				</Form>
+								<ButtonLoading type="submit" isLoading={isLoading}>
+									Save
+								</ButtonLoading>
+							</form>
+						</Form>
+					</CardContent>
+				</Card>
 			</div>
-
 			<div>
 				<h3 className="text-lg font-medium mb-4">GitHub Integration</h3>
 				<div className="space-y-4">

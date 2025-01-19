@@ -1,5 +1,6 @@
 // JSON Schema for extracting the config file
 import { JSONSchemaSchema } from "@/lib/types/server"
+import { ServerConfigSchema } from "@/lib/types/server-config"
 import { z } from "zod"
 
 export const StartCommandSchema = z
@@ -37,10 +38,8 @@ The startCommand object will be used to MCP server locally. We will use the star
 `)
 
 // Smithery.yaml
-export const ExtractServerConfigSchema = z
-	.object({
-		startCommand: StartCommandSchema,
-	})
-	.strict()
+export const ExtractServerConfigSchema = ServerConfigSchema.extend({
+	startCommand: StartCommandSchema,
+}).strict()
 
 export type ExtractServerConfig = z.infer<typeof ExtractServerConfigSchema>
