@@ -37,12 +37,17 @@ export async function hasOpenConfigPr(serverId: string) {
 		})
 		.from(servers)
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-		.leftJoin(pullRequests, eq(servers.id, pullRequests.serverRepo))
+		.leftJoin(
+			pullRequests,
+			and(
+				eq(servers.id, pullRequests.serverRepo),
+				eq(pullRequests.task, "config"),
+			),
+		)
 		.where(
 			and(
 				eq(servers.id, serverId),
 				eq(servers.owner, user.id),
-				eq(pullRequests.task, "config"),
 				eq(serverRepos.type, "github"),
 			),
 		)
