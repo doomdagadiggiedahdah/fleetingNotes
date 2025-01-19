@@ -3,94 +3,23 @@ import type { Server } from "@/db/schema"
 import { pullRequests } from "@/db/schema/blacksmith"
 import { getConnectedRepos } from "@/lib/actions/servers"
 import { getInstallationToken } from "@/lib/auth/github/server"
-import {
-	commitFile,
-	createBranch,
-	getGithubFile,
-	getREADME,
-	joinGithubPath,
-} from "@/lib/utils/github"
-import { err, ok } from "@/lib/utils/result"
+import { commitFile, createBranch, joinGithubPath } from "@/lib/utils/github"
+import { err, ok, toResult } from "@/lib/utils/result"
+import { retry } from "@lifeomic/attempt"
 import { Octokit } from "@octokit/rest"
-import { initLogger, wrapTraced } from "braintrust"
+import { initLogger } from "braintrust"
 import YAML from "yaml"
+import { checkPullRequests } from "./check-prs"
 import type { ExtractServerConfig } from "./extract-server-config"
-import { generateConfigFile } from "./gen-config"
-import { generateDockerFile } from "./gen-dockerfile"
-import { hasOpenConfigPr } from "@/lib/actions/config-pr"
+import { generateConfigPR } from "./gen-all"
 // TODO: May want to move elsewhere
 const logger = initLogger({
 	projectName: "Smithery",
 })
 
-interface GenerateConfigPR {
-	repoOwner: string
-	repoName: string
-	basePath: string
-}
-
 /**
- * Generates a PR to help repositories with obtain the correct config using the GitHub app installation.
- * This function is run in the background and requires our GitHub app to be installed in the repo.
- *
- * @param serverId The server ID
- */
-export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
-	wrapTraced(async function generateConfigPR({
-		repoOwner,
-		repoName,
-		basePath,
-	}: GenerateConfigPR) {
-		// Obtain existing files
-		const [smitheryFile, dockerFile, readmeFile] = await Promise.all([
-			getGithubFile(
-				octokit,
-				repoOwner,
-				repoName,
-				joinGithubPath(basePath, "smithery.yaml"),
-			),
-			getGithubFile(
-				octokit,
-				repoOwner,
-				repoName,
-				joinGithubPath(basePath, "Dockerfile"),
-			),
-			getREADME(octokit, repoOwner, repoName),
-		])
-
-		const newDockerFile = !dockerFile
-			? await generateDockerFile(
-					octokit,
-					accessToken,
-				)({
-					repoOwner,
-					repoName,
-					basePath: basePath,
-					readmeFile,
-					dockerFile,
-				})
-			: null
-		const newSmitheryConfig = !smitheryFile
-			? await generateConfigFile(
-					octokit,
-					accessToken,
-				)({
-					repoOwner,
-					repoName,
-					basePath: basePath,
-					readmeFile,
-					dockerFile: dockerFile ?? newDockerFile,
-				})
-			: null
-
-		return {
-			newDockerFile,
-			newSmitheryConfig,
-		}
-	})
-
-/**
- * Apply the generated PR
+ * Apply the generated PR.
+ * TODO: Refactor this so it's more general purpose.
  * @param octokit
  * @param newDockerFile
  * @param newSmitheryConfig
@@ -103,38 +32,73 @@ async function applyConfigPR(
 	basePath: string,
 	newDockerFile: string | null,
 	newSmitheryConfig: ExtractServerConfig | null,
+	useFork = false,
 ) {
 	if (!newDockerFile && !newSmitheryConfig) {
-		return null
+		return err("No changes to apply")
 	}
 
-	const branchName = `smithery/config-${Math.random().toString(36).slice(2, 6)}`
+	const changeBranchName = `smithery/config/${Math.random().toString(36).slice(2, 6)}`
 
-	const defaultBranch = await octokit.request("GET /repos/{owner}/{repo}", {
+	const repoInfo = await octokit.request("GET /repos/{owner}/{repo}", {
 		owner: repoOwner,
 		repo: repoName,
 	})
-	const defaultBranchName = defaultBranch.data.default_branch
+	const defaultBranchName = repoInfo.data.default_branch
+	console.log(`Default branch: ${defaultBranchName}`)
 
-	// Create new branch from main/master
-	await createBranch(
-		octokit,
-		repoOwner,
-		repoName,
-		branchName,
-		defaultBranchName,
+	let newRepoOwner = repoOwner
+	let newRepoName = repoName
+
+	if (useFork) {
+		const newRepoResult = await toResult(
+			octokit.request("POST /repos/{owner}/{repo}/forks", {
+				owner: repoOwner,
+				repo: repoName,
+				organization: "smithery-ai",
+			}),
+		)
+
+		if (!newRepoResult.ok) {
+			console.error(newRepoResult)
+			return err("Unable to fork repo")
+		}
+
+		const { value: newRepo } = newRepoResult
+
+		newRepoOwner = newRepo.data.owner.login
+		newRepoName = newRepo.data.name
+		console.log(
+			`Forked ${repoOwner}/${repoName} to ${newRepoOwner}/${newRepoName}.`,
+		)
+	}
+
+	// Forking a Repository happens asynchronously. We have to wait for it to finish
+	await retry(
+		async () => {
+			console.log("attempting to create branch...")
+			// Create new branch from main/master
+			await createBranch(
+				octokit,
+				newRepoOwner,
+				newRepoName,
+				changeBranchName,
+				defaultBranchName,
+			)
+		},
+		{ delay: 2000, factor: 2, maxAttempts: 5 },
 	)
 
 	// Commit changes to the new branch
 	if (newDockerFile) {
 		await commitFile(
 			octokit,
-			repoOwner,
-			repoName,
+			newRepoOwner,
+			newRepoName,
 			joinGithubPath(basePath, "Dockerfile"),
 			newDockerFile,
 			"Add Dockerfile",
-			branchName,
+			changeBranchName,
 		)
 	}
 
@@ -158,55 +122,65 @@ async function applyConfigPR(
 
 		await commitFile(
 			octokit,
-			repoOwner,
-			repoName,
+			newRepoOwner,
+			newRepoName,
 			joinGithubPath(basePath, "smithery.yaml"),
 			doc.toString().trim(),
 			"Add Smithery configuration",
-			branchName,
+			changeBranchName,
 		)
 	}
 
 	// Create pull request
 	const prTitle = newDockerFile
-		? "Add Dockerfile and Smithery config"
-		: "Add Smithery config"
+		? "Deployment: Dockerfile and Smithery config"
+		: "Deployment: Smithery config"
 	const changes = [
 		newDockerFile &&
-			`- **Dockerfile**: Adds a Dockerfile to package the MCP for deployment in diverse environments.`,
+			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
 		newSmitheryConfig &&
-			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and what configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}).`,
+			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and what configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}) and claiming it.`,
 	].filter(Boolean)
-	const prBody = `This PR makes the following changes:
+	const prBody = `\
+This pull request introduces the following updates:
 
 ${changes.join("\n")}
 
-Please review these changes to ensure they're correct for your server.`
+Please review these updates to verify their accuracy for your server. Let us know if you have any questions. 🙂`
+
 	const prRes = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
 		owner: repoOwner,
 		repo: repoName,
+		base: defaultBranchName,
+		head: `${newRepoOwner}:${changeBranchName}`,
+		head_repo: newRepoOwner === repoOwner ? newRepoName : undefined,
 		title: prTitle,
 		body: prBody,
-		head: branchName,
-		base: defaultBranchName,
+		maintainer_can_modify: true,
 	})
 
-	return { id: prRes.data.number, url: prRes.data.html_url }
+	return ok({ number: prRes.data.number, url: prRes.data.html_url })
 }
 /**
  * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
  * Assumes authenticated state.
  * This will make a PR so long as no open PR already exists. More checks need to be done for out-bound PRs.
+ * @param server
+ * @param useFork If true, will perform a fork of the repository
+ * @param prAuthToken If provided, will use this token to create the PR
  */
 export async function runConfigPR(
 	server: Pick<Server, "id" | "qualifiedName">,
+	useFork = false,
+	prAuthToken?: string,
 ) {
-	const [openPrResult, [serverRepo]] = await Promise.all([
-		hasOpenConfigPr(server.id),
+	// TODO: This would run a PR even if there's a merged PR.
+	const [prChecksResult, [serverRepo]] = await Promise.all([
+		checkPullRequests(server.id),
 		getConnectedRepos(server.id),
 	])
-	if (openPrResult.ok && openPrResult.value.prUrl) {
-		return err("A config PR already exists for this server")
+	if (prChecksResult.ok && prChecksResult.value.length > 0) {
+		return err("A config PR has already been made previously.")
 	}
 	if (!serverRepo) {
 		return err("No repository connected to this server")
@@ -219,39 +193,79 @@ export async function runConfigPR(
 		repoName,
 	)
 	if (!installationTokenResult.ok) return err(installationTokenResult.error)
-	const installationToken = installationTokenResult.value
+	const { installToken } = installationTokenResult.value
 
-	const installationOctokit = new Octokit({
-		auth: installationToken,
+	const installOctokit = new Octokit({
+		auth: installToken,
 	})
 
 	const { newDockerFile, newSmitheryConfig } = await generateConfigPR(
-		installationOctokit,
-		installationToken,
+		installOctokit,
+		installToken,
 	)({
 		repoOwner,
 		repoName,
 		basePath: baseDirectory,
 	})
 
-	const prData = await applyConfigPR(
-		installationOctokit,
+	const prResult = await applyConfigPR(
+		prAuthToken ? new Octokit({ auth: prAuthToken }) : installOctokit,
 		server.qualifiedName,
 		repoOwner,
 		repoName,
 		baseDirectory,
 		newDockerFile,
 		newSmitheryConfig,
+		useFork,
 	)
-	if (!prData) {
+	if (!prResult.ok) {
+		console.warn(prResult.error)
 		return err("No changes were made to the server")
 	}
 
 	await db.insert(pullRequests).values({
 		serverRepo: serverRepo.id,
 		task: "config",
-		pullRequestNumber: `${prData.id}`,
+		pullRequestNumber: `${prResult.value.number}`,
 	})
 
-	return ok({ prUrl: prData.url })
+	return ok({ prUrl: prResult.value.url })
+}
+
+// CLI version for testing: npx tsx lib/blacksmith/config/index.ts
+if (require.main === module) {
+	;(async () => {
+		const dotenv = await import("dotenv")
+		dotenv.config()
+
+		const serverId = process.argv[2]
+		if (!serverId) {
+			console.error("Please provide a server ID as a command-line argument")
+			process.exit(1)
+		}
+
+		const server = await db.query.servers.findFirst({
+			where: (servers, { eq }) => eq(servers.id, serverId),
+			columns: {
+				id: true,
+				qualifiedName: true,
+			},
+		})
+
+		if (!server) {
+			console.error(`Server with ID ${serverId} not found`)
+			process.exit(1)
+		}
+
+		const result = await runConfigPR(
+			server,
+			true,
+			process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		)
+		if (result.ok) {
+			console.log(`PR created successfully: ${result.value.prUrl}`)
+		} else {
+			console.error(`Failed to create PR: ${result.error}`)
+		}
+	})()
 }

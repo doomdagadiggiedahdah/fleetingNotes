@@ -1,6 +1,6 @@
 import { mcpInfo } from "@/lib/blacksmith/crawl/extract-server"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
-import type { Octokit } from "@octokit/core"
+import type { Octokit } from "@octokit/rest"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 import { ServerBuilder } from "@smithery/sdk/server/builder.js"

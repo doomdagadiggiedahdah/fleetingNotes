@@ -31,5 +31,5 @@ export async function hasOpenConfigPullRequest(serverId: string) {
 		return prCheckResult
 	}
 
-	return ok({ prUrl: prCheckResult.value.find((pr) => pr.state === "open") })
+	return ok({ pr: prCheckResult.value.find((pr) => pr.state === "open") })
 }

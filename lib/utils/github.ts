@@ -1,4 +1,4 @@
-import type { Octokit } from "@octokit/core"
+import type { Octokit } from "@octokit/rest"
 import type { RequestError } from "@octokit/request-error"
 
 /**

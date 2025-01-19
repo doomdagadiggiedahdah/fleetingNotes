@@ -53,8 +53,8 @@ export function MissingFilesDialog({
 				} else {
 					setPermissionError(null)
 				}
-				if (openPrResult.ok) {
-					setPrUrl(openPrResult.value.prUrl)
+				if (openPrResult.ok && openPrResult.value.pr) {
+					setPrUrl(openPrResult.value.pr.prUrl)
 				}
 
 				setIsChecking(false)

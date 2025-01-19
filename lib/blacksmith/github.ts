@@ -1,5 +1,5 @@
 // @deprecated. Use github in utils
-import { Octokit } from "@octokit/core"
+import { Octokit } from "@octokit/rest"
 
 export const octokit = new Octokit({
 	auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
