@@ -9,13 +9,13 @@ import { err, ok, toResult } from "../utils/result"
 import { getMyServer } from "./servers"
 
 export async function createConfigPr(serverId: string) {
-	const { server } = await getMyServer(serverId)
+	const serverResult = await getMyServer(serverId)
 
-	if (!server) {
-		return err("Unauthorized")
+	if (!serverResult.ok) {
+		return serverResult
 	}
 
-	return await runConfigPR(server)
+	return await runConfigPR(serverResult.value)
 }
 
 /**

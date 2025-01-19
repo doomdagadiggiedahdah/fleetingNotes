@@ -23,12 +23,12 @@ export async function checkGithubPermissions(
 ) {
 	const { serverId } = checkGithubPermissionsSchema.parse(input)
 
-	const { server } = await getMyServer(serverId)
-	if (!server) {
-		return err("Unauthorized")
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
+		return serverResult
 	}
 
-	const repoRows = await getConnectedRepos(server.id)
+	const repoRows = await getConnectedRepos(serverResult.value.id)
 
 	if (repoRows.length === 0) {
 		return err("No repository connected to this server")

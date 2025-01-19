@@ -20,6 +20,7 @@ import { getMe } from "../supabase/server"
 import { runConfigPR } from "../blacksmith/config"
 import { extractServer } from "../blacksmith/extract-server"
 import { joinGithubPath } from "../utils/github"
+import { err, ok } from "../utils/result"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -28,9 +29,9 @@ export async function updateServerDetails(
 	const updatesParsed = updateServerSchema.parse(updates)
 
 	// Check ownership first
-	const { server } = await getMyServer(serverId)
-	if (!server) {
-		return { error: "Unauthorized" }
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
+		return serverResult
 	}
 
 	try {
@@ -49,7 +50,7 @@ export async function updateServerDetails(
 		return {}
 	} catch (error) {
 		console.error("Failed to update server details:", error)
-		return { error: "Internal error." }
+		return err("Internal error.")
 	}
 }
 
@@ -59,8 +60,8 @@ export async function connectServerRepo(
 	repoName: string,
 ) {
 	// Check ownership first
-	const { server } = await getMyServer(serverId)
-	if (!server) {
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
 		return false
 	}
 
@@ -175,7 +176,7 @@ export async function getMyServer(serverId: string) {
 	const user = await getMe()
 
 	if (!user) {
-		return { error: "Unauthorized" }
+		return err("Unauthorized")
 	}
 
 	const server = await db.query.servers.findFirst({
@@ -183,9 +184,9 @@ export async function getMyServer(serverId: string) {
 	})
 
 	if (!server) {
-		return { error: "Server not found" }
+		return err("Server not found")
 	}
-	return { server }
+	return ok(server)
 }
 
 export async function updateRepoConnection(
