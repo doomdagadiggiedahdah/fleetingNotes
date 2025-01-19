@@ -1,3 +1,3 @@
-ALTER TABLE "pull_requests" RENAME COLUMN "pr_url" TO "pr_id";--> statement-breakpoint
-ALTER TABLE "pull_requests" DROP CONSTRAINT "pull_requests_pr_url_unique";--> statement-breakpoint
-ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_pr_id_unique" UNIQUE("pr_id");
+-- ALTER TABLE "pull_requests" RENAME COLUMN "pr_url" TO "pr_id";--> statement-breakpoint
+-- ALTER TABLE "pull_requests" DROP CONSTRAINT "pull_requests_pr_url_unique";--> statement-breakpoint
+-- ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_pr_id_unique" UNIQUE("pr_id");

@@ -1,0 +1,2 @@
+ALTER TABLE "pull_requests" DROP CONSTRAINT "pull_requests_pr_id_unique";--> statement-breakpoint
+ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_pr_id_server_repo_unique" UNIQUE("pr_id","server_repo");

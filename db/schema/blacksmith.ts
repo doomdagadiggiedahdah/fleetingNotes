@@ -4,6 +4,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	unique,
 	uuid,
 } from "drizzle-orm/pg-core"
 import { serverRepos } from "./servers"
@@ -28,17 +29,23 @@ export const pr_queue = pgTable("pr_queue", {
 
 // A table consisting of all PRs made by blacksmith
 export const prTask = pgEnum("pr_task", ["config", "readme"])
-export const pullRequests = pgTable("pull_requests", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	// ID of the serverRepo
-	serverRepo: uuid("server_repo")
-		.references(() => serverRepos.id, {
-			onDelete: "cascade",
-		})
-		.notNull(),
-	// Type of task the PR was trying to achieve.
-	task: prTask("pr_task").notNull(),
-	// Number of the PR
-	pullRequestNumber: text("pr_id").notNull().unique(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-}).enableRLS()
+export const pullRequests = pgTable(
+	"pull_requests",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		// ID of the serverRepo
+		serverRepo: uuid("server_repo")
+			.references(() => serverRepos.id, {
+				onDelete: "cascade",
+			})
+			.notNull(),
+		// Type of task the PR was trying to achieve.
+		task: prTask("pr_task").notNull(),
+		// Number of the PR on Github
+		pullRequestNumber: text("pr_id").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(t) => ({
+		unq: unique().on(t.pullRequestNumber, t.serverRepo),
+	}),
+).enableRLS()

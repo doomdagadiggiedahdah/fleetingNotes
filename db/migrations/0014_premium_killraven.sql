@@ -1,1 +1,1 @@
-ALTER TABLE "pull_requests" ALTER COLUMN "pr_id" SET DATA TYPE text;
+-- ALTER TABLE "pull_requests" ALTER COLUMN "pr_id" SET DATA TYPE text;
