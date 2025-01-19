@@ -8,6 +8,8 @@ import { getMe } from "../supabase/server"
 import { err, ok, toResult } from "../utils/result"
 import { getMyServer } from "./servers"
 
+export const maxDuration = 60
+
 export async function createConfigPr(serverId: string) {
 	const serverResult = await getMyServer(serverId)
 
