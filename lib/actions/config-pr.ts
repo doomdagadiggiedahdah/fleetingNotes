@@ -81,7 +81,7 @@ export async function hasOpenConfigPr(serverId: string) {
 			{
 				owner: repo.repoOwner,
 				repo: repo.repoName,
-				pull_number: pr.pullRequestId,
+				pull_number: Number.parseInt(pr.pullRequestId),
 			},
 		),
 	)

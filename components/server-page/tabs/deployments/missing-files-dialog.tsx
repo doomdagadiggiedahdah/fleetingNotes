@@ -82,7 +82,7 @@ export function MissingFilesDialog({
 		if (!missingFiles) return []
 		const files = []
 		if (missingFiles.dockerfile) files.push("Dockerfile")
-		if (missingFiles.smitheryFile) files.push("Smithery.yaml")
+		if (missingFiles.smitheryFile) files.push("smithery.yaml")
 		return files
 	}
 
