@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache"
 import {
 	type CreateServerInputs,
 	createServerSchema,
-	updateBaseDirectorySchema,
+	updateRepoConnectionSchema,
 	type UpdateServer,
 	updateServerSchema,
 } from "./servers.schema"
@@ -19,6 +19,7 @@ import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
 import { runConfigPR } from "../blacksmith/config"
 import { extractServer } from "../blacksmith/extract-server"
+import { joinGithubPath } from "../utils/github"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -124,7 +125,12 @@ export async function createServer(rawData: CreateServerInputs) {
 				.insert(servers)
 				.values({
 					owner: user.id,
-					sourceUrl: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
+					sourceUrl: joinGithubPath(
+						`https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
+						insertData.baseDirectory !== "."
+							? `tree/main/${insertData.baseDirectory}`
+							: "",
+					),
 					tags: [],
 					connections: [],
 					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
@@ -184,8 +190,11 @@ export async function getMyServer(serverId: string) {
 	return { server }
 }
 
-export async function updateBaseDirectory(serverId: string, formData: unknown) {
-	const { baseDirectory } = updateBaseDirectorySchema.parse(formData)
+export async function updateRepoConnection(
+	serverId: string,
+	formData: unknown,
+) {
+	const { baseDirectory } = updateRepoConnectionSchema.parse(formData)
 
 	// Check ownership first
 	const { server } = await getMyServer(serverId)
@@ -194,14 +203,27 @@ export async function updateBaseDirectory(serverId: string, formData: unknown) {
 	}
 
 	try {
-		await db
-			.update(serverRepos)
-			.set({
-				baseDirectory,
+		await db.transaction(async (tx) => {
+			const [serverRepo] = await tx
+				.update(serverRepos)
+				.set({
+					baseDirectory,
+					updatedAt: new Date(),
+				})
+				.where(eq(serverRepos.serverId, serverId))
+				.returning({
+					repoOwner: serverRepos.repoOwner,
+					repoName: serverRepos.repoName,
+				})
+
+			await tx.update(servers).set({
+				sourceUrl: joinGithubPath(
+					`https://github.com/${serverRepo.repoOwner}/${serverRepo.repoName}`,
+					baseDirectory !== "." ? `tree/main/${baseDirectory}` : "",
+				),
 				updatedAt: new Date(),
 			})
-			.where(eq(serverRepos.serverId, serverId))
-
+		})
 		revalidatePath(`/server/${server.qualifiedName}`)
 		return { success: true }
 	} catch (error) {

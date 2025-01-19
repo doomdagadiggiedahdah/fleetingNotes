@@ -40,7 +40,7 @@ export const createServerSchema = z.object({
 
 export type CreateServerInputs = z.infer<typeof createServerSchema>
 
-export const updateBaseDirectorySchema = z.object({
+export const updateRepoConnectionSchema = z.object({
 	baseDirectory: z
 		.string()
 		.min(1, "Base directory cannot be empty")

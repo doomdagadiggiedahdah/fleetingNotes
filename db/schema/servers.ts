@@ -27,6 +27,7 @@ export const servers = pgTable(
 		description: text("description").notNull(),
 		// Long description, usually the README.
 		descriptionLong: text("description_long"),
+		// The HTML url to the Github repo, including base directory
 		sourceUrl: text("source_url").notNull(),
 		// The URL this repo was crawled from. Null if it wasn't crawled.
 		crawlUrl: text("crawl_url"),

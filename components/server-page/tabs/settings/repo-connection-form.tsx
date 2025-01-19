@@ -13,14 +13,16 @@ import {
 import { Input } from "@/components/ui/input"
 import type { ServerRepo } from "@/db/schema/servers"
 import { useToast } from "@/hooks/use-toast"
-import { updateBaseDirectory } from "@/lib/actions/servers"
-import { updateBaseDirectorySchema } from "@/lib/actions/servers.schema"
+import { updateRepoConnection } from "@/lib/actions/servers"
+import { updateRepoConnectionSchema } from "@/lib/actions/servers.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
+
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import type { z } from "zod"
 
-type FormData = z.infer<typeof updateBaseDirectorySchema>
+type FormData = z.infer<typeof updateRepoConnectionSchema>
 
 interface Props {
 	serverId: string
@@ -30,9 +32,10 @@ interface Props {
 export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 	const { toast } = useToast()
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const router = useRouter()
 
 	const form = useForm<FormData>({
-		resolver: zodResolver(updateBaseDirectorySchema),
+		resolver: zodResolver(updateRepoConnectionSchema),
 		defaultValues: {
 			baseDirectory: serverRepo.baseDirectory,
 		},
@@ -41,7 +44,7 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 	const onSubmit = async (data: FormData) => {
 		setIsSubmitting(true)
 		try {
-			const result = await updateBaseDirectory(serverId, data)
+			const result = await updateRepoConnection(serverId, data)
 			if (result.error) {
 				toast({
 					title: "Error",
@@ -53,6 +56,7 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 					title: "Success",
 					description: "Base directory updated successfully",
 				})
+				router.refresh()
 			}
 		} catch (error) {
 			console.error(error)
