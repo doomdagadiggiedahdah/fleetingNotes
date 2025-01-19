@@ -248,7 +248,7 @@ export async function runConfigPR(
 	}
 
 	await db.insert(pullRequests).values({
-		serverId: server.id,
+		serverRepo: serverRepo.id,
 		task: "config",
 		prUrl,
 	})

@@ -6,7 +6,7 @@ import {
 	timestamp,
 	uuid,
 } from "drizzle-orm/pg-core"
-import { servers } from "./servers"
+import { serverRepos } from "./servers"
 
 export const candidate_urls = pgTable("candidate_urls", {
 	crawl_url: text("crawl_url").primaryKey(),
@@ -30,11 +30,12 @@ export const pr_queue = pgTable("pr_queue", {
 export const prTask = pgEnum("pr_task", ["config", "readme"])
 export const pullRequests = pgTable("pull_requests", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	// ID of the server the PR was for
-	serverId: uuid("server_id")
-		.references(() => servers.id, {
+	// ID of the serverRepo
+	serverRepo: uuid("server_repo")
+		.references(() => serverRepos.id, {
 			onDelete: "cascade",
 		})
+		.unique()
 		.notNull(),
 	// Type of task the PR was trying to achieve.
 	task: prTask("pr_task").notNull(),
