@@ -15,28 +15,26 @@ export const StartCommandSchema = z
 	})
 	.describe("Determines how to start the server.")
 
-export const ServerConfigSchema = z
-	.object({
-		build: z
-			.object({
-				dockerfile: z
-					.string()
-					.describe(
-						"Path to Dockerfile, relative to this config file (base path). Defaults to the Dockerfile in the current directory.",
-					)
-					.default("Dockerfile")
-					.optional(),
-				dockerBuildPath: z
-					.string()
-					.describe(
-						"Path to docker build context, relative to this config file (base path). Defaults to the current directory.",
-					)
-					.default(".")
-					.optional(),
-			})
-			.optional(),
-		startCommand: StartCommandSchema,
-	})
-	.strict()
+export const ServerConfigSchema = z.object({
+	build: z
+		.object({
+			dockerfile: z
+				.string()
+				.describe(
+					"Path to Dockerfile, relative to this config file (base path). Defaults to the Dockerfile in the current directory.",
+				)
+				.default("Dockerfile")
+				.optional(),
+			dockerBuildPath: z
+				.string()
+				.describe(
+					"Path to docker build context, relative to this config file (base path). Defaults to the current directory.",
+				)
+				.default(".")
+				.optional(),
+		})
+		.optional(),
+	startCommand: StartCommandSchema,
+})
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>

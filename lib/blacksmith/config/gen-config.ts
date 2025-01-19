@@ -1,7 +1,7 @@
 import {
 	type ExtractServerConfig,
 	ExtractServerConfigSchema,
-} from "@/lib/blacksmith/config/config-types"
+} from "@/lib/blacksmith/config/extract-server-config"
 import { mcpInfo } from "@/lib/blacksmith/crawl/extract-server"
 import type { StdioConnection } from "@/lib/types/server"
 import type { ServerConfig } from "@/lib/types/server-config"

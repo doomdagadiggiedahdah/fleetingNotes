@@ -8,7 +8,7 @@ import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/core"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
-import { type ServerConfig, ServerConfigSchema } from "../types/server-config"
+import { ServerConfigSchema } from "../types/server-config"
 import { getGithubFile, joinGithubPath } from "../utils/github"
 import { getConnectedRepos } from "./servers"
 
@@ -234,13 +234,11 @@ export async function createDeployment(data: TriggerBuildInput) {
 		}
 	}
 
-	let smitheryConfig: ServerConfig
-	try {
-		smitheryConfig = ServerConfigSchema.parse(YAML.parse(smitheryFile))
-	} catch (e) {
-		console.error(e)
-		return { error: "Unable to parse YAML file." }
+	const result = ServerConfigSchema.safeParse(YAML.parse(smitheryFile))
+	if (!result.success) {
+		return { error: `Failed to parse smithery.yaml: ${result.error.message}` }
 	}
+	const smitheryConfig = result.data
 
 	const dockerfileContents = createDockerfile(
 		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
