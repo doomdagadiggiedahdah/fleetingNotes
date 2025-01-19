@@ -1,6 +1,6 @@
 "use client"
 
-import { DeployButton } from "@/components/projects/deploy"
+import { DeployButton } from "@/components/server-page/tabs/deployments/deploy"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import {
 	Table,
@@ -101,7 +101,7 @@ export function DeploymentsTable({ server }: Props) {
 					</CardDescription>
 				</div>
 				<DeployButton
-					projectId={server.id}
+					serverId={server.id}
 					hasPendingBuilding={hasPendingBuilding}
 				/>
 			</div>

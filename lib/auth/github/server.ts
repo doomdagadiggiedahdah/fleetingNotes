@@ -1,5 +1,3 @@
-"use server"
-
 import { createClient } from "@/lib/supabase/server"
 import { err, ok, toResult } from "@/lib/utils/result"
 import { createAppAuth } from "@octokit/auth-app"
@@ -28,20 +26,20 @@ export async function getOctokit() {
 
 export function getAuthApp() {
 	return createAppAuth({
-		appId: process.env.GITHUB_APP_ID!,
-		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-		clientId: process.env.GITHUB_APP_CLIENT_ID!,
-		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
+		appId: process.env.GITHUB_APP_ID as string,
+		privateKey: process.env.GITHUB_APP_PRIVATE_KEY as string,
+		clientId: process.env.GITHUB_APP_CLIENT_ID as string,
+		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET as string,
 	})
 }
 export function getAppOctokit() {
 	return new Octokit({
 		authStrategy: createAppAuth,
 		auth: {
-			appId: process.env.GITHUB_APP_ID!,
-			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-			clientId: process.env.GITHUB_APP_CLIENT_ID!,
-			clientSecret: process.env.GITHUB_APP_CLIENT_SECRET!,
+			appId: process.env.GITHUB_APP_ID as string,
+			privateKey: process.env.GITHUB_APP_PRIVATE_KEY as string,
+			clientId: process.env.GITHUB_APP_CLIENT_ID as string,
+			clientSecret: process.env.GITHUB_APP_CLIENT_SECRET as string,
 		},
 	})
 }

@@ -13,11 +13,11 @@ import {
 import { err, ok } from "@/lib/utils/result"
 import { Octokit } from "@octokit/rest"
 import { initLogger, wrapTraced } from "braintrust"
-import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
 import type { ExtractServerConfig } from "./config-types"
 import { generateConfigFile } from "./gen-config"
 import { generateDockerFile } from "./gen-dockerfile"
+import { hasOpenConfigPr } from "@/lib/actions/config-pr"
 // TODO: May want to move elsewhere
 const logger = initLogger({
 	projectName: "Smithery",
@@ -196,23 +196,18 @@ Please review these changes to ensure they're correct for your server.`
 /**
  * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
  * Assumes authenticated state.
+ * This will make a PR so long as no open PR already exists. More checks need to be done for out-bound PRs.
  */
 export async function runConfigPR(
 	server: Pick<Server, "id" | "qualifiedName">,
 ) {
-	// TODO: Combine queries
-	// Early return if a config PR already exists
-	const existingPR = await db.query.pullRequests.findFirst({
-		where: and(
-			eq(pullRequests.serverId, server.id),
-			eq(pullRequests.task, "config"),
-		),
-	})
-	if (existingPR) {
+	const [openPrResult, [serverRepo]] = await Promise.all([
+		hasOpenConfigPr(server.id),
+		getConnectedRepos(server.id),
+	])
+	if (openPrResult.ok && openPrResult.value.prUrl) {
 		return err("A config PR already exists for this server")
 	}
-
-	const [serverRepo] = await getConnectedRepos(server.id)
 	if (!serverRepo) {
 		return err("No repository connected to this server")
 	}
