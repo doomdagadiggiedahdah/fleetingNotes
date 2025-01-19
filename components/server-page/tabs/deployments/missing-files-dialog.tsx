@@ -11,7 +11,10 @@ import {
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { checkGithubPermissions } from "@/lib/actions/check-github-permissions"
-import { createConfigPr, hasOpenConfigPr } from "@/lib/actions/config-pr"
+import {
+	createConfigPullRequest,
+	hasOpenConfigPullRequest,
+} from "@/lib/actions/config-pr"
 import type { DeploymentMissingFiles } from "@/lib/actions/deployment"
 import { AlertCircle, GitPullRequest } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -42,7 +45,7 @@ export function MissingFilesDialog({
 			;(async () => {
 				const [permResult, openPrResult] = await Promise.all([
 					checkGithubPermissions({ serverId }),
-					hasOpenConfigPr(serverId),
+					hasOpenConfigPullRequest(serverId),
 				])
 
 				if (!permResult.ok) {
@@ -64,7 +67,7 @@ export function MissingFilesDialog({
 		setError(null)
 		setPrUrl(null)
 		try {
-			const result = await createConfigPr(serverId)
+			const result = await createConfigPullRequest(serverId)
 			if (!result.ok) {
 				setError(`Failed to create pull request: ${result.error}`)
 				return

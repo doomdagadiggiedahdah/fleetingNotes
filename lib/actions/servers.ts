@@ -47,7 +47,7 @@ export async function updateServerDetails(
 
 		revalidatePath(`/server/${rows[0].qualifiedName}`)
 
-		return ok({})
+		return ok()
 	} catch (error) {
 		console.error("Failed to update server details:", error)
 		return err("Internal error.")
