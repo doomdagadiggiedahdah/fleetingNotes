@@ -191,7 +191,7 @@ Please review these changes to ensure they're correct for your server.`
 		base: defaultBranchName,
 	})
 
-	return prRes.data.html_url
+	return { id: prRes.data.id, url: prRes.data.html_url }
 }
 /**
  * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
@@ -234,7 +234,7 @@ export async function runConfigPR(
 		basePath: baseDirectory,
 	})
 
-	const prUrl = await applyConfigPR(
+	const prData = await applyConfigPR(
 		installationOctokit,
 		server.qualifiedName,
 		repoOwner,
@@ -243,15 +243,15 @@ export async function runConfigPR(
 		newDockerFile,
 		newSmitheryConfig,
 	)
-	if (!prUrl) {
+	if (!prData) {
 		return err("No changes were made to the server")
 	}
 
 	await db.insert(pullRequests).values({
 		serverRepo: serverRepo.id,
 		task: "config",
-		prUrl,
+		pullRequestId: prData.id,
 	})
 
-	return ok({ prUrl })
+	return ok({ prUrl: prData.url })
 }

@@ -1,5 +1,6 @@
 import {
 	boolean,
+	integer,
 	pgEnum,
 	pgTable,
 	text,
@@ -40,6 +41,6 @@ export const pullRequests = pgTable("pull_requests", {
 	// Type of task the PR was trying to achieve.
 	task: prTask("pr_task").notNull(),
 	// HTML URL of the PR
-	prUrl: text("pr_url").notNull().unique(),
+	pullRequestId: integer("pr_id").notNull().unique(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 }).enableRLS()

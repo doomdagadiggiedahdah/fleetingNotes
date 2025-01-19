@@ -58,18 +58,9 @@ export async function hasOpenConfigPr(serverId: string) {
 		return err("No repository connected to this server")
 	}
 
-	if (!pr || !pr.prUrl) {
+	if (!pr || !pr.pullRequestId) {
 		return ok({ prUrl: null })
 	}
-
-	const prNumberResult = toResult(() =>
-		Number.parseInt(pr.prUrl.split("/").pop() ?? ""),
-	)
-	if (!prNumberResult.ok) {
-		return ok({ prUrl: null })
-	}
-	const { value: prNumber } = prNumberResult
-
 	const installationOctokitResult = await getInstallationOctokit(
 		repo.repoOwner,
 		repo.repoName,
@@ -85,7 +76,7 @@ export async function hasOpenConfigPr(serverId: string) {
 			{
 				owner: repo.repoOwner,
 				repo: repo.repoName,
-				pull_number: prNumber,
+				pull_number: pr.pullRequestId,
 			},
 		),
 	)
