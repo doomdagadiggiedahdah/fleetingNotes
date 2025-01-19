@@ -47,7 +47,7 @@ export async function updateServerDetails(
 
 		revalidatePath(`/server/${rows[0].qualifiedName}`)
 
-		return {}
+		return ok({})
 	} catch (error) {
 		console.error("Failed to update server details:", error)
 		return err("Internal error.")
@@ -196,10 +196,11 @@ export async function updateRepoConnection(
 	const { baseDirectory } = updateRepoConnectionSchema.parse(formData)
 
 	// Check ownership first
-	const { server } = await getMyServer(serverId)
-	if (!server) {
-		return { error: "Unauthorized" }
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
+		return serverResult
 	}
+	const { value: server } = serverResult
 
 	try {
 		await db.transaction(async (tx) => {

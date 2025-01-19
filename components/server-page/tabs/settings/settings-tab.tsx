@@ -46,14 +46,20 @@ export function SettingsPanel({ server }: SettingsPanelProps) {
 	const onSubmit = async (data: UpdateServer) => {
 		try {
 			setIsLoading(true)
-			const { error } = await updateServerDetails(server.id, data)
-			if (error) throw new Error(error)
+			const result = await updateServerDetails(server.id, data)
+			if (!result.ok) {
+				form.setError("root", {
+					type: "manual",
+					message: result.error,
+				})
+				return
+			}
 			router.refresh()
 		} catch (error) {
 			console.error("Failed to update server:", error)
 			form.setError("root", {
 				type: "manual",
-				message: `Failed to update server: ${error}`,
+				message: `Failed to update server.`,
 			})
 		} finally {
 			setIsLoading(false)
