@@ -5,7 +5,6 @@ import {
 import { mcpInfo } from "@/lib/blacksmith/crawl/extract-server"
 import type { StdioConnection } from "@/lib/types/server"
 import type { ServerConfig } from "@/lib/types/server-config"
-import { getGithubFile, joinGithubPath } from "@/lib/utils/github"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import type { Octokit } from "@octokit/core"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
@@ -17,6 +16,7 @@ import { EventSource } from "eventsource"
 import { omit, pick } from "lodash"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
+import type { FileNamedContent } from "./gen-all"
 
 // Patch event source
 global.EventSource = EventSource
@@ -202,8 +202,7 @@ interface GenerateConfigData {
 	repoOwner: string
 	repoName: string
 	basePath: string
-	readmeFile: string | null
-	dockerFile: string | null
+	fileNamedContents: FileNamedContent[]
 }
 /**
  * Generates a smithery.yaml config file (as a JSON object)
@@ -216,8 +215,7 @@ export const generateConfigFile = (
 		repoOwner,
 		repoName,
 		basePath,
-		readmeFile,
-		dockerFile,
+		fileNamedContents,
 	}: GenerateConfigData): Promise<ServerConfig | null> {
 		const llm = wrapOpenAI(new OpenAI())
 
@@ -234,19 +232,7 @@ export const generateConfigFile = (
 		const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
 
 		// Perform a few basic hard-coded actions
-		const [packageJson, pyProjectToml, listRepoResults] = await Promise.all([
-			getGithubFile(
-				octokit,
-				repoOwner,
-				repoName,
-				joinGithubPath(basePath, "package.json"),
-			),
-			getGithubFile(
-				octokit,
-				repoOwner,
-				repoName,
-				joinGithubPath(basePath, "pyproject.toml"),
-			),
+		const [listRepoResults] = await Promise.all([
 			mcp.callTool({
 				name: "gh_get_file_contents",
 				arguments: {
@@ -268,21 +254,9 @@ export const generateConfigFile = (
 			.join("\n")
 
 		// Prompt with some commonly used files
-		const initFilePrompts: string[] = []
-		if (readmeFile) {
-			initFilePrompts.push(`<readme>\n${readmeFile}\n</readme>\n`)
-		}
-		if (packageJson) {
-			initFilePrompts.push(`<package.json>\n${packageJson}\n</package.json>\n`)
-		}
-		if (pyProjectToml) {
-			initFilePrompts.push(
-				`<pyproject.toml>\n${pyProjectToml}\n</pyproject.toml>\n`,
-			)
-		}
-		if (dockerFile) {
-			initFilePrompts.push(`<Dockerfile>\n${dockerFile}\n</Dockerfile>\n`)
-		}
+		const initFilePrompts: string[] = fileNamedContents.map(
+			(file) => `<${file.name}>\n${file.content}\n</${file.name}>\n`,
+		)
 		const messages: ChatCompletionMessageParam[] = [
 			{ role: "developer", content: systemPrompt },
 			{

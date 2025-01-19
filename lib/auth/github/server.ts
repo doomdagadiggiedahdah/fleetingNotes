@@ -68,12 +68,12 @@ export async function getInstallationToken(
 	}
 
 	// Generate an installation token, then create an Octokit with it
-	const { token: installationToken } = await auth({
+	const { token: installToken } = await auth({
 		type: "installation",
 		installationId: result.value.data.id,
 	})
 
-	return ok(installationToken)
+	return ok({ installToken, appToken })
 }
 
 export async function getInstallationOctokit(
@@ -86,11 +86,11 @@ export async function getInstallationOctokit(
 		repoName,
 	)
 	if (!installationTokenResult.ok) return err(installationTokenResult.error)
-	const installationToken = installationTokenResult.value
+	const { installToken } = installationTokenResult.value
 
 	return ok(
 		new Octokit({
-			auth: installationToken,
+			auth: installToken,
 		}),
 	)
 }
