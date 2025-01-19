@@ -29,18 +29,20 @@ export async function hasOpenConfigPr(serverId: string) {
 		return err("Unauthorized")
 	}
 
-	const [row] = await db
+	const rows = await db
 		.select({
 			server: servers,
 			repo: serverRepos,
 			pr: pullRequests,
 		})
 		.from(servers)
-		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+		// Must have server repo
+		.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+		// May have PRs
 		.leftJoin(
 			pullRequests,
 			and(
-				eq(servers.id, pullRequests.serverRepo),
+				eq(pullRequests.serverRepo, serverRepos.id),
 				eq(pullRequests.task, "config"),
 			),
 		)
@@ -51,9 +53,8 @@ export async function hasOpenConfigPr(serverId: string) {
 				eq(serverRepos.type, "github"),
 			),
 		)
-		.limit(1)
 
-	const { server, repo, pr } = row
+	const { server, repo } = rows[0]
 
 	if (!server) {
 		return err("Unauthorized")
@@ -63,33 +64,39 @@ export async function hasOpenConfigPr(serverId: string) {
 		return err("No repository connected to this server")
 	}
 
-	if (!pr || !pr.pullRequestId) {
-		return ok({ prUrl: null })
-	}
-	const installationOctokitResult = await getInstallationOctokit(
-		repo.repoOwner,
-		repo.repoName,
-	)
-	if (!installationOctokitResult.ok) {
-		return err(installationOctokitResult.error)
-	}
-	const { value: installationOctokit } = installationOctokitResult
+	for (const row of rows) {
+		const pr = row.pr
+		if (!pr || !pr.pullRequestNumber) {
+			continue
+		}
+		const installationOctokitResult = await getInstallationOctokit(
+			repo.repoOwner,
+			repo.repoName,
+		)
+		if (!installationOctokitResult.ok) {
+			// Installation issue
+			return err(installationOctokitResult.error)
+		}
+		const { value: installationOctokit } = installationOctokitResult
 
-	const prResult = await toResult(
-		installationOctokit.request(
-			"GET /repos/{owner}/{repo}/pulls/{pull_number}",
-			{
-				owner: repo.repoOwner,
-				repo: repo.repoName,
-				pull_number: Number.parseInt(pr.pullRequestId),
-			},
-		),
-	)
+		const prResult = await toResult(
+			installationOctokit.request(
+				"GET /repos/{owner}/{repo}/pulls/{pull_number}",
+				{
+					owner: repo.repoOwner,
+					repo: repo.repoName,
+					pull_number: Number.parseInt(pr.pullRequestNumber),
+				},
+			),
+		)
 
-	return ok({
-		prUrl:
-			prResult.ok && prResult.value.data.state === "open"
-				? prResult.value.data.html_url
-				: null,
-	})
+		if (prResult.ok && prResult.value.data.state === "open") {
+			// Found an open PR
+			return ok({
+				prUrl: prResult.value.data.html_url,
+			})
+		}
+	}
+
+	return ok({ prUrl: null })
 }

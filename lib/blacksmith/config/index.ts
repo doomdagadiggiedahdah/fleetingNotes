@@ -191,7 +191,7 @@ Please review these changes to ensure they're correct for your server.`
 		base: defaultBranchName,
 	})
 
-	return { id: prRes.data.id, url: prRes.data.html_url }
+	return { id: prRes.data.number, url: prRes.data.html_url }
 }
 /**
  * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
@@ -250,7 +250,7 @@ export async function runConfigPR(
 	await db.insert(pullRequests).values({
 		serverRepo: serverRepo.id,
 		task: "config",
-		pullRequestId: `${prData.id}`,
+		pullRequestNumber: `${prData.id}`,
 	})
 
 	return ok({ prUrl: prData.url })

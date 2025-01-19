@@ -1,0 +1,1 @@
+ALTER TABLE "pull_requests" DROP CONSTRAINT "pull_requests_server_repo_unique";

@@ -35,11 +35,10 @@ export const pullRequests = pgTable("pull_requests", {
 		.references(() => serverRepos.id, {
 			onDelete: "cascade",
 		})
-		.unique()
 		.notNull(),
 	// Type of task the PR was trying to achieve.
 	task: prTask("pr_task").notNull(),
-	// ID of the PR
-	pullRequestId: text("pr_id").notNull().unique(),
+	// Number of the PR
+	pullRequestNumber: text("pr_id").notNull().unique(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 }).enableRLS()
