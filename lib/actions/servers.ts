@@ -17,7 +17,7 @@ import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
 import { getMe } from "../supabase/server"
-import { runConfigPR } from "../blacksmith/config"
+import { createServerRepoPullRequest } from "../blacksmith/config"
 import { extractServer } from "../blacksmith/extract-server"
 import { joinGithubPath } from "../utils/github"
 import { err, ok } from "../utils/result"
@@ -145,7 +145,11 @@ export async function createServer(rawData: CreateServerInputs) {
 					// TODO: Allow usernames
 					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
 				})
-				.returning({ id: servers.id, qualifiedName: servers.qualifiedName })
+				.returning({
+					id: servers.id,
+					qualifiedName: servers.qualifiedName,
+					displayName: servers.displayName,
+				})
 
 			await tx.insert(serverRepos).values({
 				serverId: server.id,
@@ -158,7 +162,7 @@ export async function createServer(rawData: CreateServerInputs) {
 			return server
 		})
 		// Generate PR
-		waitUntil(runConfigPR(newServer))
+		waitUntil(createServerRepoPullRequest(newServer))
 
 		return { server: newServer }
 	} catch (error) {

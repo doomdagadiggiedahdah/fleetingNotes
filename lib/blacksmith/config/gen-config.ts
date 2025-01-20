@@ -232,11 +232,15 @@ export const generateConfigFile = (
 			// Remove defaults
 			if (finalOutput.build?.dockerBuildPath === ".") {
 				// biome-ignore lint/performance/noDelete: <explanation>
-				delete finalOutput.build.dockerfile
+				delete finalOutput.build.dockerBuildPath
 			}
 			if (finalOutput.build?.dockerfile === "Dockerfile") {
 				// biome-ignore lint/performance/noDelete: <explanation>
 				delete finalOutput.build.dockerfile
+			}
+			if (finalOutput.build && Object.keys(finalOutput.build).length === 0) {
+				// biome-ignore lint/performance/noDelete: <explanation>
+				delete finalOutput.build
 			}
 		})
 		const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))

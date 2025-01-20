@@ -4,8 +4,8 @@ import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { mcpInfo } from "../crawl/extract-server"
 
 export function constructPatchMessages(
-	serverId: string,
-	serverName: string,
+	qualifiedName: string,
+	displayName: string,
 	readme: string,
 ): ChatCompletionMessageParam[] {
 	const systemPrompt = `\
@@ -33,10 +33,10 @@ Here's an example for your reference:
 
 ### Installing via Smithery
 
-To install ${serverName} for Claude Desktop automatically via [Smithery](https://smithery.ai/server/${serverId}):
+To install ${displayName} for Claude Desktop automatically via [Smithery](https://smithery.ai/server/${qualifiedName}):
 
 \`\`\`bash
-npx -y @smithery/cli install ${serverId} --client claude
+npx -y @smithery/cli install ${qualifiedName} --client claude
 \`\`\`
 
 ### Installing Manually
@@ -50,12 +50,12 @@ The second change is adding a badge to the README.md file to show the number of 
 If the repo does not have any badges, place the badge immediately under the H1 heading.
 
 <badge_example>
-[![smithery badge](https://smithery.ai/badge/${serverId})](https://smithery.ai/server/${serverId})
+[![smithery badge](https://smithery.ai/badge/${qualifiedName})](https://smithery.ai/server/${qualifiedName})
 </badge_example>
 
 Note that if the README uses HTML for badges, you should follow their style and write the badge in HTML:
 <badge_example>
-<a href="https://smithery.ai/server/${serverId}"><img alt="Smithery Badge" src="https://smithery.ai/badge/${serverId}"></a>
+<a href="https://smithery.ai/server/${qualifiedName}"><img alt="Smithery Badge" src="https://smithery.ai/badge/${qualifiedName}"></a>
 </badge_example>
 </add_badge>
 </proposed_changes>
@@ -77,8 +77,8 @@ In these cases, you should skip and return immediately without any text.
 		{
 			role: "user",
 			content: `\
-<server_id>${serverId}</server_id>
-<server_name>${serverName}</server_name>
+<server_id>${qualifiedName}</server_id>
+<server_name>${displayName}</server_name>
 <readme>
 ${readme}
 </readme>
@@ -88,15 +88,15 @@ Output the new readme directly:`,
 }
 
 export const patchReadme = wrapTraced(async function patchReadme(
-	serverId: string,
-	serverName: string,
+	qualifiedName: string,
+	displayName: string,
 	readme: string,
 ) {
 	const llm = wrapOpenAI(new OpenAI())
 
 	const response = await llm.chat.completions.create({
 		model: "ft:gpt-4o-2024-08-06:personal:pr:AknuYBkm",
-		messages: constructPatchMessages(serverId, serverName, readme),
+		messages: constructPatchMessages(qualifiedName, displayName, readme),
 		prediction: {
 			type: "content",
 			content: readme,
@@ -110,5 +110,10 @@ export const patchReadme = wrapTraced(async function patchReadme(
 	const inputEnding = readme.includes("\r\n") ? "\r\n" : "\n"
 	const normalizedReadme = newReadme.replace(/\r\n|\n/g, inputEnding)
 
-	return normalizedReadme
+	const fixedUrlReadme = normalizedReadme.replace(
+		/https?:\/\/smithery\.ai\/protocol\//g,
+		"https://smithery.ai/server/",
+	)
+
+	return fixedUrlReadme
 })

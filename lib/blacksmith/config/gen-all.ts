@@ -1,11 +1,14 @@
 import { getGithubFile, getREADME, joinGithubPath } from "@/lib/utils/github"
+import { isOk, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
 import { wrapTraced } from "braintrust"
+import YAML from "yaml"
+import { patchReadme } from "../pr/patch"
 import { generateConfigFile } from "./gen-config"
 import { generateDockerFile } from "./gen-dockerfile"
-import { toResult, isOk } from "@/lib/utils/result"
 
-interface GenerateConfigPR {
+interface GeneratePullRequestProps {
+	server: { qualifiedName: string; displayName: string }
 	repoOwner: string
 	repoName: string
 	basePath: string
@@ -20,12 +23,13 @@ export interface FileNamedContent {
  *
  * @param serverId The server ID
  */
-export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
+export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 	wrapTraced(async function generateConfigPR({
+		server,
 		repoOwner,
 		repoName,
 		basePath,
-	}: GenerateConfigPR) {
+	}: GeneratePullRequestProps) {
 		// Obtain existing files
 		const filesToFetch = [
 			{
@@ -98,10 +102,33 @@ export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
 			.map((f, i) => ({ name: filesToFetch[i].name, content: f.value }))
 			.filter((f): f is FileNamedContent => !!f.content)
 
+		// If README.md and readme exists, remove readme
+		const rootReadmeIndex = fileNamedContents.findIndex(
+			(f) => f.name === "readme",
+		)
+		if (
+			fileNamedContents.find((f) => f.name === "README.md") &&
+			rootReadmeIndex !== -1
+		) {
+			fileNamedContents.splice(rootReadmeIndex, 1)
+		}
+
+		const patchFile = (fileName: string, newContent: string | null) => {
+			if (!newContent) return
+			const fileContent = fileNamedContents.find(
+				(file) => file.name === fileName,
+			)
+			if (fileContent) {
+				fileContent.content = newContent
+			} else {
+				fileNamedContents.push({ name: fileName, content: newContent })
+			}
+		}
+
+		// Update Dockerfile
 		const dockerfile = fileNamedContents.find(
 			(file) => file.name === "Dockerfile",
 		)
-
 		const newDockerFile = !dockerfile
 			? await generateDockerFile(
 					octokit,
@@ -113,15 +140,9 @@ export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
 					fileNamedContents,
 				})
 			: null
+		patchFile("Dockerfile", newDockerFile)
 
-		// Replace Dockerfile with new Dockerfile
-		if (newDockerFile) {
-			const fileContent = fileNamedContents.find(
-				(file) => file.name === "Dockerfile",
-			)
-			if (fileContent) fileContent.content = newDockerFile
-		}
-
+		// Update config
 		const smitheryConfig = fileNamedContents.find(
 			(file) => file.name === "smithery.yaml",
 		)
@@ -136,9 +157,50 @@ export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
 					fileNamedContents,
 				})
 			: null
+		const newSmitheryYaml = newSmitheryConfig
+			? (() => {
+					const doc = new YAML.Document(newSmitheryConfig)
+					const cmdFuncScalar = doc.getIn(
+						["startCommand", "commandFunction"],
+						true,
+					) as YAML.Scalar
+					const schemaScalar = doc.getIn(
+						["startCommand", "configSchema"],
+						true,
+					) as YAML.Scalar
+					doc.commentBefore =
+						" Smithery configuration file: https://smithery.ai/docs/deployments"
+					cmdFuncScalar.commentBefore =
+						" A function that produces the CLI command to start the MCP on stdio."
+					cmdFuncScalar.type = "BLOCK_LITERAL"
+					schemaScalar.commentBefore =
+						" JSON Schema defining the configuration options for the MCP."
+					return doc.toString().trim()
+				})()
+			: null
+		patchFile("smithery.yaml", newSmitheryYaml)
+
+		// Update README
+		const readme = fileNamedContents.find(
+			(file) => file.name === "readme" || file.name === "README.md",
+		)
+		let newReadme = readme
+			? await patchReadme(
+					server.qualifiedName,
+					server.displayName,
+					readme.content,
+				)
+			: null
+		if (!newReadme || newReadme === readme?.content) {
+			newReadme = null
+		}
 
 		return {
-			newDockerFile,
-			newSmitheryConfig,
+			oldFiles: { readme: readme?.content ?? null },
+			newFiles: {
+				dockerFile: newDockerFile,
+				smitheryConfig: newSmitheryYaml,
+				readme: newReadme,
+			},
 		}
 	})

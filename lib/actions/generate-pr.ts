@@ -1,5 +1,5 @@
 "use server"
-import { runConfigPR } from "../blacksmith/config"
+import { createServerRepoPullRequest } from "../blacksmith/config"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
 import { getMyServer } from "./servers"
@@ -12,7 +12,7 @@ export async function createConfigPullRequest(serverId: string) {
 		return serverResult
 	}
 
-	return await runConfigPR(serverResult.value)
+	return await createServerRepoPullRequest(serverResult.value)
 }
 
 /**

@@ -14,7 +14,7 @@ import { checkGithubPermissions } from "@/lib/actions/check-github-permissions"
 import {
 	createConfigPullRequest,
 	hasOpenConfigPullRequest,
-} from "@/lib/actions/config-pr"
+} from "@/lib/actions/generate-pr"
 import type { DeploymentMissingFiles } from "@/lib/actions/deployment"
 import { AlertCircle, GitPullRequest } from "lucide-react"
 import { useEffect, useState } from "react"

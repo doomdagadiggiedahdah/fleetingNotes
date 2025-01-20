@@ -8,10 +8,8 @@ import { err, ok, toResult } from "@/lib/utils/result"
 import { retry } from "@lifeomic/attempt"
 import { Octokit } from "@octokit/rest"
 import { initLogger } from "braintrust"
-import YAML from "yaml"
 import { checkPullRequests } from "./check-prs"
-import type { ExtractServerConfig } from "./extract-server-config"
-import { generateConfigPR } from "./gen-all"
+import { generatePullRequest } from "./gen-all"
 // TODO: May want to move elsewhere
 const logger = initLogger({
 	projectName: "Smithery",
@@ -24,17 +22,21 @@ const logger = initLogger({
  * @param newDockerFile
  * @param newSmitheryConfig
  */
-async function applyConfigPR(
+async function applyPullRequest(
 	octokit: Octokit,
 	qualifiedName: string,
 	repoOwner: string,
 	repoName: string,
 	basePath: string,
-	newDockerFile: string | null,
-	newSmitheryConfig: ExtractServerConfig | null,
+	oldFiles: { readme: string | null },
+	newFiles: {
+		dockerFile: string | null
+		smitheryConfig: string | null
+		readme: string | null
+	},
 	useFork = false,
 ) {
-	if (!newDockerFile && !newSmitheryConfig) {
+	if (!Object.values(newFiles).some(Boolean)) {
 		return err("No changes to apply")
 	}
 
@@ -91,57 +93,74 @@ async function applyConfigPR(
 	)
 
 	// Commit changes to the new branch
-	if (newDockerFile) {
+	if (newFiles.dockerFile) {
 		await commitFile(
 			octokit,
 			newRepoOwner,
 			newRepoName,
 			joinGithubPath(basePath, "Dockerfile"),
-			newDockerFile,
+			newFiles.dockerFile,
 			"Add Dockerfile",
 			changeBranchName,
 		)
 	}
 
-	if (newSmitheryConfig) {
-		const doc = new YAML.Document(newSmitheryConfig)
-		const cmdFuncScalar = doc.getIn(
-			["startCommand", "commandFunction"],
-			true,
-		) as YAML.Scalar
-		const schemaScalar = doc.getIn(
-			["startCommand", "configSchema"],
-			true,
-		) as YAML.Scalar
-		doc.commentBefore =
-			" Smithery configuration file: https://smithery.ai/docs/deployments"
-		cmdFuncScalar.commentBefore =
-			" A function that produces the CLI command to start the MCP on stdio."
-		cmdFuncScalar.type = "BLOCK_LITERAL"
-		schemaScalar.commentBefore =
-			" JSON Schema defining the configuration options for the MCP."
-
+	if (newFiles.smitheryConfig) {
 		await commitFile(
 			octokit,
 			newRepoOwner,
 			newRepoName,
 			joinGithubPath(basePath, "smithery.yaml"),
-			doc.toString().trim(),
+			newFiles.smitheryConfig,
 			"Add Smithery configuration",
 			changeBranchName,
 		)
 	}
 
+	if (newFiles.readme) {
+		await commitFile(
+			octokit,
+			newRepoOwner,
+			newRepoName,
+			joinGithubPath(basePath, "README.md"),
+			newFiles.readme,
+			"Update README",
+			changeBranchName,
+		)
+	}
+
 	// Create pull request
-	const prTitle = newDockerFile
-		? "Deployment: Dockerfile and Smithery config"
-		: "Deployment: Smithery config"
+	const prTitle =
+		newFiles.dockerFile && newFiles.smitheryConfig
+			? "Deployment: Dockerfile and Smithery config"
+			: newFiles.dockerFile
+				? "Deployment: Dockerfile"
+				: newFiles.smitheryConfig
+					? "Deployment: Smithery config"
+					: "Update: README"
+
+	// Detect and create changelog
+	const addedBadge =
+		!oldFiles.readme?.includes("[smithery badge]") &&
+		newFiles.readme?.includes("[smithery badge]")
+	const addedInstallInstructions =
+		!oldFiles.readme?.includes("npx -y @smithery/cli install") &&
+		newFiles.readme?.includes("npx -y @smithery/cli install")
+
 	const changes = [
-		newDockerFile &&
+		newFiles.dockerFile &&
 			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
-		newSmitheryConfig &&
+		newFiles.smitheryConfig &&
 			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and what configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}) and claiming it.`,
+		addedBadge && addedInstallInstructions
+			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge.`
+			: addedBadge
+				? `- **README**: Updates the README to include a popularity badge.`
+				: addedInstallInstructions
+					? `- **README**: Updates the README to include installation instructions via Smithery.`
+					: null,
 	].filter(Boolean)
+
 	const prBody = `\
 This pull request introduces the following updates:
 
@@ -171,8 +190,8 @@ Please review these updates to verify their accuracy for your server. Let us kno
  * @param useFork If true, will perform a fork of the repository
  * @param prAuthToken If provided, will use this token to create the PR
  */
-export async function runConfigPR(
-	server: Pick<Server, "id" | "qualifiedName">,
+export async function createServerRepoPullRequest(
+	server: Pick<Server, "id" | "qualifiedName" | "displayName">,
 	useFork = false,
 	prAuthToken?: string,
 ) {
@@ -189,35 +208,52 @@ export async function runConfigPR(
 	}
 	const { repoOwner, repoName, baseDirectory } = serverRepo
 
-	// Create an app-level Octokit to fetch the installation ID
-	const installationTokenResult = await getInstallationToken(
-		repoOwner,
-		repoName,
-	)
-	if (!installationTokenResult.ok) return err(installationTokenResult.error)
-	const { installToken } = installationTokenResult.value
+	const octokitResult = await (async () => {
+		if (prAuthToken) {
+			return ok({
+				octokit: new Octokit({ auth: prAuthToken }),
+				token: prAuthToken,
+			})
+		} else {
+			// Create an app-level Octokit to fetch the installation ID
+			const installationTokenResult = await getInstallationToken(
+				repoOwner,
+				repoName,
+			)
+			if (!installationTokenResult.ok) return err(installationTokenResult.error)
+			const { installToken } = installationTokenResult.value
 
-	const installOctokit = new Octokit({
-		auth: installToken,
-	})
+			return ok({
+				octokit: new Octokit({
+					auth: installToken,
+				}),
+				token: installToken,
+			})
+		}
+	})()
+	if (!octokitResult.ok) {
+		return octokitResult
+	}
+	const { octokit, token } = octokitResult.value
 
-	const { newDockerFile, newSmitheryConfig } = await generateConfigPR(
-		installOctokit,
-		installToken,
+	const { newFiles, oldFiles } = await generatePullRequest(
+		octokit,
+		token,
 	)({
 		repoOwner,
 		repoName,
 		basePath: baseDirectory,
+		server,
 	})
 
-	const prResult = await applyConfigPR(
-		prAuthToken ? new Octokit({ auth: prAuthToken }) : installOctokit,
+	const prResult = await applyPullRequest(
+		octokit,
 		server.qualifiedName,
 		repoOwner,
 		repoName,
 		baseDirectory,
-		newDockerFile,
-		newSmitheryConfig,
+		oldFiles,
+		newFiles,
 		useFork,
 	)
 	if (!prResult.ok) {
@@ -251,6 +287,7 @@ if (require.main === module) {
 			columns: {
 				id: true,
 				qualifiedName: true,
+				displayName: true,
 			},
 		})
 
@@ -259,7 +296,7 @@ if (require.main === module) {
 			process.exit(1)
 		}
 
-		const result = await runConfigPR(
+		const result = await createServerRepoPullRequest(
 			server,
 			true,
 			process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
@@ -269,6 +306,8 @@ if (require.main === module) {
 		} else {
 			console.error(`Failed to create PR: ${result.error}`)
 		}
+
+		await logger.flush()
 		// const allServers = await db
 		// 	.select({
 		// 		server: servers,
