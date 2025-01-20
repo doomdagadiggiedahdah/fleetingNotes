@@ -56,6 +56,7 @@ async function applyConfigPR(
 				owner: repoOwner,
 				repo: repoName,
 				organization: "smithery-ai",
+				default_branch_only: true,
 			}),
 		)
 
@@ -154,7 +155,7 @@ Please review these updates to verify their accuracy for your server. Let us kno
 		base: defaultBranchName,
 		// Note: Github will give an error for head if the forked repo has a different name from the original repo
 		head: `${newRepoOwner}:${changeBranchName}`,
-		head_repo: newRepoName,
+		head_repo: `${newRepoOwner}/${newRepoName}`,
 		title: prTitle,
 		body: prBody,
 		maintainer_can_modify: true,
@@ -268,5 +269,25 @@ if (require.main === module) {
 		} else {
 			console.error(`Failed to create PR: ${result.error}`)
 		}
+		// const allServers = await db
+		// 	.select({
+		// 		server: servers,
+		// 	})
+		// 	.from(servers)
+		// 	// Must have server repo
+		// 	.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+
+		// for (const server of allServers) {
+		// 	const result = await runConfigPR(
+		// 		server.server,
+		// 		true,
+		// 		process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		// 	)
+		// 	if (result.ok) {
+		// 		console.log(`PR created successfully: ${result.value.prUrl}`)
+		// 	} else {
+		// 		console.error(`Failed to create PR: ${result.error}`)
+		// 	}
+		// }
 	})()
 }
