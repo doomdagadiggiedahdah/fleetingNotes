@@ -2,6 +2,7 @@ import { MCPProvider } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, ExternalLink } from "lucide-react"
 
+import { SiGithub } from "@icons-pack/react-simple-icons"
 import { Suspense } from "react"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
@@ -9,7 +10,6 @@ import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import ServerSearch from "./server-search"
 import { ServerTabs } from "./tabs"
-import { SiGithub } from "@icons-pack/react-simple-icons"
 
 interface Props {
 	server: FetchedServer
@@ -17,10 +17,6 @@ interface Props {
 }
 
 export function ServerPage({ server }: Props) {
-	const urlParts = server.sourceUrl.split("/")
-	const owner = urlParts[3]
-	const repoName = urlParts[4]
-
 	return (
 		<>
 			<Header />
@@ -55,15 +51,17 @@ export function ServerPage({ server }: Props) {
 						<div className="text-muted-foreground text-sm">
 							{server.qualifiedName}
 						</div>
-						<a
-							href={server.sourceUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="flex items-center hover:text-primary"
-						>
-							<SiGithub className="w-4 h-4 mr-1" />
-							{owner}/{repoName}
-						</a>
+						{server.sourceUrl && (
+							<a
+								href={server.sourceUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex items-center hover:text-primary"
+							>
+								<SiGithub className="w-4 h-4 mr-1" />
+								{server.serverRepo.owner}/{server.serverRepo.repo}
+							</a>
+						)}
 						{server.homepage && (
 							<a
 								href={server.homepage}

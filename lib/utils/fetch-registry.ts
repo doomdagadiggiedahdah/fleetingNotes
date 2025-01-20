@@ -1,6 +1,11 @@
 "use server"
 import { db } from "@/db"
-import { deployments, selectServerSchema, servers } from "@/db/schema"
+import {
+	deployments,
+	selectServerSchema,
+	serverRepos,
+	servers,
+} from "@/db/schema"
 import { events } from "@/db/schema/events"
 import { eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
@@ -15,7 +20,6 @@ const selectFetchedServerSchema = selectServerSchema
 		displayName: true,
 		description: true,
 		descriptionLong: true,
-		sourceUrl: true,
 		license: true,
 		homepage: true,
 		verified: true,
@@ -31,6 +35,11 @@ const selectFetchedServerSchema = selectServerSchema
 		descriptionLongMdx: z.any().optional(),
 		installCount: z.number(),
 		deploymentUrl: z.string().nullable(),
+		sourceUrl: z.string().nullable(),
+		serverRepo: z.object({
+			owner: z.string(),
+			repo: z.string(),
+		}),
 	})
 
 /**
@@ -45,7 +54,13 @@ export async function getServer(qualifiedName: string) {
 			displayName: servers.displayName,
 			description: servers.description,
 			descriptionLong: servers.descriptionLong,
-			sourceUrl: servers.sourceUrl,
+			sourceUrl: sql<
+				string | null
+			>`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`,
+			serverRepo: {
+				owner: serverRepos.repoOwner,
+				repo: serverRepos.repoName,
+			},
 			license: servers.license,
 			homepage: servers.homepage,
 			verified: servers.verified,
@@ -67,8 +82,10 @@ export async function getServer(qualifiedName: string) {
 		})
 		.from(servers)
 		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
+		// TODO: Won't work if user has 2 repos connected
+		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.where(eq(servers.qualifiedName, qualifiedName))
-		.groupBy(servers.id)
+		.groupBy(servers.id, serverRepos.id)
 		.limit(1)
 
 	const data = rows[0]
@@ -89,15 +106,28 @@ export async function getAllServers() {
 			displayName: servers.displayName,
 			description: servers.description,
 			createdAt: servers.createdAt,
-			sourceUrl: servers.sourceUrl,
 			homepage: servers.homepage,
 			verified: servers.verified,
 			owner: servers.owner,
+			sourceUrl: sql<
+				string | null
+			>`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`,
 			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
+			isDeployed: sql<boolean>`EXISTS (
+				SELECT 1
+				FROM ${deployments}
+				WHERE ${deployments.serverId} = ${servers.id}
+				AND ${deployments.status} = 'SUCCESS'
+				AND ${deployments.deploymentUrl} is not null
+				ORDER BY ${deployments.createdAt} DESC
+				LIMIT 1
+			)`,
 		})
 		.from(servers)
 		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
-		.groupBy(servers.id)
+		// TODO: Won't work if user has 2 repos connected
+		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+		.groupBy(servers.id, serverRepos.id)
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,

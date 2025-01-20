@@ -103,7 +103,7 @@ export function ClaimServerDialog({
 										? "Failed to claim server"
 										: `Claimed ${claimResult.claimedCount} server${
 												claimResult.claimedCount !== 1 ? "s" : ""
-											}`}
+											}. Refresh the page to see the changes.`}
 							</p>
 						</div>
 						<div className="flex items-center gap-2">

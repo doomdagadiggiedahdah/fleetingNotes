@@ -19,7 +19,6 @@ import { getOctokit } from "../auth/github/server"
 import { getMe } from "../supabase/server"
 import { createServerRepoPullRequest } from "../blacksmith/pr"
 import { extractServer } from "../blacksmith/extract-server"
-import { joinGithubPath } from "../utils/github"
 import { err, ok } from "../utils/result"
 
 export async function updateServerDetails(
@@ -127,12 +126,6 @@ export async function createServer(rawData: CreateServerInputs) {
 				.insert(servers)
 				.values({
 					owner: user.id,
-					sourceUrl: joinGithubPath(
-						`https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
-						insertData.baseDirectory !== "."
-							? `tree/main/${insertData.baseDirectory}`
-							: "",
-					),
 					tags: [],
 					connections: [],
 					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
@@ -207,30 +200,17 @@ export async function updateRepoConnection(
 	const { value: server } = serverResult
 
 	try {
-		await db.transaction(async (tx) => {
-			const [serverRepo] = await tx
-				.update(serverRepos)
-				.set({
-					baseDirectory,
-					updatedAt: new Date(),
-				})
-				.where(eq(serverRepos.serverId, serverId))
-				.returning({
-					repoOwner: serverRepos.repoOwner,
-					repoName: serverRepos.repoName,
-				})
-
-			await tx
-				.update(servers)
-				.set({
-					sourceUrl: joinGithubPath(
-						`https://github.com/${serverRepo.repoOwner}/${serverRepo.repoName}`,
-						baseDirectory !== "." ? `tree/main/${baseDirectory}` : "",
-					),
-					updatedAt: new Date(),
-				})
-				.where(eq(servers.id, serverId))
-		})
+		const [serverRepo] = await db
+			.update(serverRepos)
+			.set({
+				baseDirectory,
+				updatedAt: new Date(),
+			})
+			.where(eq(serverRepos.serverId, serverId))
+			.returning({
+				repoOwner: serverRepos.repoOwner,
+				repoName: serverRepos.repoName,
+			})
 		revalidatePath(`/server/${server.qualifiedName}`)
 		return { success: true }
 	} catch (error) {

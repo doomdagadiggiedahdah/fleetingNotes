@@ -3,12 +3,11 @@ import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema/servers"
 import { Octokit } from "@octokit/rest"
 
-import { and, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 
 import type { GithubAccount } from "../auth/github/common"
 import { createClient } from "../supabase/server"
 import { revalidatePath } from "next/cache"
-import { getGithubBaseDirectory } from "@/lib/utils/github"
 
 /**
  * Assigns all unclaimed servers to the current user based on their GitHub App installation
@@ -47,40 +46,27 @@ export async function assignUnclaimedServers() {
 		.select({
 			id: servers.id,
 			qualifiedName: servers.qualifiedName,
-			sourceUrl: servers.sourceUrl,
+			repo: serverRepos,
 		})
 		.from(servers)
+		.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.where(isNull(servers.owner))
 
-	// Extract GitHub repository paths from unclaimed servers
-	const unclaimedRepoPaths = unclaimedServers
-		.map((server) => {
-			if (!server.sourceUrl?.startsWith("https://github.com/")) return null
-			const path = server.sourceUrl
-				.replace("https://github.com/", "")
-				.split("/")
-			return path.length >= 2 ? `${path[0]}/${path[1]}` : null
-		})
-		.filter((path): path is string => path !== null)
-
-	if (unclaimedRepoPaths.length === 0) {
-		return { error: "No unclaimed GitHub repositories found" }
-	}
-
-	// Get repositories from installations, with pagination only if needed
-	const accessibleRepos = (
+	// Get repositories from installations with pagination
+	const serversToAssign = (
 		await Promise.all(
 			installations.map(async (installation) => {
-				const hasMatchingRepo = unclaimedRepoPaths.some((path) =>
-					path.startsWith(`${installation.account.login}/`),
+				// First check if the owner matches. If not, we can skip this
+				const hasMatchingRepo = unclaimedServers.some(
+					(server) => server.repo.repoOwner === installation.account.login,
 				)
 
 				if (!hasMatchingRepo) return []
 
 				try {
 					let page = 1
-					const allRepos: string[] = []
 					let foundAllNeeded = false
+					const foundServers = []
 
 					while (!foundAllNeeded) {
 						const { data: reposData } = await octokit.request(
@@ -88,26 +74,34 @@ export async function assignUnclaimedServers() {
 							{ installation_id: installation.id, per_page: 100, page },
 						)
 
-						const currentPageRepos = reposData.repositories.map(
-							(repo) => `${repo.owner.login}/${repo.name}`,
-						)
-
-						allRepos.push(...currentPageRepos)
+						const currentPageRepos = reposData.repositories.map((repo) => ({
+							repoOwner: repo.owner.login,
+							repoName: repo.name,
+						}))
 
 						// Check if we found all needed repositories
-						const foundRepos = unclaimedRepoPaths.every((path) =>
-							allRepos.some((repo) => repo === path),
+						foundServers.push(
+							...unclaimedServers.filter((server) =>
+								currentPageRepos.some(
+									(repo) =>
+										repo.repoOwner === server.repo.repoOwner &&
+										repo.repoName === server.repo.repoName,
+								),
+							),
 						)
 
 						// Stop if we found all needed repos or if there are no more pages
-						if (foundRepos || reposData.repositories.length < 100) {
+						if (
+							reposData.repositories.length < 100 ||
+							foundServers.length >= unclaimedServers.length
+						) {
 							foundAllNeeded = true
 						}
 
 						page++
 					}
 
-					return allRepos
+					return foundServers
 				} catch (error) {
 					console.error(
 						`Failed to get repositories for installation ${installation.id}:`,
@@ -118,24 +112,6 @@ export async function assignUnclaimedServers() {
 			}),
 		)
 	).flat()
-
-	// Filter servers that match the user's repositories
-	const serversToAssign = unclaimedServers
-		.map((server) => {
-			if (!server.sourceUrl?.startsWith("https://github.com/")) return null
-			const path = server.sourceUrl
-				.replace("https://github.com/", "")
-				.split("/")
-			const repoPath = path.length >= 2 ? `${path[0]}/${path[1]}` : null
-			if (!repoPath || !accessibleRepos.includes(repoPath)) return null
-			return {
-				server,
-				repoOwner: path[0],
-				repoName: path[1],
-				baseDirectory: getGithubBaseDirectory(path),
-			}
-		})
-		.filter((s): s is NonNullable<typeof s> => s !== null)
 
 	if (serversToAssign.length > 0) {
 		// Assign all owners
@@ -150,27 +126,13 @@ export async function assignUnclaimedServers() {
 					isNull(servers.owner),
 					inArray(
 						servers.id,
-						serversToAssign.map((s) => s.server.id),
+						serversToAssign.map((server) => server.id),
 					),
 				),
 			)
-		// Connect all repos
-		await db
-			.insert(serverRepos)
-			.values(
-				serversToAssign.map((s) => ({
-					serverId: s.server.id,
-					type: "github" as const,
-					repoOwner: s.repoOwner,
-					repoName: s.repoName,
-					baseDirectory: s.baseDirectory,
-				})),
-			)
-			.onConflictDoNothing()
-
 		// Revalidate all paths
 		for (const server of serversToAssign) {
-			revalidatePath(`/server/${server.server.qualifiedName}`)
+			revalidatePath(`/server/${server.qualifiedName}`)
 		}
 	}
 
