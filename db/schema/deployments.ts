@@ -24,7 +24,7 @@ export const deploymentStatus = pgEnum("deployment_status", [
 export const deployments = pgTable(
 	"deployments",
 	{
-		id: text("id").primaryKey(),
+		id: uuid("id").primaryKey().defaultRandom(),
 		serverId: uuid("server_id")
 			.notNull()
 			.references(() => servers.id, { onDelete: "cascade" }),
