@@ -3,6 +3,7 @@ import type { Octokit } from "@octokit/rest"
 import { wrapTraced } from "braintrust"
 import { generateConfigFile } from "./gen-config"
 import { generateDockerFile } from "./gen-dockerfile"
+import { toResult, isOk } from "@/lib/utils/result"
 
 interface GenerateConfigPR {
 	repoOwner: string
@@ -27,50 +28,63 @@ export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
 	}: GenerateConfigPR) {
 		// Obtain existing files
 		const filesToFetch = [
-			{ name: "readme", file: getREADME(octokit, repoOwner, repoName) },
+			{
+				name: "readme",
+				file: toResult(getREADME(octokit, repoOwner, repoName)),
+			},
 			{
 				name: "README.md",
-				file: getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(basePath, "README.md"),
+				file: toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(basePath, "README.md"),
+					),
 				),
 			},
 			{
 				name: "smithery.yaml",
-				file: getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(basePath, "smithery.yaml"),
+				file: toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(basePath, "smithery.yaml"),
+					),
 				),
 			},
 			{
 				name: "Dockerfile",
-				file: getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(basePath, "Dockerfile"),
+				file: toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(basePath, "Dockerfile"),
+					),
 				),
 			},
 			{
 				name: "package.json",
-				file: getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(basePath, "package.json"),
+				file: toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(basePath, "package.json"),
+					),
 				),
 			},
 			{
 				name: "pyproject.toml",
-				file: getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(basePath, "pyproject.toml"),
+				file: toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(basePath, "pyproject.toml"),
+					),
 				),
 			},
 		]
@@ -80,8 +94,9 @@ export const generateConfigPR = (octokit: Octokit, accessToken: string) =>
 		)
 
 		const fileNamedContents: FileNamedContent[] = fileContents
-			.map((content, i) => ({ name: filesToFetch[i].name, content }))
-			.filter((f): f is FileNamedContent => f.content !== null)
+			.filter(isOk)
+			.map((f, i) => ({ name: filesToFetch[i].name, content: f.value }))
+			.filter((f): f is FileNamedContent => !!f.content)
 
 		const dockerfile = fileNamedContents.find(
 			(file) => file.name === "Dockerfile",

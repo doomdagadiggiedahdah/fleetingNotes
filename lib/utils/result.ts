@@ -19,6 +19,11 @@ function isPromiseLike<T>(
 		typeof value.then === "function"
 	)
 }
+
+export function isOk<T>(result: Result<T>): result is Ok<T> {
+	return result.ok
+}
+
 export function ok(): Ok<undefined>
 export function ok<T>(value: T): Ok<T>
 export function ok<T>(value?: T): Ok<T | undefined> {
