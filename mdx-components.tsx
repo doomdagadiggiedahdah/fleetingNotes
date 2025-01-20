@@ -2,7 +2,8 @@ import type { MDXComponents } from "mdx/types"
 import { CodeBlock } from "@/components/docs/code-block"
 import { Link } from "lucide-react"
 
-const slugify = (text: string) => {
+const slugify = (text: unknown) => {
+	if (typeof text !== "string") return undefined
 	return text
 		.toLowerCase()
 		.replace(/[^a-z0-9 -]/g, "")
@@ -20,13 +21,15 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 					className="text-4xl font-bold tracking-tight mb-4 group flex items-center gap-3"
 				>
 					{children}
-					<a
-						href={`#${slug}`}
-						className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-						aria-label="Link to section"
-					>
-						<Link className="w-5 h-5" />
-					</a>
+					{slug && (
+						<a
+							href={`#${slug}`}
+							className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
+							aria-label="Link to section"
+						>
+							<Link className="w-5 h-5" />
+						</a>
+					)}
 				</h1>
 			)
 		},
@@ -38,13 +41,15 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 					className="text-2xl font-semibold mb-4 mt-10 group flex items-center gap-2"
 				>
 					{children}
-					<a
-						href={`#${slug}`}
-						className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-						aria-label="Link to section"
-					>
-						<Link className="w-4 h-4" />
-					</a>
+					{slug && (
+						<a
+							href={`#${slug}`}
+							className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
+							aria-label="Link to section"
+						>
+							<Link className="w-4 h-4" />
+						</a>
+					)}
 				</h2>
 			)
 		},
@@ -56,13 +61,15 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 					className="text-xl font-semibold mb-2 mt-8 group flex items-center gap-2"
 				>
 					{children}
-					<a
-						href={`#${slug}`}
-						className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
-						aria-label="Link to section"
-					>
-						<Link className="w-4 h-4" />
-					</a>
+					{slug && (
+						<a
+							href={`#${slug}`}
+							className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
+							aria-label="Link to section"
+						>
+							<Link className="w-4 h-4" />
+						</a>
+					)}
 				</h3>
 			)
 		},

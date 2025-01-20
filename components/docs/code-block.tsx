@@ -11,14 +11,16 @@ interface CodeBlockProps {
 export function CodeBlock({ children, className }: CodeBlockProps) {
 	const [mounted, setMounted] = useState(false)
 
+	const code = children.trim()
+
 	// Get language from className (format: language-{lang})
 	const language = className?.replace("language-", "") || "plaintext"
 
 	// Calculate height based on content
 	const lineHeight = 18 // Monaco's default line height
-	const lineCount = (children.match(/\n/g) || []).length + 1
+	const lineCount = (code.match(/\n/g) || []).length + 1
 	const padding = 16 // top + bottom padding
-	const height = Math.min(Math.max(lineCount * lineHeight + padding, 100), 500) // min 100px, max 500px
+	const height = Math.min(lineCount * lineHeight + padding, 500) // min 100px, max 500px
 
 	// Handle hydration
 	useEffect(() => {
@@ -33,7 +35,7 @@ export function CodeBlock({ children, className }: CodeBlockProps) {
 		<div className="relative rounded-lg overflow-hidden my-4">
 			<Editor
 				height={height}
-				defaultValue={children}
+				defaultValue={code}
 				language={language}
 				theme={"vs-dark"}
 				options={{
