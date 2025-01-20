@@ -1,18 +1,10 @@
 import { useState } from "react"
-import {
-	SiAnthropic,
-	SiTypescript,
-	SiGithub,
-} from "@icons-pack/react-simple-icons"
+import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-	ClientInstallContent,
-	BadgeContent,
-	TypeScriptContent,
-} from "./install-tab-content"
+import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 
-export type InstallTabStates = "claude" | "cline" | "code" | "badge"
+export type InstallTabStates = "claude" | "cline" | "code"
 
 type InstallationTabsProps = {
 	server: FetchedServer
@@ -52,12 +44,6 @@ export function InstallationTabs({
 						Typescript
 					</span>
 				</TabsTrigger>
-				<TabsTrigger value="badge">
-					<span className="flex items-center gap-2">
-						<SiGithub className="w-4 h-4" />
-						Badge
-					</span>
-				</TabsTrigger>
 			</TabsList>
 			<TabsContent value="claude">
 				<ClientInstallContent tool={server} client="claude" />
@@ -67,9 +53,6 @@ export function InstallationTabs({
 			</TabsContent>
 			<TabsContent value="code">
 				<TypeScriptContent tool={server} />
-			</TabsContent>
-			<TabsContent value="badge">
-				<BadgeContent tool={server} />
 			</TabsContent>
 		</Tabs>
 	)

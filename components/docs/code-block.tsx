@@ -1,14 +1,22 @@
 "use client"
 
-import { Editor } from "@monaco-editor/react"
+import { Editor, type EditorProps } from "@monaco-editor/react"
 import { useEffect, useState } from "react"
 
-interface CodeBlockProps {
+interface CodeBlockProps extends EditorProps {
 	children: string
+	lineCount?: number
 	className?: string
+	onCopy?: (text: string) => void
 }
 
-export function CodeBlock({ children, className }: CodeBlockProps) {
+export function CodeBlock({
+	children,
+	className,
+	lineCount,
+	onCopy,
+	...props
+}: CodeBlockProps) {
 	const [mounted, setMounted] = useState(false)
 
 	const code = children.trim()
@@ -18,7 +26,7 @@ export function CodeBlock({ children, className }: CodeBlockProps) {
 
 	// Calculate height based on content
 	const lineHeight = 18 // Monaco's default line height
-	const lineCount = (code.match(/\n/g) || []).length + 1
+	lineCount = lineCount ?? (code.match(/\n/g) || []).length + 1
 	const padding = 16 // top + bottom padding
 	const height = Math.min(lineCount * lineHeight + padding, 500) // min 100px, max 500px
 
@@ -55,10 +63,14 @@ export function CodeBlock({ children, className }: CodeBlockProps) {
 					padding: { top: 8, bottom: 8 },
 				}}
 				loading={<div style={{ height }} className="bg-muted animate-pulse" />}
+				{...props}
 			/>
 			<button
-				onClick={() => navigator.clipboard.writeText(children)}
-				className="absolute top-2 right-2 p-2 rounded-md bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
+				onClick={() => {
+					navigator.clipboard.writeText(children)
+					onCopy?.(children)
+				}}
+				className="absolute top-1 right-1 p-1 rounded-md bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
 				aria-label="Copy code"
 			>
 				<svg

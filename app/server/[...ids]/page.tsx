@@ -93,6 +93,7 @@ export default async function Page(props: Props) {
 	if (server.descriptionLong) {
 		let longDescription = server.descriptionLong
 
+		// TODO: We should move this to post-processing README descriptions using GPT 4o-mini instead of doing it during runtime.
 		longDescription = longDescription
 			// Remove Smithery badges
 			.replaceAll(
@@ -103,6 +104,9 @@ export default async function Page(props: Props) {
 			.replace(/^#\s+.*$\n|^.*\n=+\s*\n/m, "")
 			// Remove images that are local
 			.replace(/!\[[^\]]*\]\((?!https?:\/\/)[^)]+\)/g, "")
+			// Remove images from glama.ai (both markdown and HTML)
+			.replace(/!\[[^\]]*\]\(https?:\/\/glama\.ai\/[^)]+\)/g, "")
+			.replace(/<img\b[^>]*src=["']https?:\/\/glama\.ai\/[^"']*["'][^>]*>/g, "")
 			// Escape { ... } brackets
 			.replace(
 				/\{(\s*[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*\s*)\}/g,

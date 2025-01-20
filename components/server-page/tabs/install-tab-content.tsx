@@ -66,29 +66,6 @@ export const ClientInstallContent = ({
 	)
 }
 
-export const BadgeContent = ({ tool }: { tool: FetchedServer }) => {
-	return (
-		<>
-			<h4 className="font-semibold mb-2 text-primary">Github Badge</h4>
-			<p className="my-2">
-				To show a download counter, add this badge to your README:
-			</p>
-			<img
-				src={`/badge/${tool.qualifiedName}`}
-				alt="Smithery Badge"
-				className="mb-4"
-			/>
-			<CodeBlock
-				language="markdown"
-				serverId={tool.qualifiedName}
-				eventTag="install_command"
-			>
-				{`[![smithery badge](https://smithery.ai/badge/${tool.qualifiedName})](https://smithery.ai/server/${tool.qualifiedName})`}
-			</CodeBlock>
-		</>
-	)
-}
-
 export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
 	const connection = tool.connections[0]
 
