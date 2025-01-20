@@ -3,7 +3,7 @@ import { isOk, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
 import { wrapTraced } from "braintrust"
 import YAML from "yaml"
-import { patchReadme } from "../pr/patch"
+import { patchReadme } from "./patch"
 import { generateConfigFile } from "./gen-config"
 import { generateDockerFile } from "./gen-dockerfile"
 
@@ -33,10 +33,12 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 		// Obtain existing files
 		const filesToFetch = [
 			{
+				// Root README
 				name: "readme",
 				file: toResult(getREADME(octokit, repoOwner, repoName)),
 			},
 			{
+				// Local README
 				name: "README.md",
 				file: toResult(
 					getGithubFile(
@@ -184,6 +186,7 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 		const readme = fileNamedContents.find(
 			(file) => file.name === "readme" || file.name === "README.md",
 		)
+		const patchingRootReadme = readme?.name === "readme"
 		let newReadme = readme
 			? await patchReadme(
 					server.qualifiedName,
@@ -196,6 +199,7 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 		}
 
 		return {
+			patchingRootReadme,
 			oldFiles: { readme: readme?.content ?? null },
 			newFiles: {
 				dockerFile: newDockerFile,

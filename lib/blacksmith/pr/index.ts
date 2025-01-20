@@ -1,200 +1,355 @@
 import { db } from "@/db"
-import { pr_queue, servers } from "@/db/schema"
-import { and, eq } from "drizzle-orm"
-import {
-	commitFile,
-	createBranch,
-	createPullRequest,
-	extractRepo,
-	forkRepository,
-	getREADME,
-	hasSmitheryBadge,
-	getSmitheryPR,
-} from "../github"
-import { patchReadme } from "./patch"
-import { createPRMessage } from "./pr_message"
+import type { Server } from "@/db/schema"
+import { pullRequests } from "@/db/schema/blacksmith"
+import { getConnectedRepos } from "@/lib/actions/servers"
+import { getInstallationToken } from "@/lib/auth/github/server"
+import { commitFile, createBranch, joinGithubPath } from "@/lib/utils/github"
+import { err, ok, toResult } from "@/lib/utils/result"
 import { retry } from "@lifeomic/attempt"
+import { Octokit } from "@octokit/rest"
+import { initLogger } from "braintrust"
+import { checkPullRequests } from "./check-prs"
+import { generatePullRequest } from "./gen-all"
+// TODO: May want to move elsewhere
+const logger = initLogger({
+	projectName: "Smithery",
+})
 
-import { sql } from "drizzle-orm"
-import { shuffle } from "lodash"
-
-const generatePR = wrapTraced(async function generatePR(
-	serverId: string,
-	name: string,
-	owner: string,
-	repo: string,
+/**
+ * Apply the generated PR.
+ * TODO: Refactor this so it's more general purpose.
+ * @param octokit
+ * @param patchingRootReadme True if we're patching the root readme instead of the one in basedir
+ */
+async function applyPullRequest(
+	octokit: Octokit,
+	qualifiedName: string,
+	repoOwner: string,
+	repoName: string,
+	basePath: string,
+	patchingRootReadme: boolean,
+	oldFiles: { readme: string | null },
+	newFiles: {
+		dockerFile: string | null
+		smitheryConfig: string | null
+		readme: string | null
+	},
+	useFork = false,
 ) {
-	// 1. Get the current README content
-	const readme = await getREADME(owner, repo)
-	if (!readme) {
-		console.log("No README found")
-		return null
+	if (!Object.values(newFiles).some(Boolean)) {
+		return err("No changes to apply")
 	}
 
-	// 2. Generate the patched README
-	const newReadme = await patchReadme(serverId, name, readme)
-	if (!newReadme || newReadme === readme) {
-		console.log("No changes needed to README")
-		return null
+	const changeBranchName = `smithery/config-${Math.random().toString(36).slice(2, 6)}`
+
+	const repoInfo = await octokit.request("GET /repos/{owner}/{repo}", {
+		owner: repoOwner,
+		repo: repoName,
+	})
+	const defaultBranchName = repoInfo.data.default_branch
+	console.log(`Default branch: ${defaultBranchName}`)
+
+	let newRepoOwner = repoOwner
+	let newRepoName = repoName
+
+	if (useFork) {
+		const newRepoResult = await toResult(
+			octokit.request("POST /repos/{owner}/{repo}/forks", {
+				owner: repoOwner,
+				repo: repoName,
+				organization: "smithery-ai",
+				default_branch_only: true,
+			}),
+		)
+
+		if (!newRepoResult.ok) {
+			console.error(newRepoResult)
+			return err("Unable to fork repo")
+		}
+
+		const { value: newRepo } = newRepoResult
+
+		newRepoOwner = newRepo.data.owner.login
+		newRepoName = newRepo.data.name
+		console.log(
+			`Forked ${repoOwner}/${repoName} to ${newRepoOwner}/${newRepoName}.`,
+		)
 	}
-	// Generate PR message
-	const prMessage = await createPRMessage(serverId, name, readme, newReadme)
 
-	// 3. Fork the repository to smithery-ai org
-	console.log("forking...")
-	const newRepo = await forkRepository(owner, repo)
-	if (!newRepo) {
-		console.log("Failed to fork repository")
-		return null
-	}
-	console.log(
-		`forked to ${newRepo.full_name}. Default branch: ${newRepo.default_branch}`,
-	)
-
-	// Forking a Repository happens asynchronously. Wait for it to finish
-
-	// 4. Create a new branch for our changes
-	const branchName = `add-smithery`
-	console.log("creating branch...")
+	// Forking a Repository happens asynchronously. We have to wait for it to finish
 	await retry(
 		async () => {
 			console.log("attempting to create branch...")
+			// Create new branch from main/master
 			await createBranch(
-				newRepo.owner.login,
-				repo,
-				branchName,
-				newRepo.default_branch,
+				octokit,
+				newRepoOwner,
+				newRepoName,
+				changeBranchName,
+				defaultBranchName,
 			)
 		},
 		{ delay: 2000, factor: 2, maxAttempts: 5 },
 	)
 
-	// 5. Commit the new README to our branch
-	console.log("committing...")
-	await commitFile(
-		newRepo.owner.login,
-		repo,
-		"README.md",
-		newReadme,
-		`Add Smithery CLI installation instructions and badge`,
-		branchName,
-	)
-
-	// 6. Create the pull request
-	console.log("creating PR...")
-	const pr = await createPullRequest(
-		newRepo.owner.login,
-		repo,
-		owner,
-		repo,
-		branchName,
-		"main",
-		"Add Smithery to README",
-		prMessage,
-	)
-
-	console.log("done.")
-	return {
-		prUrl: pr.html_url,
+	// Commit changes to the new branch
+	if (newFiles.dockerFile) {
+		await commitFile(
+			octokit,
+			newRepoOwner,
+			newRepoName,
+			joinGithubPath(basePath, "Dockerfile"),
+			newFiles.dockerFile,
+			"Add Dockerfile",
+			changeBranchName,
+		)
 	}
-})
 
-/**
- * Goes through all unprocessed URLs and generates entries for each
- */
-export async function generatePRs() {
-	const logger = initLogger({
-		projectName: "Smithery",
+	if (newFiles.smitheryConfig) {
+		await commitFile(
+			octokit,
+			newRepoOwner,
+			newRepoName,
+			joinGithubPath(basePath, "smithery.yaml"),
+			newFiles.smitheryConfig,
+			"Add Smithery configuration",
+			changeBranchName,
+		)
+	}
+
+	if (newFiles.readme) {
+		let readmePath: string
+
+		if (patchingRootReadme) {
+			// Obtain name of root readme
+			const result = await toResult(
+				octokit.request("GET /repos/{owner}/{repo}/readme", {
+					owner: repoOwner,
+					repo: repoName,
+				}),
+			)
+			if (!result.ok) {
+				return err("Unable to get root readme")
+			}
+			const {
+				value: {
+					data: { path },
+				},
+			} = result
+			readmePath = path
+		} else {
+			readmePath = joinGithubPath(basePath, "README.md")
+		}
+		await commitFile(
+			octokit,
+			newRepoOwner,
+			newRepoName,
+			readmePath,
+			newFiles.readme,
+			"Update README",
+			changeBranchName,
+		)
+	}
+
+	// Create pull request
+	const prTitle =
+		newFiles.dockerFile && newFiles.smitheryConfig
+			? "Deployment: Dockerfile and Smithery config"
+			: newFiles.dockerFile
+				? "Deployment: Dockerfile"
+				: newFiles.smitheryConfig
+					? "Deployment: Smithery config"
+					: "Update: README"
+
+	// Detect and create changelog
+	const addedBadge =
+		!oldFiles.readme?.includes("[smithery badge]") &&
+		newFiles.readme?.includes("[smithery badge]")
+	const addedInstallInstructions =
+		!oldFiles.readme?.includes("npx -y @smithery/cli install") &&
+		newFiles.readme?.includes("npx -y @smithery/cli install")
+
+	const changes = [
+		newFiles.dockerFile &&
+			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
+		newFiles.smitheryConfig &&
+			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and what configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}) and claiming it.`,
+		addedBadge && addedInstallInstructions
+			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge.`
+			: addedBadge
+				? `- **README**: Updates the README to include a popularity badge.`
+				: addedInstallInstructions
+					? `- **README**: Updates the README to include installation instructions via Smithery.`
+					: null,
+	].filter(Boolean)
+
+	const prBody = `\
+This pull request introduces the following updates:
+
+${changes.join("\n")}
+
+Please review these updates to verify their accuracy for your server. Let us know if you have any questions. 🙂`
+
+	const prRes = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
+		owner: repoOwner,
+		repo: repoName,
+		base: defaultBranchName,
+		// Note: Github will give an error for head if the forked repo has a different name from the original repo
+		head: `${newRepoOwner}:${changeBranchName}`,
+		head_repo: `${newRepoOwner}/${newRepoName}`,
+		title: prTitle,
+		body: prBody,
+		maintainer_can_modify: true,
 	})
 
-	const rows = await db
-		.select()
-		.from(servers)
-		.where(
-			and(
-				sql`NOT EXISTS (
-          SELECT 1 FROM ${pr_queue}
-          WHERE
-            ${servers.qualifiedName} = ${pr_queue.serverId}
-        )`,
-				eq(servers.published, true),
-			),
-		)
-		.execute()
-
-	const serverRows = shuffle(rows)
-	console.log("Servers to PR:", serverRows.length)
-
-	for (const server of serverRows) {
-		let errored = false
-		let prUrl = null
-
-		try {
-			console.log("Processing server:", server.qualifiedName)
-			const repoInfo = await extractRepo(server.sourceUrl)
-
-			if (!repoInfo) {
-				console.error("Invalid repo details")
-				continue
-			}
-
-			const { owner, repo } = repoInfo
-
-			if (
-				owner.includes("modelcontextprotocol") ||
-				owner.includes("mcp-get") ||
-				owner.includes("anaisbetts")
-			) {
-				// Skip these owners
-				continue
-			}
-
-			const conditions = await Promise.all([
-				getSmitheryPR(owner, repo),
-				hasSmitheryBadge(owner, repo),
-			])
-
-			if (conditions.some((x) => x)) {
-				prUrl = conditions[0]
-				continue
-			}
-
-			const entryOutput = await generatePR(
-				server.qualifiedName,
-				server.qualifiedName,
-				owner,
-				repo,
-			)
-			if (entryOutput) {
-				prUrl = entryOutput.prUrl
-			}
-		} catch (e) {
-			errored = true
-			console.error(e)
-		} finally {
-			// Update process status
-			await db
-				.insert(pr_queue)
-				.values({
-					serverId: server.qualifiedName,
-					processed: true,
-					prUrl,
-					errored,
-				})
-				.onConflictDoUpdate({
-					target: pr_queue.serverId,
-					set: {
-						processed: true,
-						prUrl,
-						errored,
-					},
-				})
-			await logger.flush()
-		}
+	return ok({ number: prRes.data.number, url: prRes.data.html_url })
+}
+/**
+ * Creates a PR that adds the Smithery configuration if one doesn’t already exist.
+ * Assumes authenticated state.
+ * This will make a PR so long as no open PR already exists. More checks need to be done for out-bound PRs.
+ * @param server
+ * @param useFork If true, will perform a fork of the repository
+ * @param prAuthToken If provided, will use this token to create the PR
+ */
+export async function createServerRepoPullRequest(
+	server: Pick<Server, "id" | "qualifiedName" | "displayName">,
+	useFork = false,
+	prAuthToken?: string,
+) {
+	// TODO: This would run a PR even if there's a merged PR.
+	const [prChecksResult, [serverRepo]] = await Promise.all([
+		checkPullRequests(server.id),
+		getConnectedRepos(server.id),
+	])
+	if (prChecksResult.ok && prChecksResult.value.length > 0) {
+		return err("A config PR has already been made previously.")
 	}
+	if (!serverRepo) {
+		return err("No repository connected to this server")
+	}
+	const { repoOwner, repoName, baseDirectory } = serverRepo
+
+	const octokitResult = await (async () => {
+		if (prAuthToken) {
+			return ok({
+				octokit: new Octokit({ auth: prAuthToken }),
+				token: prAuthToken,
+			})
+		} else {
+			// Create an app-level Octokit to fetch the installation ID
+			const installationTokenResult = await getInstallationToken(
+				repoOwner,
+				repoName,
+			)
+			if (!installationTokenResult.ok) return err(installationTokenResult.error)
+			const { installToken } = installationTokenResult.value
+
+			return ok({
+				octokit: new Octokit({
+					auth: installToken,
+				}),
+				token: installToken,
+			})
+		}
+	})()
+	if (!octokitResult.ok) {
+		return octokitResult
+	}
+	const { octokit, token } = octokitResult.value
+
+	const { newFiles, oldFiles, patchingRootReadme } = await generatePullRequest(
+		octokit,
+		token,
+	)({
+		repoOwner,
+		repoName,
+		basePath: baseDirectory,
+		server,
+	})
+
+	const prResult = await applyPullRequest(
+		octokit,
+		server.qualifiedName,
+		repoOwner,
+		repoName,
+		baseDirectory,
+		patchingRootReadme,
+		oldFiles,
+		newFiles,
+		useFork,
+	)
+	if (!prResult.ok) {
+		console.warn(prResult.error)
+		return err("No changes were made to the server")
+	}
+
+	await db.insert(pullRequests).values({
+		serverRepo: serverRepo.id,
+		task: "config",
+		pullRequestNumber: `${prResult.value.number}`,
+	})
+
+	return ok({ prUrl: prResult.value.url })
 }
 
-import dotenv from "dotenv"
-import { initLogger, wrapTraced } from "braintrust"
-dotenv.config()
-generatePRs()
+// CLI version for testing: npx tsx lib/blacksmith/config/index.ts
+if (require.main === module) {
+	;(async () => {
+		const dotenv = await import("dotenv")
+		dotenv.config()
+
+		const serverId = process.argv[2]
+		if (!serverId) {
+			console.error("Please provide a server ID as a command-line argument")
+			process.exit(1)
+		}
+
+		const server = await db.query.servers.findFirst({
+			where: (servers, { eq }) => eq(servers.id, serverId),
+			columns: {
+				id: true,
+				qualifiedName: true,
+				displayName: true,
+			},
+		})
+
+		if (!server) {
+			console.error(`Server with ID ${serverId} not found`)
+			process.exit(1)
+		}
+
+		const result = await createServerRepoPullRequest(
+			server,
+			true,
+			process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		)
+		if (result.ok) {
+			console.log(`PR created successfully: ${result.value.prUrl}`)
+		} else {
+			console.error(`Failed to create PR: ${result.error}`)
+		}
+
+		await logger.flush()
+		// const allServers = await db
+		// 	.select({
+		// 		server: servers,
+		// 	})
+		// 	.from(servers)
+		// 	// Must have server repo
+		// 	.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+
+		// for (const server of allServers) {
+		// 	const result = await runConfigPR(
+		// 		server.server,
+		// 		true,
+		// 		process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		// 	)
+		// 	if (result.ok) {
+		// 		console.log(`PR created successfully: ${result.value.prUrl}`)
+		// 	} else {
+		// 		console.error(`Failed to create PR: ${result.error}`)
+		// 	}
+		// }
+	})()
+}

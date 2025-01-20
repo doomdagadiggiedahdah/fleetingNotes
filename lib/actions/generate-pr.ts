@@ -1,9 +1,9 @@
 "use server"
-import { createServerRepoPullRequest } from "../blacksmith/config"
+import { createServerRepoPullRequest } from "../blacksmith/pr"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
 import { getMyServer } from "./servers"
-import { checkPullRequests } from "../blacksmith/config/check-prs"
+import { checkPullRequests } from "../blacksmith/pr/check-prs"
 
 export async function createConfigPullRequest(serverId: string) {
 	const serverResult = await getMyServer(serverId)

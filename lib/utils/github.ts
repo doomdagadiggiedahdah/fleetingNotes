@@ -59,6 +59,7 @@ export async function getREADME(
 		owner,
 		repo,
 	})
+	console.log(data.path)
 	return Buffer.from(data.content, "base64").toString("utf-8")
 }
 
