@@ -13,6 +13,7 @@ import { z } from "zod"
 import { SERVER_NEW_DAYS } from "../utils"
 
 // We have a special schema for selecting servers for rendering
+// TODO: Remove this if we no longer need connections object in the future
 const selectFetchedServerSchema = selectServerSchema
 	.pick({
 		id: true,
@@ -40,7 +41,24 @@ const selectFetchedServerSchema = selectServerSchema
 			owner: z.string(),
 			repo: z.string(),
 		}),
+		isDeployed: z.boolean(),
 	})
+
+const isDeployedQuery = sql<boolean>`EXISTS (
+		SELECT 1
+		FROM ${deployments}
+		WHERE ${deployments.serverId} = ${servers.id}
+		AND ${deployments.status} = 'SUCCESS'
+		AND ${deployments.deploymentUrl} is not null
+		ORDER BY ${deployments.createdAt} DESC
+		LIMIT 1
+	)`
+
+const sourceUrlQuery = sql<
+	string | null
+>`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
+
+const installCountQuery = sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`
 
 /**
  * Gets a single server
@@ -54,9 +72,7 @@ export async function getServer(qualifiedName: string) {
 			displayName: servers.displayName,
 			description: servers.description,
 			descriptionLong: servers.descriptionLong,
-			sourceUrl: sql<
-				string | null
-			>`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`,
+			sourceUrl: sourceUrlQuery,
 			serverRepo: {
 				owner: serverRepos.repoOwner,
 				repo: serverRepos.repoName,
@@ -78,7 +94,9 @@ export async function getServer(qualifiedName: string) {
 				ORDER BY ${deployments.createdAt} DESC
 				LIMIT 1
 			)`,
-			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
+			isDeployed: isDeployedQuery,
+
+			installCount: installCountQuery,
 		})
 		.from(servers)
 		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
@@ -109,19 +127,9 @@ export async function getAllServers() {
 			homepage: servers.homepage,
 			verified: servers.verified,
 			owner: servers.owner,
-			sourceUrl: sql<
-				string | null
-			>`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`,
-			installCount: sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`,
-			isDeployed: sql<boolean>`EXISTS (
-				SELECT 1
-				FROM ${deployments}
-				WHERE ${deployments.serverId} = ${servers.id}
-				AND ${deployments.status} = 'SUCCESS'
-				AND ${deployments.deploymentUrl} is not null
-				ORDER BY ${deployments.createdAt} DESC
-				LIMIT 1
-			)`,
+			sourceUrl: sourceUrlQuery,
+			installCount: installCountQuery,
+			isDeployed: isDeployedQuery,
 		})
 		.from(servers)
 		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
@@ -130,7 +138,7 @@ export async function getAllServers() {
 		.groupBy(servers.id, serverRepos.id)
 		.orderBy(
 			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
-			sql`CASE WHEN ${servers.published} THEN 0 ELSE 1 END`,
+			sql`CASE WHEN (${isDeployedQuery}) OR (${servers.published}) THEN 0 ELSE 1 END`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,

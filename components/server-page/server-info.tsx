@@ -8,6 +8,7 @@ import { Header } from "../header"
 import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
+import { ServerQualifiedName } from "./server-qualified-name"
 import ServerSearch from "./server-search"
 import { ServerTabs } from "./tabs"
 
@@ -48,9 +49,7 @@ export function ServerPage({ server }: Props) {
 						</Suspense>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
-						<div className="text-muted-foreground text-sm">
-							{server.qualifiedName}
-						</div>
+						<ServerQualifiedName server={server} />
 						{server.sourceUrl && (
 							<a
 								href={server.sourceUrl}

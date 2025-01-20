@@ -6,6 +6,7 @@ import Link from "next/link"
 import { InstallCount } from "../install-count"
 import { useRouter } from "next/navigation"
 import { ServerFavicon } from "../server-page/server-favicon"
+import { ServerQualifiedName } from "../server-page/server-qualified-name"
 
 interface ToolCardProps {
 	server: FetchedServers[number]
@@ -52,13 +53,13 @@ export function ServerListItem({ server }: ToolCardProps) {
 								</div>
 							)}
 						</div>
-						<div className="flex-shrink-0 ml-4">
-							<InstallCount count={server.installCount} />
-						</div>
+						{server.installCount > 0 && (
+							<div className="flex-shrink-0 ml-4">
+								<InstallCount count={server.installCount} />
+							</div>
+						)}
 					</div>
-					<div className="text-muted-foreground text-sm my-2">
-						{server.qualifiedName}
-					</div>
+					<ServerQualifiedName server={server} />
 					<p className="text-card-foreground mb-3 text-sm line-clamp-3">
 						{server.description}
 					</p>
