@@ -3,7 +3,7 @@ import { isOk, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
 import { wrapTraced } from "braintrust"
 import YAML from "yaml"
-import { patchReadme } from "./patch"
+import { patchReadme } from "./patch-readme"
 import { generateConfigFile } from "./gen-config"
 import { generateDockerFile } from "./gen-dockerfile"
 

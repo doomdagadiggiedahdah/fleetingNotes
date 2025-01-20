@@ -57,6 +57,8 @@ Note that if the README uses HTML for badges, you should follow their style and 
 <badge_example>
 <a href="https://smithery.ai/server/${qualifiedName}"><img alt="Smithery Badge" src="https://smithery.ai/badge/${qualifiedName}"></a>
 </badge_example>
+
+Also, if the Smithery badge is the last badge added, ensure the there's a new line after the badge.
 </add_badge>
 </proposed_changes>
 
@@ -108,12 +110,17 @@ export const patchReadme = wrapTraced(async function patchReadme(
 
 	// Make line endings consistent with input readme
 	const inputEnding = readme.includes("\r\n") ? "\r\n" : "\n"
-	const normalizedReadme = newReadme.replace(/\r\n|\n/g, inputEnding)
+	let fixedReadme = newReadme.replace(/\r\n|\n/g, inputEnding)
 
-	const fixedUrlReadme = normalizedReadme.replace(
+	// Fix old URLs
+	fixedReadme = fixedReadme.replace(
 		/https?:\/\/smithery\.ai\/protocol\//g,
 		"https://smithery.ai/server/",
 	)
-
-	return fixedUrlReadme
+	// Fix missing -y in command
+	fixedReadme = fixedReadme.replace(
+		"npx @smithery/cli install",
+		"npx -y @smithery/cli install",
+	)
+	return fixedReadme
 })

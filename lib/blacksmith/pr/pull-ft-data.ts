@@ -5,7 +5,7 @@ import { writeFile } from "node:fs/promises"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import path from "node:path"
 import { getPRDiff, octokit } from "../github"
-import { constructPatchMessages } from "./patch"
+import { constructPatchMessages } from "./patch-readme"
 
 interface TrainingExample {
 	original_readme: string

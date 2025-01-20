@@ -173,13 +173,13 @@ async function applyPullRequest(
 		newFiles.dockerFile &&
 			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
 		newFiles.smitheryConfig &&
-			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and what configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}) and claiming it.`,
+			`- **Smithery Configuration**: Adds a Smithery YAML configuration file, which specifies how to start the MCP and the configuration options it supports. This enables hosting the MCP server on [Smithery](https://smithery.ai) and allows users to connect to the hosted version over SSE without additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}) and claiming it.`,
 		addedBadge && addedInstallInstructions
-			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge.`
+			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge. Note that the installation only works after the server is deployed.`
 			: addedBadge
 				? `- **README**: Updates the README to include a popularity badge.`
 				: addedInstallInstructions
-					? `- **README**: Updates the README to include installation instructions via Smithery.`
+					? `- **README**: Updates the README to include installation instructions via Smithery. Note that the installation only works after the server is deployed.`
 					: null,
 	].filter(Boolean)
 
@@ -188,7 +188,7 @@ This pull request introduces the following updates:
 
 ${changes.join("\n")}
 
-Please review these updates to verify their accuracy for your server. Let us know if you have any questions. 🙂`
+Please review these updates to verify their accuracy for your server and feel free to customize it to your needs. Let us know if you have any questions. 🙂`
 
 	const prRes = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
 		owner: repoOwner,
