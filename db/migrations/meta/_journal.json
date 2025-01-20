@@ -120,6 +120,13 @@
 			"when": 1737379977735,
 			"tag": "0017_smart_madame_web",
 			"breakpoints": true
+		},
+		{
+			"idx": 18,
+			"version": "7",
+			"when": 1737390115918,
+			"tag": "0018_blue_retro_girl",
+			"breakpoints": true
 		}
 	]
 }
