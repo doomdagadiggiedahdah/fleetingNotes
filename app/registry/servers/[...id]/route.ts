@@ -1,12 +1,13 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
+import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
-import { JSONSchemaSchema, RegistryServerSchema } from "@/lib/types/server"
+import { RegistryServerSchema, ConnectionSchema } from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -14,13 +15,7 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	qualifiedName: true,
 	displayName: true,
 }).extend({
-	connections: z.array(
-		z.object({
-			type: z.string(),
-			configSchema: JSONSchemaSchema.default({}),
-			exampleConfig: z.any(),
-		}),
-	),
+	connections: z.array(ConnectionSchema)
 })
 
 export async function GET(
@@ -30,20 +25,44 @@ export async function GET(
 	const params = await props.params
 	try {
 		const serverId = params.id.join("/")
-		const result = await db.query.servers.findFirst({
-			where: eq(servers.qualifiedName, serverId),
-		})
+		const server = await db
+			.select({
+				id: servers.id,
+				qualifiedName: servers.qualifiedName,
+				displayName: servers.displayName,
+				connections: servers.connections,
+				deploymentUrl: sql<string>`(
+					SELECT ${deployments.deploymentUrl}
+					FROM ${deployments} as deployments
+					WHERE deployments.server_id = servers.id
+					AND ${deployments.status} = 'SUCCESS'
+					ORDER BY ${deployments.createdAt} DESC
+					LIMIT 1
+				)`,
+			})
+			.from(servers)
+			.where(eq(servers.qualifiedName, serverId))
+			.limit(1)
+			.then(rows => rows[0]);
 
-		if (!result) {
+		if (!server) {
 			return NextResponse.json({ error: "Server not found" }, { status: 404 })
 		}
 
+		// Prepare the connections array with SSE if available
+		const connections = [
+			...RegistryServerSchema.shape.connections.parse(server.connections),
+			...(server.deploymentUrl ? [{
+				type: 'sse',
+				deploymentUrl: server.deploymentUrl,
+				configSchema: {},
+			}] : [])
+		]
+
 		return NextResponse.json(
 			ReturnTypeSchema.parse({
-				...result,
-				connections: RegistryServerSchema.shape.connections.parse(
-					result.connections,
-				),
+				...server,
+				connections,
 			}),
 		)
 	} catch (error) {

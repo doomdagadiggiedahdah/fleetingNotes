@@ -62,29 +62,37 @@ export const JSONSchemaSchema: z.ZodType = z
 export type JSONSchema = z.infer<typeof JSONSchemaSchema>
 
 export const ConnectionSchema = z
-	.object({
-		type: z.literal("stdio"),
-		configSchema: JSONSchemaSchema,
-		exampleConfig: z
-			.record(z.any())
-			.optional()
-			.describe(
-				"An example config object. This must conform to the specified configSchema and cannot have fields not present in the schema. This example config will be displayed to the user as documentation on what to pass to the stdioFunction.",
-			),
-		published: z
-			.boolean()
-			.describe(
-				"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
-			),
-		stdioFunction: z
-			.string()
-			.describe(
-				"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
-			),
-	})
-	.describe(
-		"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in durnig runtime.",
-	)
+	.union([
+		z.object({
+			type: z.literal("stdio"),
+			configSchema: JSONSchemaSchema,
+			exampleConfig: z
+				.record(z.any())
+				.optional()
+				.describe(
+					"An example config object. This must conform to the specified configSchema and cannot have fields not present in the schema. This example config will be displayed to the user as documentation on what to pass to the stdioFunction.",
+				),
+			published: z
+				.boolean()
+				.describe(
+					"True if the server is published on `npm` or `pypi` and runnable without users needing to clone the source code.",
+				),
+			stdioFunction: z
+				.string()
+				.describe(
+					"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
+				),
+		})
+		.describe(
+			"A connection represents the protocol used to connect with the MCP server. A connection can be templated with shell variables in the format of ${VARNAME}. These will be replaced with the actual value of the variable defined in `configSchema` in during runtime.",
+		),
+		z.object({
+			type: z.literal("sse"),
+			deploymentUrl: z.string().url().describe("The URL endpoint of the deployment"),
+			configSchema: JSONSchemaSchema,
+		})
+		.describe("A Server-Sent Events connection for remote execution of the MCP server."),
+	])
 
 export type Connection = z.infer<typeof ConnectionSchema>
 
