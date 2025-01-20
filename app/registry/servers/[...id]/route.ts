@@ -15,7 +15,7 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	qualifiedName: true,
 	displayName: true,
 }).extend({
-	connections: z.array(ConnectionSchema)
+	connections: z.array(ConnectionSchema),
 })
 
 export async function GET(
@@ -43,7 +43,7 @@ export async function GET(
 			.from(servers)
 			.where(eq(servers.qualifiedName, serverId))
 			.limit(1)
-			.then(rows => rows[0]);
+			.then((rows) => rows[0])
 
 		if (!server) {
 			return NextResponse.json({ error: "Server not found" }, { status: 404 })
@@ -52,11 +52,15 @@ export async function GET(
 		// Prepare the connections array with SSE if available
 		const connections = [
 			...RegistryServerSchema.shape.connections.parse(server.connections),
-			...(server.deploymentUrl ? [{
-				type: 'sse',
-				deploymentUrl: server.deploymentUrl,
-				configSchema: {},
-			}] : [])
+			...(server.deploymentUrl
+				? [
+						{
+							type: "sse",
+							deploymentUrl: server.deploymentUrl,
+							configSchema: {},
+						},
+					]
+				: []),
 		]
 
 		return NextResponse.json(

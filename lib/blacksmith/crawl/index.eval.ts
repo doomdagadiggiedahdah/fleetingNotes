@@ -50,9 +50,11 @@ const connectionsDiff = async (args: {
 		// and take the best match
 		let totalIoU = 0
 		for (const expectedConnection of expectedServer.connections) {
-			const inputConfig =
-				expectedConnection.exampleConfig ??
-				createDummyConfig(expectedConnection.configSchema)
+			const inputConfig = createDummyConfig(expectedConnection.configSchema)
+			// tODO:
+			// const inputConfig =
+			// 	expectedConnection.exampleConfig ??
+			// 	createDummyConfig(expectedConnection.configSchema)
 
 			const expectedOutputConfig = generateConfig(
 				expectedConnection,
@@ -76,10 +78,10 @@ const connectionsDiff = async (args: {
 
 					const outputConfigAlt = outputConnection
 						? generateConfig(
-								outputConnection,
-								outputConnection.exampleConfig ??
-									createDummyConfig(outputConnection.configSchema),
-							)
+							outputConnection,
+							// outputConnection.exampleConfig ??
+							createDummyConfig(outputConnection.configSchema),
+						)
 						: null
 
 					const similarity =
