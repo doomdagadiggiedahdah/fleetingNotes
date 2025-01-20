@@ -4,11 +4,14 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { getServer } from "@/lib/utils/fetch-registry"
+import { toResult } from "@/lib/utils/result"
+import { getMdxComponents } from "@/mdx-components"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
+import { MDXRemote } from "next-mdx-remote/rsc"
+
 import { notFound } from "next/navigation"
-import { compileMDX } from "next-mdx-remote/rsc"
-import { getMdxComponents } from "@/mdx-components"
+import { ErrorBoundary } from "react-error-boundary"
 
 type Props = {
 	params: Promise<{ ids: string[] }>
@@ -88,12 +91,38 @@ export default async function Page(props: Props) {
 		notFound()
 	}
 	if (server.descriptionLong) {
-		// Compile the MDX on the server
-		const { content } = await compileMDX({
-			source: server.descriptionLong,
-			components: getMdxComponents(),
-		})
-		server.descriptionLongMdx = content
+		let longDescription = server.descriptionLong
+
+		longDescription = longDescription
+			// Remove Smithery badges
+			.replaceAll(
+				/\[!\[smithery badge\]\(https:\/\/smithery\.ai\/badge\/[^)]+\)\]\(https:\/\/smithery\.ai\/[^)]+\)/g,
+				"",
+			)
+			// Remove first H1 title
+			.replace(/^#\s+.*$\n|^.*\n=+\s*\n/m, "")
+			// Remove images that are local
+			.replace(/!\[[^\]]*\]\((?!https?:\/\/)[^)]+\)/g, "")
+			// Escape { ... } brackets
+			.replace(
+				/\{(\s*[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*\s*)\}/g,
+				"\\{$1\\}",
+			)
+
+		const renderResult = await toResult(
+			MDXRemote({
+				source: longDescription,
+				components: getMdxComponents(),
+			}),
+		)
+
+		server.descriptionLongMdx = renderResult.ok ? (
+			<ErrorBoundary fallback={longDescription}>
+				{renderResult.value}
+			</ErrorBoundary>
+		) : (
+			longDescription
+		)
 	}
 	return (
 		<main className="min-h-screen bg-background">
