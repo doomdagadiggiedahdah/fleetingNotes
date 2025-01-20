@@ -152,8 +152,9 @@ Please review these updates to verify their accuracy for your server. Let us kno
 		owner: repoOwner,
 		repo: repoName,
 		base: defaultBranchName,
+		// Note: Github will give an error for head if the forked repo has a different name from the original repo
 		head: `${newRepoOwner}:${changeBranchName}`,
-		head_repo: newRepoOwner === repoOwner ? newRepoName : undefined,
+		head_repo: newRepoName,
 		title: prTitle,
 		body: prBody,
 		maintainer_can_modify: true,
