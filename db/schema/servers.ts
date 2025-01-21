@@ -34,11 +34,14 @@ export const servers = pgTable(
 		// True if this is created by the official vendor
 		verified: boolean("verified").default(false),
 		// True if this entry has been checked by a human
+		// @deprecated
 		checked: boolean("checked").notNull().default(false),
 		// True if this server doesn't require local access
 		remote: boolean("remote").notNull().default(true),
 		// True if this server has any connection published to npm/pypi
+		// @deprecated
 		published: boolean("published").notNull().default(false),
+		// @deprecated
 		tags: jsonb("tags").notNull().default([]),
 
 		// User who owns this server. Some servers are "unclaimed".

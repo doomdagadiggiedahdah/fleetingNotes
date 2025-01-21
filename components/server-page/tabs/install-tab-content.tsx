@@ -33,7 +33,7 @@ export const ClientInstallContent = ({
 				.
 			</p>
 
-			{tool.published ? (
+			{tool.published || tool.isDeployed ? (
 				<CodeBlock
 					language="shell"
 					serverId={tool.qualifiedName}
@@ -45,9 +45,8 @@ export const ClientInstallContent = ({
 				<Alert>
 					<AlertCircle className="h-4 w-4" />
 					<AlertDescription>
-						This tool has not been published, so it can only be run locally
-						after cloning the source code. Please visit the source page to see
-						how to run it locally.
+						This server has not been deployed. It needs to be manually installed
+						from source.
 					</AlertDescription>
 				</Alert>
 			)}
