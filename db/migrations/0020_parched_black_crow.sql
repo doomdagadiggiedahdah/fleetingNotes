@@ -1,0 +1,1 @@
+CREATE POLICY "Users can read their servers" ON "servers" AS PERMISSIVE FOR SELECT TO "authenticated" USING ((select auth.uid()) = owner);

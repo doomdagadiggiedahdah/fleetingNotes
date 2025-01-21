@@ -127,6 +127,20 @@
 			"when": 1737390115918,
 			"tag": "0018_blue_retro_girl",
 			"breakpoints": true
+		},
+		{
+			"idx": 19,
+			"version": "7",
+			"when": 1737435976405,
+			"tag": "0019_cheerful_tomorrow_man",
+			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "7",
+			"when": 1737436033849,
+			"tag": "0020_parched_black_crow",
+			"breakpoints": true
 		}
 	]
 }
