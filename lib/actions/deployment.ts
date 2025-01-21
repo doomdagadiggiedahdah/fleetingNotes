@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { deployments, servers } from "@/db/schema"
+import { deployments, type Server, servers } from "@/db/schema"
 import { createClient } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
@@ -148,19 +148,21 @@ export async function createDeployment(data: TriggerBuildInput) {
 	}
 
 	// Get server details
-	const serverRows = await db
+	const [server] = await db
 		.select()
 		.from(servers)
 		// Ensures logged-in user owns this server
 		.where(and(eq(servers.id, data.serverId), eq(servers.owner, user.id)))
 		.limit(1)
-
-	if (serverRows.length === 0) {
+	if (!server) {
 		return { error: "Server not found" }
 	}
+	return await createDeploymentForServer(server)
+}
 
-	const server = serverRows[0]
-
+export async function createDeploymentForServer(
+	server: Omit<Server, "connections" | "tags">,
+) {
 	// Obtain the connected repo
 	const repoRows = await getConnectedRepos(server.id)
 
@@ -243,11 +245,11 @@ export async function createDeployment(data: TriggerBuildInput) {
 	}
 	const smitheryConfig: ServerConfigGateway = {
 		...result.data,
-		serverId: data.serverId,
+		serverId: server.id,
 	}
 
 	const dockerfileContents = createDockerfile(
-		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
+		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
 		smitheryConfig,
 	)
 
@@ -274,7 +276,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 							"build",
 							"--pull",
 							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
 							"-f",
 							joinGithubPath(
 								serverRepo.baseDirectory,
@@ -292,7 +294,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 						name: "gcr.io/cloud-builders/docker",
 						args: [
 							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
 						],
 					},
 					// Build our layer on top
@@ -305,7 +307,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 						args: [
 							"build",
 							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
 							"-f",
 							"Dockerfile.smithery",
 							".",
@@ -316,7 +318,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 						name: "gcr.io/cloud-builders/docker",
 						args: [
 							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
 						],
 					},
 					{
@@ -324,9 +326,9 @@ export async function createDeployment(data: TriggerBuildInput) {
 						args: [
 							"run",
 							"deploy",
-							`app-${data.serverId}`,
+							`app-${server.id}`,
 							"--image",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${data.serverId}:latest`,
+							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
 							"--region",
 							"us-central1",
 							"--platform",
@@ -345,7 +347,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 				},
 				images: [
 					// For caching purposes
-					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,
+					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
 				],
 			},
 		})
@@ -360,7 +362,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 
 		await db.insert(deployments).values({
 			id: buildId,
-			serverId: data.serverId,
+			serverId: server.id,
 			status: "QUEUED",
 			deploymentUrl: null,
 			commit: commitInfo.data.sha,
