@@ -31,9 +31,9 @@ export function DeployButton({
 							serverId: serverId,
 						})
 
-						const { error, missing } = await createDeployment({ serverId })
-						if (error && missing) {
-							setMissingFiles(missing)
+						const result = await createDeployment({ serverId })
+						if (!result.ok && result.error.missing) {
+							setMissingFiles(result.error.missing)
 							return
 						}
 						toast({

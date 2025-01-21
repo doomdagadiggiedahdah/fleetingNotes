@@ -24,22 +24,13 @@ export async function POST(request: Request) {
 		console.log("Deploying", serversToDeploy.length, "servers")
 
 		for (const { server } of serversToDeploy) {
-			try {
-				console.log("Deploying", server.id)
-				const result = await createDeploymentForServer(server)
-				console.log("Deployed", server.id)
-				results.push({
-					serverId: server.id,
-					success: !result.error,
-					error: result.error,
-				})
-			} catch (error) {
-				results.push({
-					serverId: server.id,
-					success: false,
-					error: error instanceof Error ? error.message : "Unknown error",
-				})
-			}
+			console.log("Deploying", server.id)
+			const result = await createDeploymentForServer(server)
+			console.log("Deployed", server.id)
+			results.push({
+				serverId: server.id,
+				result,
+			})
 		}
 
 		return NextResponse.json({

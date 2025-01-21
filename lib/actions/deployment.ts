@@ -13,6 +13,7 @@ import {
 	ServerConfigSchema,
 } from "../types/server-config"
 import { getGithubFile, joinGithubPath } from "../utils/github"
+import { err, ok, type Result } from "../utils/result"
 import { getConnectedRepos } from "./servers"
 
 export const getDeployments = async (serverId: string) => {
@@ -136,7 +137,11 @@ export interface DeploymentMissingFiles {
 	dockerfile: boolean
 }
 
-export async function createDeployment(data: TriggerBuildInput) {
+export async function createDeployment(
+	data: TriggerBuildInput,
+): Promise<
+	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
+> {
 	const supabase = await createClient()
 
 	const {
@@ -144,7 +149,7 @@ export async function createDeployment(data: TriggerBuildInput) {
 	} = await supabase.auth.getUser()
 
 	if (!user) {
-		return { error: "Unauthorized" }
+		return err({ message: "Unauthorized" })
 	}
 
 	// Get server details
@@ -155,19 +160,21 @@ export async function createDeployment(data: TriggerBuildInput) {
 		.where(and(eq(servers.id, data.serverId), eq(servers.owner, user.id)))
 		.limit(1)
 	if (!server) {
-		return { error: "Server not found" }
+		return err({ message: "Server not found" })
 	}
 	return await createDeploymentForServer(server)
 }
 
 export async function createDeploymentForServer(
 	server: Omit<Server, "connections" | "tags">,
-) {
+): Promise<
+	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
+> {
 	// Obtain the connected repo
 	const repoRows = await getConnectedRepos(server.id)
 
 	if (repoRows.length === 0) {
-		return { error: "No repository connected to this server" }
+		return err({ message: "No repository connected to this server" })
 	}
 	const serverRepo = repoRows[0]
 
@@ -191,7 +198,7 @@ export async function createDeploymentForServer(
 	)
 
 	if (!installation) {
-		return { error: "GitHub App not installed for this repository" }
+		return err({ message: "GitHub App not installed for this repository" })
 	}
 
 	// Get installation token
@@ -228,20 +235,22 @@ export async function createDeploymentForServer(
 	])
 
 	if (!smitheryFile || !dockerfile) {
-		return {
-			error: !smitheryFile
+		return err({
+			message: !smitheryFile
 				? "Failed to find smithery.yaml from repository"
 				: "Failed to find Dockerfile from repository",
 			missing: {
 				smitheryFile: !smitheryFile,
 				dockerfile: !dockerfile,
 			} as DeploymentMissingFiles,
-		}
+		})
 	}
 
 	const result = ServerConfigSchema.safeParse(YAML.parse(smitheryFile))
 	if (!result.success) {
-		return { error: `Failed to parse smithery.yaml: ${result.error.message}` }
+		return err({
+			message: `Failed to parse smithery.yaml: ${result.error.message}`,
+		})
 	}
 	const smitheryConfig: ServerConfigGateway = {
 		...result.data,
@@ -357,7 +366,7 @@ export async function createDeploymentForServer(
 		const buildMeta = operation.metadata as any
 		const buildId = buildMeta.build?.id
 		if (!buildId) {
-			return { error: "Failed to generate build ID." }
+			return err({ message: "Failed to generate build ID." })
 		}
 
 		await db.insert(deployments).values({
@@ -371,12 +380,9 @@ export async function createDeploymentForServer(
 			repo: serverRepo.id,
 		})
 
-		return {
-			buildId,
-			status: "started",
-		}
+		return ok()
 	} catch (error) {
 		console.error("Cloud Build error:", error)
-		return { error: "Failed to trigger deployment." }
+		return err({ message: "Failed to trigger deployment." })
 	}
 }
