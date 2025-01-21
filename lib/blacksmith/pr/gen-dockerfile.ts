@@ -311,7 +311,14 @@ async function createMCPClient(
 			description: "Final function to output the Dockerfile.",
 			parameters: z.object({ dockerfile: z.string() }).describe("Dockerfile"),
 			execute: async (output) => {
+				if (
+					output.dockerfile.includes('ENTRYPOINT ["npx", "-y",') ||
+					output.dockerfile.includes('ENTRYPOINT ["uvx",')
+				) {
+					return "Error: Entrypoint should not reference published package. Instead, it should start the locally built project."
+				}
 				setOutput(output.dockerfile)
+				return "Dockerfile created."
 			},
 		})
 		.build()

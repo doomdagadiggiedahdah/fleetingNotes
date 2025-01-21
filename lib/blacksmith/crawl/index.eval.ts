@@ -78,10 +78,10 @@ const connectionsDiff = async (args: {
 
 					const outputConfigAlt = outputConnection
 						? generateConfig(
-							outputConnection,
-							// outputConnection.exampleConfig ??
-							createDummyConfig(outputConnection.configSchema),
-						)
+								outputConnection,
+								// outputConnection.exampleConfig ??
+								createDummyConfig(outputConnection.configSchema),
+							)
 						: null
 
 					const similarity =
