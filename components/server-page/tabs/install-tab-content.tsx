@@ -1,13 +1,14 @@
+import { CodeBlock } from "@/components/docs/code-block"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { AlertCircle, Bug, ExternalLink } from "lucide-react"
-import CodeBlock from "../../code-block"
+import posthog from "posthog-js"
 
 export const ClientInstallContent = ({
-	tool,
+	server,
 	client,
-}: { tool: FetchedServer; client: "claude" | "cline" }) => {
+}: { server: FetchedServer; client: "claude" | "cline" }) => {
 	return (
 		<>
 			<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
@@ -33,13 +34,18 @@ export const ClientInstallContent = ({
 				.
 			</p>
 
-			{tool.published || tool.isDeployed ? (
+			{server.published || server.isDeployed ? (
 				<CodeBlock
-					language="shell"
-					serverId={tool.qualifiedName}
-					eventTag="install_command"
+					className="language-shell"
+					lineCount={2}
+					onCopy={() => {
+						posthog.capture("Code Copied", {
+							serverQualifiedName: server.qualifiedName,
+							eventTag: "install_command",
+						})
+					}}
 				>
-					{`npx -y @smithery/cli@latest install ${tool.qualifiedName} --client ${client}`}
+					{`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`}
 				</CodeBlock>
 			) : (
 				<Alert>
@@ -52,7 +58,7 @@ export const ClientInstallContent = ({
 			)}
 			<p className="mt-3 text-muted-foreground hover:text-primary">
 				<a
-					href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${tool.qualifiedName}`}
+					href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center hover:text-primary"
@@ -102,8 +108,12 @@ export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
 			</p>
 			<CodeBlock
 				language="typescript"
-				serverId={tool.qualifiedName}
-				eventTag="typescript"
+				onCopy={() => {
+					posthog.capture("Code Copied", {
+						serverQualifiedName: tool.qualifiedName,
+						eventTag: "typescript",
+					})
+				}}
 			>
 				{`\
 import { OpenAI } from "openai"

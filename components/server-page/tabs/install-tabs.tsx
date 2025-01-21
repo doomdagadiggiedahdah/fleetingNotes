@@ -30,7 +30,7 @@ export function InstallationTabs({
 				onTabChange?.(tab as InstallTabStates)
 			}}
 		>
-			<TabsList className="border-b border-border mb-3">
+			<TabsList className="border-b border-border mb-3 w-full justify-start">
 				<TabsTrigger value="claude">
 					<span className="flex items-center gap-2">
 						<SiAnthropic className="w-4 h-4" />
@@ -46,10 +46,10 @@ export function InstallationTabs({
 				</TabsTrigger>
 			</TabsList>
 			<TabsContent value="claude">
-				<ClientInstallContent tool={server} client="claude" />
+				<ClientInstallContent server={server} client="claude" />
 			</TabsContent>
 			<TabsContent value="cline">
-				<ClientInstallContent tool={server} client="cline" />
+				<ClientInstallContent server={server} client="cline" />
 			</TabsContent>
 			<TabsContent value="code">
 				<TypeScriptContent tool={server} />

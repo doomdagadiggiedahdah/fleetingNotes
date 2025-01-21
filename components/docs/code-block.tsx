@@ -1,6 +1,7 @@
 "use client"
 
 import { Editor, type EditorProps } from "@monaco-editor/react"
+import { CopyIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface CodeBlockProps extends EditorProps {
@@ -50,7 +51,8 @@ export function CodeBlock({
 					readOnly: true,
 					minimap: { enabled: false },
 					scrollBeyondLastLine: false,
-					lineNumbers: "on",
+					folding: false,
+					lineNumbers: "off",
 					scrollbar: {
 						vertical: "auto",
 						horizontal: "auto",
@@ -73,20 +75,7 @@ export function CodeBlock({
 				className="absolute top-1 right-1 p-1 rounded-md bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
 				aria-label="Copy code"
 			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					strokeWidth="2"
-					strokeLinecap="round"
-					strokeLinejoin="round"
-				>
-					<rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-					<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-				</svg>
+				<CopyIcon className="w-4 h-4" />
 			</button>
 		</div>
 	)

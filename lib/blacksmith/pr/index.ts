@@ -173,7 +173,7 @@ async function applyPullRequest(
 		newFiles.dockerFile &&
 			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
 		newFiles.smitheryConfig &&
-			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. This file is used by [Smithery](https://smithery.ai) to render configurations for the end-user. It also allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to Smithery, serving it over SSE so end-users do not need to install additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}), claiming it and clicking "Deploy".`,
+			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. This file is used by [Smithery](https://smithery.ai?utm_campaign=pr) to render configurations for the end-user. It also allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to Smithery, serving it over SSE so end-users do not need to install additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}?utm_campaign=pr&modal=claim), claiming it and clicking "Deploy".`,
 		addedBadge && addedInstallInstructions
 			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge. Note that the installation only works after the server is deployed.`
 			: addedBadge

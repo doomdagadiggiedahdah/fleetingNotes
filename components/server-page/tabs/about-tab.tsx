@@ -30,7 +30,7 @@ export function AboutPanel({
 		<div>
 			<div className="grid grid-cols-1 md:grid-cols-12 gap-4">
 				<div className="md:col-span-7">
-					{server.description}
+					<p>{server.description}</p>
 					{server.descriptionLongMdx && (
 						<div className="my-8">{server.descriptionLongMdx}</div>
 					)}
