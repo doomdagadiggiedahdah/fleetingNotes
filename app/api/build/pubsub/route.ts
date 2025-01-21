@@ -3,6 +3,7 @@ import { type Deployment, deployments, servers } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { z } from "zod"
 import * as cloudRun from "@google-cloud/run"
+import { revalidatePath } from "next/cache"
 
 const KEY = "A2aC3mQN%GImJ7yj"
 
@@ -92,6 +93,8 @@ export async function POST(request: Request) {
 				const cloudRunUrl = await getCloudRunUrl(deployment.serverId)
 				if (cloudRunUrl) {
 					updateData.deploymentUrl = cloudRunUrl
+					// Invalidate server page cache
+					revalidatePath(`/server/${servers.qualifiedName}`)
 				}
 			}
 		}
