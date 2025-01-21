@@ -11,7 +11,7 @@ import { initLogger } from "braintrust"
 import { checkPullRequests } from "./check-prs"
 import { generatePullRequest } from "./gen-all"
 // TODO: May want to move elsewhere
-const logger = initLogger({
+export const logger = initLogger({
 	projectName: "Smithery",
 })
 
@@ -173,7 +173,7 @@ async function applyPullRequest(
 		newFiles.dockerFile &&
 			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
 		newFiles.smitheryConfig &&
-			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. This file is used by [Smithery](https://smithery.ai) to render configurations for the end-user. It also allows you to deploy your MCP to Smithery, serving it over SSE so end-users do not need to install additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}), claiming it and clicking "Deploy".`,
+			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. This file is used by [Smithery](https://smithery.ai) to render configurations for the end-user. It also allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to Smithery, serving it over SSE so end-users do not need to install additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}), claiming it and clicking "Deploy".`,
 		addedBadge && addedInstallInstructions
 			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge. Note that the installation only works after the server is deployed.`
 			: addedBadge
@@ -219,10 +219,11 @@ export async function createServerRepoPullRequest(
 ) {
 	// TODO: This would run a PR even if there's a merged PR.
 	const [prChecksResult, [serverRepo]] = await Promise.all([
-		checkPullRequests(server.id),
+		checkPullRequests(server.id, undefined, prAuthToken),
 		getConnectedRepos(server.id),
 	])
-	if (prChecksResult.ok && prChecksResult.value.length > 0) {
+	if (!prChecksResult.ok) return prChecksResult
+	if (prChecksResult.value.length > 0) {
 		return err("A config PR has already been made previously.")
 	}
 	if (!serverRepo) {
@@ -291,65 +292,4 @@ export async function createServerRepoPullRequest(
 	})
 
 	return ok({ prUrl: prResult.value.url })
-}
-
-// CLI version for testing: npx tsx lib/blacksmith/config/index.ts
-if (require.main === module) {
-	;(async () => {
-		const dotenv = await import("dotenv")
-		dotenv.config()
-
-		const serverId = process.argv[2]
-		if (!serverId) {
-			console.error("Please provide a server ID as a command-line argument")
-			process.exit(1)
-		}
-
-		const server = await db.query.servers.findFirst({
-			where: (servers, { eq }) => eq(servers.id, serverId),
-			columns: {
-				id: true,
-				qualifiedName: true,
-				displayName: true,
-			},
-		})
-
-		if (!server) {
-			console.error(`Server with ID ${serverId} not found`)
-			process.exit(1)
-		}
-
-		const result = await createServerRepoPullRequest(
-			server,
-			true,
-			process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-		)
-		if (result.ok) {
-			console.log(`PR created successfully: ${result.value.prUrl}`)
-		} else {
-			console.error(`Failed to create PR: ${result.error}`)
-		}
-
-		await logger.flush()
-		// const allServers = await db
-		// 	.select({
-		// 		server: servers,
-		// 	})
-		// 	.from(servers)
-		// 	// Must have server repo
-		// 	.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-
-		// for (const server of allServers) {
-		// 	const result = await runConfigPR(
-		// 		server.server,
-		// 		true,
-		// 		process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-		// 	)
-		// 	if (result.ok) {
-		// 		console.log(`PR created successfully: ${result.value.prUrl}`)
-		// 	} else {
-		// 		console.error(`Failed to create PR: ${result.error}`)
-		// 	}
-		// }
-	})()
 }

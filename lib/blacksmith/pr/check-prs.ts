@@ -3,6 +3,7 @@ import { pullRequests, serverRepos, servers } from "@/db/schema"
 import { and, eq } from "drizzle-orm"
 import { getInstallationOctokit } from "../../auth/github/server"
 import { err, ok, toResult } from "../../utils/result"
+import { Octokit } from "@octokit/rest"
 
 /**
  * Checks all PRs made to the server to obtain their status
@@ -10,7 +11,11 @@ import { err, ok, toResult } from "../../utils/result"
  * @param userId If provided, will only check for this user. Otherwise, bypasses security
  * @returns
  */
-export async function checkPullRequests(serverId: string, userId?: string) {
+export async function checkPullRequests(
+	serverId: string,
+	userId?: string,
+	githubToken?: string,
+) {
 	const rows = await db
 		.select({
 			server: servers,
@@ -46,15 +51,17 @@ export async function checkPullRequests(serverId: string, userId?: string) {
 		return err("No repository connected to this server")
 	}
 
-	const installOctokitResult = await getInstallationOctokit(
-		repo.repoOwner,
-		repo.repoName,
-	)
-	if (!installOctokitResult.ok) {
-		// Installation issue
-		return err(installOctokitResult.error)
+	const octokitResult = await (async () => {
+		if (githubToken) {
+			return ok(new Octokit({ auth: githubToken }))
+		} else {
+			return await getInstallationOctokit(repo.repoOwner, repo.repoName)
+		}
+	})()
+	if (!octokitResult.ok) {
+		return octokitResult
 	}
-	const { value: installOctokit } = installOctokitResult
+	const { value: octokit } = octokitResult
 
 	const prs = (
 		await Promise.all(
@@ -64,14 +71,11 @@ export async function checkPullRequests(serverId: string, userId?: string) {
 					return null
 				}
 				const prResult = await toResult(
-					installOctokit.request(
-						"GET /repos/{owner}/{repo}/pulls/{pull_number}",
-						{
-							owner: repo.repoOwner,
-							repo: repo.repoName,
-							pull_number: Number.parseInt(pr.pullRequestNumber),
-						},
-					),
+					octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+						owner: repo.repoOwner,
+						repo: repo.repoName,
+						pull_number: Number.parseInt(pr.pullRequestNumber),
+					}),
 				)
 				if (!prResult.ok) {
 					return null

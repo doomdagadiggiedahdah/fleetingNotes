@@ -1,4 +1,3 @@
-"use server"
 import { db } from "@/db"
 import {
 	deployments,
@@ -11,6 +10,11 @@ import { eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 import { z } from "zod"
 import { SERVER_NEW_DAYS } from "../utils"
+import {
+	installCountQuery,
+	isDeployedQuery,
+	sourceUrlQuery,
+} from "@/db/schema/queries"
 
 // We have a special schema for selecting servers for rendering
 // TODO: Remove this if we no longer need connections object in the future
@@ -43,22 +47,6 @@ const selectFetchedServerSchema = selectServerSchema
 		}),
 		isDeployed: z.boolean(),
 	})
-
-const isDeployedQuery = sql<boolean>`EXISTS (
-		SELECT 1
-		FROM ${deployments}
-		WHERE ${deployments.serverId} = ${servers.id}
-		AND ${deployments.status} = 'SUCCESS'
-		AND ${deployments.deploymentUrl} is not null
-		ORDER BY ${deployments.createdAt} DESC
-		LIMIT 1
-	)`
-
-const sourceUrlQuery = sql<
-	string | null
->`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
-
-const installCountQuery = sql<number>`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int`
 
 /**
  * Gets a single server

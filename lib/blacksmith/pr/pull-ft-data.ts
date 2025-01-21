@@ -16,6 +16,7 @@ interface TrainingExample {
 	server_name: string
 }
 
+// TODO: Fine-tuning data can be pulled from all successfully deployed servers, because this verifies that it actually works.
 export async function pullTrainingData() {
 	// Query all PRs that were manually verified, along with their server info
 	const prs = await db
