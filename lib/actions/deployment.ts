@@ -8,7 +8,10 @@ import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
-import { ServerConfigSchema } from "../types/server-config"
+import {
+	type ServerConfigGateway,
+	ServerConfigSchema,
+} from "../types/server-config"
 import { getGithubFile, joinGithubPath } from "../utils/github"
 import { getConnectedRepos } from "./servers"
 
@@ -50,7 +53,7 @@ interface TriggerBuildInput {
 	serverId: string
 }
 
-function createDockerfile(baseImage: string, config: object) {
+function createDockerfile(baseImage: string, config: ServerConfigGateway) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
 FROM us-central1-docker.pkg.dev/smithery-ai/smithery/gateway as gateway_image
@@ -238,7 +241,10 @@ export async function createDeployment(data: TriggerBuildInput) {
 	if (!result.success) {
 		return { error: `Failed to parse smithery.yaml: ${result.error.message}` }
 	}
-	const smitheryConfig = result.data
+	const smitheryConfig: ServerConfigGateway = {
+		...result.data,
+		serverId: data.serverId,
+	}
 
 	const dockerfileContents = createDockerfile(
 		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${data.serverId}:latest`,

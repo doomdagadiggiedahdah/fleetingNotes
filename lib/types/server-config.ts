@@ -38,3 +38,8 @@ export const ServerConfigSchema = z.object({
 })
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>
+
+// The type used for the gateway, which includes serverId specification
+export type ServerConfigGateway = ServerConfig & {
+	serverId: string
+}
