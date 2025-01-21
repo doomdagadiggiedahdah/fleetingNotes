@@ -57,13 +57,15 @@ interface TriggerBuildInput {
 function createDockerfile(baseImage: string, config: ServerConfigGateway) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM us-central1-docker.pkg.dev/smithery-ai/smithery/gateway as gateway_image
+FROM us-central1-docker.pkg.dev/smithery-ai/smithery/gateway:latest as gateway_image
 
 # User's original image
 FROM ${baseImage} as userimage
 
 COPY --from=gateway_image /app/gateway-app-glibc /tmp/smithery-gateway-glibc
 COPY --from=gateway_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
+
+USER root
 
 # "Detect" script: tries ldd on /bin/sh (or /usr/bin/env) to see if it's musl or glibc.
 # If ldd or /bin/sh doesn't exist, this might fail.

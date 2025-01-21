@@ -12,12 +12,25 @@ export async function POST(request: Request) {
 	}
 
 	try {
+		// Parse the request to check for serverId
+		const { serverId } = await request.json().catch(() => ({}))
+
 		// Get all deployments ordered by creation date
 		const serversToDeploy = await db
 			.selectDistinct({ server: servers })
 			.from(deployments)
 			.innerJoin(servers, eq(deployments.serverId, servers.id))
+			.where(serverId ? eq(servers.id, serverId) : undefined)
 			.orderBy(servers.id)
+
+		if (serversToDeploy.length === 0) {
+			return NextResponse.json(
+				{
+					error: serverId ? `Server ${serverId} not found` : "No servers found",
+				},
+				{ status: 404 },
+			)
+		}
 
 		// Trigger new deployments for each server's latest deployment
 		const results = []
