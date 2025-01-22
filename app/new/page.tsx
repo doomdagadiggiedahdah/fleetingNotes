@@ -27,7 +27,7 @@ export default function NewPage(props: Props) {
 					onRepoSelect={(owner, repo) => {
 						router.push(`/new?owner=${owner}&repo=${repo}`)
 					}}
-					buttonText="Deploy"
+					buttonText="Create"
 				/>
 			</GithubAuthProvider>
 		)

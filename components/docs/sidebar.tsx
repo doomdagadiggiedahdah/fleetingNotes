@@ -6,6 +6,7 @@ export const navigation = [
 		links: [
 			{ title: "Introduction", href: "/docs" },
 			{ title: "Deployments", href: "/docs/deployments" },
+			{ title: "Configuration", href: "/docs/config" },
 		],
 	},
 ]

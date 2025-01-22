@@ -59,7 +59,6 @@ export async function getREADME(
 		owner,
 		repo,
 	})
-	console.log(data.path)
 	return Buffer.from(data.content, "base64").toString("utf-8")
 }
 
@@ -98,7 +97,6 @@ export async function getGithubFile(
 		if ((error as RequestError).status === 404) {
 			return null
 		}
-		console.error("Error fetching smithery.yaml:", error)
 	}
 	return null
 }

@@ -1,0 +1,107 @@
+import { CircleAlert } from "lucide-react"
+import { Maintainers } from "@/components/docs/maintainers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export const metadata = {
+  title: 'Configuration | Smithery Documentation',
+  description: 'Learn how to deploy your Message Control Protocol (MCP) server on Smithery.',
+}
+
+# Configuration
+
+## Required Files
+There are two files required in your repository in order to deploy:
+1. [Dockerfile](#dockerfile)
+2. [smithery.yaml](#smitheryyaml)
+
+The Dockerfile tells us how to build your server. The smithery.yaml file tells us how to start your server.
+
+## Automatic Setup
+Smithery automatically generates a pull-request with these files for you based on your repository structure.
+
+To obtain an automated pull-request:
+1. Go to your deployments tab on your server page
+2. Click "Deploy"
+
+You will see a dialog show up with the option to generate a pull-request. Click "Generate Pull Request" and Smithery will generate a pull-request for you.
+
+## Manual Setup
+### Dockerfile
+
+Create a `Dockerfile` in your repository root that defines how to build your MCP server. Your Dockerfile should be created such that running your Docker image will start your [STDIO server](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio).
+
+Here's an example Dockerfile that builds a Node-based MCP server:
+
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy application code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Command will be provided by smithery.yaml
+CMD ["node", "dist/index.js"]
+```
+
+**We only support Linux Docker images on major distros (Alpine/Debian-based) and expect `sh` to run in your container. Other distros are untested and may not deploy.**
+
+You can find more examples of Dockerfiles in MCP's [official reference implementations](https://github.com/modelcontextprotocol/servers/tree/main/src).
+
+### smithery.yaml
+
+Create a `smithery.yaml` file in your repository root. This file defines how your MCP server should be started.
+
+Here's a minimal example of a server with no configuration options:
+
+```yaml
+# Smithery.ai configuration
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    {}
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({
+      "command": "node",
+      "args": [
+        "dist/index.js"
+      ]
+    })
+```
+
+The `startCommand` object consists of:
+- `type: stdio`: Specifies that your repository is a standard I/O based MCP server
+- `configSchema`: Defines the JSON Schema for your server's configuration options. Users will configure this your server using this schema. We will reject invalid configurations.
+- `commandFunction`: A JavaScript function that returns the command and arguments to start your server. This function is run within your server's sandbox during runtime to parse the config specified by clients. You can trust that `config` input argument conforms to your `configSchema`.
+
+Optional configuration:
+
+`build`: Object containing build configuration:
+  - `dockerfile` (optional): Path to Dockerfile, relative to this config file
+  - `dockerBuildPath` (optional): Path to docker build context, relative to this config file
+
+## Subdirectories
+If your package is not in the root directory of your repository (in the case of a monorepo), you should place your Dockerfile and `smithery.yaml` in the subdirectory that contains your package. You will need to specify the base directory in your server settings on Smithery.
+
+For example, if your MCP server is in the `packages/mcp-server` directory, you would:
+
+1. Place your `Dockerfile` and `smithery.yaml` in the `packages/mcp-server` directory
+2. Set the base directory to `packages/mcp-server` in your server settings under Github integration
+
+## Best Practices
+
+1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
+2. **Configuration**: Use the `configSchema` to properly define and validate your server's configuration options
+3. **Docker Optimization**: Keep your Docker image size minimal by using appropriate base images and multi-stage builds
