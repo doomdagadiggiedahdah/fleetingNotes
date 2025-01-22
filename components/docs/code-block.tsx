@@ -1,8 +1,8 @@
 "use client"
 
 import { Editor, type EditorProps } from "@monaco-editor/react"
-import { CopyIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import { CopyButton } from "@/components/ui/copy-button"
 
 interface CodeBlockProps extends EditorProps {
 	children: string
@@ -67,16 +67,7 @@ export function CodeBlock({
 				loading={<div style={{ height }} className="bg-muted animate-pulse" />}
 				{...props}
 			/>
-			<button
-				onClick={() => {
-					navigator.clipboard.writeText(children)
-					onCopy?.(children)
-				}}
-				className="absolute top-1 right-1 p-1 rounded-md bg-background/80 hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
-				aria-label="Copy code"
-			>
-				<CopyIcon className="w-4 h-4" />
-			</button>
+			<CopyButton value={children} onCopy={onCopy} />
 		</div>
 	)
 }
