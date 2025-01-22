@@ -79,11 +79,15 @@ export async function GET(
 }
 
 const RequestSchema = z.object({
+	userId: z.string().optional().describe("User performing the request"),
+
 	// The type of server to instantiate
-	connectionType: z.enum(["stdio"]),
+	connectionType: z
+		.enum(["stdio"])
+		.describe("The type of server to instantiate"),
 
 	// The configuration for the server
-	config: z.record(z.unknown()),
+	config: z.record(z.unknown()).describe("The configuration for the server"),
 })
 
 export async function POST(
@@ -133,7 +137,7 @@ export async function POST(
 
 		posthog.capture({
 			event: "Config Generated",
-			distinctId: "anonymous",
+			distinctId: data.userId ?? "anonymous",
 			properties: {
 				$process_person_profile: false,
 				serverId,
