@@ -118,6 +118,11 @@ export async function createServer(rawData: CreateServerInputs) {
 	if (installationId === undefined)
 		return { error: "Failed to validate GitHub installation." }
 
+	const serverExtractionResult = await serverExtractionPromise
+	const serverExtractionData = serverExtractionResult.ok
+		? serverExtractionResult.value
+		: null
+
 	// let newServer: Pick<Server, "id" | "qualifiedName"> | null = null
 	try {
 		// Create both the server and repo connection in a single transaction
@@ -133,7 +138,7 @@ export async function createServer(rawData: CreateServerInputs) {
 					license: null,
 					displayName: insertData.qualifiedName,
 					description: "",
-					...(await serverExtractionPromise).server,
+					...serverExtractionData,
 					// User specified data
 					// TODO: Allow usernames
 					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
