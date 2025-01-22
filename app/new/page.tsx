@@ -5,6 +5,8 @@ import NewServerForm from "./new-server-form"
 import { GithubAuthProvider } from "@/components/github/github-user-provider"
 import { RepoSelector } from "@/components/github/repo-selector"
 
+export const maxDuration = 60
+
 interface Props {
 	searchParams: Promise<{
 		owner?: string

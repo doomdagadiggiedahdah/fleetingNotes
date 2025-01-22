@@ -83,7 +83,6 @@ export async function getServer(qualifiedName: string) {
 				LIMIT 1
 			)`,
 			isDeployed: isDeployedQuery,
-
 			installCount: installCountQuery,
 		})
 		.from(servers)
@@ -125,8 +124,8 @@ export async function getAllServers() {
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.groupBy(servers.id, serverRepos.id)
 		.orderBy(
-			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`CASE WHEN ${isDeployedQuery} THEN 0 ELSE 1 END`,
+			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
 			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int DESC`,
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
@@ -141,7 +140,10 @@ export async function getAllServers() {
 		shuffle(
 			data
 				.filter(
-					(server) => server.createdAt && server.createdAt > newServerThreshold,
+					(server) =>
+						server.createdAt &&
+						server.createdAt > newServerThreshold &&
+						server.isDeployed,
 				)
 				.map((server) => server.qualifiedName),
 		).slice(0, 3),
