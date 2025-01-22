@@ -16,9 +16,9 @@ import {
 import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getOctokit } from "../auth/github/server"
-import { getMe } from "../supabase/server"
-import { createServerRepoPullRequest } from "../blacksmith/pr"
 import { extractServer } from "../blacksmith/extract-server"
+import { createServerRepoPullRequest } from "../blacksmith/pr"
+import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
 
 export async function updateServerDetails(
@@ -77,7 +77,7 @@ export async function connectServerRepo(
 	}
 }
 
-// TODO: By passes security? Should use static types to ensure security
+// TODO: This bypasses security? Should use static types to ensure security
 export async function getConnectedRepos(serverId: string) {
 	// Obtain the connected repo
 	const rows = await db

@@ -17,7 +17,7 @@ import type { FetchedServer } from "@/lib/utils/fetch-registry"
 import { useEffect, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
 
-type Deployment = Database["public"]["Tables"]["deployments"]["Row"]
+export type Deployment = Database["public"]["Tables"]["deployments"]["Row"]
 
 interface Props {
 	server: FetchedServer
@@ -103,6 +103,7 @@ export function DeploymentsTable({ server }: Props) {
 				<DeployButton
 					serverId={server.id}
 					hasPendingBuilding={hasPendingBuilding}
+					deployments={!isLoading ? deployments : null}
 				/>
 			</div>
 			<div>

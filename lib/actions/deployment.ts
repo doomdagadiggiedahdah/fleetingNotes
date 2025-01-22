@@ -1,22 +1,32 @@
 "use server"
 
 import { db } from "@/db"
-import { deployments, type Server, servers } from "@/db/schema"
-import { createClient } from "@/lib/supabase/server"
+import {
+	deployments,
+	type Server,
+	type ServerRepo,
+	serverRepos,
+	servers,
+} from "@/db/schema"
+import { createClient, getMe } from "@/lib/supabase/server"
 import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
+import { waitUntil } from "@vercel/functions"
 import { and, eq } from "drizzle-orm"
 import YAML from "yaml"
+import { checkGithubPermissions } from "../auth/github/check-github-permissions"
+import {
+	getInstallationOctokit,
+	getInstallationToken,
+} from "../auth/github/server"
+import { posthog } from "../posthog_server"
 import {
 	type ServerConfigGateway,
 	ServerConfigSchema,
 } from "../types/server-config"
-import { getGithubFile, joinGithubPath } from "../utils/github"
+import { getGithubFileResult, joinGithubPath } from "../utils/github"
 import { err, ok, type Result } from "../utils/result"
-import { getConnectedRepos } from "./servers"
-import { posthog } from "../posthog_server"
-import { waitUntil } from "@vercel/functions"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -51,10 +61,6 @@ const cloudCredentials = JSON.parse(
 const cloudBuildClient = new CloudBuildClient({
 	credentials: cloudCredentials,
 })
-
-interface TriggerBuildInput {
-	serverId: string
-}
 
 function createDockerfile(baseImage: string, config: ServerConfigGateway) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
@@ -142,15 +148,11 @@ export interface DeploymentMissingFiles {
 }
 
 export async function createDeployment(
-	data: TriggerBuildInput,
+	serverId: string,
 ): Promise<
 	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
 > {
-	const supabase = await createClient()
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser()
+	const user = await getMe()
 
 	if (!user) {
 		return err({ message: "Unauthorized" })
@@ -160,106 +162,60 @@ export async function createDeployment(
 		event: "Deployment Started",
 		distinctId: user.id,
 		properties: {
-			serverId: data.serverId,
+			serverId,
 		},
 	})
 
-	// Get server details
-	const [server] = await db
-		.select()
-		.from(servers)
-		// Ensures logged-in user owns this server
-		.where(and(eq(servers.id, data.serverId), eq(servers.owner, user.id)))
-		.limit(1)
-	if (!server) {
+	const row = await getServerRepo(serverId, user.id)
+	if (!row) {
 		return err({ message: "Server not found" })
 	}
 	waitUntil(posthog.flush())
-	return await createDeploymentForServer(server)
+	return await createDeploymentForServer(row.server, row.serverRepo)
 }
 
 export async function createDeploymentForServer(
 	server: Omit<Server, "connections" | "tags">,
+	serverRepo: ServerRepo,
 ): Promise<
 	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
 > {
-	// Obtain the connected repo
-	const repoRows = await getConnectedRepos(server.id)
-
-	if (repoRows.length === 0) {
-		return err({ message: "No repository connected to this server" })
-	}
-	const serverRepo = repoRows[0]
-
 	// Get repo details
 	const { repoOwner, repoName } = serverRepo
 
-	// Get installation ID for the repo
-	const octokit = new Octokit({
-		authStrategy: createAppAuth,
-		auth: {
-			appId: process.env.GITHUB_APP_ID!,
-			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-		},
-	})
+	const installTokenResult = await getInstallationToken(repoOwner, repoName)
 
-	// TODO: Need to filter by installation ID? (This won't scale to more users)
-	const installations = await octokit.request("GET /app/installations")
-
-	const installation = installations.data.find(
-		(inst) => inst.account?.login === repoOwner,
-	)
-
-	if (!installation) {
-		return err({ message: "GitHub App not installed for this repository" })
+	if (!installTokenResult.ok) {
+		return err({ message: installTokenResult.error })
 	}
 
-	// Get installation token
-	const auth = createAppAuth({
-		appId: process.env.GITHUB_APP_ID!,
-		privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-		installationId: installation.id,
-	})
-	const { token } = await auth({ type: "installation" })
+	const { installationId, installToken } = installTokenResult.value
 
 	const installationOctokit = new Octokit({
 		authStrategy: createAppAuth,
 		auth: {
 			appId: process.env.GITHUB_APP_ID!,
 			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-			installationId: installation.id,
+			installationId,
 		},
 	})
 
-	const [smitheryFile, dockerfile, commitInfo] = await Promise.all([
-		getGithubFile(
-			installationOctokit,
-			repoOwner,
-			repoName,
-			joinGithubPath(serverRepo.baseDirectory, "smithery.yaml"),
-		),
-		getGithubFile(
-			installationOctokit,
-			repoOwner,
-			repoName,
-			joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
-		),
+	const [files, commitInfo] = await Promise.all([
+		getDeployFiles(serverRepo),
 		getCommitInfo(installationOctokit, repoOwner, repoName),
 	])
 
-	if (!smitheryFile || !dockerfile) {
+	if (!files.ok)
 		return err({
-			message: !smitheryFile
+			message: files.error.missingFiles?.smitheryFile
 				? "Failed to find smithery.yaml from repository"
 				: "Failed to find Dockerfile from repository",
-			missing: {
-				smitheryFile: !smitheryFile,
-				dockerfile: !dockerfile,
-			} as DeploymentMissingFiles,
+			missing: files.error.missingFiles,
 		})
-	}
 
-	const result = ServerConfigSchema.safeParse(YAML.parse(smitheryFile))
+	const result = ServerConfigSchema.safeParse(
+		YAML.parse(files.value.smitheryFile),
+	)
 	if (!result.success) {
 		return err({
 			message: `Failed to parse smithery.yaml: ${result.error.message}`,
@@ -286,7 +242,7 @@ export async function createDeploymentForServer(
 						name: "gcr.io/cloud-builders/git",
 						args: [
 							"clone",
-							`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
+							`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
 							".",
 						],
 					},
@@ -398,4 +354,101 @@ export async function createDeploymentForServer(
 		console.error("Cloud Build error:", error)
 		return err({ message: "Failed to trigger deployment." })
 	}
+}
+
+/**
+ * Checks if this server is has the necessary requirements for deployment by examining the Github App installation and the repo required files.
+ * @returns OK if all requirements are met, error otherwise.
+ * 			Error reveals the required files and whether they're satisfied. Returns true if the file is missing.
+ */
+export async function checkDeployment(serverId: string) {
+	const user = await getMe()
+
+	if (!user) {
+		return err({ message: "Unauthorized" })
+	}
+
+	const row = await getServerRepo(serverId, user.id)
+
+	if (!row) {
+		return err({ message: "Server not found" })
+	}
+	// Get repo details
+	const { serverRepo } = row
+	const { repoOwner, repoName } = serverRepo
+
+	const [fileResult, permissionResult] = await Promise.all([
+		getDeployFiles(serverRepo),
+		checkGithubPermissions(repoOwner, repoName),
+	])
+
+	if (!permissionResult.ok || !fileResult.ok)
+		return err({
+			missingPermissions: !permissionResult.ok,
+			...(!fileResult.ok && fileResult.error),
+		})
+
+	return ok()
+}
+
+/**
+ * Gets the required files for deployment
+ * @param serverRepo
+ * @returns Files for deployment
+ */
+async function getDeployFiles(
+	serverRepo: ServerRepo,
+): Promise<
+	Result<
+		{ smitheryFile: string; dockerfile: string },
+		{ missingInstallation: boolean; missingFiles?: DeploymentMissingFiles }
+	>
+> {
+	const { repoOwner, repoName } = serverRepo
+
+	const octokitResult = await getInstallationOctokit(repoOwner, repoName)
+
+	if (!octokitResult.ok) return err({ missingInstallation: true })
+	const octokit = octokitResult.value
+
+	const [smitheryFile, dockerfile] = await Promise.all([
+		getGithubFileResult(
+			octokit,
+			repoOwner,
+			repoName,
+			joinGithubPath(serverRepo.baseDirectory, "smithery.yaml"),
+		),
+		getGithubFileResult(
+			octokit,
+			repoOwner,
+			repoName,
+			joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
+		),
+	])
+
+	if (smitheryFile.ok && dockerfile.ok)
+		return ok({
+			smitheryFile: smitheryFile.value,
+			dockerfile: dockerfile.value,
+		})
+
+	return err({
+		missingInstallation: false,
+		missingFiles: {
+			smitheryFile: !smitheryFile.ok,
+			dockerfile: !dockerfile.ok,
+		},
+	})
+}
+
+async function getServerRepo(serverId: string, userId: string) {
+	// Get server details
+	const [row] = await db
+		.select({ server: servers, serverRepo: serverRepos })
+		.from(servers)
+		.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+		// Ensures logged-in user owns this server
+		.where(and(eq(servers.id, serverId), eq(servers.owner, userId)))
+		.limit(1)
+	return row
 }

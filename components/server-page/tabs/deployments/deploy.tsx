@@ -1,22 +1,36 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import {
-	createDeployment,
-	type DeploymentMissingFiles,
-} from "@/lib/actions/deployment"
+import { createDeployment } from "@/lib/actions/deployment"
 import posthog from "posthog-js"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import type { Deployment } from "./deployments-table"
 import { MissingFilesDialog } from "./missing-files-dialog"
 
+interface Props {
+	serverId: string
+	hasPendingBuilding: boolean
+	deployments: Deployment[] | null
+}
 export function DeployButton({
 	serverId,
 	hasPendingBuilding,
-}: { serverId: string; hasPendingBuilding: boolean }) {
+	deployments,
+}: Props) {
 	const { toast } = useToast()
-	const [isLoading, setIsLoading] = useState(false)
-	const [missingFiles, setMissingFiles] =
-		useState<DeploymentMissingFiles | null>(null)
+	const [isLoading, setIsLoading] = useState(true)
+	const [openModal, setOpenModal] = useState(false)
+	const [checkOnLoad, setCheckOnLoad] = useState(false)
+
+	useEffect(() => {
+		if (deployments !== null) {
+			// Deployments loaded
+			if (deployments.length === 0) {
+				setCheckOnLoad(true)
+			}
+			setIsLoading(false)
+		}
+	}, [deployments])
 
 	return (
 		<>
@@ -31,9 +45,9 @@ export function DeployButton({
 							serverId: serverId,
 						})
 
-						const result = await createDeployment({ serverId })
+						const result = await createDeployment(serverId)
 						if (!result.ok && result.error.missing) {
-							setMissingFiles(result.error.missing)
+							setOpenModal(true)
 							return
 						}
 						toast({
@@ -59,10 +73,10 @@ export function DeployButton({
 				Deploy
 			</Button>
 			<MissingFilesDialog
-				open={!!missingFiles}
-				onOpenChange={() => setMissingFiles(null)}
+				open={openModal}
+				onOpenChange={(open) => setOpenModal(open)}
 				serverId={serverId}
-				missingFiles={missingFiles}
+				checkOnLoad={checkOnLoad}
 			/>
 		</>
 	)

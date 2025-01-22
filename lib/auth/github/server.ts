@@ -64,7 +64,7 @@ export async function getInstallationToken(
 	)
 
 	if (!result.ok) {
-		return err("Github App Installation not found")
+		return err("Smithery Github App Installation not found")
 	}
 
 	// Generate an installation token, then create an Octokit with it
@@ -73,7 +73,7 @@ export async function getInstallationToken(
 		installationId: result.value.data.id,
 	})
 
-	return ok({ installToken, appToken })
+	return ok({ installationId: result.value.data.id, installToken, appToken })
 }
 
 export async function getInstallationOctokit(

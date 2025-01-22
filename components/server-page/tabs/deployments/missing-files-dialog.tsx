@@ -10,12 +10,14 @@ import {
 } from "@/components/ui/dialog"
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { checkGithubPermissions } from "@/lib/actions/check-github-permissions"
+import {
+	checkDeployment,
+	type DeploymentMissingFiles,
+} from "@/lib/actions/deployment"
 import {
 	createConfigPullRequest,
 	hasOpenConfigPullRequest,
 } from "@/lib/actions/generate-pr"
-import type { DeploymentMissingFiles } from "@/lib/actions/deployment"
 import { AlertCircle, GitPullRequest } from "lucide-react"
 import { useEffect, useState } from "react"
 
@@ -23,36 +25,50 @@ interface MissingFilesDialogProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	serverId: string
-	missingFiles: DeploymentMissingFiles | null
+	checkOnLoad: boolean
 }
 
 export function MissingFilesDialog({
 	open,
 	onOpenChange,
 	serverId,
-	missingFiles,
+	checkOnLoad,
 }: MissingFilesDialogProps) {
 	const [isChecking, setIsChecking] = useState(false)
-	const [permissionError, setPermissionError] = useState<string | null>(null)
 
 	const [isLoading, setIsLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [prUrl, setPrUrl] = useState<string | null>(null)
 
+	const [missingFiles, setMissingFiles] =
+		useState<DeploymentMissingFiles | null>(null)
+	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
 	useEffect(() => {
-		if (open) {
+		if (open || checkOnLoad) {
 			setIsChecking(true)
 			;(async () => {
-				const [permResult, openPrResult] = await Promise.all([
-					checkGithubPermissions({ serverId }),
+				const [checkResult, openPrResult] = await Promise.all([
+					checkDeployment(serverId),
 					hasOpenConfigPullRequest(serverId),
 				])
 
-				if (!permResult.ok) {
-					setPermissionError(permResult.error)
-				} else {
-					setPermissionError(null)
+				if (!checkResult.ok) {
+					if ("message" in checkResult.error) {
+						setErrorMessage(checkResult.error.message)
+						onOpenChange(true)
+					} else if (checkResult.error.missingPermissions) {
+						setErrorMessage("Smithery Github App insufficient permissions.")
+						onOpenChange(true)
+					} else if (checkResult.error.missingInstallation) {
+						setErrorMessage("Smithery Github App not installed.")
+						onOpenChange(true)
+					} else if (checkResult.error.missingFiles) {
+						setMissingFiles(checkResult.error.missingFiles)
+						onOpenChange(true)
+					}
 				}
+
 				if (openPrResult.ok && openPrResult.value.pr) {
 					setPrUrl(openPrResult.value.pr.prUrl)
 				}
@@ -60,7 +76,7 @@ export function MissingFilesDialog({
 				setIsChecking(false)
 			})()
 		}
-	}, [open, serverId])
+	}, [open || checkOnLoad, serverId])
 
 	const handleCreatePR = async () => {
 		setIsLoading(true)
@@ -106,7 +122,7 @@ export function MissingFilesDialog({
 					</div>
 				) : (
 					<>
-						{permissionError ? (
+						{errorMessage ? (
 							<div className="space-y-4">
 								<Alert variant="destructive">
 									<AlertCircle className="h-4 w-4" />
@@ -114,7 +130,7 @@ export function MissingFilesDialog({
 										<p className="font-medium">
 											Insufficient GitHub Permissions
 										</p>
-										<p className="text-sm">{permissionError}</p>
+										<p className="text-sm">{errorMessage}</p>
 									</div>
 								</Alert>
 								<p className="text-sm text-muted-foreground">
@@ -181,7 +197,7 @@ export function MissingFilesDialog({
 										<ButtonLoading
 											onClick={handleCreatePR}
 											isLoading={isLoading}
-											disabled={!!permissionError || isLoading}
+											disabled={!!errorMessage || isLoading}
 										>
 											Generate Pull Request
 										</ButtonLoading>

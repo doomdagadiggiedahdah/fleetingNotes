@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { deployments, servers } from "@/db/schema"
+import { deployments, serverRepos, servers } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -17,9 +17,10 @@ export async function POST(request: Request) {
 
 		// Get all deployments ordered by creation date
 		const serversToDeploy = await db
-			.selectDistinct({ server: servers })
+			.selectDistinct({ server: servers, serverRepo: serverRepos })
 			.from(deployments)
 			.innerJoin(servers, eq(deployments.serverId, servers.id))
+			.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 			.where(serverId ? eq(servers.id, serverId) : undefined)
 			.orderBy(servers.id)
 
@@ -36,9 +37,9 @@ export async function POST(request: Request) {
 		const results = []
 		console.log("Deploying", serversToDeploy.length, "servers")
 
-		for (const { server } of serversToDeploy) {
+		for (const { server, serverRepo } of serversToDeploy) {
 			console.log("Deploying", server.id)
-			const result = await createDeploymentForServer(server)
+			const result = await createDeploymentForServer(server, serverRepo)
 			console.log("Deployed", server.id)
 			results.push({
 				serverId: server.id,

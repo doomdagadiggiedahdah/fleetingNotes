@@ -1,13 +1,5 @@
-"use server"
-
-import { z } from "zod"
-import { getAppOctokit } from "../auth/github/server"
-import { err, ok, toResult } from "../utils/result"
-import { getConnectedRepos, getMyServer } from "./servers"
-
-const checkGithubPermissionsSchema = z.object({
-	serverId: z.string(),
-})
+import { getAppOctokit } from "./server"
+import { err, ok, toResult } from "../../utils/result"
 
 const requiredPerms = {
 	metadata: "read",
@@ -16,26 +8,13 @@ const requiredPerms = {
 }
 
 /**
- * Checks if the GitHub App has the required permissions to deploy
+ * Checks if our GitHub App has the required permissions to deploy
+ * @returns OK if we have the permissions, error otherwise
  */
 export async function checkGithubPermissions(
-	input: z.infer<typeof checkGithubPermissionsSchema>,
+	repoOwner: string,
+	repoName: string,
 ) {
-	const { serverId } = checkGithubPermissionsSchema.parse(input)
-
-	const serverResult = await getMyServer(serverId)
-	if (!serverResult.ok) {
-		return serverResult
-	}
-
-	const repoRows = await getConnectedRepos(serverResult.value.id)
-
-	if (repoRows.length === 0) {
-		return err("No repository connected to this server")
-	}
-	const serverRepo = repoRows[0]
-	const { repoOwner, repoName } = serverRepo
-
 	const appAuthOctokit = getAppOctokit()
 	const result = await toResult(
 		appAuthOctokit.rest.apps.getRepoInstallation({
@@ -61,5 +40,5 @@ export async function checkGithubPermissions(
 		return err(`Missing permissions:\n${missingPermsString}`)
 	}
 
-	return ok(undefined)
+	return ok()
 }

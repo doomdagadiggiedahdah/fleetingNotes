@@ -1,5 +1,6 @@
 import type { Octokit } from "@octokit/rest"
 import type { RequestError } from "@octokit/request-error"
+import { err, ok } from "./result"
 
 /**
  * Extracts the base directory path from a GitHub URL.
@@ -71,6 +72,7 @@ export async function getREADME(
  * @param ref - The ref to use for the request. Defaults to the repository's default branch.
  * @returns The content of the file.
  */
+// TODO: @deprecated. Use Result instead.
 export async function getGithubFile(
 	octokit: Octokit,
 	owner: string,
@@ -99,6 +101,37 @@ export async function getGithubFile(
 		}
 	}
 	return null
+}
+export async function getGithubFileResult(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string,
+) {
+	try {
+		const response = await octokit.request(
+			"GET /repos/{owner}/{repo}/contents/{path}",
+			{
+				owner,
+				repo,
+				path,
+				ref,
+			},
+		)
+
+		if (!Array.isArray(response.data) && response.data.type === "file") {
+			const content = Buffer.from(response.data.content, "base64").toString()
+			return ok(content)
+		} else {
+			return err("Not a file")
+		}
+	} catch (error) {
+		if ((error as RequestError).status === 404) {
+			return err("Not found")
+		}
+	}
+	return err("Unknown error")
 }
 
 /**
