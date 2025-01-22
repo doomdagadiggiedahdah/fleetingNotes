@@ -99,7 +99,7 @@ export async function POST(request: Request) {
 				if (cloudRunUrl) {
 					updateData.deploymentUrl = cloudRunUrl
 					// Invalidate server page cache
-					revalidatePath(`/server/${servers.qualifiedName}`)
+					revalidatePath(`/server/${deployment.serverQualifiedName}`)
 
 					posthog.capture({
 						event: "Deployment Completed",
