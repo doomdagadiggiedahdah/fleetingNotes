@@ -15,6 +15,8 @@ import {
 import { getGithubFile, joinGithubPath } from "../utils/github"
 import { err, ok, type Result } from "../utils/result"
 import { getConnectedRepos } from "./servers"
+import { posthog } from "../posthog_server"
+import { waitUntil } from "@vercel/functions"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -154,6 +156,14 @@ export async function createDeployment(
 		return err({ message: "Unauthorized" })
 	}
 
+	posthog.capture({
+		event: "Deployment Started",
+		distinctId: user.id,
+		properties: {
+			serverId: data.serverId,
+		},
+	})
+
 	// Get server details
 	const [server] = await db
 		.select()
@@ -164,6 +174,7 @@ export async function createDeployment(
 	if (!server) {
 		return err({ message: "Server not found" })
 	}
+	waitUntil(posthog.flush())
 	return await createDeploymentForServer(server)
 }
 

@@ -133,7 +133,7 @@ export async function POST(
 
 		posthog.capture({
 			event: "Config Generated",
-			distinctId: "config-generated",
+			distinctId: "anonymous",
 			properties: {
 				$process_person_profile: false,
 				serverId,

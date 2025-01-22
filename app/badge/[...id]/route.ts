@@ -27,7 +27,7 @@ export async function GET(
 
 	posthog.capture({
 		event: "Badge Viewed",
-		distinctId: "badge-viewed",
+		distinctId: "anonymous",
 		properties: {
 			$process_person_profile: false,
 			serverId: qualifiedName,

@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm"
 import { z } from "zod"
 import * as cloudRun from "@google-cloud/run"
 import { revalidatePath } from "next/cache"
+import { posthog } from "@/lib/posthog_server"
+import { waitUntil } from "@vercel/functions"
 
 const KEY = "A2aC3mQN%GImJ7yj"
 
@@ -81,7 +83,10 @@ export async function POST(request: Request) {
 		if (data.status === "SUCCESS") {
 			const deployment = await db
 				.select({
+					id: deployments.id,
 					serverId: servers.id,
+					serverQualifiedName: servers.qualifiedName,
+					serverOwner: servers.owner,
 				})
 				.from(deployments)
 				.innerJoin(servers, eq(deployments.serverId, servers.id))
@@ -95,6 +100,19 @@ export async function POST(request: Request) {
 					updateData.deploymentUrl = cloudRunUrl
 					// Invalidate server page cache
 					revalidatePath(`/server/${servers.qualifiedName}`)
+
+					posthog.capture({
+						event: "Deployment Completed",
+						distinctId: deployment.serverOwner ?? "anonymous",
+						properties: {
+							$process_person_profile: deployment.serverOwner ?? false,
+							serverId: deployment.serverId,
+							serverQualifiedName: deployment.serverQualifiedName,
+							deploymentId: deployment.id,
+							status: data.status,
+						},
+					})
+					waitUntil(posthog.flush())
 				}
 			}
 		}
