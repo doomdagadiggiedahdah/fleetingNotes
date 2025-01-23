@@ -12,6 +12,7 @@ import { ButtonLoading } from "@/components/ui/loading-button"
 import { assignUnclaimedServers } from "@/lib/actions/claim-servers"
 import { openGithubAppInstall } from "@/lib/auth/github/client"
 import { Check, Loader2, XCircle } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -66,7 +67,15 @@ export function ClaimServerDialog({
 				</DialogHeader>
 				<p className="text-sm text-muted-foreground">
 					Claiming a server allows you to edit its settings and deploy Smithery
-					hosted servers.
+					hosted servers.{" "}
+					<Link
+						href="/docs/git"
+						className="underline hover:opacity-80 text-primary"
+						target="_blank"
+					>
+						Read more
+					</Link>{" "}
+					about the permissions we require.
 				</p>
 				{/* Step 1: GitHub Installation */}
 				<div className="space-y-6">

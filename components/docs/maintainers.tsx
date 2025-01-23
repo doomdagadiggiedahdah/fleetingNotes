@@ -13,7 +13,7 @@ export function Maintainers() {
 						sizes="96px"
 					/>
 				</div>
-				<h3 className="font-medium">Henry Wu</h3>
+				<h3 className="font-medium">Henry Mao</h3>
 				<a
 					href="https://x.com/calclavia"
 					target="_blank"
