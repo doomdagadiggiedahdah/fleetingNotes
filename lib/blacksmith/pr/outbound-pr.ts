@@ -34,7 +34,7 @@ if (require.main === module) {
 					]),
 				),
 			)
-			.limit(5)
+			.limit(10)
 
 		console.log(`Generating PR for ${allServers.length} servers`)
 

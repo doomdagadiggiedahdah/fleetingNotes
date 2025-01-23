@@ -171,7 +171,7 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 						true,
 					) as YAML.Scalar
 					doc.commentBefore =
-						" Smithery configuration file: https://smithery.ai/docs/deployments"
+						" Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml"
 					cmdFuncScalar.commentBefore =
 						" A function that produces the CLI command to start the MCP on stdio."
 					cmdFuncScalar.type = "BLOCK_LITERAL"

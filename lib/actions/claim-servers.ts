@@ -8,6 +8,8 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import type { GithubAccount } from "../auth/github/common"
 import { createClient } from "../supabase/server"
 import { revalidatePath } from "next/cache"
+import { posthog } from "../posthog_server"
+import { waitUntil } from "@vercel/functions"
 
 /**
  * Assigns all unclaimed servers to the current user based on their GitHub App installation
@@ -23,6 +25,13 @@ export async function assignUnclaimedServers() {
 	if (!session?.provider_token || sessionError) {
 		return { error: "No GitHub access token" }
 	}
+
+	posthog.capture({
+		event: "Server Claim Started",
+		distinctId: session.user.id,
+		properties: {},
+	})
+	waitUntil(posthog.flush())
 
 	const octokit = new Octokit({
 		auth: session.provider_token,

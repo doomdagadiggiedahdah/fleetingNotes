@@ -173,13 +173,13 @@ async function applyPullRequest(
 		newFiles.dockerFile &&
 			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
 		newFiles.smitheryConfig &&
-			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. This file is used by [Smithery](https://smithery.ai?utm_campaign=pr) to render configurations for the end-user. It also allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to Smithery, serving it over SSE so end-users do not need to install additional dependencies. You may deploy your server by visiting your [server page](https://smithery.ai/server/${qualifiedName}?utm_campaign=pr&modal=claim), claiming it and clicking "Deploy".`,
+			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. It allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to [Smithery](https://smithery.ai?utm_campaign=pr), serving it over SSE so end-users do not need to install additional dependencies. To deploy, merge this PR, then visit your [server page](https://smithery.ai/server/${qualifiedName}?utm_campaign=pr&modal=claim) and click "Deploy" under the deployments page.`,
 		addedBadge && addedInstallInstructions
-			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge. Note that the installation only works after the server is deployed.`
+			? `- **README**: Updates the README to include installation instructions via Smithery and a popularity badge. _Note that the installation only works after the server is deployed on Smithery._`
 			: addedBadge
 				? `- **README**: Updates the README to include a popularity badge.`
 				: addedInstallInstructions
-					? `- **README**: Updates the README to include installation instructions via Smithery. Note that the installation only works after the server is deployed.`
+					? `- **README**: Updates the README to include installation instructions via Smithery. _Note that the installation only works after the server is deployed on Smithery._`
 					: null,
 	].filter(Boolean)
 
@@ -188,7 +188,7 @@ This pull request introduces the following updates:
 
 ${changes.join("\n")}
 
-Please review these updates to verify their accuracy for your server and feel free to customize it to your needs. Let us know if you have any questions. 🙂`
+Please review these updates to verify their accuracy for your server and feel free to customize it to your needs. Let me know if you have any questions. 🙂`
 
 	const prRes = await octokit.request("POST /repos/{owner}/{repo}/pulls", {
 		owner: repoOwner,
