@@ -5,6 +5,7 @@ import { GithubRepoList } from "./github-repo-list"
 import { GithubSearch } from "./github-search"
 import { GithubUserContext } from "./github-user-provider"
 import { GithubUserSelector } from "./github-user-selector"
+import Link from "next/link"
 
 interface RepoSelectorProps {
 	onRepoSelect: (owner: string, repo: string) => void
@@ -46,9 +47,14 @@ export function RepoSelector({ onRepoSelect, buttonText }: RepoSelectorProps) {
 				/>
 			</div>
 			<p className="text-sm text-muted-foreground max-w-md">
-				We ask for write permission on your repository to create automated
-				pull-requests for faster setup. These pull requests are created on
-				dedicated `smithery/*` branches.
+				<Link
+					href="/docs/git"
+					className="underline hover:opacity-80 text-primary"
+					target="_blank"
+				>
+					Read more
+				</Link>{" "}
+				about how we use Github permissions to deploy your server.
 			</p>
 		</div>
 	)

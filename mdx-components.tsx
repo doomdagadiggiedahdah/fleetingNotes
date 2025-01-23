@@ -115,10 +115,27 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 				className="inline-block max-w-full h-auto my-2 rounded-lg"
 			/>
 		),
+		table: ({ children }) => (
+			<div className="my-6 w-full overflow-y-auto">
+				<table className="w-full border-collapse text-sm">{children}</table>
+			</div>
+		),
+		thead: ({ children }) => <thead className="border-b">{children}</thead>,
+		tbody: ({ children }) => <tbody className="divide-y">{children}</tbody>,
+		tr: ({ children }) => <tr>{children}</tr>,
+		th: ({ children }) => (
+			<th className="border-b bg-muted px-4 py-2 text-left font-medium">
+				{children}
+			</th>
+		),
+		td: ({ children }) => (
+			<td className="px-4 py-2 text-muted-foreground">{children}</td>
+		),
 		...components,
 	}
 }
 
 export function getMdxComponents() {
+	// eslint-disable-next-line react-hooks/rules-of-hooks
 	return useMDXComponents({})
 }
