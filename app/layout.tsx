@@ -24,6 +24,17 @@ export default function RootLayout({
 					<body className={inter.className}>
 						{children}
 						<Toaster />
+						<script
+							src="https://cdn.jsdelivr.net/npm/@widgetbot/crate@3"
+							async
+							defer
+							dangerouslySetInnerHTML={{
+								__html: `new Crate({
+									server: '1319565605820563506',
+									channel: '1319565605820563509'
+								})`,
+							}}
+						/>
 					</body>
 				</AuthProvider>
 			</CSPostHogProvider>

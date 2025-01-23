@@ -1,4 +1,4 @@
-import { SiDiscord, SiGithub } from "@icons-pack/react-simple-icons"
+import { SiGithub } from "@icons-pack/react-simple-icons"
 import { Anvil, Plus } from "lucide-react"
 import Link from "next/link"
 import { LoginButton } from "./auth/login-button"
@@ -26,7 +26,7 @@ export function Header() {
 							>
 								<SiGithub className="w-5 h-5" />
 							</a>
-							<a
+							{/* <a
 								href="https://discord.gg/Afd38S5p9A"
 								target="_blank"
 								rel="noopener noreferrer"
@@ -34,7 +34,7 @@ export function Header() {
 								aria-label="Discord server"
 							>
 								<SiDiscord className="w-5 h-5" />
-							</a>
+							</a> */}
 						</div>
 						<Link
 							href="/docs"
