@@ -3,7 +3,7 @@ import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
-import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
+import { ConnectionSchema, JSONSchema, RegistryServerSchema } from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
 
@@ -54,24 +54,24 @@ export async function GET(
 			...RegistryServerSchema.shape.connections.parse(server.connections),
 			...(server.deploymentUrl
 				? [
-					await (async () => {
-						let configSchema: Record<string, any> = {}
-						try {
-							const data = await fetch(
-								`${server.deploymentUrl}/.well-known/mcp/smithery.json`,
-							)
-							const smitheryConfig = await data.json()
-							configSchema = smitheryConfig.configSchema ?? {}
-						} catch (e) {
-							console.error("[MCP] Failed to fetch schema:", e)
-						}
-						return {
-							type: "sse",
-							deploymentUrl: server.deploymentUrl,
-							configSchema,
-						}
-					})()
-				]
+						await (async () => {
+							let configSchema: JSONSchema = {}
+							try {
+								const data = await fetch(
+									`${server.deploymentUrl}/.well-known/mcp/smithery.json`,
+								)
+								const smitheryConfig = await data.json()
+								configSchema = smitheryConfig.configSchema ?? {}
+							} catch (e) {
+								console.error("[MCP] Failed to fetch schema:", e)
+							}
+							return {
+								type: "sse",
+								deploymentUrl: server.deploymentUrl,
+								configSchema,
+							}
+						})(),
+					]
 				: []),
 		]
 

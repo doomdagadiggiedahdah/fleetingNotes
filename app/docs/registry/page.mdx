@@ -1,0 +1,75 @@
+import { CircleAlert } from "lucide-react"
+import { Maintainers } from "@/components/docs/maintainers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export const metadata = {
+  title: 'Registry API | Smithery Documentation',
+  description: 'Learn how to deploy your Message Control Protocol (MCP) server on Smithery.',
+}
+
+# Smithery Registry API Documentation
+
+The Smithery Registry provides a RESTful API for managing and obtaining deployed Model Context Protocol (MCP) servers. This documentation will guide you through using the Registry API to obtain an SSE MCP server.
+
+## Concepts
+Smithery contains MCP servers. Every server is different and may have different ways of connecting with them. Server authors specify a configuration schema, which is a JSON schema that defines the structure of the configuration that is required to connect to the server.
+
+### Get Server Information
+
+```http
+GET https://registry.smithery.ai/servers/{qualifiedName}
+```
+
+Retrieves information about a specific server by its qualified name. The qualified name is a unique human-readable identifier for the server. You can find the qualified name from the server page's url: `https://smithery.ai/server/{qualifiedName}`.
+
+#### Response
+
+```typescript
+{
+  qualifiedName: string;
+  displayName: string;
+  deploymentUrl: string;
+  connections: Array<{
+    type: string;
+    url: string;
+    configSchema: JSONSchema;
+  }>;
+}
+```
+
+We will return you a response containing information about the server, including its qualified name, display name, and connection details.
+
+The connection details specify how you can connect to this server.
+
+- `type`: The type of connection, such as "sse" for MCP served over Server-Sent Events.
+- `url`: The URL to connect to.
+- `configSchema`: The JSON schema for the server's configuration. You must specify a config that complies with this schema in order to connect to this server. Some servers will have no configuration required.
+
+## Connecting to SSE Servers
+
+To connect to SSE servers, you have to format your URL as such:
+
+```http
+GET `${url}/sse?config=${base64encode(config)}`
+```
+
+where `{url}` is the URL of the server and `config` is the JSON configuration for the server that complies with the `configSchema` encoded in base64 format.
+
+If you're using our [Typescript SDK](https://github.com/smithery-ai/typescript-sdk/), you can use the `createSmitheryUrl` function to produce the URL. 
+
+```typescript
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { createSmitheryUrl } from "@smithery/sdk/config"
+
+const url = createSmitheryUrl(
+  "https://your-smithery-mcp-server/sse",
+  {
+    ...config goes here
+  },
+)
+
+const transport = new SSEClientTransport(url)
+```
+
+### Time-outs
+Our SSE connections are hosted in a serverless environment, so they can at most retain an open connection for 1 minute. If you need a longer connection, you need to reconnect your client upon timeout.
