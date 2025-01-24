@@ -141,6 +141,13 @@
 			"when": 1737436033849,
 			"tag": "0020_parched_black_crow",
 			"breakpoints": true
+		},
+		{
+			"idx": 21,
+			"version": "7",
+			"when": 1737726858316,
+			"tag": "0021_naive_stranger",
+			"breakpoints": true
 		}
 	]
 }

@@ -3,7 +3,11 @@ import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
-import { ConnectionSchema, JSONSchema, RegistryServerSchema } from "@/lib/types/server"
+import {
+	ConnectionSchema,
+	type JSONSchema,
+	RegistryServerSchema,
+} from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
 

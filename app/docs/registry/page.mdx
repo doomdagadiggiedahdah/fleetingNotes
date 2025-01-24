@@ -14,6 +14,15 @@ The Smithery Registry provides a RESTful API for managing and obtaining deployed
 ## Concepts
 Smithery contains MCP servers. Every server is different and may have different ways of connecting with them. Server authors specify a configuration schema, which is a JSON schema that defines the structure of the configuration that is required to connect to the server.
 
+### Authentication
+Most endpoints require authentication via a bearer token. Currently, you have to request for an API key by contacting us. Include this token in your API requests:
+
+```typescript
+headers: {
+  'Authorization': 'Bearer your-api-token'
+}
+```
+
 ### Get Server Information
 
 ```http
