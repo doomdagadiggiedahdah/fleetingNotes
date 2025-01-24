@@ -1,6 +1,6 @@
 "use client"
 
-import { Download, SquareFunction } from "lucide-react"
+import { ArrowLeftRight, Download } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
@@ -31,15 +31,16 @@ export function PopularityCounter({ count = 0, type }: Props) {
 						{type === "install" ? (
 							<Download className="h-4 w-4" />
 						) : (
-							<SquareFunction className="h-4 w-4" />
+							<ArrowLeftRight className="h-4 w-4" />
 						)}
 						<span>{formatCount(count)}</span>
 					</div>
 				</TooltipTrigger>
 				<TooltipContent>
 					<p>
-						{count.toLocaleString()}{" "}
-						{type === "install" ? "installs" : "tool calls"}
+						{type === "install"
+							? `${count.toLocaleString()}  installs`
+							: `Used ${count.toLocaleString()} times`}
 					</p>
 				</TooltipContent>
 			</Tooltip>

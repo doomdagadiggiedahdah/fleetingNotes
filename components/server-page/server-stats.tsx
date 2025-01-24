@@ -33,19 +33,20 @@ export function ServerStats({ serverId, server }: ServerStatsProps) {
 				<h2 className="font-semibold">Server Statistics</h2>
 
 				<div className="space-y-2">
-					{server.toolCallCount && (
+					{server.toolCallCount ? (
 						<div className="flex justify-between">
-							<span className="text-muted-foreground">Tool Calls</span>
-							<span className="font-medium">{server.toolCallCount}</span>
+							<span className="text-muted-foreground">Usage</span>
+							<span className="font-medium">
+								{server.toolCallCount} calls made
+							</span>
 						</div>
-					)}
-					{server.installCount && (
+					) : null}
+					{server.installCount ? (
 						<div className="flex justify-between">
 							<span className="text-muted-foreground">Installs</span>
 							<span className="font-medium">{server.installCount}</span>
 						</div>
-					)}
-
+					) : null}
 					{server.license && (
 						<div className="flex justify-between">
 							<span className="text-muted-foreground">License</span>
