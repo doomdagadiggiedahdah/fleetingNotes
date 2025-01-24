@@ -54,12 +54,24 @@ export async function GET(
 			...RegistryServerSchema.shape.connections.parse(server.connections),
 			...(server.deploymentUrl
 				? [
-						{
+					await (async () => {
+						let configSchema: Record<string, any> = {}
+						try {
+							const data = await fetch(
+								`${server.deploymentUrl}/.well-known/mcp/smithery.json`,
+							)
+							const smitheryConfig = await data.json()
+							configSchema = smitheryConfig.configSchema ?? {}
+						} catch (e) {
+							console.error("[MCP] Failed to fetch schema:", e)
+						}
+						return {
 							type: "sse",
 							deploymentUrl: server.deploymentUrl,
-							configSchema: {},
-						},
-					]
+							configSchema,
+						}
+					})()
+				]
 				: []),
 		]
 
