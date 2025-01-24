@@ -1,6 +1,6 @@
 "use client"
 
-import { Download } from "lucide-react"
+import { Download, SquareFunction } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
@@ -8,8 +8,9 @@ import {
 	TooltipTrigger,
 } from "./ui/tooltip"
 
-interface InstallCountProps {
+interface Props {
 	count?: number
+	type: "install" | "tool_calls"
 }
 
 function formatCount(num: number): string {
@@ -21,18 +22,25 @@ function formatCount(num: number): string {
 	return num.toString()
 }
 
-export function InstallCount({ count = 0 }: InstallCountProps) {
+export function PopularityCounter({ count = 0, type }: Props) {
 	return (
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger>
 					<div className="flex items-center gap-1 text-sm text-muted-foreground">
-						<Download className="h-4 w-4" />
+						{type === "install" ? (
+							<Download className="h-4 w-4" />
+						) : (
+							<SquareFunction className="h-4 w-4" />
+						)}
 						<span>{formatCount(count)}</span>
 					</div>
 				</TooltipTrigger>
 				<TooltipContent>
-					<p>{count.toLocaleString()} installs</p>
+					<p>
+						{count.toLocaleString()}{" "}
+						{type === "install" ? "installs" : "tool calls"}
+					</p>
 				</TooltipContent>
 			</Tooltip>
 		</TooltipProvider>

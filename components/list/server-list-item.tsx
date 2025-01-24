@@ -3,8 +3,8 @@ import type { FetchedServers } from "@/lib/utils/fetch-registry"
 import { BadgeCheck, Sparkles } from "lucide-react"
 import Link from "next/link"
 
-import { InstallCount } from "../install-count"
 import { useRouter } from "next/navigation"
+import { PopularityCounter } from "../install-count"
 import { ServerFavicon } from "../server-page/server-favicon"
 import { ServerQualifiedName } from "../server-page/server-qualified-name"
 
@@ -53,10 +53,22 @@ export function ServerListItem({ server }: ToolCardProps) {
 								</div>
 							)}
 						</div>
-						{server.installCount > 0 && (
+						{server.toolCallCount > 0 ? (
 							<div className="flex-shrink-0 ml-4">
-								<InstallCount count={server.installCount} />
+								<PopularityCounter
+									count={server.toolCallCount}
+									type="tool_calls"
+								/>
 							</div>
+						) : (
+							server.installCount > 0 && (
+								<div className="flex-shrink-0 ml-4">
+									<PopularityCounter
+										count={server.installCount}
+										type="install"
+									/>
+								</div>
+							)
 						)}
 					</div>
 					<ServerQualifiedName server={server} />

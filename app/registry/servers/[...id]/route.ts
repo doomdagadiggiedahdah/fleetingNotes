@@ -3,7 +3,7 @@ import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
-import { RegistryServerSchema, ConnectionSchema } from "@/lib/types/server"
+import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
 
@@ -24,7 +24,7 @@ export async function GET(
 ) {
 	const params = await props.params
 	try {
-		const serverId = params.id.join("/")
+		const serverQualifiedName = params.id.join("/")
 		const server = await db
 			.select({
 				id: servers.id,
@@ -41,7 +41,7 @@ export async function GET(
 				)`,
 			})
 			.from(servers)
-			.where(eq(servers.qualifiedName, serverId))
+			.where(eq(servers.qualifiedName, serverQualifiedName))
 			.limit(1)
 			.then((rows) => rows[0])
 

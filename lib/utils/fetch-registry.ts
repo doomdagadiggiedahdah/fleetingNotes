@@ -5,12 +5,12 @@ import {
 	serverRepos,
 	servers,
 } from "@/db/schema"
-import { events } from "@/db/schema/events"
-import { eq, sql } from "drizzle-orm"
+import { desc, eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 import { z } from "zod"
 import { SERVER_NEW_DAYS } from "../utils"
 import {
+	toolCallsQuery,
 	installCountQuery,
 	isDeployedQuery,
 	sourceUrlQuery,
@@ -39,6 +39,7 @@ const selectFetchedServerSchema = selectServerSchema
 		// The compiled Markdown component passed to the page
 		descriptionLongMdx: z.any().optional(),
 		installCount: z.number(),
+		toolCallCount: z.number(),
 		deploymentUrl: z.string().nullable(),
 		sourceUrl: z.string().nullable(),
 		serverRepo: z.object({
@@ -84,9 +85,9 @@ export async function getServer(qualifiedName: string) {
 			)`,
 			isDeployed: isDeployedQuery,
 			installCount: installCountQuery,
+			toolCallCount: toolCallsQuery,
 		})
 		.from(servers)
-		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
 		// TODO: Won't work if user has 2 repos connected
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.where(eq(servers.qualifiedName, qualifiedName))
@@ -116,17 +117,18 @@ export async function getAllServers() {
 			owner: servers.owner,
 			sourceUrl: sourceUrlQuery,
 			installCount: installCountQuery,
+			toolCallCount: toolCallsQuery,
 			isDeployed: isDeployedQuery,
 		})
 		.from(servers)
-		.leftJoin(events, sql`${servers.qualifiedName} = payload->>'serverId'`)
 		// TODO: Won't work if user has 2 repos connected
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.groupBy(servers.id, serverRepos.id)
 		.orderBy(
-			sql`CASE WHEN ${isDeployedQuery} THEN 0 ELSE 1 END`,
-			sql`CASE WHEN jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb THEN 1 ELSE 0 END`,
-			sql`COUNT(DISTINCT CASE WHEN ${events.eventName} IN ('config') THEN ${events.eventId} END)::int DESC`,
+			// There's a valid installation strategy
+			sql`CASE WHEN ${isDeployedQuery} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
+			desc(toolCallsQuery),
+			desc(installCountQuery),
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
 		)
@@ -155,7 +157,7 @@ export async function getAllServers() {
 
 		if (aIsNew && !bIsNew) return -1
 		if (!aIsNew && bIsNew) return 1
-		if (aIsNew && bIsNew) return Math.random() - 0.5
+		if (aIsNew && bIsNew) return b.toolCallCount - a.toolCallCount
 		return 0
 	})
 
