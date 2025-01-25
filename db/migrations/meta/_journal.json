@@ -148,6 +148,13 @@
 			"when": 1737726858316,
 			"tag": "0021_naive_stranger",
 			"breakpoints": true
+		},
+		{
+			"idx": 22,
+			"version": "7",
+			"when": 1737809121913,
+			"tag": "0022_petite_quicksilver",
+			"breakpoints": true
 		}
 	]
 }

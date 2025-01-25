@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
 	public: {
 		Tables: {
+			api_keys: {
+				Row: {
+					api_key: string
+					owner: string | null
+					timestamp: string
+				}
+				Insert: {
+					api_key?: string
+					owner?: string | null
+					timestamp?: string
+				}
+				Update: {
+					api_key?: string
+					owner?: string | null
+					timestamp?: string
+				}
+				Relationships: []
+			}
 			candidate_urls: {
 				Row: {
 					crawl_url: string
@@ -46,7 +64,7 @@ export type Database = {
 					commit_message: string
 					created_at?: string
 					deployment_url?: string | null
-					id: string
+					id?: string
 					repo: string
 					server_id: string
 					status: Database["public"]["Enums"]["deployment_status"]
@@ -132,8 +150,41 @@ export type Database = {
 				}
 				Relationships: []
 			}
+			pull_requests: {
+				Row: {
+					created_at: string
+					id: string
+					pr_id: string
+					pr_task: Database["public"]["Enums"]["pr_task"]
+					server_repo: string
+				}
+				Insert: {
+					created_at?: string
+					id?: string
+					pr_id: string
+					pr_task: Database["public"]["Enums"]["pr_task"]
+					server_repo: string
+				}
+				Update: {
+					created_at?: string
+					id?: string
+					pr_id?: string
+					pr_task?: Database["public"]["Enums"]["pr_task"]
+					server_repo?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: "pull_requests_server_repo_server_repos_id_fk"
+						columns: ["server_repo"]
+						isOneToOne: false
+						referencedRelation: "server_repos"
+						referencedColumns: ["id"]
+					},
+				]
+			}
 			server_repos: {
 				Row: {
+					base_directory: string
 					created_at: string
 					id: string
 					repo_name: string
@@ -143,6 +194,7 @@ export type Database = {
 					updated_at: string
 				}
 				Insert: {
+					base_directory?: string
 					created_at?: string
 					id?: string
 					repo_name: string
@@ -152,6 +204,7 @@ export type Database = {
 					updated_at?: string
 				}
 				Update: {
+					base_directory?: string
 					created_at?: string
 					id?: string
 					repo_name?: string
@@ -175,63 +228,60 @@ export type Database = {
 					checked: boolean
 					connections: Json
 					crawl_url: string | null
-					created_at: string | null
-					deployment_url: string | null
+					created_at: string
 					description: string
-					displayName: string
+					description_long: string | null
+					display_name: string
+					embedding: string | null
 					homepage: string | null
 					id: string
 					license: string | null
 					owner: string | null
 					published: boolean
-					qualifiedName: string
+					qualified_name: string
 					remote: boolean
-					source_url: string
 					tags: Json
-					updated_at: string | null
-					vendor: string | null
+					updated_at: string
 					verified: boolean | null
 				}
 				Insert: {
 					checked?: boolean
 					connections: Json
 					crawl_url?: string | null
-					created_at?: string | null
-					deployment_url?: string | null
+					created_at?: string
 					description: string
-					displayName: string
+					description_long?: string | null
+					display_name: string
+					embedding?: string | null
 					homepage?: string | null
 					id?: string
 					license?: string | null
 					owner?: string | null
 					published?: boolean
-					qualifiedName: string
+					qualified_name: string
 					remote?: boolean
-					source_url: string
 					tags?: Json
-					updated_at?: string | null
-					vendor?: string | null
+					updated_at?: string
 					verified?: boolean | null
 				}
 				Update: {
 					checked?: boolean
 					connections?: Json
 					crawl_url?: string | null
-					created_at?: string | null
-					deployment_url?: string | null
+					created_at?: string
 					description?: string
-					displayName?: string
+					description_long?: string | null
+					display_name?: string
+					embedding?: string | null
 					homepage?: string | null
 					id?: string
 					license?: string | null
 					owner?: string | null
 					published?: boolean
-					qualifiedName?: string
+					qualified_name?: string
 					remote?: boolean
-					source_url?: string
 					tags?: Json
-					updated_at?: string | null
-					vendor?: string | null
+					updated_at?: string
 					verified?: boolean | null
 				}
 				Relationships: []
@@ -250,6 +300,8 @@ export type Database = {
 				| "SUCCESS"
 				| "FAILURE"
 				| "INTERNAL_ERROR"
+				| "CANCELLED"
+			pr_task: "config" | "readme"
 			provider: "github"
 		}
 		CompositeTypes: {

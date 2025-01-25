@@ -104,6 +104,13 @@ export const extractServer = (octokit: Octokit) =>
 			.filter((file): file is NonNullable<typeof file> => file !== null)
 
 		const llm = wrapOpenAI(new OpenAI())
+
+		const descriptionLong = readmeBase.ok
+			? readmeBase.value
+			: readmeRoot.ok
+				? readmeRoot.value
+				: null
+
 		const completion = await llm.beta.chat.completions.parse({
 			model: "gpt-4o-mini",
 			temperature: 0,
@@ -141,11 +148,7 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 			| "remote"
 		> = {
 			...parsed,
-			descriptionLong: readmeBase.ok
-				? readmeBase.value
-				: readmeRoot.ok
-					? readmeRoot.value
-					: null,
+			descriptionLong,
 			license: licenseResp.ok
 				? licenseResp.value.data.license?.spdx_id
 				: undefined,

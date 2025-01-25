@@ -7,4 +7,4 @@ import dotenv from "dotenv"
 dotenv.config({ path: ".env.development.local" })
 
 const client = postgres(process.env.POSTGRES_URL!, { prepare: false })
-export const db = drizzle({ client, schema })
+export const db = drizzle(client, { schema })

@@ -2,14 +2,16 @@ import { ConnectionSchema } from "@/lib/types/server"
 import { sql } from "drizzle-orm"
 import {
 	boolean,
+	index,
 	jsonb,
 	pgEnum,
 	pgPolicy,
 	pgTable,
 	text,
 	timestamp,
-	uuid,
 	unique,
+	uuid,
+	vector,
 } from "drizzle-orm/pg-core"
 import { authenticatedRole, authUsers } from "drizzle-orm/supabase"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
@@ -50,6 +52,9 @@ export const servers = pgTable(
 		connections: jsonb("connections").notNull(),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+
+		// Search embedding
+		embedding: vector("embedding", { dimensions: 1536 }),
 	},
 	(table) => [
 		pgPolicy("Users can read their servers", {
@@ -58,6 +63,7 @@ export const servers = pgTable(
 			to: authenticatedRole,
 			using: sql`(select auth.uid()) = owner`,
 		}),
+		index("embeddingIndex").using("hnsw", table.embedding.op("vector_ip_ops")),
 	],
 ).enableRLS()
 
