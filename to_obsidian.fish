@@ -4,13 +4,15 @@ set -g STT_LOCATION   "/home/mat/Documents/ProgramExperiments/fleetingNotes/main
 set -g ARCHIVE_FOLDER "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/note_folder/"
 set -g ZETTLE_FOLDER "/home/mat/Obsidian/ZettleKasten"
 set -g INBOX_NOTE "/home/mat/Obsidian/gtd - inbox.md"
+set -g DAILY_NOTES_FOLDER "/home/mat/Obsidian/Daily Notes"
 set -g LOG_FILE "$ZETTLE_FOLDER/dump_log.md"
-set -g LONG_NOTES_FOLDER "$ZETTLE_FOLDER/fleet_notes/voice_memo/"
+set -g LONG_NOTES_FOLDER "$ZETTLE_FOLDER/fleet_notes/voice_memo"
 
-# Static mappings
-set -g KEYWORDS
-set -a KEYWORDS "concept digest" "$ZETTLE_FOLDER/concept digest.md"
-set -a KEYWORDS "memory dump" "$ZETTLE_FOLDER/memory dump.md"
+# Define keyword mappings as keyword -> file pairs
+set -g NOTES_MAP
+set -a NOTES_MAP "concept digest" "$ZETTLE_FOLDER/concept digest.md"
+set -a NOTES_MAP "memory dump" "$ZETTLE_FOLDER/memory dump.md"
+set -a NOTES_MAP "daily reflection" "daily" 
 
 
 function log_operation
@@ -37,7 +39,7 @@ function append_to_file
         # Create a new markdown file for the full content
         set md_filename (string replace -r '\.txt$' '.md' (basename "$source_file"))
         mkdir -p "$LONG_NOTES_FOLDER"
-        echo "$content" > "$LONG_NOTES_FOLDER$md_filename"
+        echo "$content" > "$LONG_NOTES_FOLDER/$md_filename"
         
         # Create truncated preview
         set preview (string sub -l 200 "$content")
@@ -48,20 +50,49 @@ function append_to_file
         echo "- $source_file ----VM----<br>$content" >> "$target_file"
         log_operation $content $source_file $target_file
     end
+end
 
+function handle_daily_reflection
+    set content $argv[1]
+    set source_file $argv[2]
+    
+    # Extract date and time from filename
+    set datetime (string match -r '(\d{4}-\d{2}-\d{2})\s*(\d{1,2})-(\d{2})-\d{2}' $source_file)
+    set date $datetime[2]    # YYYY-MM-DD
+    set hour $datetime[3]    # HH
+    
+    # If it's between midnight and 5am, use previous day
+    if test $hour -lt 5
+        # Calculate previous day using date command
+        set date (date -d "$date - 1 day" '+%Y-%m-%d')
+    end
+    
+    set target_file "$DAILY_NOTES_FOLDER/$date.md"
+    
+    mkdir -p (dirname $target_file)
+    set extracted (string replace -ri "daily reflection\s*" "" $content)
+    append_to_file $extracted $source_file $target_file
+    return 0
 end
 
 function handle_keywords
     set content $argv[1]
     set source_file $argv[2]
     
-    for i in (seq 1 2 (count $KEYWORDS))
-        set keyword $KEYWORDS[$i]
-        set target_file $KEYWORDS[(math $i + 1)]
+    # Go through each keyword pair
+    for i in (seq 1 2 (count $NOTES_MAP))
+        set keyword $NOTES_MAP[$i]
+        set target $NOTES_MAP[(math $i + 1)]
         
-	if string match -i -q "*$keyword*" $content
+        if string match -i -q "*$keyword*" $content
             set extracted (string replace -ri "$keyword\s*" "" $content)
-            append_to_file $extracted $source_file $target_file 
+            
+            # Special handling for daily reflection
+            if test "$target" = "daily"
+                handle_daily_reflection $extracted $source_file
+            else
+                append_to_file $extracted $source_file $target
+            end
             return 0
         end
     end

@@ -34,6 +34,10 @@ function long_stuff
 	echo $bleh >> "$NOTE_DIR/long-test.txt"
 end
 
-long_stuff
-prod
+function daily_reflection
+	echo "daily reflection test day of; 01-24" >> "$NOTE_DIR/2025-01-24 23-06-03 4.m4a.txt"
+	echo "daily reflection test early monring, prev day; 01-23" >> "$NOTE_DIR/2025-01-24 03-06-03 4.m4a.txt"
+end
+
+daily_reflection
 ./to_obsidian.fish
