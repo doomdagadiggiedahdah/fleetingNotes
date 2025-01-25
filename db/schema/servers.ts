@@ -43,8 +43,6 @@ export const servers = pgTable(
 		// True if this server has any connection published to npm/pypi
 		// @deprecated
 		published: boolean("published").notNull().default(false),
-		// @deprecated
-		tags: jsonb("tags").notNull().default([]),
 
 		// User who owns this server. Some servers are "unclaimed".
 		owner: uuid("owner").references(() => authUsers.id),

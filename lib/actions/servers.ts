@@ -131,7 +131,6 @@ export async function createServer(rawData: CreateServerInputs) {
 				.insert(servers)
 				.values({
 					owner: user.id,
-					tags: [],
 					connections: [],
 					homepage: `https://github.com/${insertData.repoOwner}/${insertData.repoName}`,
 					verified: false,

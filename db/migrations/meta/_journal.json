@@ -155,6 +155,13 @@
 			"when": 1737809121913,
 			"tag": "0022_petite_quicksilver",
 			"breakpoints": true
+		},
+		{
+			"idx": 23,
+			"version": "7",
+			"when": 1737823323146,
+			"tag": "0023_sturdy_rhodey",
+			"breakpoints": true
 		}
 	]
 }
