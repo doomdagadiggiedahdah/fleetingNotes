@@ -13,9 +13,6 @@ export type GithubAccount =
 // TODO: Support enterprise?
 
 export interface GithubUser {
-	login: string
-	name: string | null
-	avatarUrl: string
 	accounts: GithubAccount[]
 }
 

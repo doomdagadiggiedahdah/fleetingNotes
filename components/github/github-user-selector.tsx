@@ -55,7 +55,7 @@ export function GithubUserSelector({
 					className="flex items-center gap-2 rounded-md bg-neutral-800 px-3 py-1.5 text-sm text-white"
 				>
 					<img
-						src={selectedAccount.avatar_url || user.avatarUrl}
+						src={selectedAccount.avatar_url}
 						alt={selectedAccount.login}
 						className="h-6 w-6 rounded-full"
 					/>

@@ -28,13 +28,10 @@ export async function getGithubUser(): Promise<GithubUser | null> {
 		const installResp = await octokit.request("GET /user/installations")
 
 		return {
-			login: user.user_metadata.user_name,
-			name: user.user_metadata.full_name,
-			avatarUrl: user.user_metadata.avatar_url,
-			// TODO: Somehow Github returns Org but type doesn't allow it
 			// TODO: Possible for no accounts?
 			accounts: installResp.data.installations
 				.map((install) => install.account)
+				// TODO: Somehow Github returns Org but type doesn't allow it
 				.filter((acc) => acc !== null) as unknown as GithubAccount[],
 		}
 	} catch (error) {
@@ -51,17 +48,17 @@ export async function getRecentGithubRepositories(
 		const { data: repos } =
 			account.type === "Organization"
 				? await octokit.repos.listForOrg({
-						org: account.login,
-						sort: "updated",
-						direction: "desc",
-						per_page: 5,
-					})
+					org: account.login,
+					sort: "updated",
+					direction: "desc",
+					per_page: 5,
+				})
 				: await octokit.repos.listForUser({
-						username: account.login,
-						sort: "updated",
-						direction: "desc",
-						per_page: 5,
-					})
+					username: account.login,
+					sort: "updated",
+					direction: "desc",
+					per_page: 5,
+				})
 
 		return repos.map((repo) => ({
 			name: repo.name,
