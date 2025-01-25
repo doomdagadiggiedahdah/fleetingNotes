@@ -8,6 +8,8 @@ import { posthog } from "@/lib/posthog_server"
 const RequestSchema = z.object({
 	eventName: z.literal("tool_call"),
 	payload: z.object({
+		// TODO: Make it required in the future
+		connectionType: z.enum(["stdio", "sse"]).optional(),
 		serverId: z.string(),
 		sessionId: z.string(),
 		toolParams: z.any(),
