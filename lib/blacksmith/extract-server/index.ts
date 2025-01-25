@@ -2,16 +2,13 @@ import type { NewServer } from "@/db/schema"
 import { getGithubFile, getREADME, joinGithubPath } from "@/lib/utils/github"
 import { err, ok, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
-import { initLogger, wrapOpenAI, wrapTraced } from "braintrust"
+import { wrapOpenAI, wrapTraced } from "braintrust"
 
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { mcpInfo } from "../crawl/extract-server"
 import { ExtractServerSchema } from "./types"
-
-const logger = initLogger({
-	projectName: "Smithery",
-})
+import "@/lib/utils/braintrust"
 
 interface ExtractServerArgs {
 	repoOwner: string

@@ -1,14 +1,11 @@
 import { JSONDiff } from "autoevals"
-import { Eval, initDataset, initLogger } from "braintrust"
+import { Eval, initDataset } from "braintrust"
 import { extractServer } from "./extract-server"
 
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { omit, zip } from "lodash"
 import type { RegistryServerNew } from "../registry-types"
-
-const logger = initLogger({
-	projectName: "Smithery",
-})
+import "@/lib/utils/braintrust"
 
 /**
  * Measures the JSONDiff between generated connections objects

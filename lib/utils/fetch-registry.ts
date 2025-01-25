@@ -101,7 +101,7 @@ export type FetchedServer = NonNullable<Awaited<ReturnType<typeof getServer>>>
 /**
  * @returns A list of all servers for the landing page
  */
-export async function getAllServers() {
+export async function getAllServers(query?: string) {
 	const data = await db
 		.select({
 			id: servers.id,

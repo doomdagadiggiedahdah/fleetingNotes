@@ -12,7 +12,7 @@ export default async function Home(props: {
 	let error = ""
 
 	try {
-		serverData = await getAllServers()
+		serverData = await getAllServers(searchParams.q)
 	} catch (e) {
 		console.error(e)
 		error = "An unexpected error occurred"

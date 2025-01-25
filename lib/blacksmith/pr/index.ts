@@ -7,13 +7,10 @@ import { commitFile, createBranch, joinGithubPath } from "@/lib/utils/github"
 import { err, ok, toResult } from "@/lib/utils/result"
 import { retry } from "@lifeomic/attempt"
 import { Octokit } from "@octokit/rest"
-import { initLogger } from "braintrust"
 import { checkPullRequests } from "./check-prs"
 import { generatePullRequest } from "./gen-all"
-// TODO: May want to move elsewhere
-export const logger = initLogger({
-	projectName: "Smithery",
-})
+
+import "@/lib/utils/braintrust"
 
 /**
  * Apply the generated PR.
