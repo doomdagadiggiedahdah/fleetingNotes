@@ -3,6 +3,7 @@ import { AuthProvider } from "@/context/auth-context"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
+import NextTopLoader from "nextjs-toploader"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,6 +23,7 @@ export default function RootLayout({
 			<CSPostHogProvider>
 				<AuthProvider>
 					<body className={inter.className}>
+						<NextTopLoader color="#D3500E" showSpinner={false} />
 						{children}
 						<Toaster />
 						<script
