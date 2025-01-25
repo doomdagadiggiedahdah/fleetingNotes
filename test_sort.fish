@@ -1,29 +1,33 @@
 #!/bin/fish
-function test_concept
-	echo "concept digest c test one" >> ./audioNoteTranscribe/c-one.txt
-	echo "Concept digest c test two" >> ./audioNoteTranscribe/c-two.txt
-	echo "concept Digest c test three" >> ./audioNoteTranscribe/c-three.txt
-	echo "CONCEPT DIGEST c test four" >> ./audioNoteTranscribe/c-four.txt
 
-	## inbox
-	echo "normal test one" >> ./audioNoteTranscribe/i-one.txt
-	echo "normal test two" >> ./audioNoteTranscribe/i-two.txt
-	echo "normal test three" >> ./audioNoteTranscribe/i-three.txt
-	echo "normal test four" >> ./audioNoteTranscribe/i-four.txt
+set NOTE_DIR "./audioNoteTranscribe"
 
-	## memory_dump
-	echo "memory dump m test one" >> ./audioNoteTranscribe/m-one.txt
-	echo "Memory dump m test two" >> ./audioNoteTranscribe/m-two.txt
-	echo "memory Dump m test three" >> ./audioNoteTranscribe/m-three.txt
-	echo "MEMORY DUMP m test four" >> ./audioNoteTranscribe/m-four.txt
+function inbox_test
+	echo "normal test one" >> "$NOTE_DIR"/i-one.txt
+	echo "normal test two" >> "$NOTE_DIR/i-two.txt"
+	echo "normal test three" >> "$NOTE_DIR/i-three.txt"
+	echo "normal test four" >> "$NOTE_DIR/i-four.txt"
+end
+
+function concept_test
+	echo "concept digest c test one" >> "$NOTE_DIR/c-one.txt"
+	echo "Concept digest c test two" >> "$NOTE_DIR/c-two.txt"
+	echo "concept Digest c test three" >> "$NOTE_DIR/c-three.txt"
+	echo "CONCEPT DIGEST c test four" >> "$NOTE_DIR/c-four.txt"
+end
+
+function mem_test
+	echo "memory dump m test one" >> "$NOTE_DIR/m-one.txt"
+	echo "Memory dump m test two" >> "$NOTE_DIR/m-two.txt"
+	echo "memory Dump m test three" >> "$NOTE_DIR/m-three.txt"
+	echo "MEMORY DUMP m test four" >> "$NOTE_DIR/m-four.txt"
 end
 
 function prod
-	cp xxx.txt ./audioNoteTranscribe/xxx-concept.txt && echo "concept digest" >> ./audioNoteTranscribe/xxx-concept.txt
-	cp xxx.txt ./audioNoteTranscribe/xxx-memory.txt  && echo "memory dump"    >> ./audioNoteTranscribe/xxx-memory.txt
-	cp xxx.txt ./audioNoteTranscribe/xxx-std.txt 
+	cp xxx.txt "$NOTE_DIR/xxx-concept.txt" && echo "concept digest" >> "$NOTE_DIR/xxx-concept.txt"
+	cp xxx.txt "$NOTE_DIR/xxx-memory.txt"  && echo "memory dump"    >> "$NOTE_DIR/xxx-memory.txt"
+	cp xxx.txt "$NOTE_DIR/xxx-std.txt"
 end
 
-#test_concept
-prod
-./obs_con_mem.fish
+inbox_test
+./to_obsidian.fish

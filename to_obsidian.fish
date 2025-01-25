@@ -5,6 +5,8 @@ set -g ARCHIVE_FOLDER "/home/mat/Documents/ProgramExperiments/fleetingNotes/main
 set -g ZETTLE_FOLDER "/home/mat/Obsidian/ZettleKasten/"
 set -g INBOX_NOTE "/home/mat/Obsidian/gtd - inbox.md"
 set -g LOG_FILE "$ZETTLE_FOLDER/dump_log.md"
+set -g LONG_NOTES_FOLDER "$ZETTLE_FOLDER/fleet_notes/voice_memo/"
+
 
 # Static mappings
 set -g KEYWORDS
@@ -21,14 +23,37 @@ function log_operation
         $timestamp $source $target (string sub -l 50 $content) >> $LOG_FILE
 end
 
+function handle_long_content
+    set content $argv[1]
+    set source_file $argv[2]
+    set target_file $argv[3]
+    
+    set char_count (string length "$content")
+    
+    if test $char_count -gt 200
+        # Create a new markdown file for the full content
+        set md_filename (string replace -r '\.txt$' '.md' (basename "$source_file"))
+        mkdir -p "$LONG_NOTES_FOLDER"
+        echo "$content" > "$LONG_NOTES_FOLDER$md_filename"
+        
+        # Create truncated preview
+        set preview (string sub -l 200 "$content")
+        echo "- $source_file ----VM----<br>[[$md_filename]] $preview..." >> "$target_file"
+    else
+        echo "- $source_file ----VM----<br>$content" >> "$target_file"
+    end
+    
+    log_operation $source_file $target_file $content
+end
+
 function append_to_file
     set content $argv[1]
-    set target_file $argv[2]
-    set source_file $argv[3]
+    set source_file $argv[2]
+    set target_file $argv[3]
     
     echo "" >> "$target_file"
     echo "- $source_file ----VM----<br>$content" >> "$target_file"
-    log_operation $source_file $target_file $content
+    log_operation $source_file $content $target_file
 end
 
 function handle_keywords
@@ -48,16 +73,6 @@ function handle_keywords
     return 1
 end
 
-function send_to_inbox
-    set content $argv[1]
-    set filename $argv[2]
-    
-    echo "" >> "$INBOX_NOTE"
-    set formatted_text "- $filename ----VM----<br>$content"
-    log_operation $filename $INBOX_NOTE $content
-    echo "$formatted_text" >> "$INBOX_NOTE"
-end
-
 function main
     mkdir -p "$ARCHIVE_FOLDER"
     cd $STT_LOCATION
@@ -67,7 +82,7 @@ function main
         set content (cat "$source_file")
         
         if not handle_keywords "$content" "$source_file"
-            send_to_inbox "$content" "$source_file"
+            append_to_file "$content" "$source_file" "$INBOX_NOTE" 
         end
         
         mv "$source_file" "$ARCHIVE_FOLDER"
