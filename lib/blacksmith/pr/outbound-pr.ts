@@ -2,8 +2,9 @@ import { db } from "@/db"
 import { pullRequests, serverRepos, servers } from "@/db/schema"
 import dotenv from "dotenv"
 import { eq, not, and, notInArray, sql } from "drizzle-orm"
-import { createServerRepoPullRequest, logger } from "."
+import { createServerRepoPullRequest } from "."
 import { isDeployedQuery } from "@/db/schema/queries"
+import { logger } from "@/lib/utils/braintrust"
 /**
  * Performs outbound PR
  */

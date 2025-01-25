@@ -1,19 +1,16 @@
-"use client"
-
-import ErrorMessage from "@/components/error-message"
 import ServerList from "@/components/list/server-list"
-import type { FetchedServers } from "@/lib/utils/fetch-registry"
+import { Suspense } from "react"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
+import ServerSearch from "../server-search"
+import { Skeleton } from "../ui/skeleton"
 
 export const HomeSearch = ({
-	servers,
-	error,
-	initialSearch = "",
+	serverCount,
+	query,
 }: {
-	servers: FetchedServers
-	error?: string
-	initialSearch?: string
+	serverCount: number
+	query?: string
 }) => {
 	return (
 		<main className="min-h-screen bg-background">
@@ -21,7 +18,7 @@ export const HomeSearch = ({
 			<Container className="mt-4">
 				<div className="mb-8">
 					<p className="text-lg text-muted-foreground text-center">
-						Extend your language model with {servers.length} capabilities via{" "}
+						Extend your language model with {serverCount} capabilities via{" "}
 						<a
 							href="https://modelcontextprotocol.io/"
 							target="_blank"
@@ -33,11 +30,21 @@ export const HomeSearch = ({
 						servers.
 					</p>
 				</div>
-				{error ? (
-					<ErrorMessage message={error} />
-				) : (
-					<ServerList servers={servers} initialSearch={initialSearch} />
-				)}
+
+				<ServerSearch />
+				<Suspense
+					key={query}
+					fallback={
+						<div className="grid grid-cols-3 gap-4">
+							{Array.from({ length: 9 }).map((_, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+								<Skeleton key={i} className="h-[200px] w-full rounded-lg" />
+							))}
+						</div>
+					}
+				>
+					<ServerList query={query} />
+				</Suspense>
 			</Container>
 		</main>
 	)

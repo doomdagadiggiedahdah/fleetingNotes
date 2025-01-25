@@ -9,8 +9,9 @@ import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
-import ServerSearch from "./server-search"
+
 import { ServerTabs } from "./tabs"
+import ServerSearch from "../server-search"
 
 interface Props {
 	server: FetchedServer
@@ -24,7 +25,9 @@ export function ServerPage({ server }: Props) {
 			<Container className="mt-4">
 				{/* Search */}
 				<div className="mb-6">
-					<ServerSearch />
+					<Suspense>
+						<ServerSearch />
+					</Suspense>
 				</div>
 
 				{/* Server Header */}

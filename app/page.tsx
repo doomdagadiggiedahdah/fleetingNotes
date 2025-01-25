@@ -1,6 +1,7 @@
 import { HomeSearch } from "@/components/list/home-search"
-import type { FetchedServers } from "@/lib/utils/fetch-registry"
-import { getAllServers } from "@/lib/utils/fetch-registry"
+import { db } from "@/db"
+import { servers } from "@/db/schema"
+import { sql } from "drizzle-orm"
 
 export const revalidate = 3600
 
@@ -8,21 +9,17 @@ export default async function Home(props: {
 	searchParams: Promise<{ q?: string }>
 }) {
 	const searchParams = await props.searchParams
-	let serverData: FetchedServers = []
-	let error = ""
 
-	try {
-		serverData = await getAllServers(searchParams.q)
-	} catch (e) {
-		console.error(e)
-		error = "An unexpected error occurred"
-	}
+	const [serverCountData] = await db
+		.select({
+			count: sql<number>`count(*)`,
+		})
+		.from(servers)
 
 	return (
 		<HomeSearch
-			servers={serverData}
-			error={error}
-			initialSearch={searchParams.q || ""}
+			serverCount={serverCountData.count ?? 0}
+			query={searchParams.q}
 		/>
 	)
 }

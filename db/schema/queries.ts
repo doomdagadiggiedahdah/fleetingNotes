@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm"
 import { deployments } from "./deployments"
-import { serverRepos, servers } from "./servers"
 import { events } from "./events"
+import { serverRepos, servers } from "./servers"
 
 export const isDeployedQuery = sql<boolean>`EXISTS (
 		SELECT 1
@@ -28,3 +28,15 @@ export const useCountQuery = sql<number>`(
 			${events.payload}->>'serverId' = ${servers.qualifiedName}
 		)
 )::int`
+
+export const isNewQuery = sql<boolean>`
+CASE
+	WHEN ${servers.createdAt} >= (
+		SELECT ${servers.createdAt}
+		FROM ${servers}
+		WHERE ${servers.createdAt} > NOW() - INTERVAL '3 days'
+		ORDER BY ${servers.createdAt}
+		DESC OFFSET 3
+		LIMIT 1
+	)
+THEN TRUE ELSE FALSE END`

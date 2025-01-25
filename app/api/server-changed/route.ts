@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
 import { pick } from "lodash"
+import { dump as yamlDump } from "js-yaml"
 
 const llm = wrapOpenAI(new OpenAI())
 
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
 	const rowData = pick(newServer, promptFields)
 
 	const embedding = await llm.embeddings.create({
-		input: JSON.stringify(rowData),
+		input: yamlDump(rowData),
 		model: "text-embedding-3-small",
 	})
 

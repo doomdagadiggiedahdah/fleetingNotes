@@ -4,7 +4,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type { FetchedServer, FetchedServers } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServers } from "@/lib/utils/search-registry"
 
 interface Props {
 	server: FetchedServer | FetchedServers[number]

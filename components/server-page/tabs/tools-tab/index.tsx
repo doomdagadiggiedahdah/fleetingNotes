@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/fetch-registry"
-import Search from "@/components/search"
+import ServerSearch from "@/components/server-search"
 import {
 	type Tool,
 	type CompatibilityCallToolResult,
@@ -113,11 +113,7 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 	return (
 		<div className="space-y-6">
 			<div className="w-1/2">
-				<Search
-					onSearch={handleSearch}
-					initialValue={searchQuery}
-					placeholder="Search for tools..."
-				/>
+				<ServerSearch />
 			</div>
 
 			<div className="flex gap-6">

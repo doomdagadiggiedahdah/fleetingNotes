@@ -48,17 +48,17 @@ export async function getRecentGithubRepositories(
 		const { data: repos } =
 			account.type === "Organization"
 				? await octokit.repos.listForOrg({
-					org: account.login,
-					sort: "updated",
-					direction: "desc",
-					per_page: 5,
-				})
+						org: account.login,
+						sort: "updated",
+						direction: "desc",
+						per_page: 5,
+					})
 				: await octokit.repos.listForUser({
-					username: account.login,
-					sort: "updated",
-					direction: "desc",
-					per_page: 5,
-				})
+						username: account.login,
+						sort: "updated",
+						direction: "desc",
+						per_page: 5,
+					})
 
 		return repos.map((repo) => ({
 			name: repo.name,
