@@ -1,5 +1,5 @@
 "use client"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 import { GitHubLogoIcon } from "@radix-ui/react-icons"
 import { Button, type ButtonProps } from "../ui/button"

@@ -1,6 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { createDeployment } from "@/lib/actions/deployment"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import type { ServerRepo } from "@/db/schema/servers"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/lib/hooks/use-toast"
 import { updateRepoConnection } from "@/lib/actions/servers"
 import { updateRepoConnectionSchema } from "@/lib/actions/servers.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
