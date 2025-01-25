@@ -1,6 +1,6 @@
-import type { Octokit } from "@octokit/rest"
 import type { RequestError } from "@octokit/request-error"
-import { err, ok } from "./result"
+import type { Octokit } from "@octokit/rest"
+import { err, ok, toResult } from "./result"
 
 /**
  * Extracts the base directory path from a GitHub URL.
@@ -51,6 +51,7 @@ export function joinGithubPath(base: string, ...paths: string[]): string {
  * @param repo - The name of the repository.
  * @returns The content of the README file.
  */
+// @deprecated
 export async function getREADME(
 	octokit: Octokit,
 	owner: string,
@@ -61,6 +62,41 @@ export async function getREADME(
 		repo,
 	})
 	return Buffer.from(data.content, "base64").toString("utf-8")
+}
+
+/**
+ * Attempts to get the README file from the base directory, falling back to the repository root README if not found.
+ */
+export async function getREADMEResult(
+	octokit: Octokit,
+	repoOwner: string,
+	repoName: string,
+	baseDirectory?: string,
+) {
+	const baseDirReadme = baseDirectory
+		? await getGithubFileResult(
+				octokit,
+				repoOwner,
+				repoName,
+				joinGithubPath(baseDirectory, "README.md"),
+			)
+		: err()
+
+	if (baseDirReadme.ok) return baseDirReadme
+	const rootReadmeResult = await toResult(
+		octokit.request("GET /repos/{owner}/{repo}/readme", {
+			owner: repoOwner,
+			repo: repoName,
+		}),
+	)
+	if (rootReadmeResult.ok)
+		return ok(
+			Buffer.from(rootReadmeResult.value.data.content, "base64").toString(
+				"utf-8",
+			),
+		)
+
+	return rootReadmeResult
 }
 
 /**

@@ -1,14 +1,19 @@
 import type { NewServer } from "@/db/schema"
-import { getGithubFile, getREADME, joinGithubPath } from "@/lib/utils/github"
+import {
+	getGithubFile,
+	getREADMEResult,
+	joinGithubPath,
+} from "@/lib/utils/github"
 import { err, ok, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
 import { wrapOpenAI, wrapTraced } from "braintrust"
 
+import "@/lib/utils/braintrust"
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { mcpInfo } from "../crawl/extract-server"
+import { cleanReadme } from "./readme"
 import { ExtractServerSchema } from "./types"
-import "@/lib/utils/braintrust"
 
 interface ExtractServerArgs {
 	repoOwner: string
@@ -26,59 +31,45 @@ export const extractServer = (octokit: Octokit) =>
 		baseDirectory,
 	}: ExtractServerArgs) {
 		// Extract essential files
-		const [
-			readmeRoot,
-			readmeBase,
-			dockerfile,
-			packageJson,
-			pyProjectToml,
-			licenseResp,
-		] = await Promise.all([
-			toResult(getREADME(octokit, repoOwner, repoName)),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "README.md"),
+		const [readme, dockerfile, packageJson, pyProjectToml, licenseResp] =
+			await Promise.all([
+				getREADMEResult(octokit, repoOwner, repoName, baseDirectory),
+				toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(baseDirectory, "Dockerfile"),
+					),
 				),
-			),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "Dockerfile"),
+				toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(baseDirectory, "package.json"),
+					),
 				),
-			),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "package.json"),
+				toResult(
+					getGithubFile(
+						octokit,
+						repoOwner,
+						repoName,
+						joinGithubPath(baseDirectory, "pyproject.toml"),
+					),
 				),
-			),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "pyproject.toml"),
+				toResult(
+					octokit.request("GET /repos/{owner}/{repo}/license", {
+						owner: repoOwner,
+						repo: repoName,
+					}),
 				),
-			),
-			toResult(
-				octokit.request("GET /repos/{owner}/{repo}/license", {
-					owner: repoOwner,
-					repo: repoName,
-				}),
-			),
-		])
+			])
 
 		const files = [
 			{
 				name: "README.md",
-				content: readmeBase.ok ? readmeBase : readmeRoot,
+				content: readme,
 			},
 			{
 				name: "Dockerfile",
@@ -102,11 +93,9 @@ export const extractServer = (octokit: Octokit) =>
 
 		const llm = wrapOpenAI(new OpenAI())
 
-		const descriptionLong = readmeBase.ok
-			? readmeBase.value
-			: readmeRoot.ok
-				? readmeRoot.value
-				: null
+		const cleanedReadmePromise = readme.ok
+			? cleanReadme({ readme: readme.value })
+			: readme
 
 		const completion = await llm.beta.chat.completions.parse({
 			model: "gpt-4o-mini",
@@ -135,6 +124,8 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 
 		if (!parsed) return err("Failed to extract server.")
 
+		const cleanedReadmeResult = await cleanedReadmePromise
+
 		const output: Pick<
 			NewServer,
 			| "license"
@@ -145,7 +136,9 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 			| "remote"
 		> = {
 			...parsed,
-			descriptionLong,
+			descriptionLong: cleanedReadmeResult.ok
+				? cleanedReadmeResult.value
+				: undefined,
 			license: licenseResp.ok
 				? licenseResp.value.data.license?.spdx_id
 				: undefined,
