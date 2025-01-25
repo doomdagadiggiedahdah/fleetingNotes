@@ -14,13 +14,14 @@ cd $LOCATION
 for file in *.txt
     # Skip if no txt files exist
     test -f "$file"; or continue
+    echo "" >> "$OBS_LOCATION"
     
-    # Read the content of the file
     set content (cat "$file")
     set char_count (string length "$content")
     
     # Format the initial text with filename
     set formatted_text "- $file ----VM----<br>$content"
+
 
     if test $char_count -gt 200
         set md_filename (string replace -r '\.m4a.txt$' '.md' "$file")
@@ -28,12 +29,10 @@ for file in *.txt
         set preview (string sub -l 200 "$content")
         
         # Add preview and link to inbox
-        echo "" >> "$OBS_LOCATION"  # Add blank line for readability
         echo "- [[$md_filename]] ----VM---- $preview..." >> "$OBS_LOCATION"
     else
         # Append directly to inbox
-        echo "" >> "$OBS_LOCATION"  # Add blank line for readability
-        echo "$formatted_text" >> "$OBS_LOCATION"
+        echo "- $formatted_text" >> "$OBS_LOCATION"
     end
     mv "$file" "$NOTES_FOLDER"
 end
