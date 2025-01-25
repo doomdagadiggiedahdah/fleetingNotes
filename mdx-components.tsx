@@ -74,15 +74,15 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 			)
 		},
 		p: ({ children }) => (
-			<p className="text-muted-foreground mb-4">{children}</p>
+			<p className="text-muted-foreground mb-4 inline-block">{children}</p>
 		),
 		ul: ({ children }) => (
-			<ul className="space-y-2 text-muted-foreground mb-4 list-disc pl-6">
+			<ul className="space-y-2 text-muted-foreground mb-4 list-disc [&>li>ul>li]:pl-4 [&>li>ol>li]:pl-4">
 				{children}
 			</ul>
 		),
 		ol: ({ children }) => (
-			<ol className="space-y-2 text-muted-foreground mb-4 list-decimal pl-6">
+			<ol className="space-y-2 text-muted-foreground mb-4 list-decimal [&>li>ul>li]:pl-4 [&>li>ol>li]:pl-4">
 				{children}
 			</ol>
 		),
