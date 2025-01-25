@@ -29,5 +29,11 @@ function prod
 	cp xxx.txt "$NOTE_DIR/xxx-std.txt"
 end
 
-inbox_test
+function long_stuff
+	set bleh "string length This is a really long test message that should be over 200 characters. Let me keep typing to make sure we get there. We need some more text to make this properly long. I'm going to add some details about a fictional event - imagine a sunny day where clouds slowly drift across the azure sky, casting gentle shadows on the landscape below. Birds soar overhead, their wings catching the light."
+	echo $bleh >> "$NOTE_DIR/long-test.txt"
+end
+
+long_stuff
+prod
 ./to_obsidian.fish
