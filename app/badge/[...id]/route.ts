@@ -3,7 +3,7 @@ import { servers } from "@/db/schema"
 import { events } from "@/db/schema/events"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
-import { and, eq, sql } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 
 // Always dynamically render page
 export const revalidate = 0
@@ -40,43 +40,23 @@ export async function GET(
 		},
 	})
 
-	// TODO: Might want to cache this
-	const [[installs], [toolCalls]] = await Promise.all([
-		db
-			.select({
-				count: sql<number>`count(*)`,
-			})
-			.from(events)
-			.where(
-				and(
-					eq(events.eventName, "config"),
-					eq(sql`payload->>'serverId'`, qualifiedName),
-				),
-			),
-		db
-			.select({
-				count: sql<number>`count(*)`,
-			})
-			.from(events)
-			.innerJoin(
-				servers,
-				eq(sql`payload->>'serverId'`, sql`${servers.id}::text`),
+	const [row]: { count: number }[] = await db.execute(sql`
+		SELECT COUNT(*) FROM ${events}
+		WHERE
+			(
+				${events.eventName} = 'tool_call' AND
+				${events.payload}->>'serverId' = (SELECT ${servers.id} FROM ${servers} WHERE ${servers.qualifiedName} = ${qualifiedName})::text
 			)
-			.where(
-				and(
-					eq(events.eventName, "install_count"),
-					eq(servers.qualifiedName, qualifiedName),
-				),
-			),
-	])
+			OR
+			(
+				${events.eventName} = 'config' AND
+				${events.payload}->>'serverId' = ${qualifiedName}
+			)
+	`)
 
-	const installCount = installs?.count ?? 0
-	const toolCallCount = toolCalls?.count ?? 0
+	const count = row.count
 
-	const badgeUrl =
-		metric === "calls" || (metric !== "installs" && toolCallCount > 0)
-			? `https://img.shields.io/badge/smithery.ai-${toolCallCount}%20calls-%23ea580c`
-			: `https://img.shields.io/badge/smithery.ai-${installCount}%20installs-%23ea580c`
+	const badgeUrl = `https://img.shields.io/badge/smithery.ai-▲%20${count}-%23ea580c`
 
 	const response = await fetch(badgeUrl, { cache: "force-cache" })
 	if (!response.ok) {

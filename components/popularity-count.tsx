@@ -1,6 +1,4 @@
-"use client"
-
-import { ArrowLeftRight, Download } from "lucide-react"
+import { Triangle } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
@@ -28,20 +26,12 @@ export function PopularityCounter({ count = 0, type }: Props) {
 			<Tooltip>
 				<TooltipTrigger>
 					<div className="flex items-center gap-1 text-sm text-muted-foreground">
-						{type === "install" ? (
-							<Download className="h-4 w-4" />
-						) : (
-							<ArrowLeftRight className="h-4 w-4" />
-						)}
+						<Triangle className="h-3 w-3" />
 						<span>{formatCount(count)}</span>
 					</div>
 				</TooltipTrigger>
 				<TooltipContent>
-					<p>
-						{type === "install"
-							? `${count.toLocaleString()}  installs`
-							: `Used ${count.toLocaleString()} times`}
-					</p>
+					<p>Used {formatCount(count)} times</p>
 				</TooltipContent>
 			</Tooltip>
 		</TooltipProvider>

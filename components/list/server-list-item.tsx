@@ -4,7 +4,7 @@ import { BadgeCheck, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 import { useRouter } from "next/navigation"
-import { PopularityCounter } from "../install-count"
+import { PopularityCounter } from "../popularity-count"
 import { ServerFavicon } from "../server-page/server-favicon"
 import { ServerQualifiedName } from "../server-page/server-qualified-name"
 
@@ -53,22 +53,10 @@ export function ServerListItem({ server }: ToolCardProps) {
 								</div>
 							)}
 						</div>
-						{server.toolCallCount > 0 ? (
+						{server.useCount > 0 && (
 							<div className="flex-shrink-0 ml-4">
-								<PopularityCounter
-									count={server.toolCallCount}
-									type="tool_calls"
-								/>
+								<PopularityCounter count={server.useCount} type="install" />
 							</div>
-						) : (
-							server.installCount > 0 && (
-								<div className="flex-shrink-0 ml-4">
-									<PopularityCounter
-										count={server.installCount}
-										type="install"
-									/>
-								</div>
-							)
 						)}
 					</div>
 					<ServerQualifiedName server={server} />

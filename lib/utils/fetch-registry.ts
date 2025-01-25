@@ -5,16 +5,15 @@ import {
 	serverRepos,
 	servers,
 } from "@/db/schema"
+import {
+	isDeployedQuery,
+	sourceUrlQuery,
+	useCountQuery,
+} from "@/db/schema/queries"
 import { desc, eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 import { z } from "zod"
 import { SERVER_NEW_DAYS } from "../utils"
-import {
-	toolCallsQuery,
-	installCountQuery,
-	isDeployedQuery,
-	sourceUrlQuery,
-} from "@/db/schema/queries"
 
 // We have a special schema for selecting servers for rendering
 // TODO: Remove this if we no longer need connections object in the future
@@ -38,8 +37,7 @@ const selectFetchedServerSchema = selectServerSchema
 	.extend({
 		// The compiled Markdown component passed to the page
 		descriptionLongMdx: z.any().optional(),
-		installCount: z.number(),
-		toolCallCount: z.number(),
+		useCount: z.number(),
 		deploymentUrl: z.string().nullable(),
 		sourceUrl: z.string().nullable(),
 		serverRepo: z.object({
@@ -84,8 +82,7 @@ export async function getServer(qualifiedName: string) {
 				LIMIT 1
 			)`,
 			isDeployed: isDeployedQuery,
-			installCount: installCountQuery,
-			toolCallCount: toolCallsQuery,
+			useCount: useCountQuery,
 		})
 		.from(servers)
 		// TODO: Won't work if user has 2 repos connected
@@ -116,8 +113,7 @@ export async function getAllServers() {
 			verified: servers.verified,
 			owner: servers.owner,
 			sourceUrl: sourceUrlQuery,
-			installCount: installCountQuery,
-			toolCallCount: toolCallsQuery,
+			useCount: useCountQuery,
 			isDeployed: isDeployedQuery,
 		})
 		.from(servers)
@@ -127,8 +123,7 @@ export async function getAllServers() {
 		.orderBy(
 			// There's a valid installation strategy
 			sql`CASE WHEN ${isDeployedQuery} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
-			desc(toolCallsQuery),
-			desc(installCountQuery),
+			desc(useCountQuery),
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
 		)
@@ -157,7 +152,7 @@ export async function getAllServers() {
 
 		if (aIsNew && !bIsNew) return -1
 		if (!aIsNew && bIsNew) return 1
-		if (aIsNew && bIsNew) return b.toolCallCount - a.toolCallCount
+		if (aIsNew && bIsNew) return b.useCount - a.useCount
 		return 0
 	})
 

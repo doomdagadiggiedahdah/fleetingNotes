@@ -15,15 +15,16 @@ export const isDeployedQuery = sql<boolean>`EXISTS (
 export const sourceUrlQuery = sql<
 	string | null
 >`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
-export const installCountQuery = sql<number>`(
-	SELECT COUNT(DISTINCT events.event_id) FROM ${events}
-	WHERE
-		${events.eventName} IN ('config') AND
-		(${events.payload}->>'serverId') = ${servers.qualifiedName}
-)::int`
-export const toolCallsQuery = sql<number>`(
+export const useCountQuery = sql<number>`(
 	SELECT COUNT(*) FROM ${events}
 	WHERE
-		${events.eventName} IN ('tool_call') AND
-		${events.payload}->>'serverId' = ${servers.id}::text
+		(
+			${events.eventName} = 'tool_call' AND
+			${events.payload}->>'serverId' = ${servers.id}::text
+		)
+		OR
+		(
+			${events.eventName} = 'config' AND
+			${events.payload}->>'serverId' = ${servers.qualifiedName}
+		)
 )::int`
