@@ -35,8 +35,10 @@ function long_stuff
 end
 
 function daily_reflection
-	echo "daily reflection test day of; 01-24" >> "$NOTE_DIR/2025-01-24 23-06-03 4.m4a.txt"
-	echo "daily reflection test early monring, prev day; 01-23" >> "$NOTE_DIR/2025-01-24 03-06-03 4.m4a.txt"
+	## note: I changed the names of notes because otherwise this would OVERWRITE THEM
+	set bleh "daily reflection string length This is a really long test message that should be over 200 characters. Let me keep typing to make sure we get there. We need some more text to make this properly long. I'm going to add some details about a fictional event - imagine a sunny day where clouds slowly drift across the azure sky, casting gentle shadows on the landscape below. Birds soar overhead, their wings catching the light."
+	echo "$bleh" >> "$NOTE_DIR/2025-01-24 23-06-03 40.m4a.txt"
+	echo "daily reflection test early monring, prev day; 01-23" >> "$NOTE_DIR/2025-01-24 03-06-03 49.m4a.txt"
 end
 
 daily_reflection
