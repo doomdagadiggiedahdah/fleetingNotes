@@ -1,4 +1,3 @@
-import { mcpInfo } from "@/lib/blacksmith/crawl/extract-server"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import type { Octokit } from "@octokit/rest"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
@@ -11,6 +10,7 @@ import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import type { FileNamedContent } from "./gen-all"
+import mcpPrompt from "../mcp-prompt.txt"
 
 // Patch event source
 global.EventSource = EventSource
@@ -18,7 +18,9 @@ global.EventSource = EventSource
 const MAX_TURNS = 8
 const FINAL_FUNC_NAME = "write_dockerfile"
 const systemPrompt = `\
-${mcpInfo}
+<mcp_info>
+${mcpPrompt}
+</mcp_info>
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt).
 

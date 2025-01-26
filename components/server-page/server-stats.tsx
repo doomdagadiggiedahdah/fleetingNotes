@@ -47,6 +47,12 @@ export function ServerStats({ serverId, server }: ServerStatsProps) {
 							<span className="font-medium">{server.license}</span>
 						</div>
 					)}
+
+					<div className="flex justify-between">
+						<span className="text-muted-foreground">Local</span>
+						<span className="font-medium">{server.remote ? "No" : "Yes"}</span>
+					</div>
+
 					{server.createdAt && (
 						<div className="flex justify-between">
 							<span className="text-muted-foreground">Published</span>

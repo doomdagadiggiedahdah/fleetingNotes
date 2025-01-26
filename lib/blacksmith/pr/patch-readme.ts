@@ -1,7 +1,8 @@
 import { wrapOpenAI, wrapTraced } from "braintrust"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
-import { mcpInfo } from "../crawl/extract-server"
+
+import mcpPrompt from "../mcp-prompt.txt"
 
 export function constructPatchMessages(
 	qualifiedName: string,
@@ -9,7 +10,9 @@ export function constructPatchMessages(
 	readme: string,
 ): ChatCompletionMessageParam[] {
 	const systemPrompt = `\
-${mcpInfo}
+<mcp_info>
+${mcpPrompt}
+</mcp_info>
 <task>
 You are given a README file from a Model Context Protocol (MCP) server repository. Your job is to patch the README.md file with specific Smithery CLI installation instructions and a badge to show the number of installations. Prefer making precision changes rather than large changes.
 

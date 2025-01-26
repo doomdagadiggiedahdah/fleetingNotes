@@ -4,8 +4,9 @@ import { eq, isNotNull } from "drizzle-orm"
 import { writeFile } from "node:fs/promises"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import path from "node:path"
-import { getPRDiff, octokit } from "../github"
+import { getPRDiff } from "@/lib/utils/github"
 import { constructPatchMessages } from "./patch-readme"
+import { Octokit } from "@octokit/rest"
 
 interface TrainingExample {
 	original_readme: string
@@ -32,6 +33,9 @@ export async function pullTrainingData() {
 
 	const trainingData: TrainingExample[] = []
 
+	const octokit = new Octokit({
+		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+	})
 	for (const pr of prs) {
 		if (!pr.prUrl) continue
 
@@ -56,7 +60,7 @@ export async function pullTrainingData() {
 		if (!pr.checked && !prInfo.merged) continue
 
 		// Get README content from PR diff
-		const diff = await getPRDiff(owner, repo, Number.parseInt(prNumber))
+		const diff = await getPRDiff(octokit, owner, repo, Number.parseInt(prNumber))
 		if (!diff || !diff.before || !diff.after) continue
 
 		trainingData.push({

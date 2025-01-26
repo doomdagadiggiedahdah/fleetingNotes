@@ -275,3 +275,134 @@ export async function commitFile(
 	)
 	return response.data
 }
+/**
+ * Extracts the owner and repo name from a GitHub URL
+ * @param url
+ * @returns Repo info
+ */
+
+export async function extractRepo(octokit: Octokit, url: string) {
+	// Extract potential owner/repo from URL path
+	const urlObj = new URL(url)
+	if (!urlObj.hostname.includes("github.com")) {
+		return null
+	}
+
+	// Remove .git suffix if present and split path
+	const pathParts = urlObj.pathname
+		.replace(/\.git$/, "")
+		.split("/")
+		.filter(Boolean)
+	if (pathParts.length < 2) {
+		return null
+	}
+
+	const [owner, repo] = pathParts
+
+	// Verify the repository exists and get its current info
+	const { data } = await octokit.request("GET /repos/{owner}/{repo}", {
+		owner,
+		repo,
+	})
+
+	const baseDirectory =
+		pathParts
+			.slice(2)
+			.join("/")
+			.replace(/^tree\/[^/]+\//, "") || "."
+
+	return {
+		owner: data.owner.login, // Use the current owner name (handles org transfers)
+		repo: data.name, // Use the current repo name (handles renames)
+		baseDirectory,
+	}
+} // TDOO: Remove
+/**
+ * Checks if a repository is a fork by querying the GitHub API
+ * @param owner The repository owner
+ * @param repo The repository name
+ * @returns True if the repository is a fork, false otherwise
+ */
+export async function isRepositoryFork(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+): Promise<boolean> {
+	try {
+		const response = await octokit.request("GET /repos/{owner}/{repo}", {
+			owner,
+			repo,
+		})
+		return response.data.fork === true
+	} catch (error) {
+		console.error(
+			`Failed to check if repository is a fork: ${owner}/${repo}`,
+			error,
+		)
+		return false
+	}
+}
+export async function getPRDiff(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	prNumber: number,
+): Promise<{
+	before: string | null
+	after: string | null
+} | null> {
+	try {
+		// Get PR and files data in parallel
+		const [{ data: pr }, { data: files }] = await Promise.all([
+			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+				owner,
+				repo,
+				pull_number: prNumber,
+			}),
+			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+				owner,
+				repo,
+				pull_number: prNumber,
+			}),
+		])
+
+		// Find README.md changes
+		const readmeChange = files.find(
+			(file) =>
+				file.filename.toLowerCase() === "readme.md" ||
+				file.filename.toLowerCase() === "readme",
+		)
+		if (!readmeChange) return null
+
+		// Get both versions in parallel using the contents API
+		const [before, after] = await Promise.all([
+			octokit
+				.request("GET /repos/{owner}/{repo}/contents/{path}", {
+					owner,
+					repo,
+					path: readmeChange.filename,
+					ref: pr.base.sha,
+					headers: {
+						accept: "application/vnd.github.v3.raw",
+					},
+				})
+				.then((res) => res.data as unknown as string),
+			octokit
+				.request("GET /repos/{owner}/{repo}/contents/{path}", {
+					owner,
+					repo,
+					path: readmeChange.filename,
+					ref: pr.head.sha,
+					headers: {
+						accept: "application/vnd.github.v3.raw",
+					},
+				})
+				.then((res) => res.data as unknown as string),
+		])
+
+		return { before, after }
+	} catch (error) {
+		console.error("Error getting PR diff:", error)
+		return null
+	}
+}

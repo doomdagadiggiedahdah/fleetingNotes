@@ -2,16 +2,20 @@ import { db } from "@/db"
 import { pullRequests, serverRepos, servers } from "@/db/schema"
 import { toResult } from "@/lib/utils/result"
 import { and, eq } from "drizzle-orm"
-import { octokit } from "../github"
+
+import { isDeployedQuery } from "@/db/schema/queries"
+import { Octokit } from "@octokit/rest"
 import * as fs from "node:fs"
 import * as path from "node:path"
-import { isDeployedQuery } from "@/db/schema/queries"
 
 /**
  * Analyzes the pull request acceptance ratio and author activity.
  * Also, updates the PR status and merge time.
  */
 export async function run() {
+	const octokit = new Octokit({
+		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+	})
 	// Ensure scratch directory exists
 	const scratchDir = path.join(process.cwd(), "scratch")
 	if (!fs.existsSync(scratchDir)) {

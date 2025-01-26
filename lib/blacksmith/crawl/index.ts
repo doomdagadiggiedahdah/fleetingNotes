@@ -1,10 +1,21 @@
 import { db } from "@/db"
-import { candidate_urls, servers } from "@/db/schema"
+import { candidate_urls, serverRepos, servers } from "@/db/schema"
 
-import { and, eq, sql } from "drizzle-orm"
-import { extractServer } from "./extract-server"
-import { shuffle } from "lodash"
 import { canonicalizeGithubUrl } from "@/lib/utils/github"
+import { Octokit } from "@octokit/rest"
+import { and, desc, eq, sql } from "drizzle-orm"
+import { shuffle } from "lodash"
+import { extractServer } from "../extract-server"
+import { isMCPServer } from "../extract-server/check"
+import { isRepositoryFork } from "@/lib/utils/github"
+import { extractRepo } from "@/lib/utils/github"
+
+export const blockRepoOwner = [
+	"modelcontextprotocol",
+	"mcp-get",
+	"punkpeye",
+	"anaisbetts",
+]
 
 /**
  * Goes through all unprocessed URLs and generates entries for each
@@ -23,7 +34,9 @@ export async function crawlServers() {
 				eq(candidate_urls.processed, false),
 			),
 		)
-		.execute()
+		.orderBy(desc(candidate_urls.createdAt))
+		// Need a limit otherwise Github will rate limit
+		.limit(50)
 
 	const canonicalCrawls = await Promise.all(
 		rows.map((row) => canonicalizeGithubUrl(row.url)),
@@ -47,32 +60,101 @@ export async function crawlServers() {
 	)
 	console.log("URLs to process:", urlsToCrawl.length)
 
+	const octokit = new Octokit({
+		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+	})
+
 	for (const url of urlsToCrawl) {
 		let errored = false
 
 		try {
-			const entryOutput = await extractServer(url)
-			const outputServers = entryOutput.servers
-			if (outputServers && outputServers.length > 0) {
-				// Insert into DB
-				try {
-					await db
-						.insert(servers)
-						.values(
-							outputServers.map((server) => ({
-								...server,
-								published: server.connections.some(
-									(c) => c.type === "stdio" && c.published,
-								),
-								crawlUrl: url,
-								verified: false,
-							})),
-						)
-						.onConflictDoNothing()
-				} catch (e) {
-					console.error(e)
-				}
+			const repoInfo = await extractRepo(octokit, url)
+			console.log(repoInfo)
+			if (!repoInfo) {
+				console.error(`Invalid repo from url: ${url}`)
+				continue
 			}
+			if (blockRepoOwner.indexOf(repoInfo.owner.toLowerCase()) !== -1) {
+				console.error(`Repo blocked: ${url}`)
+				continue
+			}
+			// Check if this repo exists in serverRepos
+			const existingRepo = await db
+				.select({ id: serverRepos.id })
+				.from(serverRepos)
+				.where(
+					and(
+						eq(serverRepos.type, "github"),
+						eq(serverRepos.repoOwner, repoInfo.owner),
+						eq(serverRepos.repoName, repoInfo.repo),
+					),
+				)
+				.limit(1)
+
+			if (existingRepo.length > 0) {
+				console.log(`Repo already exists: ${url}`)
+				continue
+			}
+
+			if (await isRepositoryFork(octokit, repoInfo.owner, repoInfo.repo)) {
+				console.log("Skipping forked repository", repoInfo)
+				continue
+			}
+
+			if (
+				!(await isMCPServer(octokit)({
+					repoOwner: repoInfo.owner,
+					repoName: repoInfo.repo,
+					baseDirectory: repoInfo.baseDirectory,
+				}))
+			) {
+				console.error("Not an MCP server", url)
+				continue
+			}
+
+			const insertDataResult = await extractServer(octokit)({
+				repoOwner: repoInfo.owner,
+				repoName: repoInfo.repo,
+				baseDirectory: repoInfo.baseDirectory,
+			})
+
+			if (!insertDataResult.ok) {
+				console.error(insertDataResult.error)
+				continue
+			}
+
+			const insertData = insertDataResult.value
+
+			const newServer = await db.transaction(async (tx) => {
+				const [server] = await tx
+					.insert(servers)
+					.values({
+						connections: [],
+						homepage: `https://github.com/${repoInfo.owner}/${repoInfo.repo}`,
+						verified: false,
+						license: null,
+						...insertData,
+						// User specified data
+						qualifiedName: `@${repoInfo.owner}/${repoInfo.repo}`,
+					})
+					.returning({
+						id: servers.id,
+						qualifiedName: servers.qualifiedName,
+						displayName: servers.displayName,
+					})
+
+				await tx.insert(serverRepos).values({
+					serverId: server.id,
+					type: "github",
+					repoOwner: repoInfo.owner,
+					repoName: repoInfo.repo,
+					baseDirectory: repoInfo.baseDirectory,
+				})
+
+				return server
+			})
+
+			console.log("Extracted server", newServer.id, newServer.qualifiedName)
 		} catch (e) {
 			errored = true
 			console.error(e)
@@ -87,4 +169,5 @@ export async function crawlServers() {
 				.where(eq(candidate_urls.crawl_url, url))
 		}
 	}
+	console.log("Done extracting.")
 }

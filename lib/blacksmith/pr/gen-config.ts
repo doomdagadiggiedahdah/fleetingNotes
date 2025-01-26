@@ -2,7 +2,6 @@ import {
 	type ExtractServerConfig,
 	ExtractServerConfigSchema,
 } from "@/lib/blacksmith/pr/extract-server-config"
-import { mcpInfo } from "@/lib/blacksmith/crawl/extract-server"
 import type { StdioConnection } from "@/lib/types/server"
 import type { ServerConfig } from "@/lib/types/server-config"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
@@ -17,6 +16,7 @@ import { omit, pick } from "lodash"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import type { FileNamedContent } from "./gen-all"
+import mcpPrompt from "../mcp-prompt.txt"
 
 // Patch event source
 global.EventSource = EventSource
@@ -24,7 +24,9 @@ global.EventSource = EventSource
 const MAX_TURNS = 8
 const FINAL_FUNC_NAME = "set_config"
 const systemPrompt = `\
-${mcpInfo}
+<mcp_info>
+${mcpPrompt}
+</mcp_info>
 <task>
 You are a maintainer of a Model Context Protocol (MCP) server registry, which lists MCP servers that users can connect to (similar to ProductHunt).
 

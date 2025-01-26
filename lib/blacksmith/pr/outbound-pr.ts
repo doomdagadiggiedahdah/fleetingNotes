@@ -1,10 +1,11 @@
 import { db } from "@/db"
 import { pullRequests, serverRepos, servers } from "@/db/schema"
-import dotenv from "dotenv"
-import { eq, not, and, notInArray, sql } from "drizzle-orm"
-import { createServerRepoPullRequest } from "."
 import { isDeployedQuery } from "@/db/schema/queries"
 import { logger } from "@/lib/utils/braintrust"
+import dotenv from "dotenv"
+import { and, eq, not, notInArray, sql } from "drizzle-orm"
+import { createServerRepoPullRequest } from "."
+import { blockRepoOwner } from "../crawl"
 /**
  * Performs outbound PR
  */
@@ -27,12 +28,7 @@ if (require.main === module) {
 						sql`EXISTS(SELECT 1 FROM ${pullRequests} WHERE ${pullRequests.serverRepo} = ${serverRepos.id})`,
 					),
 					// Manual blacklist
-					notInArray(serverRepos.repoOwner, [
-						"modelcontextprotocol",
-						"mcp-get",
-						"punkpeye",
-						"anaisbetts",
-					]),
+					notInArray(serverRepos.repoOwner, blockRepoOwner),
 				),
 			)
 			.limit(10)

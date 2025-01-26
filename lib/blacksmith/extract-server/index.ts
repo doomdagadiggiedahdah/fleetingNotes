@@ -11,8 +11,8 @@ import { wrapOpenAI, wrapTraced } from "braintrust"
 import "@/lib/utils/braintrust"
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
-import { mcpInfo } from "../crawl/extract-server"
-import { ExtractServerSchema } from "./types"
+import { z } from "zod"
+import mcpPrompt from "../mcp-prompt.txt"
 
 interface ExtractServerArgs {
 	repoOwner: string
@@ -99,7 +99,7 @@ export const extractServer = (octokit: Octokit) =>
 				{
 					role: "system",
 					content: `\
-${mcpInfo}
+${mcpPrompt}
 <task>
 Extract the metadata about MCP (Model Context Protocol) server from its Github repository README and other metadata files.
 </task>`,
@@ -136,3 +136,37 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 		}
 		return ok(output)
 	})
+
+/**
+ * Used for auto-filling server settings.
+ */
+const ExtractServerSchema = z.object({
+	displayName: z
+		.string()
+		.describe(
+			"The human-readable concise name of the MCP server. Do not mention 'MCP' or 'Claude Desktop' since those are redundant.",
+		),
+	description: z
+		.string()
+		.describe(
+			"A concise one-line description of the MCP server for end-users. For example, 'Add code execution and interpreting capabilities.'. Start with a verb. Max 2 sentences.",
+		),
+	descriptionLong: z
+		.string()
+		.describe(
+			"A detailed description of the MCP server for end-users, describing the key features and capabilities. Do not describe how to install or run the MCP. Maximum 3 paragraphs.",
+		),
+	homepage: z
+		.string()
+		.optional()
+		.describe(
+			"The homepage is the official website of the MCP, typically a company's website. The URL to the product page of the MCP, if it exists. (e.g,. https://search.brave.com/). The homepage should NOT be a page where this MCP is listed (e.g., glama, npm, github are not homepages). Leave null if it cannot be determined.",
+		),
+	remote: z
+		.boolean()
+		.describe(
+			"Whether it's possible to host this MCP remotely. For example, if a MCP accesses files local to a user's desktop or users some local commands/cli, then it should be false. If it wraps a remote API and doesn't depend on the end-users local environment, then it should be true. Only set this false if the end-user must run this locally. If unsure, set to false.",
+		),
+})
+
+export type ExtractServer = z.infer<typeof ExtractServerSchema>
