@@ -123,7 +123,6 @@ export async function createServer(rawData: CreateServerInputs) {
 		? serverExtractionResult.value
 		: null
 
-	// let newServer: Pick<Server, "id" | "qualifiedName"> | null = null
 	try {
 		// Create both the server and repo connection in a single transaction
 		const newServer = await db.transaction(async (tx) => {
