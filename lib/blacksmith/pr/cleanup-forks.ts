@@ -3,7 +3,7 @@ import { pullRequests } from "@/db/schema/blacksmith"
 import { serverRepos, servers } from "@/db/schema/servers"
 import { toResult } from "@/lib/utils/result"
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest"
-import { and, eq } from "drizzle-orm"
+import { and, eq, not } from "drizzle-orm"
 
 type Fork = RestEndpointMethodTypes["repos"]["listForks"]["response"]["data"][0]
 type PullRequest = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"]
@@ -12,18 +12,6 @@ type PullRequest = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"]
  * Background task that cleans up all forked repositories that have closed PRs
  */
 export async function cleanupForkedRepos() {
-	// Get all servers with their repos and PRs in one query
-	// const rows = await db
-	// 	.select({
-	// 		server: servers,
-	// 		repo: serverRepos,
-	// 		pr: pr_queue,
-	// 	})
-	// 	.from(servers)
-	// 	.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-	// 	.innerJoin(pr_queue, and(eq(pr_queue.serverId, sql`${servers.qualifiedName}`)))
-	// 	.where(eq(serverRepos.type, "github"))
-
 	const rows = await db
 		.select({
 			server: servers,
@@ -39,7 +27,7 @@ export async function cleanupForkedRepos() {
 				eq(pullRequests.task, "config"),
 			),
 		)
-		.where(eq(serverRepos.type, "github"))
+		.where(and(eq(serverRepos.type, "github"), not(pullRequests.isClosed)))
 
 	console.log(`Processing ${rows.length} repositories...`)
 
@@ -69,10 +57,20 @@ export async function cleanupForkedRepos() {
 			)
 			if (!prResult.ok) {
 				console.error(prResult.error)
-				return null
+				continue
 			}
 
 			const prData = prResult.value.data
+
+			// Update PR database
+			await db
+				.update(pullRequests)
+				.set({
+					isClosed: prData.state === "closed",
+					mergedAt: prData.merged_at ? new Date(prData.merged_at) : null,
+				})
+				.where(eq(pullRequests.id, pr.id))
+
 			if (prData.state !== "closed") {
 				console.log("PR is not closed. Skipping...")
 				continue

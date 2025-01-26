@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
 import { crawlServers } from "@/lib/blacksmith/crawl"
+import { cleanupForkedRepos } from "@/lib/blacksmith/pr/cleanup-forks"
 import { createOutboundPR } from "@/lib/blacksmith/pr/outbound-pr"
 import "@/lib/utils/braintrust"
 import { logger } from "@/lib/utils/braintrust"
@@ -62,6 +63,7 @@ export async function POST() {
 		(async () => {
 			await crawlServers()
 			await createOutboundPR()
+			await cleanupForkedRepos()
 			await logger.flush()
 		})(),
 	)

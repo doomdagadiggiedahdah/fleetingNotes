@@ -93,14 +93,6 @@ export async function run() {
 				fs.appendFileSync(statsFile, `${JSON.stringify(stat)}\n`)
 			}
 		}
-
-		await db
-			.update(pullRequests)
-			.set({
-				isClosed: state === "closed",
-				mergedAt: mergedAt ? new Date(mergedAt) : null,
-			})
-			.where(eq(pullRequests.id, pr.id))
 	}
 
 	console.log(`Stats written to ${statsFile}`)
