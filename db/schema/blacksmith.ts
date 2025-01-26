@@ -43,6 +43,8 @@ export const pullRequests = pgTable(
 		task: prTask("pr_task").notNull(),
 		// Number of the PR on Github
 		pullRequestNumber: text("pr_id").notNull(),
+		isClosed: boolean("is_closed").notNull().default(false),
+		mergedAt: timestamp("merged_at"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 	},
 	(t) => ({
