@@ -13,6 +13,7 @@ export const candidate_urls = pgTable("candidate_urls", {
 	crawl_url: text("crawl_url").primaryKey(),
 	processed: boolean("processed").notNull().default(false),
 	errored: boolean("errored").notNull().default(false),
+	createdAt: timestamp("created_at").defaultNow(),
 }).enableRLS()
 
 // @deprecated

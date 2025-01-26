@@ -176,6 +176,13 @@
 			"when": 1737899289007,
 			"tag": "0025_exotic_catseye",
 			"breakpoints": true
+		},
+		{
+			"idx": 26,
+			"version": "7",
+			"when": 1737904066318,
+			"tag": "0026_third_zzzax",
+			"breakpoints": true
 		}
 	]
 }
