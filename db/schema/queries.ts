@@ -15,6 +15,8 @@ export const isDeployedQuery = sql<boolean>`EXISTS (
 export const sourceUrlQuery = sql<
 	string | null
 >`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
+
+// Monthly usage count
 export const useCountQuery = sql<number>`(
 	SELECT COUNT(*) FROM ${events}
 	WHERE
@@ -27,6 +29,8 @@ export const useCountQuery = sql<number>`(
 			${events.eventName} = 'config' AND
 			${events.payload}->>'serverId' = ${servers.qualifiedName}
 		)
+		AND
+		NOW() - ${events.timestamp} < INTERVAL '1 month'
 )::int`
 
 export const isNewQuery = sql<boolean>`

@@ -37,7 +37,7 @@ export function ServerStats({ serverId, server }: ServerStatsProps) {
 						<div className="flex justify-between">
 							<span className="text-muted-foreground">Usage</span>
 							<span className="font-medium">
-								Called {server.useCount} times
+								Used {server.useCount} times last month
 							</span>
 						</div>
 					) : null}

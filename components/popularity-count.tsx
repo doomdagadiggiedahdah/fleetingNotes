@@ -31,7 +31,7 @@ export function PopularityCounter({ count = 0, type }: Props) {
 					</div>
 				</TooltipTrigger>
 				<TooltipContent>
-					<p>Used {formatCount(count)} times</p>
+					<p>Used {formatCount(count)} times last month</p>
 				</TooltipContent>
 			</Tooltip>
 		</TooltipProvider>
