@@ -58,7 +58,7 @@ export function MissingFilesDialog({
 						setErrorMessage(checkResult.error.message)
 						onOpenChange(true)
 					} else if (checkResult.error.missingPermissions) {
-						setErrorMessage("Smithery Github App insufficient permissions.")
+						setErrorMessage(checkResult.error.missingPermissions)
 						onOpenChange(true)
 					} else if (checkResult.error.missingInstallation) {
 						setErrorMessage("Smithery Github App not installed.")
@@ -127,9 +127,7 @@ export function MissingFilesDialog({
 								<Alert variant="destructive">
 									<AlertCircle className="h-4 w-4" />
 									<div className="ml-2">
-										<p className="font-medium">
-											Insufficient GitHub Permissions
-										</p>
+										<p className="font-medium">Permissions Error</p>
 										<p className="text-sm">{errorMessage}</p>
 									</div>
 								</Alert>

@@ -384,7 +384,7 @@ export async function checkDeployment(serverId: string) {
 
 	if (!permissionResult.ok || !fileResult.ok)
 		return err({
-			missingPermissions: !permissionResult.ok,
+			missingPermissions: !permissionResult.ok ? permissionResult.error : null,
 			...(!fileResult.ok && fileResult.error),
 		})
 
