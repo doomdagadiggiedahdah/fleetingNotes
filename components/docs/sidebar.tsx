@@ -7,6 +7,7 @@ export const navigation = [
 			{ title: "Introduction", href: "/docs" },
 			{ title: "Deployments", href: "/docs/deployments" },
 			{ title: "Configuration", href: "/docs/config" },
+			// { title: "Profiles", href: "/docs/profiles" },
 			{ title: "Git Integration", href: "/docs/git" },
 		],
 	},

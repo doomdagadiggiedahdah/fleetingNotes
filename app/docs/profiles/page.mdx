@@ -1,0 +1,64 @@
+import { CircleAlert } from "lucide-react"
+import { Maintainers } from "@/components/docs/maintainers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export const metadata = {
+  title: 'Profiles | Smithery Documentation',
+  description: 'Learn how to deploy your Message Control Protocol (MCP) server on Smithery.',
+}
+
+# Configuration Profiles
+
+Configuration profiles (or **profile** for short), are a way for you to specify and save default server configurations on Smithery.
+When you connect to Smithery through a specific profile, we will pre-fill the configuration of any servers you connect to.
+This allows you to use Smithery with a seamless authentication experience.
+
+## Profile API Keys
+API keys can be associated with specific profiles.
+You can create an API key by clicking on your login icon, and selecting API keys in the dropdown menu.
+When creating an API key, you will be asked to associate it with a specific profile.
+If you authenticate with Smithery using an API key associated with a profile, we will pre-fill the configuration of any servers you connect to using that profile.
+
+## Example
+Configuration profiles are useful if you're building agents or autonomous systems and want to avoid passing in a bunch of API key.
+
+Imagine you are building an agent where you need to build a search functionality in it and want to integrate [Exa](/server/exa) into your agent.
+
+Typically, you would write your connection as follows:
+```typescript
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { createSmitheryUrl } from "@smithery/sdk/config"
+
+const url = createSmitheryUrl(
+  "https://url-to-exa-mcp-server/sse",
+  {
+    ...config goes here
+  },
+)
+
+const transport = new SSEClientTransport(url)
+```
+
+Instead of specifying your Exa API key every time you connect to the Exa SSE, you can create a profile on Smithery and perform an authenticated call to the SSE server by specifying the header:
+
+```typescript
+headers: {
+  'Authorization': 'Bearer your-profile-api-key'
+}
+```
+
+With this authentication, you no longer need to pass in the API key when connecting to the Exa SSE server.
+
+```typescript
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { createSmitheryUrl } from "@smithery/sdk/config"
+
+const url = createSmitheryUrl(
+  "https://url-to-exa-mcp-server/sse"
+)
+
+const transport = new SSEClientTransport(url)
+```
+
+Obviously, this is not very useful if you're only connecting to one MCP. It becomes handy when you have multiple MCPs and you don't want to specify configurations for each of them.
+Some MCPs require OAuth, which may have complex configurations. You can authenticate via the UI on Smithery instead of offloading it to your end users.
