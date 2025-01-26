@@ -2,7 +2,7 @@ import { useState } from "react"
 import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 
 export type InstallTabStates = "claude" | "cline" | "code"
 

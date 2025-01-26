@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import ServerSearch from "@/components/server-search"
 import {
 	type Tool,

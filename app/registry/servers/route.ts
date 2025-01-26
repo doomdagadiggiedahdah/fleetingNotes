@@ -2,7 +2,7 @@ import { db } from "@/db"
 import { apiKeys } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
-import { getAllServers } from "@/lib/utils/search-registry"
+import { getAllServers } from "@/lib/utils/search-servers"
 import { pick } from "lodash"
 
 const DEFAULT_PAGE_SIZE = 10

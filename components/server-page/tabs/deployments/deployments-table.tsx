@@ -13,7 +13,7 @@ import {
 import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { createClient } from "@/lib/supabase/client"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { useEffect, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
 

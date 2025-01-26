@@ -1,4 +1,4 @@
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { ServerInstallation } from "../server-installation"
 import { ServerStats } from "../server-stats"
 import { ConfigurationForm } from "./config-form"

@@ -1,6 +1,6 @@
 import { CodeBlock } from "@/components/docs/code-block"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { AlertCircle, Bug, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"

@@ -1,5 +1,5 @@
 import { MCPProvider } from "@/context/mcp-context"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { BadgeCheck, ExternalLink } from "lucide-react"
 
 import { SiGithub } from "@icons-pack/react-simple-icons"

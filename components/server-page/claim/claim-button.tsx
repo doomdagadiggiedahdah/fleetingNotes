@@ -1,5 +1,5 @@
 "use client"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { ClaimServerDialog } from "./claim-server-dialog"

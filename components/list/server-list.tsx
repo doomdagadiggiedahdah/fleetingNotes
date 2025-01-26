@@ -1,4 +1,4 @@
-import { getAllServers } from "@/lib/utils/search-registry"
+import { getAllServers } from "@/lib/utils/search-servers"
 import { ServerListItem } from "./server-list-item"
 
 export default async function ServerList({ query }: { query?: string }) {

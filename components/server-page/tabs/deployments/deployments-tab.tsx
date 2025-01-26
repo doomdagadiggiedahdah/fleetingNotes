@@ -1,4 +1,4 @@
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import Link from "next/link"
 import { DeploymentsTable } from "./deployments-table"
 

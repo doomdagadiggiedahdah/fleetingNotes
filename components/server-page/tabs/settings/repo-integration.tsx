@@ -1,6 +1,6 @@
 "use client"
 
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { getConnectedRepos } from "@/lib/actions/servers"
 import { RepoConnectionForm } from "./repo-connection-form"
 import { RepoConnector } from "./repo-connector"

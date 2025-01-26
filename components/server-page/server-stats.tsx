@@ -1,4 +1,4 @@
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 
 interface ServerStatsProps {
 	serverId: string

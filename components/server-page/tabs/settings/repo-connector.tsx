@@ -4,7 +4,7 @@ import { GithubAuthProvider } from "@/components/github/github-user-provider"
 import { RepoSelector } from "@/components/github/repo-selector"
 import { useToast } from "@/lib/hooks/use-toast"
 import { connectServerRepo } from "@/lib/actions/servers"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { useRouter } from "next/navigation"
 
 interface Props {

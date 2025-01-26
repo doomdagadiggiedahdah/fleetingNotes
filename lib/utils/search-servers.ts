@@ -86,7 +86,7 @@ export async function getAllServers(
 		.orderBy((t) => [
 			...(similarity ? [desc(similarity)] : []),
 			// There exists a valid installation strategy
-			sql`CASE WHEN ${isDeployedQuery} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
+			sql`CASE WHEN ${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
 			// Prioritize the new servers
 			desc(t.isNew),
 			desc(t.useCount),

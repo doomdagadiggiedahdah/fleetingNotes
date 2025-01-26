@@ -18,7 +18,7 @@ import {
 	type UpdateServer,
 	updateServerSchema,
 } from "@/lib/actions/servers.schema"
-import type { FetchedServer } from "@/lib/utils/fetch-registry"
+import type { FetchedServer } from "@/lib/utils/get-server"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
