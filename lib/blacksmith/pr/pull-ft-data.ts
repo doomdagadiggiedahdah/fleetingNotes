@@ -60,7 +60,12 @@ export async function pullTrainingData() {
 		if (!pr.checked && !prInfo.merged) continue
 
 		// Get README content from PR diff
-		const diff = await getPRDiff(octokit, owner, repo, Number.parseInt(prNumber))
+		const diff = await getPRDiff(
+			octokit,
+			owner,
+			repo,
+			Number.parseInt(prNumber),
+		)
 		if (!diff || !diff.before || !diff.after) continue
 
 		trainingData.push({

@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
 import { crawlServers } from "@/lib/blacksmith/crawl"
+import { createOutboundPR } from "@/lib/blacksmith/pr/outbound-pr"
 import "@/lib/utils/braintrust"
 import { logger } from "@/lib/utils/braintrust"
 import { waitUntil } from "@vercel/functions"
@@ -21,6 +22,7 @@ const glama = "https://glama.ai/mcp/servers.json"
 
 // This site requires 2-hit scraping
 // https://mcp.so/sitemap_projects_1.xml
+// https://www.pulsemcp.com/
 
 export async function POST() {
 	let urls: string[] = []
@@ -56,7 +58,12 @@ export async function POST() {
 			.onConflictDoNothing()
 	}
 
-	waitUntil(crawlServers())
-	waitUntil(logger.flush())
+	waitUntil(
+		(async () => {
+			await crawlServers()
+			await createOutboundPR()
+			await logger.flush()
+		})(),
+	)
 	return NextResponse.json({}, { status: 200 })
 }
