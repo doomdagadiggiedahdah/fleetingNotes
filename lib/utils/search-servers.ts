@@ -7,6 +7,7 @@ import {
 	useCountQuery,
 } from "@/db/schema/queries"
 import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
+import searchQueryParser from "search-query-parser"
 import { llm } from "./braintrust"
 
 export interface PaginationParams {
@@ -33,14 +34,28 @@ export async function getAllServers(
 	query?: string,
 	pagination?: PaginationParams,
 ) {
+	// Handle special filters like owner:repo
+	const parsedQueryObj = (() => {
+		const parsed = searchQueryParser.parse(query || "", {
+			keywords: ["owner", "repo"],
+			alwaysArray: true,
+		})
+		return typeof parsed === "string" ? null : parsed
+	})()
+
+	const semanticQuery = Array.isArray(parsedQueryObj?.text)
+		? parsedQueryObj.text.join(" ").trim()
+		: query
+
 	const similarity = await (async () => {
-		if (!query) return null
+		if (!semanticQuery) return null
 		try {
 			const queryEmbedding = await llm.embeddings.create({
-				input: query,
+				input: semanticQuery,
 				model: "text-embedding-3-small",
 			})
-			return sql<number>`-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)})`
+			// Quantize distances so things that are very similar get sorted by other factors
+			return sql<number>`floor(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * 25)`
 		} catch (e) {
 			console.error(e)
 			return null
@@ -48,14 +63,21 @@ export async function getAllServers(
 	})()
 
 	// Base conditions for both count and data queries
-	const whereClause = similarity
-		? and(isNotNull(similarity), gt(similarity, 0.25))
-		: undefined
+	const whereClause = and(
+		similarity ? and(isNotNull(similarity), gt(similarity, 0.25)) : undefined,
+		parsedQueryObj?.owner
+			? eq(serverRepos.repoOwner, parsedQueryObj.owner)
+			: undefined,
+		parsedQueryObj?.repo
+			? eq(serverRepos.repoName, parsedQueryObj.repo)
+			: undefined,
+	)
 
 	// Get total count
 	const totalCount = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(servers)
+		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.where(whereClause)
 		.then((result) => Number(result[0].count))
 
