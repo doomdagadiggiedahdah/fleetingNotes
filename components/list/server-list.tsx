@@ -2,7 +2,7 @@ import { getAllServers } from "@/lib/utils/search-registry"
 import { ServerListItem } from "./server-list-item"
 
 export default async function ServerList({ query }: { query?: string }) {
-	const servers = await getAllServers(query)
+	const { servers } = await getAllServers(query)
 
 	return (
 		<div className="space-y-4 mt-4">

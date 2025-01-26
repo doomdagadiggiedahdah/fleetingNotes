@@ -1,7 +1,9 @@
 import { db } from "@/db"
-import { apiKeys, servers } from "@/db/schema"
-import { eq, sql } from "drizzle-orm"
+import { apiKeys } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { getAllServers } from "@/lib/utils/search-registry"
+import { pick } from "lodash"
 
 const DEFAULT_PAGE_SIZE = 10
 
@@ -34,6 +36,7 @@ export async function GET(request: Request) {
 		const pageSize = Number.parseInt(
 			searchParams.get("pageSize") ?? String(DEFAULT_PAGE_SIZE),
 		)
+		const query = searchParams.get("q") ?? undefined
 
 		if (
 			Number.isNaN(page) ||
@@ -47,40 +50,21 @@ export async function GET(request: Request) {
 			)
 		}
 
-		// Calculate offset
-		const offset = (page - 1) * pageSize
-
-		// Get total count of servers
-		const totalCount = await db
-			.select({ count: sql<number>`count(*)` })
-			.from(servers)
-			.then((result) => Number(result[0].count))
-
-		// Get paginated servers
-		const serversList = await db.query.servers.findMany({
-			columns: {
-				qualifiedName: true,
-				displayName: true,
-				description: true,
-				homepage: true,
-				createdAt: true,
-			},
-			limit: pageSize,
-			offset: offset,
-			orderBy: (servers, { asc }) => [asc(servers.createdAt)],
-		})
-
-		// Calculate total pages
-		const totalPages = Math.ceil(totalCount / pageSize)
+		// Get servers using the search registry
+		const result = await getAllServers(query, { page, pageSize })
 
 		return NextResponse.json({
-			servers: serversList,
-			pagination: {
-				currentPage: page,
-				pageSize: pageSize,
-				totalPages: totalPages,
-				totalCount: totalCount,
-			},
+			servers: result.servers.map((s) => ({
+				...pick(s, [
+					"qualifiedName",
+					"displayName",
+					"description",
+					"createdAt",
+					"useCount",
+				]),
+				homepage: `https://smithery.ai/server/${s.qualifiedName}`,
+			})),
+			pagination: result.pagination,
 		})
 	} catch (error) {
 		console.error("Error fetching servers:", error)
