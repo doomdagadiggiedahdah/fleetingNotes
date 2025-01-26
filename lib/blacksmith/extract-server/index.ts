@@ -12,7 +12,6 @@ import "@/lib/utils/braintrust"
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { mcpInfo } from "../crawl/extract-server"
-import { cleanReadme } from "./readme"
 import { ExtractServerSchema } from "./types"
 
 interface ExtractServerArgs {
@@ -93,10 +92,6 @@ export const extractServer = (octokit: Octokit) =>
 
 		const llm = wrapOpenAI(new OpenAI())
 
-		const cleanedReadmePromise = readme.ok
-			? cleanReadme({ readme: readme.value })
-			: readme
-
 		const completion = await llm.beta.chat.completions.parse({
 			model: "gpt-4o-mini",
 			temperature: 0,
@@ -124,8 +119,6 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 
 		if (!parsed) return err("Failed to extract server.")
 
-		const cleanedReadmeResult = await cleanedReadmePromise
-
 		const output: Pick<
 			NewServer,
 			| "license"
@@ -136,9 +129,7 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 			| "remote"
 		> = {
 			...parsed,
-			descriptionLong: cleanedReadmeResult.ok
-				? cleanedReadmeResult.value
-				: undefined,
+			descriptionLong: parsed.descriptionLong,
 			license: licenseResp.ok
 				? licenseResp.value.data.license?.spdx_id
 				: undefined,

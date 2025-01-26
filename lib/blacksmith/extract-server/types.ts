@@ -12,7 +12,12 @@ export const ExtractServerSchema = z.object({
 	description: z
 		.string()
 		.describe(
-			"A concise description of the MCP server for end-users. For example, 'Add code execution and interpreting capabilities.'. Start with a verb.",
+			"A concise description of the MCP server for end-users. For example, 'Add code execution and interpreting capabilities.'. Start with a verb. Max 2 sentences.",
+		),
+	descriptionLong: z
+		.string()
+		.describe(
+			"A detailed description of the MCP server for end-users, describing the key features and capabilities. Maximum 2 paragraphs.",
 		),
 	homepage: z
 		.string()
