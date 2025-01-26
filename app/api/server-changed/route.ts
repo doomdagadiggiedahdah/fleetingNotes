@@ -1,14 +1,11 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { Database } from "@/db/supabase.types"
-import { wrapOpenAI } from "braintrust"
+import { llm } from "@/lib/utils/braintrust"
 import { eq } from "drizzle-orm"
-import { NextResponse } from "next/server"
-import OpenAI from "openai"
-import { pick } from "lodash"
 import { dump as yamlDump } from "js-yaml"
-
-const llm = wrapOpenAI(new OpenAI())
+import { pick } from "lodash"
+import { NextResponse } from "next/server"
 
 // Auth token used to verify if it came from our server
 const AUTH_TOKEN = "h57345grn9248wrjvf"
