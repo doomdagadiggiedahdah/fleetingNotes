@@ -15,6 +15,7 @@ export const blockRepoOwner = [
 	"mcp-get",
 	"punkpeye",
 	"anaisbetts",
+	"spences10",
 ]
 
 /**

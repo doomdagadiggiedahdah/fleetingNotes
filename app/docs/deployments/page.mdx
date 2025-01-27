@@ -30,6 +30,11 @@ Deploying on Smithery is straightforward:
 
 That's it! Your MCP server will be built and deployed according to your configuration.
 
+## Hosted MCPs
+We serve your hosted MCP servers on Smithery over [Server-Sent Events (SSE)](https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse).
+However, your server will only persist for 5 minutes maximum before being terminated due to the serverless nature of the platform.
+You should design your server with ephemeral storage in mind.
+
 ## Best Practices
 
 1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector). If you run into build errors, test to ensure your Dockerfile builds locally.
