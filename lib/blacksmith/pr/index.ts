@@ -11,6 +11,8 @@ import { checkPullRequests } from "./check-prs"
 import { generatePullRequest } from "./gen-all"
 
 import "@/lib/utils/braintrust"
+import { posthog } from "@/lib/posthog_server"
+import { waitUntil } from "@vercel/functions"
 
 /**
  * Apply the generated PR.
@@ -282,11 +284,26 @@ export async function createServerRepoPullRequest(
 		return err("No changes were made to the server")
 	}
 
+	posthog.capture({
+		event: "Pull Request Created",
+		distinctId: "anonymous",
+		properties: {
+			$process_person_profile: false,
+			serverId: server.id,
+			repoOwner,
+			repoName,
+			basePath: baseDirectory,
+			prNumber: prResult.value.number,
+		},
+	})
+
 	await db.insert(pullRequests).values({
 		serverRepo: serverRepo.id,
 		task: "config",
 		pullRequestNumber: `${prResult.value.number}`,
 	})
+
+	waitUntil(posthog.flush())
 
 	return ok({ prUrl: prResult.value.url })
 }

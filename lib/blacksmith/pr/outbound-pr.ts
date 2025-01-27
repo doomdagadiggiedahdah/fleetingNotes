@@ -1,5 +1,10 @@
 import { db } from "@/db"
-import { pullRequests, serverRepos, servers } from "@/db/schema"
+import {
+	pullRequests,
+	pullRequestsFailures,
+	serverRepos,
+	servers,
+} from "@/db/schema"
 import { isDeployedQuery } from "@/db/schema/queries"
 import { logger } from "@/lib/utils/braintrust"
 import { and, desc, eq, not, notInArray, sql } from "drizzle-orm"
@@ -11,29 +16,48 @@ import { blockRepoOwner } from "../crawl"
  */
 export async function createOutboundPR(limit = 10) {
 	const allServers = await db
-		.select()
+		// Ensure we don't have dupe owners in one outbound PR attempt
+		.selectDistinctOn([serverRepos.repoOwner])
 		.from(servers)
 		// Must have server repo
 		.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-		.where(
+		.where((t) =>
 			and(
 				not(isDeployedQuery),
-				servers.remote,
-				// No PRs have been made
+				t.servers.remote,
+				// Don't make PRs if we've made a PR in the past
+				// or if there's already an open PR by the same owner.
+				// If the owner has multiple MCP repos and we already have an open PR, we'll wait till it's closed first before creating a new one.
 				not(
-					sql`EXISTS(SELECT 1 FROM ${pullRequests} WHERE ${pullRequests.serverRepo} = ${serverRepos.id})`,
+					sql`EXISTS(
+						SELECT 1
+						FROM ${pullRequests}
+						JOIN ${serverRepos} AS sr ON ${pullRequests.serverRepo} = ${serverRepos.id}
+						WHERE 
+							${pullRequests.serverRepo} = ${t.server_repos.id}
+							OR
+							(
+							sr.repo_owner = ${t.server_repos.repoOwner} AND
+							${pullRequests.isClosed} = false
+							)
+					)`,
+				),
+				// Ignore failed attempts
+				not(
+					sql`EXISTS(SELECT 1 FROM ${pullRequestsFailures} WHERE ${pullRequestsFailures.serverRepo} = ${serverRepos.id})`,
 				),
 				// Manual blacklist
-				notInArray(serverRepos.repoOwner, blockRepoOwner),
+				notInArray(t.server_repos.repoOwner, blockRepoOwner),
 			),
 		)
+
 		// Latest servers first
-		.orderBy(desc(servers.createdAt))
+		.orderBy(serverRepos.repoOwner, desc(servers.createdAt))
 		.limit(limit)
 
 	console.log(`Generating PR for ${allServers.length} servers`)
 
-	for (const { servers: server } of allServers) {
+	for (const { servers: server, server_repos: serverRepo } of allServers) {
 		const result = await createServerRepoPullRequest(
 			server,
 			true,
@@ -43,6 +67,11 @@ export async function createOutboundPR(limit = 10) {
 			console.log(`PR created successfully: ${result.value.prUrl}`)
 		} else {
 			console.error(`Failed to create PR: ${result.error}`)
+			await db.insert(pullRequestsFailures).values({
+				error: result.error,
+				serverRepo: serverRepo.id,
+				task: "config",
+			})
 		}
 	}
 	console.log("Done.")

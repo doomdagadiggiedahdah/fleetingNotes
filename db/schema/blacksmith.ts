@@ -52,3 +52,19 @@ export const pullRequests = pgTable(
 		unq: unique().on(t.pullRequestNumber, t.serverRepo),
 	}),
 ).enableRLS()
+
+// A table to mark PR failures to avoid retries
+export const pullRequestsFailures = pgTable("pull_requests_failures", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	// ID of the serverRepo
+	serverRepo: uuid("server_repo")
+		.references(() => serverRepos.id, {
+			onDelete: "cascade",
+		})
+		.notNull()
+		.unique(),
+	// Type of task the PR was trying to achieve.
+	task: prTask("pr_task").notNull(),
+	error: text("error").notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+}).enableRLS()
