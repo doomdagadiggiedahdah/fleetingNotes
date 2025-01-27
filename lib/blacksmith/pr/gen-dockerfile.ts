@@ -228,15 +228,23 @@ export const generateDockerFile = (
 			}),
 		])
 		// TODO: Would be better if we can modify the prompt of an MCP (adapter)
-		const listRepoText = (listRepoResults.content as Record<string, string>[])
-			.map((c) =>
-				JSON.stringify(
-					JSON.parse(c.text).map((file: object) =>
-						pick(file, ["type", "size", "name", "path"]),
-					),
-				),
-			)
-			.join("\n")
+		const listRepoText = (() => {
+			try {
+				return (listRepoResults.content as Record<string, string>[])
+					.map((c) =>
+						JSON.stringify(
+							// Sometimes this fails Error: MCP error -32603: Not Found: Resource not found:
+							JSON.parse(c.text).map((file: object) =>
+								pick(file, ["type", "size", "name", "path"]),
+							),
+						),
+					)
+					.join("\n")
+			} catch (e) {
+				console.error(e)
+				return ""
+			}
+		})()
 
 		// Prompt with some commonly used files
 		const initFilePrompts: string[] = fileNamedContents.map(

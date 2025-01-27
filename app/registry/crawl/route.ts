@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 	waitUntil(
 		(async () => {
 			try {
-				const crawlLimit = 5
+				const crawlLimit = 3
 				await crawlServers(crawlLimit)
 				await Promise.all([createOutboundPR(crawlLimit), cleanupForkedRepos()])
 			} catch (e) {

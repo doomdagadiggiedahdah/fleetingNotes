@@ -58,17 +58,26 @@ export async function createOutboundPR(limit = 10) {
 	console.log(`Generating PR for ${allServers.length} servers`)
 
 	for (const { servers: server, server_repos: serverRepo } of allServers) {
-		const result = await createServerRepoPullRequest(
-			server,
-			true,
-			process.env.GITHUB_BOT_UAT,
-		)
-		if (result.ok) {
-			console.log(`PR created successfully: ${result.value.prUrl}`)
-		} else {
-			console.error(`Failed to create PR: ${result.error}`)
+		try {
+			const result = await createServerRepoPullRequest(
+				server,
+				true,
+				process.env.GITHUB_BOT_UAT,
+			)
+			if (result.ok) {
+				console.log(`PR created successfully: ${result.value.prUrl}`)
+			} else {
+				console.error(`Failed to create PR: ${result.error}`)
+				await db.insert(pullRequestsFailures).values({
+					error: result.error,
+					serverRepo: serverRepo.id,
+					task: "config",
+				})
+			}
+		} catch (e) {
+			console.error(`Failed to create PR: ${e}`)
 			await db.insert(pullRequestsFailures).values({
-				error: result.error,
+				error: `Thrown error ${e}`,
 				serverRepo: serverRepo.id,
 				task: "config",
 			})
