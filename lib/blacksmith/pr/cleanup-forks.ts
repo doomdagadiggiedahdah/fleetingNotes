@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { pullRequests } from "@/db/schema/blacksmith"
 import { serverRepos, servers } from "@/db/schema/servers"
+import { getAuthApp } from "@/lib/auth/github/server"
 import { toResult } from "@/lib/utils/result"
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest"
 import { and, eq, not } from "drizzle-orm"
@@ -31,8 +32,9 @@ export async function cleanupForkedRepos() {
 
 	console.log(`Processing ${rows.length} repositories...`)
 
-	const octokit = new Octokit({
-		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+	const auth = getAuthApp()
+	const appOctokit = new Octokit({
+		auth: process.env.GITHUB_BOT_UAT,
 	})
 
 	// Process each repository
@@ -49,7 +51,7 @@ export async function cleanupForkedRepos() {
 
 			// Get PR statuses in parallel
 			const prResult = await toResult<{ data: PullRequest }>(
-				octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+				appOctokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
 					owner: repo.repoOwner,
 					repo: repo.repoName,
 					pull_number: prNumber,
@@ -76,9 +78,29 @@ export async function cleanupForkedRepos() {
 				continue
 			}
 
+			const result = await toResult(
+				appOctokit.rest.apps.getRepoInstallation({
+					owner: repo.repoOwner,
+					repo: repo.repoName,
+				}),
+			)
+			if (!result.ok) {
+				console.error(`Failed to fetch installation for: ${result.error}`)
+				continue
+			}
+
+			// Generate an installation token, then create an Octokit with it
+			const { token: installToken } = await auth({
+				type: "installation",
+				installationId: result.value.data.id,
+			})
+			const installationOctokit = new Octokit({
+				auth: installToken,
+			})
+
 			// Get all forks
 			const forksResult = await toResult<{ data: Fork[] }>(
-				octokit.request("GET /repos/{owner}/{repo}/forks", {
+				installationOctokit.request("GET /repos/{owner}/{repo}/forks", {
 					owner: repo.repoOwner,
 					repo: repo.repoName,
 				}),
@@ -111,7 +133,7 @@ export async function cleanupForkedRepos() {
 			const deletionResults = await Promise.all(
 				forksToDelete.map(async (fork: Fork) => {
 					const deleteResult = await toResult(
-						octokit.request("DELETE /repos/{owner}/{repo}", {
+						installationOctokit.request("DELETE /repos/{owner}/{repo}", {
 							owner: fork.owner.login,
 							repo: fork.name,
 						}),

@@ -61,7 +61,7 @@ export async function crawlServers() {
 	console.log("URLs to process:", urlsToCrawl.length)
 
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		auth: process.env.GITHUB_BOT_UAT,
 	})
 
 	for (const url of urlsToCrawl) {

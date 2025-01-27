@@ -37,7 +37,7 @@ export async function createOutboundPR(limit = 10) {
 		const result = await createServerRepoPullRequest(
 			server,
 			true,
-			process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+			process.env.GITHUB_BOT_UAT,
 		)
 		if (result.ok) {
 			console.log(`PR created successfully: ${result.value.prUrl}`)

@@ -34,7 +34,7 @@ export async function pullTrainingData() {
 	const trainingData: TrainingExample[] = []
 
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		auth: process.env.GITHUB_BOT_UAT,
 	})
 	for (const pr of prs) {
 		if (!pr.prUrl) continue

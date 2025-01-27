@@ -14,7 +14,7 @@ import * as path from "node:path"
  */
 export async function run() {
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+		auth: process.env.GITHUB_BOT_UAT,
 	})
 	// Ensure scratch directory exists
 	const scratchDir = path.join(process.cwd(), "scratch")

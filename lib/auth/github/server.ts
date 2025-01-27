@@ -3,7 +3,7 @@ import { err, ok, toResult } from "@/lib/utils/result"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 
-export async function getOctokit() {
+export async function getSessionUserOctokit() {
 	const supabase = await createClient()
 
 	const [
@@ -32,6 +32,7 @@ export function getAuthApp() {
 		clientSecret: process.env.GITHUB_APP_CLIENT_SECRET as string,
 	})
 }
+
 export function getAppOctokit() {
 	return new Octokit({
 		authStrategy: createAppAuth,

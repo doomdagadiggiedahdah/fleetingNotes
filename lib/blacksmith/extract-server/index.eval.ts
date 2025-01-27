@@ -153,7 +153,7 @@ Eval<string, RegistryServerNew, RegistryServerNew>("Smithery", {
 	},
 	task: async (url: string) => {
 		const octokit = new Octokit({
-			auth: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
+			auth: process.env.GITHUB_BOT_UAT,
 		})
 		const repoInfo = await extractRepo(octokit, url)
 		if (!repoInfo) throw new Error(`Failed to extract server. ${url}`)

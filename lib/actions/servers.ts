@@ -15,7 +15,7 @@ import {
 
 import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
-import { getOctokit } from "../auth/github/server"
+import { getSessionUserOctokit } from "../auth/github/server"
 import { extractServer } from "../blacksmith/extract-server"
 import { createServerRepoPullRequest } from "../blacksmith/pr"
 import { getMe } from "../supabase/server"
@@ -93,7 +93,7 @@ export async function createServer(rawData: CreateServerInputs) {
 	// Validate
 	const insertData = createServerSchema.parse(rawData)
 
-	const res = await getOctokit()
+	const res = await getSessionUserOctokit()
 
 	if (!res) return { error: "Failed to connect to GitHub user." }
 
