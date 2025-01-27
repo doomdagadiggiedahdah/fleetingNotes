@@ -2,7 +2,7 @@ import { wrapOpenAI, wrapTraced } from "braintrust"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
-import mcpPrompt from "../mcp-prompt.txt"
+import mcpPrompt from "../mcp-prompt-mini.txt"
 
 export function constructPatchMessages(
 	qualifiedName: string,

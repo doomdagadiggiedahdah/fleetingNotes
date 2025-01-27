@@ -1,0 +1,74 @@
+MCP TECHNICAL PRIMER
+(Explicitly clarifies: “MCP = Model Context Protocol,” an open specification that standardizes LLM-to-application integration.)
+
+1. Core Definition
+MCP (Model Context Protocol) is an open standard for bridging Large Language Model (LLM) applications (clients) with servers that expose data (resources), actions (tools), and prompt templates. It relies on JSON-RPC 2.0 for request/response exchange over transports like stdio or SSE.
+
+2. Key Purpose
+	•	Dynamically integrate LLMs with external context: files, DB content, logs, APIs, or custom operations.
+	•	Let LLMs reference or manipulate real-world data and tools in a standardized, secure way.
+
+3. Architecture
+	•	Client: Typically an LLM-based host (Claude Desktop, IDE plugin, etc.) that loads an MCP client library.
+	•	Server: Implements MCP, exposing Tools (model-invocable functions), Resources (data content), Prompts (reusable templates), optionally Sampling. Communicates solely via JSON-RPC messages.
+
+4. Core Features
+	•	Tools: Named capabilities with typed arguments (JSON schema). The LLM may call them to perform actions or fetch computed results.
+	•	Resources: File-like objects (identified by URIs) that can be listed, read, or streamed.
+	•	Prompts: Predefined conversation blocks with placeholders, letting LLMs retrieve standardized workflows.
+	•	Sampling (optional): The server can request completions from the client’s LLM interface.
+
+5. JSON-RPC Integration
+	•	Initialize → server returns capabilities + version.
+	•	Method Calls:
+	1.	tools/list / tools/call
+	2.	resources/list / resources/read
+	3.	prompts/list / prompts/get
+	4.	(Optional) sampling/createMessage
+	•	Each request is {"jsonrpc":"2.0","id":..., "method":"...","params":{...}}; respond with {"jsonrpc":"2.0","id":...,"result":...} or {"error":...}.
+
+6. Error Codes
+	•	Standard JSON-RPC: -32600 (invalid request), -32601 (method not found), -32602 (invalid params), -32603 (internal error).
+	•	Application-specific codes can appear in the error object’s code field.
+
+7. Implementation Outline
+	1.	Server Setup
+	•	Create server instance (custom or using an MCP SDK).
+	•	Advertise features (tools, resources, prompts) in the init response.
+	2.	Transport
+	•	Typically stdio for local usage; SSE/HTTP for remote.
+	•	Must parse JSON lines or SSE events, dispatch to request handlers.
+	3.	Handlers
+	•	tools/list: Return each tool’s name, description, JSON schema for inputs.
+	•	tools/call: Validate arguments → run the tool → return structured content.
+	•	resources/list: Return an array of resource descriptors (URI, name, MIME type).
+	•	resources/read: Return text or base64-encoded data.
+	•	prompts/list / prompts/get: Provide reusable prompt definitions.
+	•	(Optional) sampling/createMessage: The server passes conversation messages, the client’s LLM provides the completion.
+	4.	Security
+	•	Restrict resource paths if handling file URIs.
+	•	Validate all tool args and method calls.
+	•	In remote scenarios, wrap with TLS and possibly OAuth or token-based auth.
+
+8. Example Mini-Implementation (Pseudo-Code)
+
+tools = {
+  "addNumbers": { ...schema..., handler(args){ return (args.x + args.y) } },
+  "createFile": { ...schema..., handler(args){ fs.writeFileSync(args.path, args.content) ... } }
+}
+resources = [{"uri":"file:///path/to/foo.txt", "name":"Foo", "mimeType":"text/plain"}]
+prompts = [{"name":"welcomePrompt", "description":"Welcome user", "args":[{...}], "genMsgs":(a)=>[...] }]
+
+function onMessage(msg) {
+  let r = parseJSON(msg)
+  switch(r.method){
+    case "initialize": return initResponse(r.id)
+    case "tools/list": return listTools(r.id, tools)
+    case "tools/call": return callTool(r.id, r.params, tools)
+    case "resources/list": return listResources(r.id, resources)
+    case "resources/read": return readResource(r.id, r.params.uri)
+    case "prompts/list": return listPrompts(r.id, prompts)
+    case "prompts/get": return getPrompt(r.id, r.params)
+    ...
+  }
+}

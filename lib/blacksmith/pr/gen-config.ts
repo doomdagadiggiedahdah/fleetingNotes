@@ -16,7 +16,7 @@ import { omit, pick } from "lodash"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import type { FileNamedContent } from "./gen-all"
-import mcpPrompt from "../mcp-prompt.txt"
+import mcpPrompt from "../mcp-prompt-mini.txt"
 
 // Patch event source
 global.EventSource = EventSource

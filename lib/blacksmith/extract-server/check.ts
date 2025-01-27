@@ -11,7 +11,7 @@ import "@/lib/utils/braintrust"
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { z } from "zod"
-import mcpPrompt from "../mcp-prompt.txt"
+import mcpPrompt from "../mcp-prompt-mini.txt"
 
 interface Args {
 	repoOwner: string

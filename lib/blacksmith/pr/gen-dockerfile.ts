@@ -10,7 +10,7 @@ import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import type { FileNamedContent } from "./gen-all"
-import mcpPrompt from "../mcp-prompt.txt"
+import mcpPrompt from "../mcp-prompt-mini.txt"
 
 // Patch event source
 global.EventSource = EventSource
