@@ -96,6 +96,7 @@ export async function GET(request: Request) {
 				console.error(`Background task error: ${e}`)
 			} finally {
 				await logger.flush()
+				console.log("Crawl complete.")
 			}
 		})(),
 	)

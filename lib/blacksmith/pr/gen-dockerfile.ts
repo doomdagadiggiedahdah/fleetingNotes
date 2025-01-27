@@ -182,6 +182,11 @@ Before viewing any file on Github, list the directory to check if it exists firs
 If you're given a URL that's a subdirectory of a Github repository, note that when URL references /tree/main is refers to the root of the repo, it doesn't mean there's an actual path in the repo called /tree/main.
 </navigation>
 </research_tips>
+
+<docker_tips>
+It's common for npm packages to have a \`prepare\` script that runs before \`npm install\`. This script can be used to run tasks that need to happen before the package is installed, such as generating a build.
+This may cause build errors if certain dev dependencies are missing before running \`npm install\` (e.g., \`tsx\` or \`tsc\`). To skip the prepare command when building, you can install using \`npm install --ignore-scripts\` first, then \`npm run build\` in the Dockerfile.
+</docker_tips>
 `
 
 interface GenerateDockerFileData {
