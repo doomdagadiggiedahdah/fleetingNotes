@@ -8,7 +8,9 @@ import { logger } from "@/lib/utils/braintrust"
 import { waitUntil } from "@vercel/functions"
 import { NextResponse } from "next/server"
 
-// const urlRegex = /https?:\/\/[^\s\)]+/g
+export const revalidate = 0
+export const maxDuration = 300
+
 const urlRegex = /https:\/\/github.com[^\s\)]+/g
 
 // A list of sources to crawl from
@@ -20,13 +22,34 @@ const sources = [
 
 // Open server that provides JSON Github URLs
 const glama = "https://glama.ai/mcp/servers.json"
-
-// This site requires 2-hit scraping
+// Addition sites requires 2-hit scraping
 // https://mcp.so/sitemap_projects_1.xml
 // https://www.pulsemcp.com/
 
-export async function POST() {
+// Validate a GitHub URL
+function isValidGitHubUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url)
+		return (
+			parsed.hostname === "github.com" &&
+			parsed.pathname.split("/").length >= 3 && // Must have owner/repo
+			!parsed.pathname.includes("..")
+		) // Prevent path traversal
+	} catch {
+		return false
+	}
+}
+
+export async function GET(request: Request) {
+	const authHeader = request.headers.get("authorization")
+	if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+		return new Response("Unauthorized", {
+			status: 401,
+		})
+	}
+
 	let urls: string[] = []
+
 	for (const source of sources) {
 		try {
 			const response = await fetch(source)
@@ -36,6 +59,8 @@ export async function POST() {
 			console.error(e)
 		}
 	}
+
+	// Fetch from JSON source
 	try {
 		const response = await fetch(glama)
 		const body = await response.json()
@@ -44,28 +69,42 @@ export async function POST() {
 		console.error(e)
 	}
 
-	// Post-process
-	// Remove all trailing slashes
-	urls.forEach((url, i) => {
-		urls[i] = url.endsWith("/") ? url.slice(0, -1) : url
-	})
-	// Ensure it's a repo with at least a slash
-	urls = urls.filter((url) => url.split("/").length >= 5)
+	// Post-process and validate URLs
+	urls = urls
+		// Remove all trailing slashes
+		.map((url) => (url.endsWith("/") ? url.slice(0, -1) : url))
+		// Ensure it's a repo with at least a slash
+		.filter((url) => url.split("/").length >= 5)
+		.filter(isValidGitHubUrl)
+		.filter((url, index, self) => self.indexOf(url) === index) // Remove duplicates
 
-	if (urls) {
+	if (urls.length > 0) {
 		await db
 			.insert(candidate_urls)
 			.values(urls.map((crawl_url) => ({ crawl_url, processed: false })))
 			.onConflictDoNothing()
 	}
 
+	// Run background tasks
 	waitUntil(
 		(async () => {
-			await crawlServers()
-			await createOutboundPR()
-			await cleanupForkedRepos()
-			await logger.flush()
+			try {
+				const crawlLimit = 5
+				await crawlServers(crawlLimit)
+				await Promise.all([createOutboundPR(crawlLimit), cleanupForkedRepos()])
+			} catch (e) {
+				console.error(`Background task error: ${e}`)
+			} finally {
+				await logger.flush()
+			}
 		})(),
 	)
-	return NextResponse.json({}, { status: 200 })
+
+	return NextResponse.json(
+		{
+			success: true,
+			urlsProcessed: urls.length,
+		},
+		{ status: 200 },
+	)
 }

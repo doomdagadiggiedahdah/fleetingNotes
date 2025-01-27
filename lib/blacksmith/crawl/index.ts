@@ -20,7 +20,7 @@ export const blockRepoOwner = [
 /**
  * Goes through all unprocessed URLs and generates entries for each
  */
-export async function crawlServers() {
+export async function crawlServers(limit = 10) {
 	const rows = await db
 		.select({ url: candidate_urls.crawl_url })
 		.from(candidate_urls)
@@ -36,7 +36,7 @@ export async function crawlServers() {
 		)
 		.orderBy(desc(candidate_urls.createdAt))
 		// Need a limit otherwise Github will rate limit
-		.limit(50)
+		.limit(limit)
 
 	const canonicalCrawls = await Promise.all(
 		rows.map((row) => canonicalizeGithubUrl(row.url)),
