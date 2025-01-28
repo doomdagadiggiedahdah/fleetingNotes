@@ -9,7 +9,6 @@ import { getMdxComponents } from "@/mdx-components"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { MDXRemote } from "next-mdx-remote/rsc"
-
 import { notFound } from "next/navigation"
 import { ErrorBoundary } from "react-error-boundary"
 
@@ -23,16 +22,18 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	// Get all server IDs from the database
 	const servers = await db.query.servers.findMany({
-		columns: {
-			qualifiedName: true,
-		},
+		columns: { qualifiedName: true },
 	})
-	const serverIds = servers.map((s) => s.qualifiedName)
-	return serverIds.map((id) => ({
-		ids: id.split("/"),
-	}))
+
+	return servers.flatMap((server) => {
+		const baseSegments = server.qualifiedName.split("/")
+		return [
+			{ ids: baseSegments },
+			{ ids: [...baseSegments, "about"] }, // About tab
+			{ ids: [...baseSegments, "tools"] }, // Tools tab
+		]
+	})
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
@@ -57,26 +58,41 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 
 function parsePathParams(ids: string[]) {
-	// The first part has to start with @
+	const validTabs = new Set(["about", "tools", "deployments", "settings"])
+
+	// Decode the segments first
+	const decodedIds = ids.map(decodeURIComponent)
+
 	const idParts = []
+	let tabSegment: string | null = null
 
-	for (let part of ids.slice(0, 2)) {
-		part = decodeURIComponent(part)
+	// Servers that have two segments, starts with @
+	for (const part of decodedIds.slice(0, 2)) {
+		if (!part.startsWith("@")) break
 		idParts.push(part)
-
-		// All servers start with "@"
-		if (!part.startsWith("@")) {
-			break
-		}
 	}
 
-	const qualifiedName = idParts.join("/")
-	return { qualifiedName, remaining: ids.slice(idParts.length) }
+	// Handle remaining segments (including potential tab)
+	const remaining = decodedIds.slice(idParts.length)
+
+	// Check if last segment is a valid tab
+	if (remaining.length > 0 && validTabs.has(remaining[remaining.length - 1])) {
+		tabSegment = remaining.pop()!
+	}
+
+	const result = {
+		qualifiedName: [...idParts, ...remaining].join("/"),
+		activeTab: tabSegment || "about",
+		remainingSegments: remaining,
+	}
+
+	return result
 }
 
 export default async function Page(props: Props) {
 	const params = await props.params
-	const { qualifiedName } = parsePathParams(params.ids)
+	const { qualifiedName, activeTab: initialActiveTab } = parsePathParams(params.ids)
+	const activeTab = initialActiveTab
 
 	let server: FetchedServer | null = null
 	let error = ""
@@ -128,12 +144,16 @@ export default async function Page(props: Props) {
 			longDescription
 		)
 	}
+
 	return (
 		<main className="min-h-screen bg-background">
 			{error ? (
 				<ErrorMessage message={error} />
 			) : (
-				<ServerPage server={server} />
+				<ServerPage
+					server={server}
+					activeTab={activeTab}
+				/>
 			)}
 		</main>
 	)

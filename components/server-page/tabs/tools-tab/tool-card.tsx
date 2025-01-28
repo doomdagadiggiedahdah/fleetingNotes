@@ -29,6 +29,7 @@ interface ToolCardProps {
 		result: CompatibilityCallToolResult | null
 		error: string | null
 	}) => void
+	disabled?: boolean
 }
 
 export function ToolCard({
@@ -36,6 +37,7 @@ export function ToolCard({
 	onExecute,
 	onExpandedChange,
 	onExecutionChange,
+	disabled,
 }: ToolCardProps) {
 	const [toolInputs, setToolInputs] = useState<Record<string, unknown>>({})
 	const [execution, setExecution] = useState({
@@ -220,7 +222,7 @@ export function ToolCard({
 							<Button
 								className="w-32 flex items-center justify-center gap-2 rounded-full border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
 								variant="ghost"
-								disabled={execution.isExecuting}
+								disabled={execution.isExecuting || disabled}
 								onClick={handleExecute}
 							>
 								{execution.isExecuting ? (

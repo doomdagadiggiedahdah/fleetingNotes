@@ -1,7 +1,5 @@
-import { MCPProvider } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { BadgeCheck, ExternalLink } from "lucide-react"
-
 import { SiGithub } from "@icons-pack/react-simple-icons"
 import { Suspense } from "react"
 import { Header } from "../header"
@@ -9,16 +7,15 @@ import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
-
 import { ServerTabs } from "./tabs"
 import ServerSearch from "../server-search"
 
 interface Props {
 	server: FetchedServer
-	tab?: string
+	activeTab: string
 }
 
-export function ServerPage({ server }: Props) {
+export function ServerPage({ server, activeTab }: Props) {
 	return (
 		<>
 			<Header />
@@ -78,11 +75,12 @@ export function ServerPage({ server }: Props) {
 					</div>
 				</div>
 
-				<MCPProvider>
 					<Suspense>
-						<ServerTabs server={server} />
+						<ServerTabs
+							server={server}
+							activeTab={activeTab}
+						/>
 					</Suspense>
-				</MCPProvider>
 			</Container>
 		</>
 	)

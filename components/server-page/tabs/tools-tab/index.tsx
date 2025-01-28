@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
 import { Card } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import { useState, useEffect } from "react"
+import { Settings } from "lucide-react"
+import { useState } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import ServerSearch from "@/components/server-search"
+// import ServerSearch from "@/components/server-search"
 import {
 	type Tool,
 	type CompatibilityCallToolResult,
@@ -13,15 +13,33 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
+import { ConfigurationForm } from "../config-form"
+import { Button } from "@/components/ui/button"
+import type { JSONSchema } from "@/lib/types/server"
 
 interface ToolsPanelProps {
 	server: FetchedServer
+	tools: Tool[]
+	showConfigForm?: boolean
+	configSchema?: JSONSchema
+	onConfigSubmit?: (config: JSONSchema) => Promise<void>
+	onConfigCancel?: () => void
+	initialConfig?: JSONSchema
+	onConfigSuccess?: () => void
 }
 
-export function ToolsPanel({ server }: ToolsPanelProps) {
-	const { status, listTools, tools, makeRequestTo } = useMCP()
-	const [isLoading, setIsLoading] = useState(false)
-	const [error, setError] = useState<string | null>(null)
+export function ToolsPanel({
+	server,
+	tools,
+	showConfigForm,
+	configSchema,
+	onConfigSubmit,
+	onConfigCancel,
+	initialConfig = {},
+	onConfigSuccess,
+}: ToolsPanelProps) {
+	const { status, makeRequestTo, connect } = useMCP()
+	// const [error, setError] = useState<string | null>(null)
 	const [searchQuery, setSearchQuery] = useState("")
 	const [isExpanded, setIsExpanded] = useState(false)
 	const [activeExecution, setActiveExecution] = useState<{
@@ -33,29 +51,7 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 		result: null,
 		error: null,
 	})
-
-	useEffect(() => {
-		async function loadTools() {
-			if (status !== "connected") return
-
-			setIsLoading(true)
-			setError(null)
-
-			try {
-				await listTools()
-			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to fetch tools")
-			} finally {
-				setIsLoading(false)
-			}
-		}
-
-		loadTools()
-	}, [status, listTools])
-
-	const handleSearch = async (query: string) => {
-		setSearchQuery(query)
-	}
+	const [isEditingConfig, setIsEditingConfig] = useState(false)
 
 	const filteredTools = tools.filter(
 		(tool) =>
@@ -64,6 +60,10 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 	)
 
 	const executeTool = async (tool: Tool, inputs: Record<string, unknown>) => {
+		if (status !== "connected") {
+			throw new Error("Must be connected to execute tools")
+		}
+
 		try {
 			const result = await makeRequestTo(
 				{
@@ -87,33 +87,30 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 		}
 	}
 
-	if (status === "disconnected") {
-		return (
-			<Card className="p-6">
-				<div className="flex flex-col items-center justify-center space-y-4">
-					<p className="text-sm text-muted-foreground">
-						Connecting to {server.displayName}...
-					</p>
-					<Loader2 className="w-4 h-4 animate-spin" />
-				</div>
-			</Card>
-		)
-	}
-
-	if (isLoading) {
-		return (
-			<Card className="p-6">
-				<div className="flex items-center justify-center">
-					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-				</div>
-			</Card>
-		)
+	const handleConfigSubmit = async (config: JSONSchema) => {
+		if (!server?.deploymentUrl) {
+			throw new Error("Server URL is required")
+		}
+		const sseUrl = `${server.deploymentUrl}/sse`
+		await connect(sseUrl, { config })
+		if (onConfigSubmit) {
+			await onConfigSubmit(config)
+		}
 	}
 
 	return (
 		<div className="space-y-6">
-			<div className="w-1/2">
-				<ServerSearch />
+			<div className="flex justify-between items-center">
+				{/* TODO: proper implementation
+				 <div className="w-1/2">
+					<ServerSearch />
+				</div> */}
+				{status === "connected" && !isEditingConfig && (
+					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
+						<Settings className="w-4 h-4 mr-2" />
+						Edit Configuration
+					</Button>
+				)}
 			</div>
 
 			<div className="flex gap-6">
@@ -139,6 +136,7 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 										onExecute={executeTool}
 										onExpandedChange={setIsExpanded}
 										onExecutionChange={setActiveExecution}
+										disabled={status !== "connected"}
 									/>
 								</Card>
 							))}
@@ -147,13 +145,24 @@ export function ToolsPanel({ server }: ToolsPanelProps) {
 				</div>
 
 				<div className="w-1/2">
-					{isExpanded ? (
+					{(showConfigForm && status !== "connected") || isEditingConfig ? (
+						<ConfigurationForm
+							schema={configSchema!}
+							onSubmit={handleConfigSubmit}
+							onCancel={() => {
+								setIsEditingConfig(false)
+								onConfigCancel?.()
+							}}
+							initialConfig={initialConfig}
+							onSuccess={() => {
+								setIsEditingConfig(false)
+								onConfigSuccess?.()
+							}}
+							defaultEditMode={false}
+						/>
+					) : isExpanded ? (
 						<Card className="p-6">
-							<ToolResults
-								isExecuting={activeExecution.isExecuting}
-								error={activeExecution.error}
-								result={activeExecution.result}
-							/>
+							<ToolResults {...activeExecution} />
 						</Card>
 					) : (
 						<div className="h-full" />

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from "react"
 import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
