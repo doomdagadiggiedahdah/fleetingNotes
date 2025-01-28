@@ -38,14 +38,17 @@ export async function getAllServers(
 	const parsedQueryObj = (() => {
 		const parsed = searchQueryParser.parse(query || "", {
 			keywords: ["owner", "repo"],
-			alwaysArray: true,
 		})
 		return typeof parsed === "string" ? null : parsed
 	})()
 
-	const semanticQuery = Array.isArray(parsedQueryObj?.text)
-		? parsedQueryObj.text.join(" ").trim()
-		: query
+	const semanticQuery = parsedQueryObj
+		? Array.isArray(parsedQueryObj?.text)
+			? parsedQueryObj.text.join(" ").trim()
+			: parsedQueryObj?.text
+				? parsedQueryObj?.text.trim()
+				: undefined
+		: query?.trim()
 
 	const similarity = await (async () => {
 		if (!semanticQuery) return null
@@ -106,11 +109,12 @@ export async function getAllServers(
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.groupBy(servers.id, serverRepos.id)
 		.orderBy((t) => [
-			...(similarity ? [desc(similarity)] : []),
 			// There exists a valid installation strategy
 			sql`CASE WHEN ${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
-			// Prioritize the new servers
-			desc(t.isNew),
+			...(similarity
+				? [desc(similarity)]
+				: // Prioritize the new servers
+					[desc(t.isNew)]),
 			desc(t.useCount),
 			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
 			sql`RANDOM()`,
