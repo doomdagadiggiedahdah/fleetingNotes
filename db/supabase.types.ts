@@ -30,16 +30,19 @@ export type Database = {
 			candidate_urls: {
 				Row: {
 					crawl_url: string
+					created_at: string | null
 					errored: boolean
 					processed: boolean
 				}
 				Insert: {
 					crawl_url: string
+					created_at?: string | null
 					errored?: boolean
 					processed?: boolean
 				}
 				Update: {
 					crawl_url?: string
+					created_at?: string | null
 					errored?: boolean
 					processed?: boolean
 				}
@@ -53,6 +56,7 @@ export type Database = {
 					created_at: string
 					deployment_url: string | null
 					id: string
+					logs: string | null
 					repo: string
 					server_id: string
 					status: Database["public"]["Enums"]["deployment_status"]
@@ -65,6 +69,7 @@ export type Database = {
 					created_at?: string
 					deployment_url?: string | null
 					id?: string
+					logs?: string | null
 					repo: string
 					server_id: string
 					status: Database["public"]["Enums"]["deployment_status"]
@@ -77,6 +82,7 @@ export type Database = {
 					created_at?: string
 					deployment_url?: string | null
 					id?: string
+					logs?: string | null
 					repo?: string
 					server_id?: string
 					status?: Database["public"]["Enums"]["deployment_status"]
@@ -154,6 +160,8 @@ export type Database = {
 				Row: {
 					created_at: string
 					id: string
+					is_closed: boolean
+					merged_at: string | null
 					pr_id: string
 					pr_task: Database["public"]["Enums"]["pr_task"]
 					server_repo: string
@@ -161,6 +169,8 @@ export type Database = {
 				Insert: {
 					created_at?: string
 					id?: string
+					is_closed?: boolean
+					merged_at?: string | null
 					pr_id: string
 					pr_task: Database["public"]["Enums"]["pr_task"]
 					server_repo: string
@@ -168,6 +178,8 @@ export type Database = {
 				Update: {
 					created_at?: string
 					id?: string
+					is_closed?: boolean
+					merged_at?: string | null
 					pr_id?: string
 					pr_task?: Database["public"]["Enums"]["pr_task"]
 					server_repo?: string
@@ -177,6 +189,38 @@ export type Database = {
 						foreignKeyName: "pull_requests_server_repo_server_repos_id_fk"
 						columns: ["server_repo"]
 						isOneToOne: false
+						referencedRelation: "server_repos"
+						referencedColumns: ["id"]
+					},
+				]
+			}
+			pull_requests_failures: {
+				Row: {
+					created_at: string
+					error: string
+					id: string
+					pr_task: Database["public"]["Enums"]["pr_task"]
+					server_repo: string
+				}
+				Insert: {
+					created_at?: string
+					error: string
+					id?: string
+					pr_task: Database["public"]["Enums"]["pr_task"]
+					server_repo: string
+				}
+				Update: {
+					created_at?: string
+					error?: string
+					id?: string
+					pr_task?: Database["public"]["Enums"]["pr_task"]
+					server_repo?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: "pull_requests_failures_server_repo_server_repos_id_fk"
+						columns: ["server_repo"]
+						isOneToOne: true
 						referencedRelation: "server_repos"
 						referencedColumns: ["id"]
 					},
@@ -240,7 +284,6 @@ export type Database = {
 					published: boolean
 					qualified_name: string
 					remote: boolean
-					tags: Json
 					updated_at: string
 					verified: boolean | null
 				}
@@ -260,7 +303,6 @@ export type Database = {
 					published?: boolean
 					qualified_name: string
 					remote?: boolean
-					tags?: Json
 					updated_at?: string
 					verified?: boolean | null
 				}
@@ -280,7 +322,6 @@ export type Database = {
 					published?: boolean
 					qualified_name?: string
 					remote?: boolean
-					tags?: Json
 					updated_at?: string
 					verified?: boolean | null
 				}

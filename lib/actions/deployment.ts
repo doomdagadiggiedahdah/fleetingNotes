@@ -319,9 +319,9 @@ export async function createDeploymentForServer(
 						],
 					},
 				],
+				logsBucket: `gs://smithery-build-logs/${server.id}`,
 				options: {
 					automapSubstitutions: true,
-					logging: "CLOUD_LOGGING_ONLY",
 				},
 				images: [
 					// For caching purposes

@@ -36,6 +36,8 @@ export const deployments = pgTable(
 			.references(() => serverRepos.id, { onDelete: "cascade" }),
 		branch: text("branch").notNull(),
 		deploymentUrl: text("deployment_url"),
+		// Path the log
+		logs: text("logs"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},

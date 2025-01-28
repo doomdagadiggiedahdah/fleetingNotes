@@ -1,0 +1,1 @@
+ALTER TABLE "deployments" RENAME COLUMN "log_url" TO "logs";
