@@ -105,7 +105,7 @@ export function ToolsPanel({
 				 <div className="w-1/2">
 					<ServerSearch />
 				</div> */}
-				{status === "connected" && !isEditingConfig && (
+				{status === "connected" && !isEditingConfig && tools.length > 0 && (
 					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
 						<Settings className="w-4 h-4 mr-2" />
 						Edit Configuration
@@ -115,12 +115,19 @@ export function ToolsPanel({
 
 			<div className="flex gap-6">
 				<div className="w-1/2">
-					{filteredTools.length === 0 ? (
+					{tools.length === 0 ? (
 						<Card className="p-6">
 							<div className="text-sm text-muted-foreground text-center">
-								{searchQuery
-									? "No tools found matching your search"
-									: "No tools available"}
+								{server.deploymentUrl 
+									? "Failed to fetch tools. Please try refreshing the page."
+									: "Viewing tools is currently only available for deployed servers"
+								}
+							</div>
+						</Card>
+					) : filteredTools.length === 0 ? (
+						<Card className="p-6">
+							<div className="text-sm text-muted-foreground text-center">
+								No tools found matching your search
 							</div>
 						</Card>
 					) : (
@@ -145,7 +152,7 @@ export function ToolsPanel({
 				</div>
 
 				<div className="w-1/2">
-					{(showConfigForm && status !== "connected") || isEditingConfig ? (
+					{(showConfigForm && status !== "connected" && tools.length > 0) || isEditingConfig ? (
 						<ConfigurationForm
 							schema={configSchema!}
 							onSubmit={handleConfigSubmit}

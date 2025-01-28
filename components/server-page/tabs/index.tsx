@@ -20,14 +20,13 @@ export async function ServerTabs({
 	server,
 	activeTab,
 }: ServerTabsProps) {
-	let tools: Tool[] = []
-	let configSchema = {}
-	
-	if (server?.deploymentUrl) {
-		const result = await fetchServerTools(server.deploymentUrl)
-		tools = result.tools
-		configSchema = result.configSchema
-	}
+	// Start the fetch immediately but don't await it yet
+	const toolsPromise = server?.deploymentUrl 
+		? fetchServerTools(server.deploymentUrl)
+		: Promise.resolve({ tools: [], configSchema: {} });
+
+	// Fetch tools in parallel with any other operations we might need
+	const { tools, configSchema } = await toolsPromise;
 
 	return (
 		<div className="space-y-4">

@@ -16,6 +16,12 @@ import { Loader2 } from "lucide-react"
 import { useState } from "react"
 import { ChevronUp, ChevronDown, Play } from "lucide-react"
 import React from "react"
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ToolCardProps {
 	tool: Tool
@@ -219,24 +225,37 @@ export function ToolCard({
 							)}
 						</div>
 						<div className="flex justify-center">
-							<Button
-								className="w-32 flex items-center justify-center gap-2 rounded-full border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
-								variant="ghost"
-								disabled={execution.isExecuting || disabled}
-								onClick={handleExecute}
-							>
-								{execution.isExecuting ? (
-									<>
-										<Loader2 className="w-4 h-4 animate-spin" />
-										<span className="text-xs">Executing...</span>
-									</>
-								) : (
-									<>
-										<Play className="h-4 w-4 shrink-0 text-muted-foreground" />
-										<span className="text-xs">Run</span>
-									</>
-								)}
-							</Button>
+							<TooltipProvider delayDuration={0}>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div>
+											<Button
+												className="w-32 flex items-center justify-center gap-2 rounded-full border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
+												variant="ghost"
+												disabled={execution.isExecuting || disabled}
+												onClick={handleExecute}
+											>
+												{execution.isExecuting ? (
+													<>
+														<Loader2 className="w-4 h-4 animate-spin" />
+														<span className="text-xs">Executing...</span>
+													</>
+												) : (
+													<>
+														<Play className="h-4 w-4 shrink-0 text-muted-foreground" />
+														<span className="text-xs">Run</span>
+													</>
+												)}
+											</Button>
+										</div>
+									</TooltipTrigger>
+									{disabled && (
+										<TooltipContent sideOffset={5}>
+											<p>Please configure to enable this feature</p>
+										</TooltipContent>
+									)}
+								</Tooltip>
+							</TooltipProvider>
 						</div>
 					</div>
 				</AccordionContent>
