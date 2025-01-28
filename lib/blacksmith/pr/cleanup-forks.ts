@@ -45,10 +45,6 @@ export async function cleanupForkedRepos() {
 		// const prNumber = Number.parseInt(pr.prUrl.split("/").pop() || "", 10)
 		const prNumber = Number.parseInt(pr.pullRequestNumber)
 		try {
-			console.log(
-				`\nProcessing ${row.server.qualifiedName}/${row.repo.repoName}...`,
-			)
-
 			// Get PR statuses in parallel
 			const prResult = await toResult<{ data: PullRequest }>(
 				appOctokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
@@ -74,10 +70,12 @@ export async function cleanupForkedRepos() {
 				.where(eq(pullRequests.id, pr.id))
 
 			if (prData.state !== "closed") {
-				console.log("PR is not closed. Skipping...")
 				continue
 			}
 
+			console.log(
+				`\nFound closed PR on ${row.server.qualifiedName}/${row.repo.repoName}...`,
+			)
 			const result = await toResult(
 				appOctokit.rest.apps.getRepoInstallation({
 					owner: repo.repoOwner,
@@ -157,6 +155,8 @@ export async function cleanupForkedRepos() {
 			console.error(`Error:`, e)
 		}
 	}
+
+	console.log("Fork cleanup done")
 }
 
 // Run the cleanup process if this file is run directly

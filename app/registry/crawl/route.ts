@@ -5,7 +5,6 @@ import { cleanupForkedRepos } from "@/lib/blacksmith/pr/cleanup-forks"
 import { createOutboundPR } from "@/lib/blacksmith/pr/outbound-pr"
 import "@/lib/utils/braintrust"
 import { logger } from "@/lib/utils/braintrust"
-import { waitUntil } from "@vercel/functions"
 import { NextResponse } from "next/server"
 
 export const revalidate = 0
@@ -85,22 +84,16 @@ export async function GET(request: Request) {
 			.onConflictDoNothing()
 	}
 
-	// Run background tasks
-	waitUntil(
-		(async () => {
-			try {
-				const crawlLimit = 3
-				await crawlServers(crawlLimit)
-				await Promise.all([createOutboundPR(crawlLimit), cleanupForkedRepos()])
-			} catch (e) {
-				console.error(`Background task error: ${e}`)
-			} finally {
-				await logger.flush()
-				console.log("Crawl complete.")
-			}
-		})(),
-	)
-
+	try {
+		const crawlLimit = 3
+		await crawlServers(crawlLimit)
+		await Promise.all([createOutboundPR(crawlLimit), cleanupForkedRepos()])
+	} catch (e) {
+		console.error(`Background task error: ${e}`)
+	} finally {
+		await logger.flush()
+		console.log("Crawl complete.")
+	}
 	return NextResponse.json(
 		{
 			success: true,
