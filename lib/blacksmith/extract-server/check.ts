@@ -95,7 +95,7 @@ export const isMCPServer = (octokit: Octokit) =>
 		const llm = wrapOpenAI(new OpenAI())
 
 		const completion = await llm.beta.chat.completions.parse({
-			model: "gpt-4o-mini",
+			model: "gpt-4o",
 			temperature: 0,
 			messages: [
 				{
@@ -111,7 +111,9 @@ Based on the files provided from this Github repository, check if the given Gith
 Examples of that are NOT MCP servers:
 - Repos that provide a framework for building an MCP, but isn't an MCP server itself
 - Repos that aggregate a list of MCPs in a single file.
-- If you're not sure and there's not enough evidence to confirm, set err on determining it's not a server.
+- Repos that implement an MCP client, but is not a server. An MCP client connects to potential MCP servers, but is not a server itself.
+
+If you're not sure and there's not enough evidence to confirm, err on determining it's not a server.
 </invalid_repos>
 </task>`,
 				},
