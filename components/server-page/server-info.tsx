@@ -75,12 +75,9 @@ export function ServerPage({ server, activeTab }: Props) {
 					</div>
 				</div>
 
-					<Suspense>
-						<ServerTabs
-							server={server}
-							activeTab={activeTab}
-						/>
-					</Suspense>
+				<Suspense>
+					<ServerTabs server={server} activeTab={activeTab} />
+				</Suspense>
 			</Container>
 		</>
 	)

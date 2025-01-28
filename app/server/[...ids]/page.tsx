@@ -91,7 +91,9 @@ function parsePathParams(ids: string[]) {
 
 export default async function Page(props: Props) {
 	const params = await props.params
-	const { qualifiedName, activeTab: initialActiveTab } = parsePathParams(params.ids)
+	const { qualifiedName, activeTab: initialActiveTab } = parsePathParams(
+		params.ids,
+	)
 	const activeTab = initialActiveTab
 
 	let server: FetchedServer | null = null
@@ -150,10 +152,7 @@ export default async function Page(props: Props) {
 			{error ? (
 				<ErrorMessage message={error} />
 			) : (
-				<ServerPage
-					server={server}
-					activeTab={activeTab}
-				/>
+				<ServerPage server={server} activeTab={activeTab} />
 			)}
 		</main>
 	)

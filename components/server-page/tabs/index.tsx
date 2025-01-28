@@ -7,7 +7,6 @@ import { SettingsPanel } from "./settings/settings-tab"
 import { ServerTabsNav } from "./tabs-nav"
 import { fetchServerTools } from "@/lib/utils/get-tools"
 import { ToolsPanel } from "./tools-tab"
-import { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { MCPProvider } from "@/context/mcp-context"
 import { Suspense } from "react"
 
@@ -16,17 +15,14 @@ interface ServerTabsProps {
 	activeTab: string
 }
 
-export async function ServerTabs({
-	server,
-	activeTab,
-}: ServerTabsProps) {
+export async function ServerTabs({ server, activeTab }: ServerTabsProps) {
 	// Start the fetch immediately but don't await it yet
-	const toolsPromise = server?.deploymentUrl 
+	const toolsPromise = server?.deploymentUrl
 		? fetchServerTools(server.deploymentUrl)
-		: Promise.resolve({ tools: [], configSchema: {} });
+		: Promise.resolve({ tools: [], configSchema: {} })
 
 	// Fetch tools in parallel with any other operations we might need
-	const { tools, configSchema } = await toolsPromise;
+	const { tools, configSchema } = await toolsPromise
 
 	return (
 		<div className="space-y-4">
@@ -42,9 +38,9 @@ export async function ServerTabs({
 				<TabsContent value="tools">
 					<Suspense fallback={<div>Loading tools...</div>}>
 						<MCPProvider>
-							<ToolsPanel 
-								server={server} 
-								tools={tools} 
+							<ToolsPanel
+								server={server}
+								tools={tools}
 								showConfigForm={true}
 								configSchema={configSchema}
 							/>

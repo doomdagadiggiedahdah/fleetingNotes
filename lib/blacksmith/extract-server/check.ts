@@ -103,6 +103,18 @@ export const isMCPServer = (octokit: Octokit) =>
 					content: `\
 <mcp_info>
 ${mcpPrompt}
+
+When MCP servers are installed on Claude (an MCP client), they usually have a JSON config that looks like the following example:
+\`\`\`
+{
+  "mcpServers": {
+    "CyberChitta": {
+      "command": "uvx",
+      "args": ["--from", "llm-context", "lc-mcp"]
+    }
+  }
+}
+\`\`\`
 </mcp_info>
 <task>
 Based on the files provided from this Github repository, check if the given Github repository is an MCP server.

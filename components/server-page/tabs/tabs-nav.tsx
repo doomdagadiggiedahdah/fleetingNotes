@@ -87,4 +87,4 @@ export function ServerTabsNav({ server }: ServerTabsNavProps) {
 			)}
 		</TabsList>
 	)
-} 
+}

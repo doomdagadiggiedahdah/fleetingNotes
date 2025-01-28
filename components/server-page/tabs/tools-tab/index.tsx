@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { Card } from "@/components/ui/card"
 import { Settings } from "lucide-react"
@@ -118,10 +118,9 @@ export function ToolsPanel({
 					{tools.length === 0 ? (
 						<Card className="p-6">
 							<div className="text-sm text-muted-foreground text-center">
-								{server.deploymentUrl 
+								{server.deploymentUrl
 									? "Failed to fetch tools. Please try refreshing the page."
-									: "Viewing tools is currently only available for deployed servers"
-								}
+									: "Viewing tools is currently only available for deployed servers"}
 							</div>
 						</Card>
 					) : filteredTools.length === 0 ? (
@@ -152,7 +151,8 @@ export function ToolsPanel({
 				</div>
 
 				<div className="w-1/2">
-					{(showConfigForm && status !== "connected" && tools.length > 0) || isEditingConfig ? (
+					{(showConfigForm && status !== "connected" && tools.length > 0) ||
+					isEditingConfig ? (
 						<ConfigurationForm
 							schema={configSchema!}
 							onSubmit={handleConfigSubmit}
