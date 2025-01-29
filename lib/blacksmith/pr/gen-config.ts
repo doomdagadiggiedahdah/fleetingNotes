@@ -4,22 +4,18 @@ import {
 } from "@/lib/blacksmith/pr/extract-server-config"
 import type { StdioConnection } from "@/lib/types/server"
 import type { ServerConfig } from "@/lib/types/server-config"
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import type { Octokit } from "@octokit/rest"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 import { ServerBuilder } from "@smithery/sdk/server/builder.js"
 import Ajv from "ajv"
 import { wrapOpenAI, wrapTraced } from "braintrust"
-import { EventSource } from "eventsource"
 import { omit, pick } from "lodash"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import type { FileNamedContent } from "./gen-all"
 import mcpPrompt from "../mcp-prompt-mini.txt"
-
-// Patch event source
-global.EventSource = EventSource
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 
 const MAX_TURNS = 8
 const FINAL_FUNC_NAME = "set_config"
@@ -367,9 +363,9 @@ async function createMCPClient(
 		.build()
 
 	await mcp.connectAll({
-		gh: new SSEClientTransport(
+		gh: new WebSocketClientTransport(
 			createSmitheryUrl(
-				"https://app-6a371696-6f71-49a2-b977-9521e125d625-5u5fdnfupa-uc.a.run.app/sse",
+				"https://app-6a371696-6f71-49a2-b977-9521e125d625-5u5fdnfupa-uc.a.run.app/ws",
 				{
 					githubPersonalAccessToken: installationIoken,
 				},
