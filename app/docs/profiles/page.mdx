@@ -27,7 +27,7 @@ Imagine you are building an agent where you need to build a search functionality
 Typically, you would write your connection as follows:
 ```typescript
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk/config"
+import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 const url = createSmitheryUrl(
   "https://url-to-exa-mcp-server/ws",
@@ -51,7 +51,7 @@ With this authentication, you no longer need to pass in the API key when connect
 
 ```typescript
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk/config"
+import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 const url = createSmitheryUrl(
   "https://url-to-exa-mcp-server/ws"

@@ -54,7 +54,7 @@ export function InstallationTabs({
 				<ClientInstallContent server={server} client="cline" />
 			</TabsContent>
 			<TabsContent value="code">
-				<TypeScriptContent tool={server} />
+				<TypeScriptContent server={server} />
 			</TabsContent>
 		</Tabs>
 	)

@@ -71,25 +71,44 @@ export const ClientInstallContent = ({
 	)
 }
 
-export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
-	const connection = tool.connections[0]
+export const TypeScriptContent = ({ server }: { server: FetchedServer }) => {
+	const stdioConnection = server.connections.find(
+		(conn) => conn.type === "stdio",
+	)
 
-	if (!connection || connection.type !== "stdio") {
+	if (!server.deploymentUrl && !stdioConnection) {
 		return <p>Unavailable</p>
 	}
 
-	// TODO: Move config generation to server-side
-	const exampleConfigResult = generateConfig(
-		connection,
-		connection.exampleConfig ?? createDummyConfig(connection.configSchema),
-	)
-	const exampleConfig = exampleConfigResult.success
-		? exampleConfigResult.result
-		: {}
-	console.log(exampleConfig)
-	if (exampleConfig.command === "npx" && exampleConfig.env) {
-		exampleConfig.env.PATH = "process.env.PATH"
+	// Generate example config for stdio if needed
+	let stdioConfig = ""
+	if (!server.deploymentUrl && stdioConnection) {
+		const exampleConfigResult = generateConfig(
+			stdioConnection,
+			stdioConnection.exampleConfig ??
+				createDummyConfig(stdioConnection.configSchema),
+		)
+		const exampleConfig = exampleConfigResult.success
+			? exampleConfigResult.result
+			: {}
+		if (exampleConfig.command === "npx" && exampleConfig.env) {
+			exampleConfig.env.PATH = "process.env.PATH"
+		}
+		stdioConfig = JSON.stringify(exampleConfig, null, 2).replace(
+			'"process.env.PATH"',
+			"process.env.PATH",
+		)
 	}
+
+	const transportCode = server.deploymentUrl
+		? `import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { createSmitheryUrl } from "@smithery/sdk/config.js"
+
+const url = createSmitheryUrl("${server.deploymentUrl}/ws")
+const transport = new WebSocketClientTransport(url)`
+		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+
+const transport = new StdioClientTransport(${stdioConfig})`
 
 	return (
 		<>
@@ -110,7 +129,7 @@ export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
 				language="typescript"
 				onCopy={() => {
 					posthog.capture("Code Copied", {
-						serverQualifiedName: tool.qualifiedName,
+						serverQualifiedName: server.qualifiedName,
 						eventTag: "typescript",
 					})
 				}}
@@ -119,11 +138,11 @@ export const TypeScriptContent = ({ tool }: { tool: FetchedServer }) => {
 import { OpenAI } from "openai"
 import { OpenAIChatAdapter } from "@smithery/sdk"
 import { Client } from "@modelcontextprotocol/sdk"
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+${transportCode}
 
 const openai = new OpenAI()
 const mcp = new Client({name: "mcp-client", version: "1.0.0"}, {capabilities: {}})
-await mcp.connect(new StdioClientTransport(${JSON.stringify(exampleConfig, null, 2).replace('"process.env.PATH"', "process.env.PATH")}))
+await mcp.connect(transport)
 const adapter = new OpenAIChatAdapter(mcp)
 const response = await openai.chat.completions.create({
 	model: "gpt-4o-mini",
