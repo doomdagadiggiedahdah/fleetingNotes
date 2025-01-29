@@ -20,7 +20,7 @@ const RequestSchema = z.object({
 		}),
 		z.object({
 			// TODO: Make it required in the future after it's redeploying all servers
-			connectionType: z.literal("sse").optional(),
+			connectionType: z.literal("ws"),
 			serverId: z.string(),
 			sessionId: z.string(),
 			toolParams: z.any(),

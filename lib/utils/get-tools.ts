@@ -59,7 +59,6 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 			error: error instanceof Error ? error.message : "Unknown error",
 		}
 	} finally {
-		// Ensure EventSource is always closed
 		await client.close()
 	}
 }

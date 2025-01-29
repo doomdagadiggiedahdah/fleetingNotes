@@ -88,16 +88,14 @@ export const ConnectionSchema = z.union([
 		),
 	z
 		.object({
-			type: z.literal("sse"),
+			type: z.literal("ws"),
 			deploymentUrl: z
 				.string()
 				.url()
 				.describe("The URL endpoint of the deployment"),
 			configSchema: JSONSchemaSchema,
 		})
-		.describe(
-			"A Server-Sent Events connection for remote execution of the MCP server.",
-		),
+		.describe("A Websocket connection for remote execution of the MCP server."),
 ])
 
 export type Connection = z.infer<typeof ConnectionSchema>

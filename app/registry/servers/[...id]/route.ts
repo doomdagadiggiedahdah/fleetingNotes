@@ -70,7 +70,7 @@ export async function GET(
 								console.error("[MCP] Failed to fetch schema:", e)
 							}
 							return {
-								type: "sse",
+								type: "ws",
 								deploymentUrl: server.deploymentUrl,
 								configSchema,
 							}
