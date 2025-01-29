@@ -28,9 +28,10 @@ export function generateConfig(connection: Connection, config?: object) {
  */
 export function createDummyConfig(
 	configSchema: JSONSchema,
+	useDescription = true,
 ): Record<string, unknown> {
 	const typeDefaults = {
-		string: "...",
+		string: "string",
 		number: 0,
 		boolean: false,
 		array: [],
@@ -41,7 +42,9 @@ export function createDummyConfig(
 
 	for (const [key, value] of Object.entries(properties as object)) {
 		if (value.type === "string") {
-			result[key] = value.description ?? typeDefaults.string
+			result[key] = useDescription
+				? (value.description ?? typeDefaults.string)
+				: typeDefaults.string
 		} else if (value.type === "object") {
 			result[key] = createDummyConfig(value)
 		} else {

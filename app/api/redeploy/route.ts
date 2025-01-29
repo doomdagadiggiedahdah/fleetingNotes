@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { deployments, serverRepos, servers } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
-import { eq } from "drizzle-orm"
+import { eq, and, isNotNull } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 // Private endpoint to redeploy all servers
@@ -15,14 +15,17 @@ export async function POST(request: Request) {
 		// Parse the request to check for serverId
 		const { serverId } = await request.json().catch(() => ({}))
 
-		// Get all deployments ordered by creation date
 		const serversToDeploy = await db
 			.selectDistinct({ server: servers, serverRepo: serverRepos })
 			.from(deployments)
 			.innerJoin(servers, eq(deployments.serverId, servers.id))
 			.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-			.where(serverId ? eq(servers.id, serverId) : undefined)
-			.orderBy(servers.id)
+			.where(
+				and(
+					serverId ? eq(servers.id, serverId) : undefined,
+					isNotNull(deployments.deploymentUrl),
+				),
+			)
 
 		if (serversToDeploy.length === 0) {
 			return NextResponse.json(

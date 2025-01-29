@@ -1,7 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { ListToolsResultSchema } from "@modelcontextprotocol/sdk/types.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
+import { createTransport } from "@smithery/sdk/transport.js"
+import { withTimeout } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
 
@@ -32,16 +31,23 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 		},
 	)
 
-	const wsUrl = new URL("/ws", deploymentUrl).toString()
-	const connectionUrl = createSmitheryUrl(wsUrl, mockConfig)
-	const transport = new WebSocketClientTransport(connectionUrl)
-	await client.connect(transport)
+	const transport = createTransport(deploymentUrl, mockConfig ?? {})
 
 	try {
-		const toolResult = await client.request(
-			{ method: "tools/list" },
-			ListToolsResultSchema,
-		)
+		await withTimeout(client.connect(transport), 5000)
+	} catch (e) {
+		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
+		await client.close()
+		return {
+			tools: [],
+			config: {},
+			configSchema: {},
+			error: e instanceof Error ? e.message : "Unable to connect to server",
+		}
+	}
+
+	try {
+		const toolResult = await withTimeout(client.listTools(), 5000)
 
 		return {
 			tools: toolResult.tools,
@@ -50,7 +56,7 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 			error: null,
 		}
 	} catch (error) {
-		console.error("[MCP] Static build error:", error)
+		console.error(`[MCP] Tool fetch error ${deploymentUrl}:`, error)
 		return {
 			tools: [],
 			config: {},
