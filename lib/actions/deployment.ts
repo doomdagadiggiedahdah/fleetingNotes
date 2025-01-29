@@ -321,6 +321,8 @@ export async function createDeploymentForServer(
 							"--session-affinity",
 							"--max-instances",
 							"3",
+							// Instance-based billing
+							"--no-cpu-throttling",
 							"--allow-unauthenticated",
 						],
 					},
