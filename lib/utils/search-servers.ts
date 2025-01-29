@@ -37,7 +37,7 @@ export async function getAllServers(
 	// Handle special filters like owner:repo
 	const parsedQueryObj = (() => {
 		const parsed = searchQueryParser.parse(query || "", {
-			keywords: ["owner", "repo"],
+			keywords: ["owner", "repo", "is"],
 		})
 		return typeof parsed === "string" ? null : parsed
 	})()
@@ -74,6 +74,7 @@ export async function getAllServers(
 		parsedQueryObj?.repo
 			? eq(serverRepos.repoName, parsedQueryObj.repo)
 			: undefined,
+		parsedQueryObj?.is === "deployed" ? eq(isDeployedQuery, true) : undefined,
 	)
 
 	// Get total count
