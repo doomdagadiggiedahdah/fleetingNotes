@@ -32,7 +32,7 @@ export async function cleanupForkedRepos(limit = 50) {
 		.orderBy(sql`RANDOM()`)
 		.limit(limit)
 
-	console.log(`Processing ${rows.length} repositories...`)
+	console.log(`Cleaning up ${rows.length} repositories...`)
 
 	const userOctokit = new Octokit({
 		auth: process.env.GITHUB_BOT_UAT,

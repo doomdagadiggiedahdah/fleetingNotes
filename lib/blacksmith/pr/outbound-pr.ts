@@ -58,6 +58,9 @@ export async function createOutboundPR(limit = 10) {
 		.orderBy(serverRepos.repoOwner, desc(servers.createdAt))
 		.limit(limit)
 
+	// Sort by createdAt
+	allServers.sort((a, b) => +b.servers.createdAt - +a.servers.createdAt)
+
 	console.log(`Generating PR for ${allServers.length} servers`)
 
 	for (const { servers: server, server_repos: serverRepo } of allServers) {
