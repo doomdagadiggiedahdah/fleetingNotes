@@ -25,9 +25,12 @@ export async function createOutboundPR(limit = 10) {
 			and(
 				not(isDeployedQuery),
 				t.servers.remote,
-				// Don't make PRs if we've made a PR in the past
-				// or if there's already an open PR by the same owner.
-				// If the owner has multiple MCP repos and we already have an open PR, we'll wait till it's closed first before creating a new one.
+				/**
+				 * Don't make PRs if:
+				 * 1. we've made a PR in the past to this repo.
+				 * 2. if there's already an open PR by the same owner. (they haven't reviewd it yet)
+				 * 3. there's a closed un-merged PR. (owner not interested)
+				 */
 				not(
 					sql`EXISTS(
 						SELECT 1
@@ -37,8 +40,8 @@ export async function createOutboundPR(limit = 10) {
 							${pullRequests.serverRepo} = ${t.server_repos.id}
 							OR
 							(
-							sr.repo_owner = ${t.server_repos.repoOwner} AND
-							${pullRequests.isClosed} = false
+								sr.repo_owner = ${t.server_repos.repoOwner} AND
+								(${pullRequests.isClosed} = false OR ${pullRequests.mergedAt} is null)
 							)
 					)`,
 				),
