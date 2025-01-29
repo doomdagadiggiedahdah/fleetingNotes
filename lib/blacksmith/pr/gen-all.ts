@@ -177,7 +177,8 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 					cmdFuncScalar.type = "BLOCK_LITERAL"
 					schemaScalar.commentBefore =
 						" JSON Schema defining the configuration options for the MCP."
-					return doc.toString().trim()
+					// Ensure trailing new line Unix standard
+					return `${doc.toString().trim()}\n`
 				})()
 			: null
 		patchFile("smithery.yaml", newSmitheryYaml)

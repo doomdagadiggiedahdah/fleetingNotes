@@ -9,8 +9,8 @@ import { pick } from "lodash"
 import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
-import type { FileNamedContent } from "./gen-all"
 import mcpPrompt from "../mcp-prompt-mini.txt"
+import type { FileNamedContent } from "./gen-all"
 
 // Patch event source
 global.EventSource = EventSource
@@ -212,7 +212,8 @@ export const generateDockerFile = (
 
 		let finalOutput: string | null = null
 		const mcp = await createMCPClient(installationIoken, (output) => {
-			finalOutput = output
+			// Ensure trailing new line Unix standard
+			finalOutput = `${output.trim()}\n`
 		})
 		const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
 
