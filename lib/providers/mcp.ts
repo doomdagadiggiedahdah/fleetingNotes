@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 import {
 	type Request,
 	type Notification,
@@ -16,7 +14,6 @@ import { createSmitheryUrl } from "@smithery/sdk/config.js"
 export class MCPError extends Error {
 	constructor(
 		message: string,
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		public originalError?: unknown,
 	) {
 		super(message)
@@ -25,12 +22,16 @@ export class MCPError extends Error {
 }
 
 interface MCPClientConfig {
-	sseUrl: string
-	config?: Record<string, any>
+	wsUrl: string
+	config?: Record<string, unknown>
 	onNotification?: (notification: Notification) => void
 	onStdErrNotification?: (notification: Notification) => void
-	onPendingRequest?: (request: any, resolve: any, reject: any) => void
-	getRoots?: () => any[]
+	onPendingRequest?: (
+		request: unknown,
+		resolve: unknown,
+		reject: unknown,
+	) => void
+	getRoots?: () => unknown[]
 }
 
 export class MCPClient {
@@ -58,11 +59,11 @@ export class MCPClient {
 			)
 
 			const connectionUrl = createSmitheryUrl(
-				this.config.sseUrl,
+				this.config.wsUrl,
 				this.config.config || {},
 			)
 
-			const clientTransport = new SSEClientTransport(connectionUrl)
+			const clientTransport = new WebSocketClientTransport(connectionUrl)
 
 			if (this.config.onNotification) {
 				this.client.setNotificationHandler(

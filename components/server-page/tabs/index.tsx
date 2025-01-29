@@ -1,29 +1,20 @@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import type { FetchedServer } from "@/lib/utils/get-server"
+import { Suspense } from "react"
 import { AboutPanel } from "./about-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings/settings-tab"
 import { ServerTabsNav } from "./tabs-nav"
-import { fetchServerTools } from "@/lib/utils/get-tools"
-import { ToolsPanel } from "./tools-tab"
-import { MCPProvider } from "@/context/mcp-context"
-import { Suspense } from "react"
+import { ToolsPanelSkeleton } from "./tools-tab/skeleton"
+import { ToolPanelContainer } from "./tools-tab/tool-container"
 
 interface ServerTabsProps {
 	server: FetchedServer
 	activeTab: string
 }
 
-export async function ServerTabs({ server, activeTab }: ServerTabsProps) {
-	// Start the fetch immediately but don't await it yet
-	const toolsPromise = server?.deploymentUrl
-		? fetchServerTools(server.deploymentUrl)
-		: Promise.resolve({ tools: [], configSchema: {} })
-
-	// Fetch tools in parallel with any other operations we might need
-	const { tools, configSchema } = await toolsPromise
-
+export function ServerTabs({ server, activeTab }: ServerTabsProps) {
 	return (
 		<div className="space-y-4">
 			<Tabs value={activeTab}>
@@ -36,15 +27,8 @@ export async function ServerTabs({ server, activeTab }: ServerTabsProps) {
 				</TabsContent>
 
 				<TabsContent value="tools">
-					<Suspense fallback={<div>Loading tools...</div>}>
-						<MCPProvider>
-							<ToolsPanel
-								server={server}
-								tools={tools}
-								showConfigForm={true}
-								configSchema={configSchema}
-							/>
-						</MCPProvider>
+					<Suspense fallback={<ToolsPanelSkeleton />}>
+						<ToolPanelContainer server={server} />
 					</Suspense>
 				</TabsContent>
 

@@ -91,8 +91,7 @@ export function ToolsPanel({
 		if (!server?.deploymentUrl) {
 			throw new Error("Server URL is required")
 		}
-		const sseUrl = `${server.deploymentUrl}/sse`
-		await connect(sseUrl, { config })
+		await connect(`${server.deploymentUrl}/ws`, { config })
 		if (onConfigSubmit) {
 			await onConfigSubmit(config)
 		}

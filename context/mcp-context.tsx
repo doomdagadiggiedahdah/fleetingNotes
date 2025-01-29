@@ -12,7 +12,6 @@ import type { z } from "zod"
 import {
 	ListToolsResultSchema,
 	type ServerCapabilities,
-	// CompatibilityCallToolResultSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 
 interface MCPContextType {
@@ -20,8 +19,8 @@ interface MCPContextType {
 	status: "disconnected" | "connected" | "connecting" | "error"
 	tools: z.infer<typeof ListToolsResultSchema>["tools"]
 	connect: (
-		sseUrl: string,
-		options?: { config?: Record<string, any> },
+		wsUrl: string,
+		options?: { config?: Record<string, unknown> },
 	) => Promise<void>
 	listTools: () => Promise<void>
 	makeRequestTo: <T>(
@@ -55,13 +54,13 @@ export function MCPProvider({
 	)
 
 	const connect = async (
-		sseUrl: string,
-		options?: { config?: Record<string, any> },
+		wsUrl: string,
+		options?: { config?: Record<string, unknown> },
 	) => {
 		try {
 			setStatus("connecting")
 			const mcpClient = new MCPClient({
-				sseUrl,
+				wsUrl,
 				config: options?.config, // Pass through any config
 			})
 

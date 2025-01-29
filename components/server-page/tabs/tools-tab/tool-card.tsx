@@ -57,7 +57,10 @@ export function ToolCard({
 
 	const handleExecute = async () => {
 		// Validate inputs against schema
-		const ajv = new Ajv()
+		const ajv = new Ajv({
+			validateFormats: false,
+		})
+
 		const validate = ajv.compile(tool.inputSchema || {})
 		const isValid = validate(toolInputs)
 
@@ -275,7 +278,7 @@ export function ToolCard({
 									</TooltipTrigger>
 									{disabled && (
 										<TooltipContent sideOffset={5}>
-											<p>Please configure to enable this feature</p>
+											<p>Please configure and connect to run this tool.</p>
 										</TooltipContent>
 									)}
 								</Tooltip>
