@@ -22,6 +22,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
+import Ajv from "ajv"
 
 interface ToolCardProps {
 	tool: Tool
@@ -52,8 +53,23 @@ export function ToolCard({
 		error: null as string | null,
 	})
 	const [isExpanded, setIsExpanded] = useState(false)
+	const [validationErrors, setValidationErrors] = useState<string[]>([])
 
 	const handleExecute = async () => {
+		// Validate inputs against schema
+		const ajv = new Ajv()
+		const validate = ajv.compile(tool.inputSchema || {})
+		const isValid = validate(toolInputs)
+
+		if (!isValid) {
+			setValidationErrors(
+				validate.errors?.map((err) => `${err.instancePath} ${err.message}`) ||
+					[],
+			)
+			return
+		}
+		setValidationErrors([])
+
 		setExecution((prev) => ({ ...prev, isExecuting: true }))
 		onExecutionChange({ isExecuting: true, result: null, error: null })
 		try {
@@ -224,7 +240,15 @@ export function ToolCard({
 								),
 							)}
 						</div>
-						<div className="flex justify-center">
+						<div className="flex flex-col items-center gap-2">
+							{validationErrors.length > 0 && (
+								<div className="text-destructive text-sm">
+									{validationErrors.map((error, index) => (
+										// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+										<div key={index}>{error}</div>
+									))}
+								</div>
+							)}
 							<TooltipProvider delayDuration={0}>
 								<Tooltip>
 									<TooltipTrigger asChild>

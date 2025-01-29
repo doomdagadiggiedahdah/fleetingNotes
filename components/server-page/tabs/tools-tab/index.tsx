@@ -142,7 +142,7 @@ export function ToolsPanel({
 										onExecute={executeTool}
 										onExpandedChange={setIsExpanded}
 										onExecutionChange={setActiveExecution}
-										disabled={status !== "connected"}
+										disabled={status !== "connected" || isEditingConfig}
 									/>
 								</Card>
 							))}
