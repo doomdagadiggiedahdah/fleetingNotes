@@ -11,13 +11,13 @@ export const metadata = {
 
 <div className="inline-flex items-center mb-4"><CircleAlert className="w-4 h-4 mr-1" /> _Deployments is in early preview and we're rapidly improving it. Please report bugs to our Discord!_</div>
 
-Smithery Deployments allow you to host your [standard input/output (STDIO)](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server as a [server-side event (SSE)](https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse) server on Smithery.
+Smithery Deployments allow you to host your [standard input/output (STDIO)](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server on Smithery served over a WebSocket connection.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/NZNFbjWLOIM?si=siuxdt5Racz4BQFe&rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen className="my-6"></iframe>
 
 Benefits of hosting:
-- Smithery will show an MCP playground on your server page, allowing users and developers to try your tool calls before installing.
-- Clients can use your server without needing to install dependencies.
+- Smithery will show an MCP playground on your server page, allowing users to try your tool calls before installing.
+- Developers can use your server without needing to install dependencies.
 - Smithery will rank hosted servers higher in our search results.
 
 ## Overview
@@ -30,9 +30,18 @@ Deploying on Smithery is straightforward:
 
 That's it! Your MCP server will be built and deployed according to your configuration.
 
-## Hosted MCPs
-We serve your hosted MCP servers on Smithery over [Server-Sent Events (SSE)](https://modelcontextprotocol.io/docs/concepts/transports#server-sent-events-sse).
-However, your server will only persist for 5 minutes maximum before being terminated due to the serverless nature of the platform.
+## Why WebSockets?
+
+Smithery Deployments use WebSockets (WS) because WebSockets enable session affinity.
+This means when we scale up your MCP based on traffic, the same client will always connect to the same server.
+The Server-Sent-Events transport provided by Model Context Protocol is unable to easily achieve this for scalable hosting. See [this discussion](https://github.com/modelcontextprotocol/specification/discussions/102) for more details.
+
+WebSockets transport implementations are maintained by the official MCP SDK in [Typescript](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/client/websocket.ts), [Python](https://github.com/modelcontextprotocol/python-sdk/blob/main/src/mcp/server/websocket.py) and [Kotlin](https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/src/commonMain/kotlin/io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport.kt).
+
+## Serverless Hosting
+
+We serve your hosted MCP servers on Smithery over WebSockets (WS) in a serverless environment and they will timeout after 5 minutes.
+You will need to handle reconnection if needed.
 You should design your server with ephemeral storage in mind.
 
 ## Best Practices

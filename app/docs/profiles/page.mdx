@@ -26,20 +26,20 @@ Imagine you are building an agent where you need to build a search functionality
 
 Typically, you would write your connection as follows:
 ```typescript
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 import { createSmitheryUrl } from "@smithery/sdk/config"
 
 const url = createSmitheryUrl(
-  "https://url-to-exa-mcp-server/sse",
+  "https://url-to-exa-mcp-server/ws",
   {
     ...config goes here
   },
 )
 
-const transport = new SSEClientTransport(url)
+const transport = new WebSocketClientTransport(url)
 ```
 
-Instead of specifying your Exa API key every time you connect to the Exa SSE, you can create a profile on Smithery and perform an authenticated call to the SSE server by specifying the header:
+Instead of specifying your Exa API key every time you connect to the Exa WebSocket, you can create a profile on Smithery and perform an authenticated call to the WebSocket server by specifying the header:
 
 ```typescript
 headers: {
@@ -47,17 +47,17 @@ headers: {
 }
 ```
 
-With this authentication, you no longer need to pass in the API key when connecting to the Exa SSE server.
+With this authentication, you no longer need to pass in the API key when connecting to the Exa WebSocket server.
 
 ```typescript
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 import { createSmitheryUrl } from "@smithery/sdk/config"
 
 const url = createSmitheryUrl(
-  "https://url-to-exa-mcp-server/sse"
+  "https://url-to-exa-mcp-server/ws"
 )
 
-const transport = new SSEClientTransport(url)
+const transport = new WebSocketClientTransport(url)
 ```
 
 Obviously, this is not very useful if you're only connecting to one MCP. It becomes handy when you have multiple MCPs and you don't want to specify configurations for each of them.
