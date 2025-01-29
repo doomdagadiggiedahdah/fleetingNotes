@@ -45,6 +45,14 @@ export function getAppOctokit() {
 	})
 }
 
+// Github app used by our bot
+export function getBotAuthApp() {
+	return createAppAuth({
+		appId: process.env.BOT_GITHUB_APP_ID as string,
+		privateKey: process.env.BOT_GITHUB_APP_PRIVATE_KEY as string,
+	})
+}
+
 export async function getInstallationToken(
 	repoOwner: string,
 	repoName: string,

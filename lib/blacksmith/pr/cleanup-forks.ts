@@ -1,10 +1,10 @@
 import { db } from "@/db"
 import { pullRequests } from "@/db/schema/blacksmith"
 import { serverRepos, servers } from "@/db/schema/servers"
-import { getAuthApp } from "@/lib/auth/github/server"
-import { toResult } from "@/lib/utils/result"
+import { getBotAuthApp } from "@/lib/auth/github/server"
+import { ok, toResult } from "@/lib/utils/result"
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest"
-import { and, eq, not } from "drizzle-orm"
+import { and, eq, not, sql } from "drizzle-orm"
 
 type Fork = RestEndpointMethodTypes["repos"]["listForks"]["response"]["data"][0]
 type PullRequest = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"]
@@ -12,7 +12,7 @@ type PullRequest = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"]
 /**
  * Background task that cleans up all forked repositories that have closed PRs
  */
-export async function cleanupForkedRepos() {
+export async function cleanupForkedRepos(limit = 50) {
 	const rows = await db
 		.select({
 			server: servers,
@@ -29,12 +29,20 @@ export async function cleanupForkedRepos() {
 			),
 		)
 		.where(and(eq(serverRepos.type, "github"), not(pullRequests.isClosed)))
+		.orderBy(sql`RANDOM()`)
+		.limit(limit)
 
 	console.log(`Processing ${rows.length} repositories...`)
 
-	const auth = getAuthApp()
-	const appOctokit = new Octokit({
+	const userOctokit = new Octokit({
 		auth: process.env.GITHUB_BOT_UAT,
+	})
+
+	// For bot fork deletion ops
+	const auth = getBotAuthApp()
+	const { token: appToken } = await auth({ type: "app" })
+	const appOctokit = new Octokit({
+		auth: appToken,
 	})
 
 	// Process each repository
@@ -47,7 +55,7 @@ export async function cleanupForkedRepos() {
 		try {
 			// Get PR statuses in parallel
 			const prResult = await toResult<{ data: PullRequest }>(
-				appOctokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+				userOctokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
 					owner: repo.repoOwner,
 					repo: repo.repoName,
 					pull_number: prNumber,
@@ -76,29 +84,10 @@ export async function cleanupForkedRepos() {
 			console.log(
 				`\nFound closed PR on ${row.server.qualifiedName}/${row.repo.repoName}...`,
 			)
-			const result = await toResult(
-				appOctokit.rest.apps.getRepoInstallation({
-					owner: repo.repoOwner,
-					repo: repo.repoName,
-				}),
-			)
-			if (!result.ok) {
-				console.error(`Failed to fetch installation for: ${result.error}`)
-				continue
-			}
-
-			// Generate an installation token, then create an Octokit with it
-			const { token: installToken } = await auth({
-				type: "installation",
-				installationId: result.value.data.id,
-			})
-			const installationOctokit = new Octokit({
-				auth: installToken,
-			})
 
 			// Get all forks
 			const forksResult = await toResult<{ data: Fork[] }>(
-				installationOctokit.request("GET /repos/{owner}/{repo}/forks", {
+				userOctokit.request("GET /repos/{owner}/{repo}/forks", {
 					owner: repo.repoOwner,
 					repo: repo.repoName,
 				}),
@@ -130,6 +119,26 @@ export async function cleanupForkedRepos() {
 			// Delete forks in parallel
 			const deletionResults = await Promise.all(
 				forksToDelete.map(async (fork: Fork) => {
+					const result = await toResult(
+						appOctokit.rest.apps.getRepoInstallation({
+							owner: fork.owner.login,
+							repo: fork.name,
+						}),
+					)
+					if (!result.ok) {
+						console.error(`Failed to fetch installation for: ${result.error}`)
+						return result
+					}
+
+					// Generate an installation token, then create an Octokit with it
+					const { token: installToken } = await auth({
+						type: "installation",
+						installationId: result.value.data.id,
+					})
+					const installationOctokit = new Octokit({
+						auth: installToken,
+					})
+
 					const deleteResult = await toResult(
 						installationOctokit.request("DELETE /repos/{owner}/{repo}", {
 							owner: fork.owner.login,
@@ -137,19 +146,14 @@ export async function cleanupForkedRepos() {
 						}),
 					)
 
-					if (!deleteResult.ok) console.error(deleteResult.error)
-					return {
-						fork: `${fork.owner.login}/${fork.name}`,
-						deleted: deleteResult.ok,
-					}
+					if (!deleteResult.ok) return deleteResult
+					return ok(`${fork.owner.login}/${fork.name}`)
 				}),
 			)
 
 			// Log results
-			deletionResults.forEach((result: { fork: string; deleted: boolean }) => {
-				console.log(
-					`  - ${result.fork}: ${result.deleted ? "Deleted" : "Failed to delete"}`,
-				)
+			deletionResults.forEach((result) => {
+				console.log(`  - Delete: ${result.ok ? result.value : result.error}`)
 			})
 		} catch (e) {
 			console.error(`Error:`, e)
