@@ -53,7 +53,7 @@ export async function GET(
 			return NextResponse.json({ error: "Server not found" }, { status: 404 })
 		}
 
-		// Prepare the connections array with SSE if available
+		// Prepare the connections array with the deployment URL if available
 		const connections = [
 			...RegistryServerSchema.shape.connections.parse(server.connections),
 			...(server.deploymentUrl

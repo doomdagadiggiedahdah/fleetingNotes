@@ -91,14 +91,14 @@ export function DeploymentsTable({ server }: Props) {
 						Recent deployments and their status.
 						{latestSuccessDeploy?.deployment_url && (
 							<div>
-								Deployed SSE Server:{" "}
+								Deployed Server:{" "}
 								<a
-									href={`${latestSuccessDeploy.deployment_url}/sse`}
+									href={`${latestSuccessDeploy.deployment_url}/ws`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="text-blue-500 hover:text-blue-700"
 								>
-									{`${latestSuccessDeploy.deployment_url}/sse`}
+									{`${latestSuccessDeploy.deployment_url}/ws`}
 								</a>
 							</div>
 						)}

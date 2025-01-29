@@ -32,7 +32,6 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 		},
 	)
 
-	// Create SSE connection and get sessionId
 	const wsUrl = new URL("/ws", deploymentUrl).toString()
 	const connectionUrl = createSmitheryUrl(wsUrl, mockConfig)
 	const transport = new WebSocketClientTransport(connectionUrl)

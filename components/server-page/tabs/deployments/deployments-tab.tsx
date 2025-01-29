@@ -20,8 +20,8 @@ export function DeploymentsPanel({ server }: Props) {
 						Deployments
 					</Link>{" "}
 					allow you to deploy your standard IO (stdio) server into a hosted
-					server-side event (SSE) server. Deployments are in early preview. If
-					you run into any issues or have feedback, let us know on{" "}
+					server. Deployments are in early preview. If you run into any issues
+					or have feedback, let us know on{" "}
 					<a
 						href="https://discord.gg/Afd38S5p9A"
 						className="text-sm text-primary hover:underline"
