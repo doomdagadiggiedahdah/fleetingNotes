@@ -1,8 +1,9 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { createTransport } from "@smithery/sdk/transport.js"
 import { withTimeout } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { createSmitheryUrl } from "@smithery/sdk"
 
 export async function fetchServerTools(deploymentUrl: string | null) {
 	if (!deploymentUrl) {
@@ -31,7 +32,9 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 		},
 	)
 
-	const transport = createTransport(deploymentUrl, mockConfig ?? {})
+	const transport = new WebSocketClientTransport(
+		createSmitheryUrl(`${deploymentUrl}/ws`, mockConfig ?? {}),
+	)
 
 	try {
 		await withTimeout(client.connect(transport), 5000)
