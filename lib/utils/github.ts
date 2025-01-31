@@ -171,6 +171,54 @@ export async function getGithubFileResult(
 }
 
 /**
+ * Gets a directory listing from a GitHub repository.
+ * @param octokit - The Octokit instance to use for the request.
+ * @param owner - The owner of the repository.
+ * @param repo - The name of the repository.
+ * @param path - The path to the directory, relative to the repository root.
+ * @param ref - The ref to use for the request. Defaults to the repository's default branch.
+ * @returns The directory listing.
+ */
+export async function getGithubDirectoryResult(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	path: string,
+	ref?: string,
+) {
+	try {
+		const response = await octokit.request(
+			"GET /repos/{owner}/{repo}/contents/{path}",
+			{
+				owner,
+				repo,
+				path,
+				ref,
+			},
+		)
+
+		if (Array.isArray(response.data)) {
+			return ok(
+				response.data.map((item) => ({
+					name: item.name,
+					path: item.path,
+					type: item.type,
+					size: item.size,
+					sha: item.sha,
+				})),
+			)
+		} else {
+			return err("Not a directory")
+		}
+	} catch (error) {
+		if ((error as RequestError).status === 404) {
+			return err("Not found")
+		}
+		return err("Unknown error")
+	}
+}
+
+/**
  * Resolves a GitHub URL to its canonical form by following redirects
  * @param url The GitHub URL to canonicalize
  * @returns The canonical GitHub URL after following redirects
@@ -405,4 +453,23 @@ export async function getPRDiff(
 		console.error("Error getting PR diff:", error)
 		return null
 	}
+}
+
+/**
+ * Gets the default branch of a GitHub repository.
+ * @param octokit - The Octokit instance to use for the request.
+ * @param owner - The owner of the repository.
+ * @param repo - The name of the repository.
+ * @returns The name of the default branch (e.g. "main" or "master").
+ */
+export async function getDefaultBranch(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+): Promise<string> {
+	const repoData = await octokit.request("GET /repos/{owner}/{repo}", {
+		owner,
+		repo,
+	})
+	return repoData.data.default_branch
 }

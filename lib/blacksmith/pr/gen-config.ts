@@ -16,6 +16,7 @@ import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import type { FileNamedContent } from "./gen-all"
 import mcpPrompt from "../mcp-prompt-mini.txt"
 import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { getGithubDirectoryResult } from "@/lib/utils/github"
 
 const MAX_TURNS = 8
 const FINAL_FUNC_NAME = "set_config"
@@ -200,6 +201,7 @@ interface GenerateConfigData {
 	repoOwner: string
 	repoName: string
 	basePath: string
+	defaultBranch: string
 	fileNamedContents: FileNamedContent[]
 }
 /**
@@ -213,6 +215,7 @@ export const generateConfigFile = (
 		repoOwner,
 		repoName,
 		basePath,
+		defaultBranch,
 		fileNamedContents,
 	}: GenerateConfigData): Promise<ServerConfig | null> {
 		const llm = wrapOpenAI(new OpenAI())
@@ -244,34 +247,19 @@ export const generateConfigFile = (
 		const adapter = new OpenAIChatAdapter(wrapErrorAdapter(mcp))
 
 		// Perform a few basic hard-coded actions
-		const [listRepoResults] = await Promise.all([
-			mcp.callTool({
-				name: "gh_get_file_contents",
-				arguments: {
-					owner: repoOwner,
-					repo: repoName,
-					path: basePath,
-				},
-			}),
-		])
-		// TODO: Would be better if we can modify the prompt of an MCP (adapter)
-		const listRepoText = (() => {
-			try {
-				return (listRepoResults.content as Record<string, string>[])
-					.map((c) =>
-						JSON.stringify(
-							// Sometimes this fails Error: MCP error -32603: Not Found: Resource not found:
-							JSON.parse(c.text).map((file: object) =>
-								pick(file, ["type", "size", "name", "path"]),
-							),
-						),
+		const directoryListing = await getGithubDirectoryResult(
+			octokit,
+			repoOwner,
+			repoName,
+			basePath,
+		)
+		const listRepoText = directoryListing.ok
+			? directoryListing.value
+					.map((file) =>
+						JSON.stringify(pick(file, ["name", "path", "type", "size"])),
 					)
 					.join("\n")
-			} catch (e) {
-				console.error(e)
-				return ""
-			}
-		})()
+			: "Could not list files"
 
 		// Prompt with some commonly used files
 		const initFilePrompts: string[] = fileNamedContents.map(
@@ -285,6 +273,7 @@ export const generateConfigFile = (
 <repo_owner>${repoOwner}</repo_owner>
 <repo_name>${repoName}</repo_name>
 <base_path>${basePath}</base_path>
+<branch>${defaultBranch}</branch>
 ${initFilePrompts.join("\n")}
 <base_directory>
 ${listRepoText}

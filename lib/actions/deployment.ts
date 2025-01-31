@@ -25,7 +25,11 @@ import {
 	type ServerConfigGateway,
 	ServerConfigSchema,
 } from "../types/server-config"
-import { getGithubFileResult, joinGithubPath } from "../utils/github"
+import {
+	getGithubFileResult,
+	joinGithubPath,
+	getDefaultBranch,
+} from "../utils/github"
 import { err, ok, type Result } from "../utils/result"
 
 export const getDeployments = async (serverId: string) => {
@@ -122,23 +126,19 @@ CMD ["--port", "8080", "--configb64", "${configb64}"]
 }
 
 async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
-	const repoData = await octokit.request("GET /repos/{owner}/{repo}", {
-		owner,
-		repo,
-	})
-	const ref = repoData.data.default_branch
+	const branch = await getDefaultBranch(octokit, owner, repo)
 
 	const commit = await octokit.request(
 		"GET /repos/{owner}/{repo}/commits/{ref}",
 		{
 			owner,
 			repo,
-			ref,
+			ref: branch,
 		},
 	)
 	return {
 		...commit,
-		branch: ref,
+		branch,
 	}
 }
 

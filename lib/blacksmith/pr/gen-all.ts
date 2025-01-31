@@ -1,4 +1,9 @@
-import { getGithubFile, getREADME, joinGithubPath } from "@/lib/utils/github"
+import {
+	getDefaultBranch,
+	getGithubFile,
+	getREADME,
+	joinGithubPath,
+} from "@/lib/utils/github"
 import { isOk, toResult } from "@/lib/utils/result"
 import type { Octokit } from "@octokit/rest"
 import { wrapTraced } from "braintrust"
@@ -30,6 +35,8 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 		repoName,
 		basePath,
 	}: GeneratePullRequestProps) {
+		const defaultBranch = await getDefaultBranch(octokit, repoOwner, repoName)
+
 		// Obtain existing files
 		const filesToFetch = [
 			{
@@ -139,6 +146,7 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 					repoOwner,
 					repoName,
 					basePath: basePath,
+					defaultBranch,
 					fileNamedContents,
 				})
 			: null
@@ -156,6 +164,7 @@ export const generatePullRequest = (octokit: Octokit, accessToken: string) =>
 					repoOwner,
 					repoName,
 					basePath: basePath,
+					defaultBranch,
 					fileNamedContents,
 				})
 			: null
