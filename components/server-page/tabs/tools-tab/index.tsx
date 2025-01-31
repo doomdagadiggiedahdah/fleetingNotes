@@ -150,29 +150,31 @@ export function ToolsPanel({
 				</div>
 
 				<div className="w-1/2">
-					{(showConfigForm && status !== "connected" && tools.length > 0) ||
-					isEditingConfig ? (
-						<ConfigurationForm
-							schema={configSchema!}
-							onSubmit={handleConfigSubmit}
-							onCancel={() => {
-								setIsEditingConfig(false)
-								onConfigCancel?.()
-							}}
-							initialConfig={initialConfig}
-							onSuccess={() => {
-								setIsEditingConfig(false)
-								onConfigSuccess?.()
-							}}
-							defaultEditMode={false}
-						/>
-					) : isExpanded ? (
-						<Card className="p-6">
-							<ToolResults {...activeExecution} />
-						</Card>
-					) : (
-						<div className="h-full" />
-					)}
+					<div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+						{(showConfigForm && status !== "connected" && tools.length > 0) ||
+						isEditingConfig ? (
+							<ConfigurationForm
+								schema={configSchema!}
+								onSubmit={handleConfigSubmit}
+								onCancel={() => {
+									setIsEditingConfig(false)
+									onConfigCancel?.()
+								}}
+								initialConfig={initialConfig}
+								onSuccess={() => {
+									setIsEditingConfig(false)
+									onConfigSuccess?.()
+								}}
+								defaultEditMode={false}
+							/>
+						) : isExpanded ? (
+							<Card className="p-6">
+								<ToolResults {...activeExecution} />
+							</Card>
+						) : (
+							<div className="h-full" />
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

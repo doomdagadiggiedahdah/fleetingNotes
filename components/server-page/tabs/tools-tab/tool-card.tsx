@@ -9,12 +9,9 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Loader2 } from "lucide-react"
 import { useState } from "react"
-import { ChevronUp, ChevronDown, Play } from "lucide-react"
+import { ChevronUp, Play } from "lucide-react"
 import React from "react"
 import {
 	Tooltip,
@@ -23,6 +20,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
 import Ajv from "ajv"
+import { ToolInput } from "./tool-input"
 
 interface ToolCardProps {
 	tool: Tool
@@ -131,118 +129,11 @@ export function ToolCard({
 				</AccordionTrigger>
 				<AccordionContent>
 					<div className="px-6 space-y-4">
-						<div className="space-y-4">
-							{Object.entries(tool.inputSchema?.properties || {}).map(
-								// eslint-disable-next-line @typescript-eslint/no-explicit-any
-								([key, value]: [string, any]) => (
-									<div key={key} className="grid w-full gap-1.5">
-										<Label htmlFor={key} className="text-sm font-medium">
-											{key}
-										</Label>
-										{value.type === "string" ? (
-											<Textarea
-												id={key}
-												placeholder={value.description}
-												value={(toolInputs[key] as string)?.toString() || ""}
-												onChange={(e) =>
-													setToolInputs((prev) => ({
-														...prev,
-														[key]: e.target.value,
-													}))
-												}
-												className="min-h-[40px] resize-none hover:resize-y"
-											/>
-										) : value.type === "object" ? (
-											<Textarea
-												id={key}
-												placeholder={value.description}
-												value={(toolInputs[key] as string)?.toString() || ""}
-												onChange={(e) => {
-													try {
-														const parsed = JSON.parse(e.target.value)
-														setToolInputs((prev) => ({
-															...prev,
-															[key]: parsed,
-														}))
-													} catch {
-														setToolInputs((prev) => ({
-															...prev,
-															[key]: e.target.value,
-														}))
-													}
-												}}
-												className="min-h-[40px] resize-none hover:resize-y font-mono text-sm"
-											/>
-										) : value.type === "number" ? (
-											<div className="flex items-center space-x-2">
-												<Input
-													type="number"
-													id={key}
-													placeholder={value.description}
-													value={toolInputs[key] as number}
-													onChange={(e) =>
-														setToolInputs((prev) => ({
-															...prev,
-															[key]: e.target.value
-																? Number(e.target.value)
-																: "",
-														}))
-													}
-													className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-												/>
-												<div className="flex flex-col space-y-1">
-													<Button
-														variant="outline"
-														size="icon"
-														className="h-5 w-5"
-														onClick={() =>
-															setToolInputs((prev) => ({
-																...prev,
-																[key]: Number(prev[key] || 0) + 1,
-															}))
-														}
-													>
-														<ChevronUp className="h-3 w-3" />
-													</Button>
-													<Button
-														variant="outline"
-														size="icon"
-														className="h-5 w-5"
-														onClick={() =>
-															setToolInputs((prev) => ({
-																...prev,
-																[key]: Number(prev[key] || 0) - 1,
-															}))
-														}
-													>
-														<ChevronDown className="h-3 w-3" />
-													</Button>
-												</div>
-											</div>
-										) : (
-											<Input
-												type={value.type === "number" ? "number" : "text"}
-												id={key}
-												placeholder={value.description}
-												value={
-													(toolInputs[key] as string | number)?.toString() || ""
-												}
-												onChange={(e) =>
-													setToolInputs((prev) => ({
-														...prev,
-														[key]:
-															value.type === "number"
-																? Number(e.target.value)
-																: e.target.value,
-													}))
-												}
-												className="h-9"
-											/>
-										)}
-									</div>
-								),
-							)}
-						</div>
+						<ToolInput
+							tool={tool}
+							toolInputs={toolInputs}
+							setToolInputs={setToolInputs}
+						/>
 						<div className="flex flex-col items-center gap-2">
 							{validationErrors.length > 0 && (
 								<div className="text-destructive text-sm">
