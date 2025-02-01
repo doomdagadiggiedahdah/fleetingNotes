@@ -35,6 +35,7 @@ interface ToolCardProps {
 		error: string | null
 	}) => void
 	disabled?: boolean
+	isExpanded?: boolean
 }
 
 export function ToolCard({
@@ -43,6 +44,7 @@ export function ToolCard({
 	onExpandedChange,
 	onExecutionChange,
 	disabled,
+	isExpanded,
 }: ToolCardProps) {
 	const [toolInputs, setToolInputs] = useState<Record<string, unknown>>({})
 	const [execution, setExecution] = useState({
@@ -50,7 +52,6 @@ export function ToolCard({
 		result: null as CompatibilityCallToolResult | null,
 		error: null as string | null,
 	})
-	const [isExpanded, setIsExpanded] = useState(false)
 	const [validationErrors, setValidationErrors] = useState<string[]>([])
 
 	const handleExecute = async () => {
@@ -93,32 +94,39 @@ export function ToolCard({
 		}
 	}
 
+	const truncateDescription = (description: string) => {
+		const sentences = description.match(/[^.!?]+[.!?]+/g) || []
+		if (sentences.length <= 4) return description
+		return `${sentences.slice(0, 3).join("")}...`
+	}
+
 	return (
 		<Accordion
 			type="single"
 			collapsible
 			className="w-full"
+			value={isExpanded ? tool.name : ""}
 			onValueChange={(value: string | undefined) => {
-				const expanded = !!value
-				setIsExpanded(expanded)
-				onExpandedChange(expanded)
+				onExpandedChange(!!value)
 			}}
 		>
 			<AccordionItem value={tool.name} className="border-0">
 				<AccordionTrigger className="hover:no-underline px-6 [&>svg]:hidden">
-					<div className="flex flex-1 items-start justify-between w-full">
+					<div className="flex flex-1 items-start justify-between w-full gap-4">
 						<div className="flex-1">
 							<h3 className="font-semibold text-primary text-left">
 								{tool.name}
 							</h3>
 							<p className="text-sm text-muted-foreground text-left mt-1">
-								{tool.description}
+								{isExpanded
+									? tool.description || ""
+									: truncateDescription(tool.description || "")}
 							</p>
 						</div>
 						{!isExpanded ? (
-							<div className="rounded-full px-3 py-1.5 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
+							<div className="rounded-full px-4 py-2 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
 								<Play className="h-4 w-4 shrink-0 text-muted-foreground hover:text-primary" />
-								<span className="text-xs text-muted-foreground hover:text-primary">
+								<span className="text-xs text-muted-foreground hover:text-primary font-medium">
 									Run
 								</span>
 							</div>

@@ -5,7 +5,6 @@ import { Settings } from "lucide-react"
 import { useState } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/get-server"
-// import ServerSearch from "@/components/server-search"
 import {
 	type Tool,
 	type CompatibilityCallToolResult,
@@ -52,6 +51,7 @@ export function ToolsPanel({
 		error: null,
 	})
 	const [isEditingConfig, setIsEditingConfig] = useState(false)
+	const [activeToolName, setActiveToolName] = useState<string | null>(null)
 
 	const filteredTools = tools.filter(
 		(tool) =>
@@ -100,10 +100,6 @@ export function ToolsPanel({
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				{/* TODO: proper implementation
-				 <div className="w-1/2">
-					<ServerSearch />
-				</div> */}
 				{status === "connected" && !isEditingConfig && tools.length > 0 && (
 					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
 						<Settings className="w-4 h-4 mr-2" />
@@ -132,14 +128,25 @@ export function ToolsPanel({
 						<div className="space-y-4">
 							{filteredTools.map((tool) => (
 								<Card
-									className="p-0 transition-all duration-200"
+									className={`p-0 transition-all duration-200 hover:ring-2 hover:ring-primary/75 ${
+										activeToolName === tool.name ? "ring-2 ring-primary/75" : ""
+									}`}
 									key={tool.name}
 								>
 									<ToolCard
 										key={tool.name}
 										tool={tool}
 										onExecute={executeTool}
-										onExpandedChange={setIsExpanded}
+										onExpandedChange={(expanded) => {
+											if (expanded) {
+												setIsExpanded(true)
+												setActiveToolName(tool.name)
+											} else if (activeToolName === tool.name) {
+												setIsExpanded(false)
+												setActiveToolName(null)
+											}
+										}}
+										isExpanded={activeToolName === tool.name}
 										onExecutionChange={setActiveExecution}
 										disabled={status !== "connected" || isEditingConfig}
 									/>
