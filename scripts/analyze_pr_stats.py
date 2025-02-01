@@ -99,42 +99,42 @@ def format_time_diff(hours):
     return f"{days}d {remaining_hours}h"
 
 
-# Calculate merge rate vs time
-df["is_merged"] = df["mergedAt"].notna().astype(int)
+# Calculate close rate vs time
+df["is_closed"] = (df["state"] == "closed").astype(int)
 df["time_bucket"] = pd.qcut(df["timeDiffHours"], q=10, duplicates="drop")
-merge_rate_by_time = df.groupby("time_bucket")["is_merged"].mean().reset_index()
-merge_rate_by_time["time_bucket_mid"] = merge_rate_by_time["time_bucket"].apply(
+close_rate_by_time = df.groupby("time_bucket")["is_closed"].mean().reset_index()
+close_rate_by_time["time_bucket_mid"] = close_rate_by_time["time_bucket"].apply(
     lambda x: x.mid
 )
-merge_rate_by_time["time_formatted"] = merge_rate_by_time["time_bucket_mid"].apply(
+close_rate_by_time["time_formatted"] = close_rate_by_time["time_bucket_mid"].apply(
     format_time_diff
 )
 
-# Create merge rate plot
-merge_rate_fig = px.line(
-    merge_rate_by_time,
+# Create close rate plot
+close_rate_fig = px.line(
+    close_rate_by_time,
     x="time_bucket_mid",
-    y="is_merged",
-    title="PR Merge Rate vs Time to Last Commit",
-    labels={"time_bucket_mid": "Time to Last Commit", "is_merged": "Merge Rate"},
+    y="is_closed",
+    title="PR Close Rate vs Time to Last Commit",
+    labels={"time_bucket_mid": "Time to Last Commit", "is_closed": "Close Rate"},
 )
-merge_rate_fig.update_traces(mode="lines+markers")
+close_rate_fig.update_traces(mode="lines+markers")
 
 # Update x-axis ticks to show formatted time
-merge_rate_fig.update_layout(
+close_rate_fig.update_layout(
     xaxis=dict(
         tickmode="array",
-        ticktext=merge_rate_by_time["time_formatted"],
-        tickvals=merge_rate_by_time["time_bucket_mid"],
+        ticktext=close_rate_by_time["time_formatted"],
+        tickvals=close_rate_by_time["time_bucket_mid"],
     )
 )
 
-merge_rate_fig.write_html("../scratch/merge_rate_analysis.html")
+close_rate_fig.write_html("../scratch/close_rate_analysis.html")
 
-# Print merge rate statistics with formatted time
-print("\nMerge Rate by Time Bucket:")
+# Print close rate statistics with formatted time
+print("\nClose Rate by Time Bucket:")
 print("==========================")
-for _, row in merge_rate_by_time.iterrows():
+for _, row in close_rate_by_time.iterrows():
     print(
-        f"Time: {format_time_diff(row['time_bucket_mid'])}, Merge rate: {row['is_merged']:.2f}"
+        f"Time: {format_time_diff(row['time_bucket_mid'])}, Close rate: {row['is_closed']:.2f}"
     )

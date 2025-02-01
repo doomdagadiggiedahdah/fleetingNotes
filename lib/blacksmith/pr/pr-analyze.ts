@@ -47,30 +47,31 @@ export async function run() {
 		.where(eq(serverRepos.type, "github"))
 
 	for (const { isDeployed, repo, pr } of rows) {
-		const prResult = await toResult(
-			octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
-				owner: repo.repoOwner,
-				repo: repo.repoName,
-				pull_number: Number.parseInt(pr.pullRequestNumber),
-			}),
-		)
-		if (!prResult.ok) {
+		const [prResult, commitsResult] = await Promise.all([
+			toResult(
+				octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+					owner: repo.repoOwner,
+					repo: repo.repoName,
+					pull_number: Number.parseInt(pr.pullRequestNumber),
+				}),
+			),
+			toResult(
+				octokit.request("GET /repos/{owner}/{repo}/commits", {
+					owner: repo.repoOwner,
+					repo: repo.repoName,
+					pull_number: Number.parseInt(pr.pullRequestNumber),
+				}),
+			),
+		])
+
+		if (!prResult.ok || !commitsResult.ok) {
 			continue
 		}
-
-		// Get the latest commit information
-		const commitsResult = await toResult(
-			octokit.request("GET /repos/{owner}/{repo}/commits", {
-				owner: repo.repoOwner,
-				repo: repo.repoName,
-				pull_number: Number.parseInt(pr.pullRequestNumber),
-			}),
-		)
 
 		const state = prResult.value.data.state
 		const mergedAt = prResult.value.data.merged_at
 
-		if (commitsResult.ok && commitsResult.value.data.length > 0) {
+		if (commitsResult.value.data.length > 0) {
 			const latestCommit =
 				commitsResult.value.data[commitsResult.value.data.length - 1]
 			if (latestCommit.commit.committer?.date) {
