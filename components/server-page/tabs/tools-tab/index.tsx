@@ -12,7 +12,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
-import { ConfigurationForm } from "../config-form"
+import { ConfigurationForm } from "./config-form"
 import { Button } from "@/components/ui/button"
 import type { JSONSchema } from "@/lib/types/server"
 

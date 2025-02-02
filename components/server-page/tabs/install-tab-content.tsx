@@ -8,7 +8,26 @@ import posthog from "posthog-js"
 export const ClientInstallContent = ({
 	server,
 	client,
-}: { server: FetchedServer; client: "claude" | "cline" }) => {
+	config,
+	isConfigured,
+}: {
+	server: FetchedServer
+	client: "claude" | "cline" | "cursor"
+	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ 
+	config?: Record<string, any>
+	isConfigured?: boolean
+}) => {
+	const command =
+		client === "cursor" && isConfigured && config
+			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
+
+	const hasValidConnection =
+		server.deploymentUrl ||
+		server.connections.some(
+			(conn) => conn.type === "stdio" && conn.configSchema,
+		)
+
 	return (
 		<>
 			<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
@@ -22,7 +41,7 @@ export const ClientInstallContent = ({
 					>
 						Claude Desktop
 					</a>
-				) : (
+				) : client === "cline" ? (
 					<a
 						href="https://github.com/cline/cline"
 						target="_blank"
@@ -30,11 +49,19 @@ export const ClientInstallContent = ({
 					>
 						Cline
 					</a>
-				)}
+				) : client === "cursor" ? (
+					<a
+						href="https://cursor.sh"
+						target="_blank"
+						className="hover:text-primary"
+					>
+						Cursor
+					</a>
+				) : null}
 				.
 			</p>
 
-			{server.published || server.isDeployed ? (
+			{hasValidConnection ? (
 				<CodeBlock
 					className="language-shell"
 					lineCount={2}
@@ -45,14 +72,14 @@ export const ClientInstallContent = ({
 						})
 					}}
 				>
-					{`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`}
+					{command ||
+						`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`}
 				</CodeBlock>
 			) : (
 				<Alert>
 					<AlertCircle className="h-4 w-4" />
 					<AlertDescription>
-						This server has not been deployed. It needs to be manually installed
-						from source.
+						This server has no valid connection configuration available.
 					</AlertDescription>
 				</Alert>
 			)}
