@@ -18,6 +18,7 @@ export const blockRepoOwner = [
 	"spences10",
 	"emzimmer",
 	"RamXX",
+	"will-of-fire",
 ]
 
 /**
