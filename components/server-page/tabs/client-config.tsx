@@ -6,7 +6,7 @@ import type { JSONSchema } from "@/lib/types/server"
 
 interface ClientConfigProps {
 	schema: JSONSchema
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	onSubmit: (config: Record<string, any>) => Promise<void>
 	onSuccess?: () => void
 }
@@ -16,7 +16,7 @@ export function ClientConfig({
 	onSubmit,
 	onSuccess,
 }: ClientConfigProps) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const [values, setValues] = useState<Record<string, any>>({})
 	const [isSubmitting, setIsSubmitting] = useState(false)
 

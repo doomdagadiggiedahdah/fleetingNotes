@@ -13,7 +13,7 @@ export const ClientInstallContent = ({
 }: {
 	server: FetchedServer
 	client: "claude" | "cline" | "cursor"
-	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */ 
+	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 	config?: Record<string, any>
 	isConfigured?: boolean
 }) => {
@@ -50,13 +50,16 @@ export const ClientInstallContent = ({
 						Cline
 					</a>
 				) : client === "cursor" ? (
-					<a
-						href="https://cursor.sh"
-						target="_blank"
-						className="hover:text-primary"
-					>
-						Cursor
-					</a>
+					<>
+						<a
+							href="https://cursor.sh"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Cursor
+						</a>{" "}
+						by copying the following into Cursor&apos;s MCP command
+					</>
 				) : null}
 				.
 			</p>
