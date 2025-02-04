@@ -117,6 +117,8 @@ async function analyzeDockerfileTraces() {
 			if (hasNode && !hasPython) stats.nodejs++
 			else if (hasPython && !hasNode) stats.python++
 			else stats.unknown++
+
+			if (!hasPython && !hasNode) console.log(dockerfile)
 		} catch (error) {
 			console.error("Failed to parse Dockerfile output:", error)
 			stats.unknown++

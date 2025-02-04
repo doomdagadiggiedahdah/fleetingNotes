@@ -77,14 +77,17 @@ startCommand:
       "command": "node",
       "args": [
         "dist/index.js"
-      ]
+      ],
+      "env": {
+        ...
+      }
     })
 ```
 
 The `startCommand` object consists of:
 - `type: stdio`: Specifies that your repository is a standard I/O based MCP server
 - `configSchema`: Defines the JSON Schema for your server's configuration options. Users will configure this your server using this schema. We will reject invalid configurations.
-- `commandFunction`: A JavaScript function that returns the command and arguments to start your server. This function is run within your server's sandbox during runtime to parse the config specified by clients. You can trust that `config` input argument conforms to your `configSchema`.
+- `commandFunction`: A JavaScript function that returns the command, arguments and environment variables required to start your server. This function is run within your server's sandbox during runtime to parse the config specified by clients. You can trust that `config` input argument conforms to your `configSchema`.
 
 Optional configuration:
 
