@@ -40,6 +40,12 @@ export async function checkPullRequests(
 				eq(serverRepos.type, "github"),
 			),
 		)
+		.limit(1)
+
+	if (rows.length === 0) {
+		// No PRs made
+		return ok([])
+	}
 
 	const { server, repo } = rows[0]
 
