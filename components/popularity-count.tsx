@@ -1,4 +1,4 @@
-import { Triangle } from "lucide-react"
+import { Activity } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
@@ -8,7 +8,6 @@ import {
 
 interface Props {
 	count?: number
-	type: "install" | "tool_calls"
 }
 
 function formatCount(num: number): string {
@@ -20,13 +19,13 @@ function formatCount(num: number): string {
 	return num.toString()
 }
 
-export function PopularityCounter({ count = 0, type }: Props) {
+export function PopularityCounter({ count = 0 }: Props) {
 	return (
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger>
 					<div className="flex items-center gap-1 text-sm text-muted-foreground">
-						<Triangle className="h-3 w-3" />
+						<Activity className="h-3 w-3" />
 						<span>{formatCount(count)}</span>
 					</div>
 				</TooltipTrigger>

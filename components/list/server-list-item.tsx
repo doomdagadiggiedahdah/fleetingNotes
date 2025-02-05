@@ -39,7 +39,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 						</div>
 						{server.useCount > 0 && (
 							<div className="flex-shrink-0 ml-4">
-								<PopularityCounter count={server.useCount} type="install" />
+								<PopularityCounter count={server.useCount} />
 							</div>
 						)}
 					</div>
