@@ -37,7 +37,7 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 	)
 
 	try {
-		await withTimeout(client.connect(transport), 5000)
+		await withTimeout(client.connect(transport), 10000)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
 		await client.close()
@@ -50,7 +50,7 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 	}
 
 	try {
-		const toolResult = await withTimeout(client.listTools(), 5000)
+		const toolResult = await withTimeout(client.listTools(), 10000)
 
 		return {
 			tools: toolResult.tools,
