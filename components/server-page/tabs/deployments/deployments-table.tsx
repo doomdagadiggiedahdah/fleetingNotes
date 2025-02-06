@@ -1,7 +1,7 @@
 "use client"
 
-import { DeployButton } from "@/components/server-page/tabs/deployments/deploy"
 import { BuildLogsDialog } from "@/components/server-page/tabs/deployments/build-logs-dialog"
+import { DeployButton } from "@/components/server-page/tabs/deployments/deploy"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import {
 	Table,
@@ -11,11 +11,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
-import { GitBranch, ScrollText } from "lucide-react"
 import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { createClient } from "@/lib/supabase/client"
 import type { FetchedServer } from "@/lib/utils/get-server"
+import { GitBranch, ScrollText } from "lucide-react"
 import { useEffect, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
 
@@ -76,8 +76,6 @@ export function DeploymentsTable({ server }: Props) {
 		}
 	}, [server.id])
 
-	const latestSuccessDeploy = deployments.find((d) => d.deployment_url)
-
 	const hasPendingBuilding = deployments.some(
 		(d) => d.status === "WORKING" || d.status === "QUEUED",
 	)
@@ -89,19 +87,6 @@ export function DeploymentsTable({ server }: Props) {
 					<CardTitle>Recent Deployments</CardTitle>
 					<CardDescription className="my-2">
 						Recent deployments and their status.
-						{latestSuccessDeploy?.deployment_url && (
-							<div>
-								Deployed Server:{" "}
-								<a
-									href={`${latestSuccessDeploy.deployment_url}/ws`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-blue-500 hover:text-blue-700"
-								>
-									{`${latestSuccessDeploy.deployment_url}/ws`}
-								</a>
-							</div>
-						)}
 					</CardDescription>
 				</div>
 				<DeployButton
