@@ -11,7 +11,12 @@ import { ClientConfig } from "./client-config"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export type InstallTabStates = "claude" | "cline" | "cursor" | "windsurf-next" | "code"
+export type InstallTabStates =
+	| "claude"
+	| "cline"
+	| "cursor"
+	| "windsurf"
+	| "code"
 
 type InstallationTabsProps = {
 	server: FetchedServer
@@ -97,7 +102,10 @@ export function InstallationTabs({
 				</TabsTrigger>
 				<TabsTrigger value="windsurf">
 					<span className="flex items-center gap-2">
-						<ServerFavicon homepage="https://codeium.com" displayName="Windsurf" />
+						<ServerFavicon
+							homepage="https://codeium.com"
+							displayName="Windsurf"
+						/>
 						Windsurf
 					</span>
 				</TabsTrigger>
@@ -139,7 +147,7 @@ export function InstallationTabs({
 				)}
 			</TabsContent>
 			<TabsContent value="windsurf">
-				<ClientInstallContent server={server} client="windsurf-next" />
+				<ClientInstallContent server={server} client="windsurf" />
 			</TabsContent>
 			<TabsContent value="cline">
 				<ClientInstallContent server={server} client="cline" />

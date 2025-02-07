@@ -12,7 +12,7 @@ export const ClientInstallContent = ({
 	isConfigured,
 }: {
 	server: FetchedServer
-	client: "claude" | "cline" | "cursor" | "windsurf-next"
+	client: "claude" | "cline" | "cursor" | "windsurf"
 	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 	config?: Record<string, any>
 	isConfigured?: boolean
@@ -34,29 +34,38 @@ export const ClientInstallContent = ({
 			<p className="my-2">
 				Integrate this tool for{" "}
 				{client === "claude" ? (
-					<a
-						href="https://claude.ai/download"
-						target="_blank"
-						className="hover:text-primary"
-					>
-						Claude Desktop
-					</a>
+					<>
+						<a
+							href="https://claude.ai/download"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Claude Desktop
+						</a>
+						.
+					</>
 				) : client === "cline" ? (
-					<a
-						href="https://github.com/cline/cline"
-						target="_blank"
-						className="hover:text-primary"
-					>
-						Cline
-					</a>
-				) : client === "windsurf-next" ? (
-					<a
-						href="https://codeium.com/blog/windsurf-next"
-						target="_blank"
-						className="hover:text-primary"
-					>
-						Windsurf Next
-					</a>
+					<>
+						<a
+							href="https://github.com/cline/cline"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Cline
+						</a>
+						.
+					</>
+				) : client === "windsurf" ? (
+					<>
+						<a
+							href="https://codeium.com/blog/windsurf-next"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Windsurf Next
+						</a>
+						.
+					</>
 				) : client === "cursor" ? (
 					<>
 						<a
@@ -66,10 +75,9 @@ export const ClientInstallContent = ({
 						>
 							Cursor
 						</a>{" "}
-						by copying the following into Cursor&apos;s MCP command
+						by copying the following into Cursor&apos;s MCP command.
 					</>
 				) : null}
-				.
 			</p>
 
 			{hasValidConnection ? (
