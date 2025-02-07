@@ -12,7 +12,7 @@ export const ClientInstallContent = ({
 	isConfigured,
 }: {
 	server: FetchedServer
-	client: "claude" | "cline" | "cursor"
+	client: "claude" | "cline" | "cursor" | "windsurf-next"
 	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 	config?: Record<string, any>
 	isConfigured?: boolean
@@ -48,6 +48,14 @@ export const ClientInstallContent = ({
 						className="hover:text-primary"
 					>
 						Cline
+					</a>
+				) : client === "windsurf-next" ? (
+					<a
+						href="https://codeium.com/blog/windsurf-next"
+						target="_blank"
+						className="hover:text-primary"
+					>
+						Windsurf Next
 					</a>
 				) : client === "cursor" ? (
 					<>
