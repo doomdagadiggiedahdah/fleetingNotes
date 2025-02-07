@@ -11,11 +11,13 @@ export const metadata = {
 
 The Smithery Registry provides a RESTful API for managing and obtaining deployed Model Context Protocol (MCP) servers. This documentation will guide you through using the Registry API to obtain a WebSocket MCP server.
 
+Please note: Smithery is still in early stages of development and the API may change in the future.
+
 ## Concepts
 Smithery contains MCP servers. Every server is different and may have different ways of connecting with them. Server authors specify a configuration schema, which is a JSON schema that defines the structure of the configuration that is required to connect to the server.
 
 ### Authentication
-Most endpoints require authentication via a bearer token. Currently, you have to request for an API key by contacting us. Include this token in your API requests:
+All endpoints require authentication via a bearer token. Currently, you have to request for an API key by [contacting us](mailto:contact@smithery.ai). Include this token in your API requests:
 
 ```typescript
 headers: {
