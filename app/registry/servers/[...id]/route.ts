@@ -165,8 +165,6 @@ export async function POST(
 					eventName: "config",
 					payload: {
 						serverId,
-						config: data.config,
-						configOutput: finalResult.result,
 					},
 				}),
 				posthog.flush(),

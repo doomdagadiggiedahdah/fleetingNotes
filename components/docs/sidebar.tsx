@@ -9,6 +9,7 @@ export const navigation = [
 			{ title: "Configuration", href: "/docs/config" },
 			// { title: "Profiles", href: "/docs/profiles" },
 			{ title: "Git Integration", href: "/docs/git" },
+			{ title: "Data Policy", href: "/docs/data-policy" },
 		],
 	},
 ]
