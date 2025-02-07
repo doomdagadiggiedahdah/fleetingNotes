@@ -12,6 +12,9 @@ const config = {
 		})
 		return config
 	},
+	experimental: {
+		useCache: true,
+	},
 }
 
 const withMDX = createMDX({

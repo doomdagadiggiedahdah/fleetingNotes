@@ -1,3 +1,4 @@
+"use cache"
 import { getAllServers } from "@/lib/utils/search-servers"
 import { ServerListItem } from "./server-list-item"
 
