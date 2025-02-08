@@ -114,14 +114,18 @@ class ContentRouter:
         """Determines the appropriate daily note path"""
         try:
             filename = Path(source_file).stem
-            datetime_obj = datetime.strptime(filename, "%Y-%m-%d %H-%M-%S %M")
-            date = datetime_obj.date()
+            # Get date and time parts
+            date_str, time_str = filename.split()[:2]
             
-            # Adjust date if file was created between midnight and 5 AM
+            # Parse both date and time to check hour
+            datetime_obj = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H-%M-%S")
+            
+            # Adjust date if before 5am
             if datetime_obj.hour < 5:
-                date -= timedelta(days=1)
+                datetime_obj -= timedelta(days=1)
+                date_str = datetime_obj.strftime("%Y-%m-%d")
                 
-            return DAILY_NOTES_DIR / f"{date}.md"
+            return DAILY_NOTES_DIR / f"{date_str}.md"
             
         except ValueError as e:
             logging.error(f"Could not parse date from filename {source_file}: {e}")
