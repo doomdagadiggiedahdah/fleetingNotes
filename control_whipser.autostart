@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Exec=/home/mat/Documents/ProgramExperiments/fleetingNotes/whisper_loop.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[en_US]=control whisper
+Name=control whisper
+Comment[en_US]=shrek is love
+Comment=shrek is life

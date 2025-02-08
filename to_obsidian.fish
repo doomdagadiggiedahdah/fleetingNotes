@@ -1,18 +1,41 @@
 #!/usr/bin/env fish
 
-set -g STT_LOCATION   "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/audioNoteTranscribe/"
-set -g ARCHIVE_FOLDER "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/note_folder/"
+set -g STT_LOCATION   "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/transcriptions/"
+set -g ARCHIVE_FOLDER "/home/mat/Documents/ProgramExperiments/fleetingNotes/main/transcriptions/.archive"
 set -g ZETTLE_FOLDER "/home/mat/Obsidian/ZettleKasten"
 set -g INBOX_NOTE "/home/mat/Obsidian/gtd - inbox.md"
 set -g DAILY_NOTES_FOLDER "/home/mat/Obsidian/Daily Notes"
 set -g LOG_FILE "$ZETTLE_FOLDER/dump_log.md"
 set -g LONG_NOTES_FOLDER "$ZETTLE_FOLDER/fleet_notes/voice_memo"
 
+# Define the paths
+set transcription_file "/home/mat/Documents/ProgramExperiments/fleetingNotes/transcriptions/2025-02-04 00-36-50 2.m4a.txt"
+set inbox_note "/home/mat/Obsidian/gtd - inbox.md"
+
+# Check if the transcription file exists
+if test -f $transcription_file
+    # Extract the base filename without extension for the link
+    set base_filename (basename "$transcription_file" .txt)
+    
+    # Read the content of the transcription file
+    set content (cat $transcription_file)
+    
+    # Create the formatted entry with truncation
+    set preview (string sub -l 200 "$content")
+    set formatted_entry "- [[${base_filename}]] ----VM----<br>$preview..."
+    
+    # Append the formatted entry to the INBOX_NOTE
+    echo $formatted_entry >> $inbox_note
+    echo "Appended formatted transcription to INBOX_NOTE."
+else
+    echo "Transcription file does not exist."
+end
+
 # Define keyword mappings as keyword -> file pairs
 set -g NOTES_MAP
 set -a NOTES_MAP "concept digest" "$ZETTLE_FOLDER/concept digest.md"
 set -a NOTES_MAP "memory dump" "$ZETTLE_FOLDER/memory dump.md"
-set -a NOTES_MAP "daily reflection" "daily" 
+set -a NOTES_MAP "daily reflection" "daily"
 
 
 function log_operation
@@ -111,7 +134,7 @@ function main
             append_to_file "$content" "$source_file" "$INBOX_NOTE" 
         end
         
-        mv "$source_file" "$ARCHIVE_FOLDER"
+        # mv "$source_file" "$ARCHIVE_FOLDER"
     end
 end
 

@@ -1,4 +1,10 @@
 note_folder/*
 audioNoteTranscribe/*
 research_archive/*
-xxx.txt
+main/
+transcriptions/
+venv/
+temp/
+recordings/
+__pycache__/
+processing_errors.log
