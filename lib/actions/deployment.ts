@@ -297,8 +297,8 @@ export async function createDeploymentForServer(
 						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
 						script: `set -ex d
 export FLY_API_TOKEN=$_FLY_API_TOKEN
-~/.fly/bin/flyctl apps create "${flyAppId}" --json --org smithery || true
-~/.fly/bin/flyctl deploy --remote-only --yes --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml "${workingDir}"
+fly apps create "${flyAppId}" --json --org smithery || true
+fly deploy --remote-only --yes --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml "${workingDir}"
 `,
 					},
 				],
