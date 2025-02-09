@@ -1,9 +1,3 @@
 {
-	"outputDirectory": ".next/build",
-	"crons": [
-		{
-			"path": "/registry/crawl",
-			"schedule": "0 * * * *"
-		}
-	]
+	"outputDirectory": ".next/build"
 }
