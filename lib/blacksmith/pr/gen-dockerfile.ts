@@ -329,7 +329,7 @@ async function createMCPClient(
 	await mcp.connectAll({
 		gh: new WebSocketClientTransport(
 			createSmitheryUrl(
-				"https://app-6a371696-6f71-49a2-b977-9521e125d625-5u5fdnfupa-uc.a.run.app/ws",
+				"https://smithery-6a371696-6f71-49a2-b977-9521e125d625.fly.dev/ws",
 				{
 					githubPersonalAccessToken: installationIoken,
 				},

@@ -1,33 +1,14 @@
 import { db } from "@/db"
 import { type Deployment, deployments, servers } from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { z } from "zod"
-import * as cloudRun from "@google-cloud/run"
-import { Storage } from "@google-cloud/storage"
-import { revalidatePath } from "next/cache"
 import { posthog } from "@/lib/posthog_server"
-import { waitUntil } from "@vercel/functions"
 import { err, ok } from "@/lib/utils/result"
+import { Storage } from "@google-cloud/storage"
+import { waitUntil } from "@vercel/functions"
+import { eq } from "drizzle-orm"
+import { revalidatePath } from "next/cache"
+import { z } from "zod"
 
 const KEY = "A2aC3mQN%GImJ7yj"
-
-// Shared utility for getting Cloud Run URL
-async function getCloudRunUrl(serverId: string) {
-	const cloudCredentials = JSON.parse(
-		process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
-	)
-	const run = new cloudRun.v2.ServicesClient({ credentials: cloudCredentials })
-
-	try {
-		const [service] = await run.getService({
-			name: `projects/${cloudCredentials.project_id}/locations/us-central1/services/app-${serverId}`,
-		})
-		return service.uri || null
-	} catch (error) {
-		console.error("Error fetching Cloud Run URL:", error)
-		return null
-	}
-}
 
 const BuildStepSchema = z.object({
 	name: z.string(),
@@ -77,11 +58,12 @@ export async function POST(request: Request) {
 		const json = await request.json()
 		const data = PubSubBuildSchema.parse(json)
 
-		const buildLogs = await extractBuildLogs(data.id, data.logsBucket)
+		// TODO: Need a better way to extract build logs
+		// const buildLogs = await extractBuildLogs(data.id, data.logsBucket)
 
 		const updateData: Partial<Deployment> = {
 			status: data.status,
-			logs: buildLogs.ok ? buildLogs.value : null,
+			// logs: buildLogs.ok ? buildLogs.value : null,
 			updatedAt: new Date(),
 		}
 
@@ -100,25 +82,23 @@ export async function POST(request: Request) {
 				.then((rows) => rows[0])
 
 			if (deployment) {
-				const cloudRunUrl = await getCloudRunUrl(deployment.serverId)
-				if (cloudRunUrl) {
-					updateData.deploymentUrl = cloudRunUrl
-					// Invalidate server page cache
-					revalidatePath(`/server/${deployment.serverQualifiedName}`)
+				const flyAppId = `smithery-${deployment.serverId}`
+				updateData.deploymentUrl = `https://${flyAppId}.fly.dev`
+				// Invalidate server page cache
+				revalidatePath(`/server/${deployment.serverQualifiedName}`)
 
-					posthog.capture({
-						event: "Deployment Completed",
-						distinctId: deployment.serverOwner ?? "anonymous",
-						properties: {
-							$process_person_profile: deployment.serverOwner ?? false,
-							serverId: deployment.serverId,
-							serverQualifiedName: deployment.serverQualifiedName,
-							deploymentId: deployment.id,
-							status: data.status,
-						},
-					})
-					waitUntil(posthog.flush())
-				}
+				posthog.capture({
+					event: "Deployment Completed",
+					distinctId: deployment.serverOwner ?? "anonymous",
+					properties: {
+						$process_person_profile: deployment.serverOwner ?? false,
+						serverId: deployment.serverId,
+						serverQualifiedName: deployment.serverQualifiedName,
+						deploymentId: deployment.id,
+						status: data.status,
+					},
+				})
+				waitUntil(posthog.flush())
 			}
 		}
 

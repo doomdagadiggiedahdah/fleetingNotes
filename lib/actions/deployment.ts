@@ -32,6 +32,14 @@ import {
 } from "../utils/github"
 import { err, ok, type Result } from "../utils/result"
 
+// Create a Cloud Build client
+const cloudCredentials = JSON.parse(
+	process.env.GOOGLE_APPLICATION_CREDENTIALS as unknown as string,
+)
+const cloudBuildClient = new CloudBuildClient({
+	credentials: cloudCredentials,
+})
+
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
 	const {
@@ -58,21 +66,40 @@ export const getDeployments = async (serverId: string) => {
 	return deployments ?? []
 }
 
-// Create a Cloud Build client
-const cloudCredentials = JSON.parse(
-	process.env.GOOGLE_APPLICATION_CREDENTIALS as unknown as string,
-)
-const cloudBuildClient = new CloudBuildClient({
-	credentials: cloudCredentials,
-})
+function createFlyConfig(appId: string) {
+	return `\
+app = "${appId}"
+primary_region = 'iad'
 
-function createDockerfile(baseImage: string, config: ServerConfigGateway) {
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 100
+    hard_limit = 200
+  
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+`
+}
+
+function createDockerfile(baseDockerfile: string, config: ServerConfigGateway) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM us-central1-docker.pkg.dev/smithery-ai/smithery/gateway:latest as gateway_image
+FROM registry.fly.io/sidecar:deployment-01JKK3M7V2JJB2KEBCB7WPHZVE as gateway_image
 
-# User's original image
-FROM ${baseImage} as userimage
+# User's Dockerfile
+${baseDockerfile}
+# End user Dockerfile
 
 COPY --from=gateway_image /app/gateway-app-glibc /tmp/smithery-gateway-glibc
 COPY --from=gateway_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
@@ -227,9 +254,16 @@ export async function createDeploymentForServer(
 	}
 
 	const dockerfileContents = createDockerfile(
-		`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
+		files.value.dockerfile,
 		smitheryConfig,
 	)
+
+	const workingDir =
+		joinGithubPath(
+			serverRepo.baseDirectory,
+			smitheryConfig.build?.dockerBuildPath ?? "",
+		) || "."
+	const flyAppId = `smithery-${server.id}`
 
 	try {
 		// Trigger Cloud Build using our builder configuration
@@ -246,95 +280,35 @@ export async function createDeploymentForServer(
 							".",
 						],
 					},
-					// Build user's image
+					// Write fly.toml
 					{
-						name: "gcr.io/cloud-builders/docker",
-						env: ["DOCKER_BUILDKIT=1"],
-						args: [
-							"build",
-							"--pull",
-							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
-							"-f",
-							joinGithubPath(
-								serverRepo.baseDirectory,
-								smitheryConfig.build?.dockerfile ?? "",
-								"Dockerfile",
-							),
-							joinGithubPath(
-								serverRepo.baseDirectory,
-								smitheryConfig.build?.dockerBuildPath ?? "",
-							) || ".",
-						],
+						name: "debian:bullseye-slim",
+						script: `cat > fly.smithery.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL`,
 					},
-					// Push user's image
+					// Write Dockerfile
 					{
-						name: "gcr.io/cloud-builders/docker",
-						args: [
-							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
-						],
-					},
-					// Build our layer on top
-					{
-						name: "ubuntu",
+						name: "debian:bullseye-slim",
 						script: `cat > Dockerfile.smithery << 'EOL'\n${dockerfileContents}\nEOL`,
 					},
+					// Install flyctl, create or deploy the app.
+					// TODO: Prebuild this image to improve build times
+					// TODO: Security concern of exposing FLY_API_TOKEN by mallicious developer apps
 					{
-						name: "gcr.io/cloud-builders/docker",
-						args: [
-							"build",
-							"-t",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
-							"-f",
-							"Dockerfile.smithery",
-							".",
-						],
-					},
-					// Push final image
-					{
-						name: "gcr.io/cloud-builders/docker",
-						args: [
-							"push",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
-						],
-					},
-					{
-						name: "gcr.io/cloud-builders/gcloud",
-						args: [
-							"run",
-							"deploy",
-							`app-${server.id}`,
-							"--image",
-							`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-servers/${server.id}:latest`,
-							"--region",
-							"us-central1",
-							"--platform",
-							"managed",
-							"--memory",
-							"1Gi",
-							"--timeout",
-							"5m",
-							"--concurrency",
-							"100",
-							// best effort affinity
-							"--session-affinity",
-							"--max-instances",
-							"3",
-							// Instance-based billing
-							"--no-cpu-throttling",
-							"--allow-unauthenticated",
-						],
+						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
+						script: `set -ex d
+export FLY_API_TOKEN=$_FLY_API_TOKEN
+~/.fly/bin/flyctl apps create "${flyAppId}" --json --org smithery || true
+~/.fly/bin/flyctl deploy --remote-only --yes --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml "${workingDir}"
+`,
 					},
 				],
 				logsBucket: `gs://smithery-build-logs/${server.id}`,
 				options: {
 					automapSubstitutions: true,
 				},
-				images: [
-					// For caching purposes
-					`us-central1-docker.pkg.dev/${cloudCredentials.project_id}/smithery-user-servers/${server.id}:latest`,
-				],
+				substitutions: {
+					_FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
+				},
 			},
 		})
 
@@ -359,7 +333,7 @@ export async function createDeploymentForServer(
 
 		return ok()
 	} catch (error) {
-		console.error("Cloud Build error:", error)
+		console.error("Deployment error:", error)
 		return err({ message: "Failed to trigger deployment." })
 	}
 }
