@@ -59,11 +59,11 @@ export async function POST(request: Request) {
 		const data = PubSubBuildSchema.parse(json)
 
 		// TODO: Need a better way to extract build logs
-		// const buildLogs = await extractBuildLogs(data.id, data.logsBucket)
+		const buildLogs = await extractBuildLogs(data.id, data.logsBucket)
 
 		const updateData: Partial<Deployment> = {
 			status: data.status,
-			// logs: buildLogs.ok ? buildLogs.value : null,
+			logs: buildLogs.ok ? buildLogs.value : null,
 			updatedAt: new Date(),
 		}
 
@@ -133,19 +133,35 @@ async function extractBuildLogs(buildId: string, logBucket: string) {
 		const [buffer] = await bucket.file(`${path}/log-${buildId}.txt`).download()
 		const text = buffer.toString("utf-8")
 
-		// Only load step for "Build user's image"
-		const requiredPrefix = "Step #1: "
-		const step1 = text
-			.split("\n")
+		const requiredPrefix = "Step #3: "
+		const lines = text.split("\n")
+
+		// Find start and end indices
+		const startIdx = lines.findIndex((l) =>
+			l.includes("Building image with Depot"),
+		)
+		const endIdx = lines.findIndex((l) =>
+			l.includes("COPY --from=gateway_image"),
+		)
+
+		if (startIdx === -1) {
+			return err({ message: "Could not find start of build logs" })
+		}
+
+		// TODO: Note there's still a chance to leak sensitive information
+		const endIndex = endIdx === -1 ? lines.length : endIdx
+
+		const filteredLogs = lines
+			.slice(startIdx + 1, endIndex)
 			.filter(
 				(l) =>
 					l.startsWith(requiredPrefix) &&
-					!l.includes("us-central1-docker.pkg.dev"),
+					!l.includes("registry.fly.io/sidecar"),
 			)
 			.map((l) => l.replace(requiredPrefix, ""))
 			.join("\n")
 
-		return ok(step1)
+		return ok(filteredLogs)
 	} catch (error) {
 		console.error("Failed to fetch build logs:", error)
 		return err({ message: "Failed to fetch build logs" })
