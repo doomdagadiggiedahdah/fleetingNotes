@@ -58,7 +58,6 @@ export async function POST(request: Request) {
 		const json = await request.json()
 		const data = PubSubBuildSchema.parse(json)
 
-		// TODO: Need a better way to extract build logs
 		const buildLogs = await extractBuildLogs(data.id, data.logsBucket)
 
 		const updateData: Partial<Deployment> = {
@@ -133,7 +132,7 @@ async function extractBuildLogs(buildId: string, logBucket: string) {
 		const [buffer] = await bucket.file(`${path}/log-${buildId}.txt`).download()
 		const text = buffer.toString("utf-8")
 
-		const requiredPrefix = "Step #3: "
+		const requiredPrefix = `Step #3 - "deploy":`
 		const lines = text.split("\n")
 
 		// Find start and end indices

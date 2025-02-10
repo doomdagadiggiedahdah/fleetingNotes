@@ -282,23 +282,26 @@ export async function createDeploymentForServer(
 					},
 					// Write fly.toml
 					{
-						name: "debian:bullseye-slim",
+						id: "fly.smithery.toml",
+						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
 						script: `cat > fly.smithery.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL`,
 					},
 					// Write Dockerfile
 					{
-						name: "debian:bullseye-slim",
+						id: "Dockerfile.smithery",
+						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
 						script: `cat > Dockerfile.smithery << 'EOL'\n${dockerfileContents}\nEOL`,
 					},
 					// Install flyctl, create or deploy the app.
-					// TODO: Prebuild this image to improve build times
-					// TODO: Security concern of exposing FLY_API_TOKEN by mallicious developer apps
 					{
+						// Changing this requires change pubsub route.ts
+						id: "deploy",
 						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
+						secretEnv: ["FLY_API_TOKEN"],
+						dir: workingDir,
 						script: `set -ex d
-export FLY_API_TOKEN=$_FLY_API_TOKEN
 fly apps create "${flyAppId}" --json --org smithery || true
-fly deploy --remote-only --yes --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml "${workingDir}"
+fly deploy --yes --remote-only --ha=false --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml
 `,
 					},
 				],
@@ -306,9 +309,16 @@ fly deploy --remote-only --yes --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)
 				options: {
 					automapSubstitutions: true,
 				},
-				substitutions: {
-					_FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
+				availableSecrets: {
+					secretManager: [
+						{
+							versionName:
+								"projects/$PROJECT_ID/secrets/FLY_API_TOKEN/versions/latest",
+							env: "FLY_API_TOKEN",
+						},
+					],
 				},
+				substitutions: {},
 			},
 		})
 
