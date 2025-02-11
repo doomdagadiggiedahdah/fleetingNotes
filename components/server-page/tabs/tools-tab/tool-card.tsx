@@ -117,7 +117,7 @@ export function ToolCard({
 							<h3 className="font-semibold text-primary text-left">
 								{tool.name}
 							</h3>
-							<p className="text-sm text-muted-foreground text-left mt-1">
+							<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line">
 								{isExpanded
 									? tool.description || ""
 									: truncateDescription(tool.description || "")}

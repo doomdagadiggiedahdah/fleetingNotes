@@ -1,6 +1,5 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { BadgeCheck, ExternalLink } from "lucide-react"
-import { SiGithub } from "@icons-pack/react-simple-icons"
+import { BadgeCheck, ExternalLink, Github } from "lucide-react"
 import { Suspense } from "react"
 import { Header } from "../header"
 import { Container } from "../layouts/container"
@@ -56,9 +55,9 @@ export function ServerPage({ server, activeTab }: Props) {
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex items-center hover:text-primary"
+								title={`${server.serverRepo.owner}/${server.serverRepo.repo}`}
 							>
-								<SiGithub className="w-4 h-4 mr-1" />
-								{server.serverRepo.owner}/{server.serverRepo.repo}
+								<Github className="w-4 h-4" />
 							</a>
 						)}
 						{server.homepage && (
@@ -67,9 +66,9 @@ export function ServerPage({ server, activeTab }: Props) {
 								target="_blank"
 								rel="noopener noreferrer"
 								className="flex items-center hover:text-primary"
+								title="Homepage"
 							>
-								<ExternalLink className="w-4 h-4 mr-1" />
-								Homepage
+								<ExternalLink className="w-4 h-4" />
 							</a>
 						)}
 					</div>

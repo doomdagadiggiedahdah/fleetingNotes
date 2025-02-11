@@ -15,7 +15,7 @@ export function Header() {
 							<h1 className="text-2xl font-bold text-foreground">Smithery</h1>
 						</div>
 					</Link>
-					<div className="flex items-center gap-6">
+					<div className="flex items-center gap-2 md:gap-6">
 						<div className="flex items-center gap-2">
 							<a
 								href="https://github.com/smithery-ai"
@@ -38,7 +38,7 @@ export function Header() {
 						</div>
 						<Link
 							href="/docs"
-							className="text-muted-foreground hover:text-foreground transition-colors"
+							className="hidden sm:block text-muted-foreground hover:text-foreground transition-colors"
 						>
 							Docs
 						</Link>
@@ -47,7 +47,7 @@ export function Header() {
 							className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-2 pr-3 py-2"
 						>
 							<Plus className="w-4 h-4" />
-							Add Server
+							<span className="hidden sm:block">Add Server</span>
 						</Link>
 						<LoginButton />
 					</div>

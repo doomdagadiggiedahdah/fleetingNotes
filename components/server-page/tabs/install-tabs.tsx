@@ -10,6 +10,13 @@ import { ServerFavicon } from "../server-favicon"
 import { ClientConfig } from "./client-config"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
 
 export type InstallTabStates =
 	| "claude"
@@ -78,6 +85,32 @@ export function InstallationTabs({
 		setIsClientConfigured(true)
 	}
 
+	const tabOptions = [
+		{
+			value: "claude",
+			label: "Claude",
+			icon: <SiAnthropic className="w-4 h-4" />,
+		},
+		{
+			value: "cursor",
+			label: "Cursor",
+			icon: <ServerFavicon homepage="https://cursor.sh" displayName="Cursor" />,
+		},
+		{
+			value: "windsurf",
+			label: "Windsurf",
+			icon: (
+				<ServerFavicon homepage="https://codeium.com" displayName="Windsurf" />
+			),
+		},
+		{ value: "cline", label: "Cline", icon: null },
+		{
+			value: "code",
+			label: "Typescript",
+			icon: <SiTypescript className="w-4 h-4" />,
+		},
+	]
+
 	return (
 		<Tabs
 			value={activeTab}
@@ -87,36 +120,69 @@ export function InstallationTabs({
 				onTabChange?.(tab as InstallTabStates)
 			}}
 		>
-			<TabsList className="border-b border-border mb-3 w-full justify-start">
-				<TabsTrigger value="claude">
-					<span className="flex items-center gap-2">
-						<SiAnthropic className="w-4 h-4" />
-						Claude
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="cursor">
-					<span className="flex items-center gap-2">
-						<ServerFavicon homepage="https://cursor.sh" displayName="Cursor" />
-						Cursor
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="windsurf">
-					<span className="flex items-center gap-2">
-						<ServerFavicon
-							homepage="https://codeium.com"
-							displayName="Windsurf"
-						/>
-						Windsurf
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="cline">Cline</TabsTrigger>
-				<TabsTrigger value="code">
-					<span className="flex items-center gap-2">
-						<SiTypescript className="w-4 h-4" />
-						Typescript
-					</span>
-				</TabsTrigger>
-			</TabsList>
+			<div className="border-b border-border mb-3">
+				<div className="lg:hidden">
+					<Select
+						value={activeTab}
+						onValueChange={(value) => {
+							setActiveTab(value as InstallTabStates)
+							onTabChange?.(value as InstallTabStates)
+						}}
+					>
+						<SelectTrigger className="w-[150px]">
+							<SelectValue>
+								<span className="flex items-center gap-2">
+									{tabOptions.find((tab) => tab.value === activeTab)?.icon}
+									{tabOptions.find((tab) => tab.value === activeTab)?.label}
+								</span>
+							</SelectValue>
+						</SelectTrigger>
+						<SelectContent>
+							{tabOptions.map((tab) => (
+								<SelectItem key={tab.value} value={tab.value}>
+									<span className="flex items-center gap-2">
+										{tab.icon}
+										{tab.label}
+									</span>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+				<TabsList className="hidden lg:flex w-full justify-start">
+					<TabsTrigger value="claude">
+						<span className="flex items-center gap-2">
+							<SiAnthropic className="w-4 h-4" />
+							Claude
+						</span>
+					</TabsTrigger>
+					<TabsTrigger value="cursor">
+						<span className="flex items-center gap-2">
+							<ServerFavicon
+								homepage="https://cursor.sh"
+								displayName="Cursor"
+							/>
+							Cursor
+						</span>
+					</TabsTrigger>
+					<TabsTrigger value="windsurf">
+						<span className="flex items-center gap-2">
+							<ServerFavicon
+								homepage="https://codeium.com"
+								displayName="Windsurf"
+							/>
+							Windsurf
+						</span>
+					</TabsTrigger>
+					<TabsTrigger value="cline">Cline</TabsTrigger>
+					<TabsTrigger value="code">
+						<span className="flex items-center gap-2">
+							<SiTypescript className="w-4 h-4" />
+							Typescript
+						</span>
+					</TabsTrigger>
+				</TabsList>
+			</div>
 			<TabsContent value="claude">
 				<ClientInstallContent server={server} client="claude" />
 			</TabsContent>

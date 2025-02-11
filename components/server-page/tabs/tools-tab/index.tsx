@@ -99,6 +99,26 @@ export function ToolsPanel({
 
 	return (
 		<div className="space-y-6">
+			{((showConfigForm && status !== "connected" && tools.length > 0) ||
+				isEditingConfig) && (
+				<div className="lg:hidden">
+					<ConfigurationForm
+						schema={configSchema!}
+						onSubmit={handleConfigSubmit}
+						onCancel={() => {
+							setIsEditingConfig(false)
+							onConfigCancel?.()
+						}}
+						initialConfig={initialConfig}
+						onSuccess={() => {
+							setIsEditingConfig(false)
+							onConfigSuccess?.()
+						}}
+						defaultEditMode={false}
+					/>
+				</div>
+			)}
+
 			<div className="flex justify-between items-center">
 				{status === "connected" && !isEditingConfig && tools.length > 0 && (
 					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
@@ -108,8 +128,8 @@ export function ToolsPanel({
 				)}
 			</div>
 
-			<div className="flex gap-6">
-				<div className="w-1/2">
+			<div className="flex flex-col lg:flex-row gap-6">
+				<div className="w-full lg:w-1/2">
 					{tools.length === 0 ? (
 						<Card className="p-6">
 							<div className="text-sm text-muted-foreground text-center">
@@ -156,24 +176,26 @@ export function ToolsPanel({
 					)}
 				</div>
 
-				<div className="w-1/2">
-					<div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+				<div className="w-full lg:w-1/2">
+					<div className="lg:sticky lg:top-4">
 						{(showConfigForm && status !== "connected" && tools.length > 0) ||
 						isEditingConfig ? (
-							<ConfigurationForm
-								schema={configSchema!}
-								onSubmit={handleConfigSubmit}
-								onCancel={() => {
-									setIsEditingConfig(false)
-									onConfigCancel?.()
-								}}
-								initialConfig={initialConfig}
-								onSuccess={() => {
-									setIsEditingConfig(false)
-									onConfigSuccess?.()
-								}}
-								defaultEditMode={false}
-							/>
+							<div className="hidden lg:block mb-6">
+								<ConfigurationForm
+									schema={configSchema!}
+									onSubmit={handleConfigSubmit}
+									onCancel={() => {
+										setIsEditingConfig(false)
+										onConfigCancel?.()
+									}}
+									initialConfig={initialConfig}
+									onSuccess={() => {
+										setIsEditingConfig(false)
+										onConfigSuccess?.()
+									}}
+									defaultEditMode={false}
+								/>
+							</div>
 						) : isExpanded ? (
 							<Card className="p-6">
 								<ToolResults {...activeExecution} />

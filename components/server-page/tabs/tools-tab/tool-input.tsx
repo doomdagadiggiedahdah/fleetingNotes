@@ -69,12 +69,32 @@ function renderInput(
 			)
 		case "boolean":
 			return (
-				<Input
-					type="checkbox"
-					id={key}
-					checked={Boolean(currentValue)}
-					onChange={(e) => onChange(e.target.checked)}
-				/>
+				<div className="inline-flex rounded-lg border border-border/40 p-0.5">
+					<Button
+						type="button"
+						variant="ghost"
+						onClick={() => onChange(true)}
+						className={`h-7 px-3 rounded-md transition-colors ${
+							currentValue
+								? "bg-secondary text-secondary-foreground"
+								: "hover:bg-secondary/10"
+						}`}
+					>
+						True
+					</Button>
+					<Button
+						type="button"
+						variant="ghost"
+						onClick={() => onChange(false)}
+						className={`h-7 px-3 rounded-md transition-colors ${
+							!currentValue
+								? "bg-secondary text-secondary-foreground"
+								: "hover:bg-secondary/10"
+						}`}
+					>
+						False
+					</Button>
+				</div>
 			)
 		case "array":
 			return (
