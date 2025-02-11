@@ -18,6 +18,7 @@ export const events = pgTable("events", {
 }).enableRLS()
 
 // Materialized view for server usage counts in the last month
+// We have a cron task on Supabase to update this every 10 minutes
 export const serverUsageCounts = pgMaterializedView("server_usage_counts").as(
 	(qb) => {
 		return qb

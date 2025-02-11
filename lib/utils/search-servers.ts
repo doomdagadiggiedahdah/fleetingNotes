@@ -1,11 +1,6 @@
 import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema"
-import {
-	isDeployedQuery,
-	isNewQuery,
-	sourceUrlQuery,
-	useCountQuery,
-} from "@/db/schema/queries"
+import { isDeployedQuery, isNewQuery, useCountQuery } from "@/db/schema/queries"
 import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
 import { llm } from "./braintrust"
@@ -24,6 +19,8 @@ export interface PaginatedResult<T> {
 		totalCount: number
 	}
 }
+
+const MIN_SIMILARITY = 0.25
 
 /**
  * @param query A string to search for. If null, we won't search
@@ -67,7 +64,9 @@ export async function getAllServers(
 
 	// Base conditions for both count and data queries
 	const whereClause = and(
-		similarity ? and(isNotNull(similarity), gt(similarity, 0.25)) : undefined,
+		similarity
+			? and(isNotNull(similarity), gt(similarity, MIN_SIMILARITY))
+			: undefined,
 		parsedQueryObj?.owner
 			? eq(serverRepos.repoOwner, parsedQueryObj.owner)
 			: undefined,
@@ -81,7 +80,6 @@ export async function getAllServers(
 	const totalCount = await db
 		.select({ count: sql<number>`count(*)` })
 		.from(servers)
-		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 		.where(whereClause)
 		.then((result) => Number(result[0].count))
 
@@ -99,16 +97,11 @@ export async function getAllServers(
 			createdAt: servers.createdAt,
 			homepage: servers.homepage,
 			verified: servers.verified,
-			owner: servers.owner,
-			sourceUrl: sourceUrlQuery,
 			useCount: useCountQuery,
 			isDeployed: isDeployedQuery,
 			isNew: isNewQuery,
 		})
 		.from(servers)
-		// TODO: Won't work if user has 2 repos connected
-		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-		.groupBy(servers.id, serverRepos.id)
 		.orderBy((t) => [
 			// There exists a valid installation strategy
 			sql`CASE WHEN ${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,

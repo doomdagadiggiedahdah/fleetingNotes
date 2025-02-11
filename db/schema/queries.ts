@@ -12,9 +12,21 @@ export const isDeployedQuery = sql<boolean>`EXISTS (
 		ORDER BY ${deployments.createdAt} DESC
 		LIMIT 1
 	)`
-export const sourceUrlQuery = sql<
-	string | null
->`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
+export const sourceUrlQuery = sql<string | null>`
+  CASE
+    WHEN ${serverRepos.repoOwner} IS NULL THEN NULL
+    ELSE CONCAT(
+      'https://github.com/',
+      ${serverRepos.repoOwner},
+      '/',
+      ${serverRepos.repoName},
+      CASE
+        WHEN ${serverRepos.baseDirectory} = '.' THEN ''
+        ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory})
+      END
+    )
+  END
+`
 
 // Monthly usage count
 export const useCountQuery = sql<number>`
