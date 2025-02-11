@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { deployments, serverRepos, servers } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
-import { eq, and, isNotNull } from "drizzle-orm"
+import { and, eq, isNotNull, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
 // Private endpoint to redeploy all servers
@@ -13,18 +13,25 @@ export async function POST(request: Request) {
 
 	try {
 		// Parse the request to check for serverId
-		const { serverId } = await request.json().catch(() => ({}))
+		const { serverId, onlyFailing } = await request.json().catch(() => ({}))
 
 		const serversToDeploy = await db
-			.selectDistinct({ server: servers, serverRepo: serverRepos })
-			.from(deployments)
-			.innerJoin(servers, eq(deployments.serverId, servers.id))
+			.select({
+				server: servers,
+				serverRepo: serverRepos,
+				url: sql`(
+					SELECT ${deployments.deploymentUrl}
+					FROM ${deployments}
+					WHERE ${deployments.serverId} = "servers"."id"
+					  AND ${deployments.status} = 'SUCCESS'
+					ORDER BY ${deployments.createdAt} DESC
+					LIMIT 1
+				  )`.as("url"),
+			})
+			.from(servers)
 			.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-			.where(
-				and(
-					serverId ? eq(servers.id, serverId) : undefined,
-					isNotNull(deployments.deploymentUrl),
-				),
+			.where((t) =>
+				and(serverId ? eq(servers.id, serverId) : undefined, isNotNull(t.url)),
 			)
 
 		if (serversToDeploy.length === 0) {
@@ -40,7 +47,27 @@ export async function POST(request: Request) {
 		const results = []
 		console.log("Deploying", serversToDeploy.length, "servers")
 
-		for (const { server, serverRepo } of serversToDeploy) {
+		for (const { server, serverRepo, url } of serversToDeploy) {
+			if (url && onlyFailing) {
+				// Check if the deployment is still running. If it is, we skip.
+				console.log("Checking...", url)
+				try {
+					const response = await fetch(`${url}/.well-known/mcp/smithery.json`, {
+						method: "GET",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						signal: AbortSignal.timeout(10000),
+					})
+					if (response.status === 200) {
+						console.log("Deployment is still running, skipping")
+						continue
+					}
+				} catch (e) {
+					console.warn(e)
+				}
+			}
+
 			console.log("Deploying", server.id)
 			const result = await createDeploymentForServer(server, serverRepo)
 			console.log("Deployed", server.id)

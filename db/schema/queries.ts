@@ -9,7 +9,6 @@ export const isDeployedQuery = sql<boolean>`EXISTS (
 		WHERE ${deployments.serverId} = ${servers.id}
 		AND ${deployments.status} = 'SUCCESS'
 		AND ${deployments.deploymentUrl} is not null
-		ORDER BY ${deployments.createdAt} DESC
 		LIMIT 1
 	)`
 export const sourceUrlQuery = sql<string | null>`

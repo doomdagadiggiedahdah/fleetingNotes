@@ -1,5 +1,5 @@
 import { db } from "@/db"
-import { serverRepos, servers } from "@/db/schema"
+import { deployments, serverRepos, servers } from "@/db/schema"
 import { isDeployedQuery, isNewQuery, useCountQuery } from "@/db/schema/queries"
 import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
@@ -98,7 +98,15 @@ export async function getAllServers(
 			homepage: servers.homepage,
 			verified: servers.verified,
 			useCount: useCountQuery,
-			isDeployed: isDeployedQuery,
+			// Drizzle will confuse the table name with the alias, so we need to use the table name directly
+			isDeployed: sql<boolean>`EXISTS (
+				SELECT 1
+				FROM ${deployments}
+				WHERE ${deployments.serverId} = "servers"."id"
+				AND ${deployments.status} = 'SUCCESS'
+				AND ${deployments.deploymentUrl} is not null
+				LIMIT 1
+			)`,
 			isNew: isNewQuery,
 		})
 		.from(servers)
