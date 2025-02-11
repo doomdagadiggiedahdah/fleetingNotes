@@ -23,20 +23,22 @@ export function ServerTabs({ server, activeTab }: ServerTabsProps) {
 
 				{/* Content Grid */}
 				<TabsContent value="about">
-					<AboutPanel server={server} />
+					{activeTab === "about" && <AboutPanel server={server} />}
 				</TabsContent>
 
 				<TabsContent value="tools">
-					<Suspense fallback={<ToolsPanelSkeleton />}>
-						<ToolPanelContainer server={server} />
-					</Suspense>
+					{activeTab === "tools" && (
+						<Suspense fallback={<ToolsPanelSkeleton />}>
+							<ToolPanelContainer server={server} />
+						</Suspense>
+					)}
 				</TabsContent>
 
 				<TabsContent value="deployments">
-					<DeploymentsPanel server={server} />
+					{activeTab === "deployments" && <DeploymentsPanel server={server} />}
 				</TabsContent>
 				<TabsContent value="settings">
-					<SettingsPanel server={server} />
+					{activeTab === "settings" && <SettingsPanel server={server} />}
 				</TabsContent>
 			</Tabs>
 		</div>
