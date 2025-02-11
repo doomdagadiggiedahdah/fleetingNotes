@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm"
 import { deployments } from "./deployments"
-import { events } from "./events"
+import { serverUsageCounts } from "./events"
 import { serverRepos, servers } from "./servers"
 
 export const isDeployedQuery = sql<boolean>`EXISTS (
@@ -17,21 +17,16 @@ export const sourceUrlQuery = sql<
 >`CASE WHEN ${serverRepos.repoOwner} IS NULL THEN NULL ELSE CONCAT('https://github.com/', ${serverRepos.repoOwner}, '/', ${serverRepos.repoName}, CASE WHEN ${serverRepos.baseDirectory} = '.' THEN '' ELSE CONCAT('/tree/main/', ${serverRepos.baseDirectory}) END) END`
 
 // Monthly usage count
-export const useCountQuery = sql<number>`(
-	SELECT COUNT(*) FROM ${events}
-	WHERE
+export const useCountQuery = sql<number>`
+	COALESCE(
 		(
-			${events.eventName} = 'tool_call' AND
-			${events.payload}->>'serverId' = ${servers.id}::text
-		)
-		OR
-		(
-			${events.eventName} = 'config' AND
-			${events.payload}->>'serverId' = ${servers.qualifiedName}
-		)
-		AND
-		NOW() - ${events.timestamp} < INTERVAL '1 month'
-)::int`
+			SELECT ${serverUsageCounts.useCount}
+			FROM ${serverUsageCounts}
+			WHERE ${serverUsageCounts.serverId} = ${servers.id}
+		),
+		0
+	)::int
+`
 
 export const isNewQuery = sql<boolean>`
 CASE
