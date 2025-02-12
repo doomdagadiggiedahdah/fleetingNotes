@@ -68,7 +68,7 @@ export const getDeployments = async (serverId: string) => {
 
 function createFlyConfig(appId: string) {
 	return `\
-app = "${appId}"
+app = '${appId}'
 primary_region = 'iad'
 
 [build]
@@ -283,12 +283,14 @@ export async function createDeploymentForServer(
 					// Write fly.toml
 					{
 						id: "fly.smithery.toml",
+						dir: workingDir,
 						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
 						script: `cat > fly.smithery.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL`,
 					},
 					// Write Dockerfile
 					{
 						id: "Dockerfile.smithery",
+						dir: workingDir,
 						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
 						script: `cat > Dockerfile.smithery << 'EOL'\n${dockerfileContents}\nEOL`,
 					},
@@ -301,7 +303,7 @@ export async function createDeploymentForServer(
 						dir: workingDir,
 						script: `set -ex d
 fly apps create "${flyAppId}" --json --org smithery || true
-fly deploy --yes --remote-only --ha=false --dockerfile $(pwd)/Dockerfile.smithery -c $(pwd)/fly.smithery.toml
+fly deploy --yes --remote-only --ha=false --dockerfile Dockerfile.smithery -c fly.smithery.toml
 `,
 					},
 				],

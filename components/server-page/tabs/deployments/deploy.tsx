@@ -50,10 +50,17 @@ export function DeployButton({
 							setOpenModal(true)
 							return
 						}
-						toast({
-							title: "Deployment started",
-							description: "This might take a minute...",
-						})
+						if (result.ok) {
+							toast({
+								title: "Deployment started",
+								description: "This might take a minute...",
+							})
+						} else {
+							toast({
+								title: "Error starting deployment",
+								description: result.error.message,
+							})
+						}
 					} catch (error) {
 						toast({
 							title: "Failed to create deployment",
