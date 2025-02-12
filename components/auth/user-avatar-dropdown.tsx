@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
-import { LogOut, User as UserIcon } from "lucide-react"
+import { LogOut, User as UserIcon, Server as ServerIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/lib/hooks/use-toast"
 
 interface UserAvatarDropdownProps {
 	user: User
@@ -26,10 +27,32 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 		.map((n) => n[0])
 		.join("")
 		.toUpperCase()
+	const { toast } = useToast()
 
 	const handleSignOut = async () => {
 		await supabase.auth.signOut()
 		router.refresh()
+	}
+
+	const handleServersClick = () => {
+		const githubIdentity = user.identities?.find(
+			(identity) => identity.provider === "github",
+		)
+
+		console.log("GitHub identity:", githubIdentity)
+
+		if (githubIdentity?.identity_data) {
+			const encodedUsername = encodeURIComponent(
+				githubIdentity.identity_data.user_name,
+			)
+			router.push(`/?q=owner:${encodedUsername}`)
+		} else {
+			toast({
+				title: "Error",
+				description: "GitHub account not connected",
+				variant: "destructive",
+			})
+		}
 	}
 
 	return (
@@ -46,6 +69,13 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 				<DropdownMenuItem className="flex items-center gap-2">
 					<UserIcon className="h-4 w-4" />
 					<span>{name}</span>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="flex items-center gap-2"
+					onClick={handleServersClick}
+				>
+					<ServerIcon className="h-4 w-4" />
+					<span>Servers</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="flex items-center gap-2 text-destructive focus:text-destructive"
