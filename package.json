@@ -68,7 +68,7 @@
 		"json-schema-to-zod": "^2.5.0",
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
-		"next": "^15.2.0-canary.45",
+		"next": "^15.2.0-canary.53",
 		"next-mdx-remote": "^5.0.0",
 		"nextjs-toploader": "^3.7.15",
 		"openai": "^4.77.0",
@@ -108,6 +108,6 @@
 		"yargs": "^17.7.2"
 	},
 	"overrides": {
-		"next": "^15.2.0-canary.45"
+		"next": "^15.2.0-canary.53"
 	}
 }
