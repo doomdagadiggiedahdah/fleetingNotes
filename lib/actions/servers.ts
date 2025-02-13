@@ -126,6 +126,7 @@ export async function createServer(rawData: CreateServerInputs) {
 	try {
 		// Create both the server and repo connection in a single transaction
 		const newServer = await db.transaction(async (tx) => {
+			// TODO: Does this perform a lowercase qualifiedname check?
 			const [server] = await tx
 				.insert(servers)
 				.values({

@@ -68,10 +68,10 @@ export async function getAllServers(
 			? and(isNotNull(similarity), gt(similarity, MIN_SIMILARITY))
 			: undefined,
 		parsedQueryObj?.owner
-			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and ${serverRepos.repoOwner} = ${parsedQueryObj.owner})`
+			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoOwner}) = LOWER(${parsedQueryObj.owner}))`
 			: undefined,
 		parsedQueryObj?.repo
-			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and ${serverRepos.repoName} = ${parsedQueryObj.repo})`
+			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoName}) = LOWER(${parsedQueryObj.repo}))`
 			: undefined,
 		parsedQueryObj?.is === "deployed" ? eq(isDeployedQuery, true) : undefined,
 	)
