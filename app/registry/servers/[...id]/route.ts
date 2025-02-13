@@ -36,7 +36,12 @@ export async function GET(
 				displayName: servers.displayName,
 				connections: servers.connections,
 				deploymentUrl: sql<string>`(
-					SELECT ${deployments.deploymentUrl}
+					SELECT
+					CASE
+						WHEN ${deployments.deploymentUrl} LIKE '%.fly.dev'
+						THEN CONCAT('https://server.smithery.ai/', ${servers.qualifiedName})
+						ELSE NULL
+					END
 					FROM ${deployments} as deployments
 					WHERE deployments.server_id = servers.id
 					AND ${deployments.status} = 'SUCCESS'

@@ -1,6 +1,6 @@
 export async function fetchConfigSchema(deploymentUrl: string) {
 	try {
-		const schemaUrl = new URL("/.well-known/mcp/smithery.json", deploymentUrl)
+		const schemaUrl = `${deploymentUrl}/.well-known/mcp/smithery.json`
 		const response = await fetch(schemaUrl)
 
 		if (!response.ok) {
