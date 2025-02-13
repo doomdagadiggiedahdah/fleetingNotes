@@ -43,8 +43,8 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 		await client.close()
 		return {
 			tools: [],
-			config: {},
-			configSchema: {},
+			config: mockConfig,
+			configSchema: configSchema || {},
 			error: e instanceof Error ? e.message : "Unable to connect to server",
 		}
 	}
@@ -62,8 +62,8 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 		console.error(`[MCP] Tool fetch error ${deploymentUrl}:`, error)
 		return {
 			tools: [],
-			config: {},
-			configSchema: {},
+			config: mockConfig,
+			configSchema: configSchema || {},
 			error: error instanceof Error ? error.message : "Unknown error",
 		}
 	} finally {

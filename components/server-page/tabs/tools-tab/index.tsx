@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Settings } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import {
@@ -15,6 +15,7 @@ import { ToolResults } from "./tool-results"
 import { ConfigurationForm } from "./config-form"
 import { Button } from "@/components/ui/button"
 import type { JSONSchema } from "@/lib/types/server"
+import { ToolsPanelSkeleton } from "./skeleton"
 
 interface ToolsPanelProps {
 	server: FetchedServer
@@ -29,7 +30,7 @@ interface ToolsPanelProps {
 
 export function ToolsPanel({
 	server,
-	tools,
+	tools: propTools,
 	showConfigForm,
 	configSchema,
 	onConfigSubmit,
@@ -37,7 +38,14 @@ export function ToolsPanel({
 	initialConfig = {},
 	onConfigSuccess,
 }: ToolsPanelProps) {
-	const { status, makeRequestTo, connect } = useMCP()
+	const {
+		status,
+		makeRequestTo,
+		connect,
+		listTools,
+		tools: contextTools,
+	} = useMCP()
+	const [isLoadingTools, setIsLoadingTools] = useState(false)
 	// const [error, setError] = useState<string | null>(null)
 	const [searchQuery, setSearchQuery] = useState("")
 	const [isExpanded, setIsExpanded] = useState(false)
@@ -52,6 +60,19 @@ export function ToolsPanel({
 	})
 	const [isEditingConfig, setIsEditingConfig] = useState(false)
 	const [activeToolName, setActiveToolName] = useState<string | null>(null)
+
+	// Prefer context tools if available, fallback to prop tools
+	const tools = contextTools.length > 0 ? contextTools : propTools
+
+	// Modified useEffect to handle loading state
+	useEffect(() => {
+		if (status === "connected") {
+			setIsLoadingTools(true)
+			listTools().finally(() => {
+				setIsLoadingTools(false)
+			})
+		}
+	}, [status, listTools])
 
 	const filteredTools = tools.filter(
 		(tool) =>
@@ -97,9 +118,13 @@ export function ToolsPanel({
 		}
 	}
 
+	if (isLoadingTools) {
+		return <ToolsPanelSkeleton />
+	}
+
 	return (
 		<div className="space-y-6">
-			{((showConfigForm && status !== "connected" && tools.length > 0) ||
+			{((showConfigForm && status !== "connected" && server.deploymentUrl) ||
 				isEditingConfig) && (
 				<div className="lg:hidden">
 					<ConfigurationForm
@@ -130,15 +155,17 @@ export function ToolsPanel({
 
 			<div className="flex flex-col lg:flex-row gap-6">
 				<div className="w-full lg:w-1/2">
-					{tools.length === 0 ? (
+					{tools.length === 0 && server.deploymentUrl ? (
 						<Card className="p-6">
-							<div className="text-sm text-muted-foreground text-center">
-								{server.deploymentUrl
-									? "Failed to fetch tools. Please try refreshing the page."
-									: "Viewing tools is currently only available for deployed servers"}
+							<div className="flex flex-col items-center gap-4">
+								<div className="text-sm text-muted-foreground text-center">
+									{status === "connected"
+										? "No tools provided. Loading available tools..."
+										: "Please configure the server to list available tools."}
+								</div>
 							</div>
 						</Card>
-					) : filteredTools.length === 0 ? (
+					) : tools.length > 0 && filteredTools.length === 0 ? (
 						<Card className="p-6">
 							<div className="text-sm text-muted-foreground text-center">
 								No tools found matching your search
@@ -178,7 +205,9 @@ export function ToolsPanel({
 
 				<div className="w-full lg:w-1/2">
 					<div className="lg:sticky lg:top-4">
-						{(showConfigForm && status !== "connected" && tools.length > 0) ||
+						{(showConfigForm &&
+							status !== "connected" &&
+							server.deploymentUrl) ||
 						isEditingConfig ? (
 							<div className="hidden lg:block mb-6">
 								<ConfigurationForm
