@@ -50,7 +50,7 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function getConfig() {
-			if (activeTab === "cursor" && !configSchema) {
+			if ((activeTab === "cursor" || activeTab === "code") && !configSchema) {
 				setIsLoadingSchema(true)
 				let schema: JSONSchema | null = null
 
@@ -219,7 +219,7 @@ export function InstallationTabs({
 				<ClientInstallContent server={server} client="cline" />
 			</TabsContent>
 			<TabsContent value="code">
-				<TypeScriptContent server={server} />
+				<TypeScriptContent server={server} configSchema={configSchema} />
 			</TabsContent>
 		</Tabs>
 	)

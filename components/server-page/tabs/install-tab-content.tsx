@@ -4,6 +4,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { AlertCircle, Bug, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
+import type { JSONSchema } from "@/lib/types/server"
 
 export const ClientInstallContent = ({
 	server,
@@ -117,7 +118,10 @@ export const ClientInstallContent = ({
 	)
 }
 
-export const TypeScriptContent = ({ server }: { server: FetchedServer }) => {
+export const TypeScriptContent = ({
+	server,
+	configSchema,
+}: { server: FetchedServer; configSchema?: JSONSchema }) => {
 	const stdioConnection = server.connections.find(
 		(conn) => conn.type === "stdio",
 	)
@@ -146,11 +150,16 @@ export const TypeScriptContent = ({ server }: { server: FetchedServer }) => {
 		)
 	}
 
+	let wsConfig = ""
+	if (configSchema) {
+		wsConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`
+	}
+
 	const transportCode = server.deploymentUrl
 		? `import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
-const url = createSmitheryUrl("${server.deploymentUrl}/ws")
+const url = createSmitheryUrl("${server.deploymentUrl}/ws"${wsConfig})
 const transport = new WebSocketClientTransport(url)`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
@@ -173,6 +182,7 @@ const transport = new StdioClientTransport(${stdioConfig})`
 			</p>
 			<CodeBlock
 				language="typescript"
+				lineCount={8}
 				onCopy={() => {
 					posthog.capture("Code Copied", {
 						serverQualifiedName: server.qualifiedName,
@@ -181,21 +191,7 @@ const transport = new StdioClientTransport(${stdioConfig})`
 				}}
 			>
 				{`\
-import { OpenAI } from "openai"
-import { OpenAIChatAdapter } from "@smithery/sdk"
-import { Client } from "@modelcontextprotocol/sdk"
-${transportCode}
-
-const openai = new OpenAI()
-const mcp = new Client({name: "mcp-client", version: "1.0.0"}, {capabilities: {}})
-await mcp.connect(transport)
-const adapter = new OpenAIChatAdapter(mcp)
-const response = await openai.chat.completions.create({
-	model: "gpt-4o-mini",
-	messages: [{ role: "user", content: "What tools can you access?" }],
-	tools: await adapter.listTools(),
-})
-const toolMessages = await adapter.callTool(response)`}
+${transportCode}`}
 			</CodeBlock>
 		</>
 	)

@@ -1,7 +1,6 @@
 "use client"
 
 import { Editor, type EditorProps } from "@monaco-editor/react"
-import { useEffect, useState } from "react"
 import { CopyButton } from "@/components/ui/copy-button"
 
 interface CodeBlockProps extends EditorProps {
@@ -18,8 +17,6 @@ export function CodeBlock({
 	onCopy,
 	...props
 }: CodeBlockProps) {
-	const [mounted, setMounted] = useState(false)
-
 	const code = children.trim()
 
 	// Get language from className (format: language-{lang})
@@ -31,20 +28,11 @@ export function CodeBlock({
 	const padding = 16 // top + bottom padding
 	const height = Math.min(lineCount * lineHeight + padding, 500) // min 100px, max 500px
 
-	// Handle hydration
-	useEffect(() => {
-		setMounted(true)
-	}, [])
-
-	if (!mounted) {
-		return null
-	}
-
 	return (
 		<div className="relative rounded-lg overflow-hidden my-4">
 			<Editor
 				height={height}
-				defaultValue={code}
+				value={code}
 				language={language}
 				theme={"vs-dark"}
 				options={{
