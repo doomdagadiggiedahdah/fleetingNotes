@@ -11,6 +11,8 @@ import type { Metadata } from "next"
 import { MDXRemote } from "next-mdx-remote/rsc"
 import { notFound } from "next/navigation"
 import { ErrorBoundary } from "react-error-boundary"
+import { getMe } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
 type Props = {
 	params: Promise<{ ids: string[] }>
@@ -108,6 +110,15 @@ export default async function Page(props: Props) {
 	if (!server) {
 		notFound()
 	}
+
+	const user = await getMe()
+	const isOwner = user?.id === server.owner
+
+	// Redirect if trying to access protected tabs without ownership
+	if (["settings", "deployments"].includes(activeTab) && !isOwner) {
+		redirect(`/server/${encodeURIComponent(server.qualifiedName)}/about`)
+	}
+
 	if (server.descriptionLong) {
 		let longDescription = server.descriptionLong
 
