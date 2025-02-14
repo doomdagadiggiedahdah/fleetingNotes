@@ -59,11 +59,11 @@ export const ClientInstallContent = ({
 				) : client === "windsurf" ? (
 					<>
 						<a
-							href="https://codeium.com/blog/windsurf-next"
+							href="https://codeium.com"
 							target="_blank"
 							className="hover:text-primary"
 						>
-							Windsurf Next
+							Windsurf
 						</a>
 						.
 					</>

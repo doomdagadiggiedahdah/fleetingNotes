@@ -19,6 +19,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import Ajv from "ajv"
 import { ToolInput } from "./tool-input"
 
@@ -36,6 +37,8 @@ interface ToolCardProps {
 	}) => void
 	disabled?: boolean
 	isExpanded?: boolean
+	toolInputs: Record<string, unknown>
+	onToolInputChange: (inputs: Record<string, unknown>) => void
 }
 
 export function ToolCard({
@@ -45,17 +48,18 @@ export function ToolCard({
 	onExecutionChange,
 	disabled,
 	isExpanded,
+	toolInputs,
+	onToolInputChange,
 }: ToolCardProps) {
-	const [toolInputs, setToolInputs] = useState<Record<string, unknown>>({})
 	const [execution, setExecution] = useState({
 		isExecuting: false,
 		result: null as CompatibilityCallToolResult | null,
 		error: null as string | null,
 	})
 	const [validationErrors, setValidationErrors] = useState<string[]>([])
+	const [showValidation, setShowValidation] = useState(false)
 
 	const handleExecute = async () => {
-		// Validate inputs against schema
 		const ajv = new Ajv({
 			validateFormats: false,
 		})
@@ -68,6 +72,7 @@ export function ToolCard({
 				validate.errors?.map((err) => `${err.instancePath} ${err.message}`) ||
 					[],
 			)
+			setShowValidation(true)
 			return
 		}
 		setValidationErrors([])
@@ -117,14 +122,20 @@ export function ToolCard({
 							<h3 className="font-semibold text-primary text-left">
 								{tool.name}
 							</h3>
-							<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line">
-								{isExpanded
-									? tool.description || ""
-									: truncateDescription(tool.description || "")}
-							</p>
+							{isExpanded ? (
+								<ScrollArea className="h-[100px]">
+									<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line pr-4">
+										{tool.description || ""}
+									</p>
+								</ScrollArea>
+							) : (
+								<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line line-clamp-3">
+									{truncateDescription(tool.description || "")}
+								</p>
+							)}
 						</div>
 						{!isExpanded ? (
-							<div className="rounded-full px-4 py-2 border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
+							<div className="rounded-full px-4 py-2 border borderxwwww-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
 								<Play className="h-4 w-4 shrink-0 text-muted-foreground hover:text-primary" />
 								<span className="text-xs text-muted-foreground hover:text-primary font-medium">
 									Run
@@ -140,7 +151,8 @@ export function ToolCard({
 						<ToolInput
 							tool={tool}
 							toolInputs={toolInputs}
-							setToolInputs={setToolInputs}
+							setToolInputs={onToolInputChange}
+							showValidation={showValidation}
 						/>
 						<div className="flex flex-col items-center gap-2">
 							{validationErrors.length > 0 && (

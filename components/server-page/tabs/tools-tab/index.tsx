@@ -60,6 +60,9 @@ export function ToolsPanel({
 	})
 	const [isEditingConfig, setIsEditingConfig] = useState(false)
 	const [activeToolName, setActiveToolName] = useState<string | null>(null)
+	const [toolInputs, setToolInputs] = useState<
+		Record<string, Record<string, unknown>>
+	>({})
 
 	// Prefer context tools if available, fallback to prop tools
 	const tools = contextTools.length > 0 ? contextTools : propTools
@@ -118,8 +121,40 @@ export function ToolsPanel({
 		}
 	}
 
+	const handleToolInputChange = (
+		toolName: string,
+		inputs: Record<string, unknown>,
+	) => {
+		setToolInputs((prev) => ({
+			...prev,
+			[toolName]: inputs,
+		}))
+	}
+
 	if (isLoadingTools) {
 		return <ToolsPanelSkeleton />
+	}
+
+	if (!server.deploymentUrl) {
+		return (
+			<div className="flex flex-col lg:flex-row gap-6">
+				<div className="w-full lg:w-1/2">
+					<Card className="p-6">
+						<div className="text-sm text-muted-foreground text-center">
+							Tool listing is only available for hosted servers. To find out
+							more, check out our{" "}
+							<a
+								href="https://smithery.ai/docs/deployments"
+								className="text-primary hover:underline"
+							>
+								documentation
+							</a>
+							.
+						</div>
+					</Card>
+				</div>
+			</div>
+		)
 	}
 
 	return (
@@ -196,6 +231,10 @@ export function ToolsPanel({
 										isExpanded={activeToolName === tool.name}
 										onExecutionChange={setActiveExecution}
 										disabled={status !== "connected" || isEditingConfig}
+										toolInputs={toolInputs[tool.name] || {}}
+										onToolInputChange={(inputs) =>
+											handleToolInputChange(tool.name, inputs)
+										}
 									/>
 								</Card>
 							))}

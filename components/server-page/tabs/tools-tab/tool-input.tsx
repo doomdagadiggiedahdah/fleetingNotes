@@ -9,11 +9,12 @@ import { Plus, X } from "lucide-react"
 interface ToolInputFormProps {
 	tool: Tool
 	toolInputs: Record<string, unknown>
-	setToolInputs: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
+	setToolInputs: (inputs: Record<string, unknown>) => void
+	showValidation?: boolean
 }
 
 type InputProperty = {
-	type: "string" | "number" | "object" | "boolean" | "array"
+	type: "string" | "number" | "object" | "boolean" | "array" | "integer"
 	description?: string
 }
 
@@ -54,17 +55,23 @@ function renderInput(
 					className="min-h-[40px] resize-none hover:resize-y font-mono text-sm"
 				/>
 			)
-		case "number":
+		case "integer":
 			return (
 				<Input
 					type="number"
 					id={key}
+					step="1"
+					min={1}
 					placeholder={value.description}
 					value={currentValue === undefined ? "" : String(currentValue)}
-					onChange={(e) =>
-						onChange(e.target.value === "" ? undefined : Number(e.target.value))
-					}
-					className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+					onChange={(e) => {
+						const rawValue = e.target.value
+						const numberValue = Number(rawValue)
+						const roundedValue = Math.round(numberValue)
+						const val = rawValue === "" ? undefined : roundedValue
+						onChange(val)
+					}}
+					onWheel={(e) => e.target instanceof HTMLElement && e.target.blur()}
 				/>
 			)
 		case "boolean":
@@ -75,7 +82,7 @@ function renderInput(
 						variant="ghost"
 						onClick={() => onChange(true)}
 						className={`h-7 px-3 rounded-md transition-colors ${
-							currentValue
+							currentValue === true
 								? "bg-secondary text-secondary-foreground"
 								: "hover:bg-secondary/10"
 						}`}
@@ -87,7 +94,7 @@ function renderInput(
 						variant="ghost"
 						onClick={() => onChange(false)}
 						className={`h-7 px-3 rounded-md transition-colors ${
-							!currentValue
+							currentValue === false
 								? "bg-secondary text-secondary-foreground"
 								: "hover:bg-secondary/10"
 						}`}
@@ -123,12 +130,24 @@ export function ToolInput({
 	tool,
 	toolInputs,
 	setToolInputs,
+	showValidation = false,
 }: ToolInputFormProps) {
 	const handleInputChange = (key: string, value: unknown) => {
-		setToolInputs((prev) => ({
-			...prev,
+		setToolInputs({
+			...toolInputs,
 			[key]: value,
-		}))
+		})
+	}
+
+	const isRequired = (fieldName: string) => {
+		return (
+			Array.isArray(tool.inputSchema?.required) &&
+			tool.inputSchema.required.includes(fieldName)
+		)
+	}
+
+	const isFieldInvalid = (key: string) => {
+		return showValidation && isRequired(key) && !toolInputs[key]
 	}
 
 	return (
@@ -138,13 +157,20 @@ export function ToolInput({
 					<div key={key} className="grid w-full gap-1.5">
 						<Label htmlFor={key} className="text-sm font-medium">
 							{key}
+							{isRequired(key) && (
+								<span className="text-destructive ml-1">*</span>
+							)}
 						</Label>
-						{renderInput(
-							key,
-							value as InputProperty,
-							toolInputs[key],
-							(newValue) => handleInputChange(key, newValue),
-						)}
+						<div
+							className={`${isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}`}
+						>
+							{renderInput(
+								key,
+								value as InputProperty,
+								toolInputs[key],
+								(newValue) => handleInputChange(key, newValue),
+							)}
+						</div>
 					</div>
 				),
 			)}
