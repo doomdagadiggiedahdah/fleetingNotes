@@ -106,13 +106,14 @@ export function ClaimServerDialog({
 						<div className="flex-1">
 							<h3 className="font-medium">2. Claim Ownership</h3>
 							<p className="text-sm text-muted-foreground">
-								{isLoading
-									? "Processing your claim..."
-									: claimResult.error
-										? "Failed to claim server"
-										: `Claimed ${claimResult.claimedCount} server${
-												claimResult.claimedCount !== 1 ? "s" : ""
-											}. Refresh the page to see the changes.`}
+								{claimResult.claimedCount !== undefined &&
+									(isLoading
+										? "Processing your claim..."
+										: claimResult.error
+											? "Failed to claim server"
+											: `Claimed ${claimResult.claimedCount} server${
+													claimResult.claimedCount !== 1 ? "s" : ""
+												}. Refresh the page to see the changes.`)}
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
