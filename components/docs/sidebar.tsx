@@ -5,6 +5,7 @@ export const navigation = [
 		title: "Getting Started",
 		links: [
 			{ title: "Introduction", href: "/docs" },
+			{ title: "Registry", href: "/docs/registry" },
 			{ title: "Deployments", href: "/docs/deployments" },
 			{ title: "Configuration", href: "/docs/config" },
 			// { title: "Profiles", href: "/docs/profiles" },

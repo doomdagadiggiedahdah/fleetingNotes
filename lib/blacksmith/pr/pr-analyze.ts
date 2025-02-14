@@ -1,7 +1,7 @@
 import { db } from "@/db"
-import { pullRequests, serverRepos, servers } from "@/db/schema"
+import { deployments, pullRequests, serverRepos, servers } from "@/db/schema"
 import { toResult } from "@/lib/utils/result"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNotNull, sql } from "drizzle-orm"
 
 import { isDeployedQuery } from "@/db/schema/queries"
 import { Octokit } from "@octokit/rest"
@@ -30,6 +30,13 @@ export async function run() {
 	const rows = await db
 		.select({
 			isDeployed: isDeployedQuery,
+			attemptedDeploy: sql<boolean>`EXISTS (
+				SELECT 1
+				FROM ${deployments}
+				WHERE ${deployments.serverId} = ${servers.id}
+				LIMIT 1
+			)`,
+			isClaimed: isNotNull(servers.owner),
 			repo: serverRepos,
 			pr: pullRequests,
 		})
@@ -46,7 +53,7 @@ export async function run() {
 		)
 		.where(eq(serverRepos.type, "github"))
 
-	for (const { isDeployed, repo, pr } of rows) {
+	for (const { isDeployed, repo, pr, isClaimed, attemptedDeploy } of rows) {
 		const [prResult, commitsResult] = await Promise.all([
 			toResult(
 				octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
@@ -89,6 +96,8 @@ export async function run() {
 					state,
 					mergedAt,
 					isDeployed,
+					isClaimed,
+					attemptedDeploy,
 				}
 				// Append stat to file
 				fs.appendFileSync(statsFile, `${JSON.stringify(stat)}\n`)

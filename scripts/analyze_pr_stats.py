@@ -23,6 +23,16 @@ print(
 )
 
 print(
+    "PR claim rate",
+    df["isClaimed"].mean(),
+)
+
+print(
+    "PR deploy attempt rate",
+    df["attemptedDeploy"].mean(),
+)
+
+print(
     "PR deployment rate",
     df["isDeployed"].mean(),
 )
