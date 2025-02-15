@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 import warnings
 
 
-warnings.filterwarnings("ignore", message="Can't initialize NVML") #idk yet
 warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
 
 # Base directories
@@ -186,10 +185,10 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
             
             log_operation(content, source_file, target_file)
 
-        # source_path = RECORDING_DIR / source_file
-        # archive_path = ARCHIVE_DIR / source_file
-        # source_path.rename(archive_path)
-        # logging.info(f"Archived {source_file}")
+        source_path = RECORDING_DIR / source_file
+        archive_path = ARCHIVE_DIR / source_file
+        source_path.rename(archive_path)
+        logging.info(f"Archived {source_file}")
 
         # I'd like to have a flag for archiving or not so I don't have to edit
         # the code out each time

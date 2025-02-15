@@ -1,0 +1,11 @@
+[Unit]
+Description=Whisper Loop Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/mat/Documents/ProgramExperiments/fleetingNotes/whisper_loop.sh
+Restart=always
+
+[Install]
+WantedBy=default.target
