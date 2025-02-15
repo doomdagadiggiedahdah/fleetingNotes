@@ -7,26 +7,25 @@ from pathlib import Path
 from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
-
-
 warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
+
 
 # Base directories
 FLEET_BASE = Path("/home/mat/Documents/ProgramExperiments/fleetingNotes")
-OBS_BASE = Path("/home/mat/Obsidian/")
+OBS_BASE   = Path("/home/mat/Obsidian/")
 
 # Fleet directories
-RECORDING_DIR = FLEET_BASE / "recordings"
-ARCHIVE_DIR = FLEET_BASE / "recordings/.archive"
-TRANSCRIPTION_DIR = FLEET_BASE / "transcriptions/"
+RECORDING_DIR         = FLEET_BASE / "recordings"
+ARCHIVE_DIR           = FLEET_BASE / "recordings/.archive"
+TRANSCRIPTION_DIR     = FLEET_BASE / "transcriptions/"
 TRANSCRIPTION_ARCHIVE = FLEET_BASE / "transcriptions/.archive"
 
 # Obsidian directories
-INBOX_NOTE = OBS_BASE / "gtd - inbox.md"
+INBOX_NOTE      = OBS_BASE / "gtd - inbox.md"
 DAILY_NOTES_DIR = OBS_BASE / "Daily Notes"
-ZETTLE_DIR = OBS_BASE / "ZettleKasten"
-LOG_FILE = ZETTLE_DIR / "dump_log.md"
-LONG_NOTES_DIR = ZETTLE_DIR / "fleet_notes/voice_memo"
+ZETTLE_DIR      = OBS_BASE / "ZettleKasten"
+LOG_FILE        = ZETTLE_DIR / "dump_log.md"
+LONG_NOTES_DIR  = ZETTLE_DIR / "fleet_notes/voice_memo"
 
 # Note mapping
 NOTES_MAP = {
