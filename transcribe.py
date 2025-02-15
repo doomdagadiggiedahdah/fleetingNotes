@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 import warnings
 
 
-# Base directories
 warnings.filterwarnings("ignore", message="Can't initialize NVML") #idk yet
+warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
+
+# Base directories
 FLEET_BASE = Path("/home/mat/Documents/ProgramExperiments/fleetingNotes")
 OBS_BASE = Path("/home/mat/Obsidian/")
 
@@ -33,6 +35,9 @@ NOTES_MAP = {
     "daily reflection": "daily"
 }
 
+WHISPER_MODEL = "turbo"
+DEVICE = "cpu"
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +56,10 @@ class TranscriptionService:
     def __init__(self):
         try:
             logging.info("Loading whisper model...")
-            self.model = whisper.load_model("base")
+
+            # thanks to https://github.com/MiscellaneousStuff/openai-whisper-cpu/blob/main/script/custom_whisper.py#L21
+            # device needed to be inside load_model params
+            self.model = whisper.load_model(name=WHISPER_MODEL, device=DEVICE) 
         except Exception as e:
             logging.error(f"Failed to load Whisper model: {e}")
             raise TranscriptionError("Could not initialize transcription service")
@@ -165,6 +173,9 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
                     tf.write(formatted_entry + "\n")
                 
                 log_operation(preview, source_file, target_file)
+
+                # need the current note name, target file? 
+                # sourcepath.rename()
             except Exception as e:
                 logging.error(f"Failed to write long note: {e}")
                 raise
@@ -174,6 +185,15 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
                 tf.write(formatted_entry + "\n")
             
             log_operation(content, source_file, target_file)
+
+        # source_path = RECORDING_DIR / source_file
+        # archive_path = ARCHIVE_DIR / source_file
+        # source_path.rename(archive_path)
+        # logging.info(f"Archived {source_file}")
+
+        # I'd like to have a flag for archiving or not so I don't have to edit
+        # the code out each time
+
             
         return True
         
@@ -230,7 +250,7 @@ def main():
         global transcriber, content_router
         transcriber = TranscriptionService()
         content_router = ContentRouter(NOTES_MAP)
-        
+ 
         # Track success/failure counts
         total_files = 0
         successful_files = 0
