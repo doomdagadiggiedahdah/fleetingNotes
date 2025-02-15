@@ -138,6 +138,24 @@ class ContentRouter:
             logging.error(f"Could not parse date from filename {source_file}: {e}")
             return INBOX_NOTE  # Fall back to inbox if date parsing fails
 
+def write_truncated_note(content: str, source_file: str, target_file: Path) -> None:
+    """Writes content to target file, creating a separate long note if content exceeds 200 chars"""
+    if len(content) > 200:
+        md_filename = Path(source_file).stem + ".md"
+        long_note_path = LONG_NOTES_DIR / md_filename
+        
+        # Write the full content to a new file for long notes
+        LONG_NOTES_DIR.mkdir(parents=True, exist_ok=True)
+        with open(long_note_path, "w") as lf:
+            lf.write(content)
+        
+        preview = content[:200]
+        formatted_entry = f"- [[{Path(source_file).stem}]] ----VM----<br>{preview}..."
+    else:
+        formatted_entry = f"- {Path(source_file)} ----VM----<br>{content}"
+    
+    with open(target_file, "a") as tf:
+        tf.write(formatted_entry + "\n")
 
 def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
     """Handles writing content to files and logging"""
@@ -148,51 +166,17 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
         # Check if target directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
         
-        char_count = len(content)
-        
         # First, try to write to the target file to check if it's writable
         with open(target_file, "a") as tf:
             tf.write("\n")  # spacer
         
-        if char_count > 200:
-            md_filename = Path(source_file).stem + ".md"
-            long_note_path = LONG_NOTES_DIR / md_filename
-            
-            # Ensure long notes directory exists
-            LONG_NOTES_DIR.mkdir(parents=True, exist_ok=True)
-            
-            # Write the full content to a new file for long notes
-            try:
-                with open(long_note_path, "w") as lf:
-                    lf.write(content)
-                
-                preview = content[:200]
-                formatted_entry = f"- [[{md_filename}]] ----VM----<br>{preview}..."
-                with open(target_file, "a") as tf:
-                    tf.write(formatted_entry + "\n")
-                
-                log_operation(preview, source_file, target_file)
-
-                # need the current note name, target file? 
-                # sourcepath.rename()
-            except Exception as e:
-                logging.error(f"Failed to write long note: {e}")
-                raise
-        else:
-            formatted_entry = f"- {Path(source_file).stem} ----VM----<br>{content}"
-            with open(target_file, "a") as tf:
-                tf.write(formatted_entry + "\n")
-            
-            log_operation(content, source_file, target_file)
+        write_truncated_note(content, source_file, target_file)
+        log_operation(content, source_file, target_file)
 
         source_path = RECORDING_DIR / source_file
         archive_path = ARCHIVE_DIR / source_file
-        source_path.rename(archive_path)
+        # source_path.rename(archive_path)
         logging.info(f"Archived {source_file}")
-
-        # I'd like to have a flag for archiving or not so I don't have to edit
-        # the code out each time
-
             
         return True
         
@@ -247,7 +231,10 @@ def main():
     try:
         # Initialize the transcription service
         global transcriber, content_router
-        transcriber = TranscriptionService()
+        if list(RECORDING_DIR.glob("*.m4a")):
+            transcriber = TranscriptionService()
+        else:
+            logging.info(f"No files present")
         content_router = ContentRouter(NOTES_MAP)
  
         # Track success/failure counts
