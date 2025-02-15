@@ -1,11 +1,11 @@
-import whisper
 import sys
-from pathlib import Path
-from datetime import datetime
+import whisper
 import logging
-from typing import Optional
-from datetime import datetime, timedelta
 import warnings
+from pathlib import Path
+from typing import Optional
+from textwrap import dedent
+from datetime import datetime, timedelta
 
 
 warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
@@ -46,6 +46,19 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+
+def log_operation(content: str, source: str, target: Path) -> None:
+    """Logs operations to the log file"""
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(LOG_FILE, "a") as log_file:
+            log_file.write(f"# Operation at {timestamp}\n")
+            log_file.write(f"- Source: '{source}'\n")
+            log_file.write(f"- Target: '{target}'\n")
+            log_file.write(f"- Content: '{content}'\n\n")
+    except Exception as e:
+        logging.error(f"Failed to log operation: {e}")
+
 
 class TranscriptionError(Exception):
     """Custom exception for transcription-related errors"""
@@ -121,7 +134,6 @@ class ContentRouter:
         """Determines the appropriate daily note path"""
         try:
             filename = Path(source_file).stem
-            # Get date and time parts
             date_str, time_str = filename.split()[:2]
             
             # Parse both date and time to check hour
@@ -136,18 +148,37 @@ class ContentRouter:
             
         except ValueError as e:
             logging.error(f"Could not parse date from filename {source_file}: {e}")
-            return INBOX_NOTE  # Fall back to inbox if date parsing fails
+            return INBOX_NOTE
 
 def write_truncated_note(content: str, source_file: str, target_file: Path) -> None:
     """Writes content to target file, creating a separate long note if content exceeds 200 chars"""
+    def _create_template(filename: str) -> str:
+        """Creates a template using datetime from filename format '2025-02-06 18-27-54 10.md'"""
+        # Extract the datetime part (everything before the last space)
+        datetime_str = ' '.join(filename.split()[:-1])
+        # Convert from "2025-02-06 18-27-54" format to datetime object
+        dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S")
+        
+        return dedent(f'''
+            ---
+            date_creation: {dt.strftime("%Y-%m-%d")}
+            time_creation: {dt.strftime("%H:%M:%S")}
+            last-modified: {dt.strftime("%A %dth %B %Y %H:%M:%S")}
+            tags:
+              - "#voice_memo"
+            ---
+
+            ''')
+
     if len(content) > 200:
         md_filename = Path(source_file).stem + ".md"
         long_note_path = LONG_NOTES_DIR / md_filename
         
-        # Write the full content to a new file for long notes
+        # Write the full content with template to a new file for long notes
         LONG_NOTES_DIR.mkdir(parents=True, exist_ok=True)
         with open(long_note_path, "w") as lf:
-            lf.write(content)
+            template = _create_template(Path(source_file).name)
+            lf.write(template + content)
         
         preview = content[:200]
         formatted_entry = f"- [[{Path(source_file).stem}]] ----VM----<br>{preview}..."
@@ -183,18 +214,6 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
     except Exception as e:
         logging.error(f"Error appending to file: {e}")
         return False
-
-def log_operation(content: str, source: str, target: Path) -> None:
-    """Logs operations to the log file"""
-    try:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        with open(LOG_FILE, "a") as log_file:
-            log_file.write(f"# Operation at {timestamp}\n")
-            log_file.write(f"- Source: '{source}'\n")
-            log_file.write(f"- Target: '{target}'\n")
-            log_file.write(f"- Content: '{content}'\n\n")
-    except Exception as e:
-        logging.error(f"Failed to log operation: {e}")
 
 def process_audio(audio_file: str) -> None:
     """Main function that calls the transcription, sorting, and logging"""
