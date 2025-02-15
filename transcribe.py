@@ -68,6 +68,8 @@ class TranscriptionError(Exception):
 class TranscriptionService:
     def __init__(self):
         try:
+            # was going to have a check to see if a file is present, but that's
+            # taken care of with the control_whisper.sh file already
             logging.info("Loading whisper model...")
 
             # thanks to https://github.com/MiscellaneousStuff/openai-whisper-cpu/blob/main/script/custom_whisper.py#L21
@@ -122,7 +124,7 @@ class ContentRouter:
         for keyword, target in self.notes_map.items():
             if keyword.lower() in content.lower():
                 logging.info(f"Keyword '{keyword}' found in content")
-                processed_content = content.lower().replace(keyword.lower(), "").strip()
+                processed_content = content.lower().strip()
                 
                 if target == "daily":
                     return self._get_daily_note_path(source_file), processed_content
@@ -173,7 +175,7 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
     if len(content) > 200:
         md_filename = Path(source_file).stem + ".md"
         long_note_path = LONG_NOTES_DIR / md_filename
-        
+
         # Write the full content with template to a new file for long notes
         LONG_NOTES_DIR.mkdir(parents=True, exist_ok=True)
         with open(long_note_path, "w") as lf:
@@ -183,9 +185,16 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
             lf.write(content)
         
         preview = content[:200]
-        formatted_entry = f"- [[{Path(source_file).stem}]] ----VM----<br>{preview}..."
+        formatted_entry = f"- [[{Path(source_file).stem}]] --VM--\n\t- {preview}..."
     else:
-        formatted_entry = f"- {Path(source_file)} ----VM----<br>{content}"
+        formatted_entry = f"- {Path(source_file)} --VM--\n\t- {content}"
+
+    # handle daily reflection heading add
+    if "Daily Notes" in str(target_file):
+        with open(target_file, 'r') as f:
+            file_content = f.read()
+            if "## daily reflection" not in file_content:
+                formatted_entry = "## daily reflection\n" + formatted_entry
     
     with open(target_file, "a") as tf:
         tf.write("\n\n" + formatted_entry)
