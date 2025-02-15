@@ -163,7 +163,6 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
             ---
             date_creation: {dt.strftime("%Y-%m-%d")}
             time_creation: {dt.strftime("%H:%M:%S")}
-            last-modified: {dt.strftime("%A %dth %B %Y %H:%M:%S")}
             tags:
               - "#voice_memo"
             ---
@@ -188,7 +187,7 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
         formatted_entry = f"- {Path(source_file)} ----VM----<br>{content}"
     
     with open(target_file, "a") as tf:
-        tf.write(formatted_entry + "\n")
+        tf.write("\n\n" + formatted_entry)
 
 def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
     """Handles writing content to files and logging"""
