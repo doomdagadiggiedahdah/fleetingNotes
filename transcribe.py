@@ -2,6 +2,7 @@ import sys
 import whisper
 import logging
 import warnings
+import argparse
 from pathlib import Path
 from typing import Optional
 from textwrap import dedent
@@ -201,18 +202,13 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
         write_truncated_note(content, source_file, target_file)
         log_operation(content, source_file, target_file)
 
-        source_path = RECORDING_DIR / source_file
-        archive_path = ARCHIVE_DIR / source_file
-        # source_path.rename(archive_path)
-        logging.info(f"Archived {source_file}")
-            
         return True
         
     except Exception as e:
         logging.error(f"Error appending to file: {e}")
         return False
 
-def process_audio(audio_file: str) -> None:
+def process_audio(audio_file: str, skip_archive: bool = False) -> None:
     """Main function that calls the transcription, sorting, and logging"""
     try:
         logging.info(f"Starting processing of {audio_file}")
@@ -231,6 +227,14 @@ def process_audio(audio_file: str) -> None:
         # Append to appropriate destination
         success = append_to_file(processed_content, audio_file, destination)
         
+        if not skip_archive:
+            source_path = RECORDING_DIR / audio_file
+            archive_path = ARCHIVE_DIR / audio_file
+            source_path.rename(archive_path)
+            logging.info(f"Archived {audio_file}")
+        else:
+            print("skipping archive")
+
         if success:
             logging.info(f"Successfully processed {audio_file} to {destination}")
         else:
@@ -240,6 +244,11 @@ def process_audio(audio_file: str) -> None:
         logging.error(f"Failed to process {audio_file}: {e}")
 
 def main():
+    parser = argparse.ArgumentParser(description='Process audio files and generate transcriptions')
+    parser.add_argument('-t', '--skip-archive', action='store_true',
+                      help='Skip archiving the audio files after processing')
+    args = parser.parse_args()
+
     try:
         # Initialize the transcription service
         global transcriber, content_router
@@ -250,7 +259,7 @@ def main():
         for audio_file in RECORDING_DIR.glob("*"):
             if audio_file.is_file() and not audio_file.name.startswith('.'):
                 logging.info(f"Processing: {audio_file.name}")
-                process_audio(audio_file.name)
+                process_audio(audio_file.name, args.skip_archive)
         
     except Exception as e:
         logging.error(f"Critical error in main process: {e}")
