@@ -178,7 +178,9 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
         LONG_NOTES_DIR.mkdir(parents=True, exist_ok=True)
         with open(long_note_path, "w") as lf:
             template = _create_template(Path(source_file).name)
-            lf.write(template + content)
+            lf.write(template)
+            lf.write("\n\n")
+            lf.write(content)
         
         preview = content[:200]
         formatted_entry = f"- [[{Path(source_file).stem}]] ----VM----<br>{preview}..."
