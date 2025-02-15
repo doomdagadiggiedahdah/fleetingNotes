@@ -168,7 +168,7 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
               - "#voice_memo"
             ---
 
-            ''')
+            ''').strip()
 
     if len(content) > 200:
         md_filename = Path(source_file).stem + ".md"
@@ -196,10 +196,6 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
             
         # Check if target directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
-        
-        # First, try to write to the target file to check if it's writable
-        with open(target_file, "a") as tf:
-            tf.write("\n")  # spacer
         
         write_truncated_note(content, source_file, target_file)
         log_operation(content, source_file, target_file)
