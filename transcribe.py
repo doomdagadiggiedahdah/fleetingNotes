@@ -196,7 +196,7 @@ def log_operation(content: str, source: str, target: Path) -> None:
     except Exception as e:
         logging.error(f"Failed to log operation: {e}")
 
-def process_audio(audio_file: str) -> bool:
+def process_audio(audio_file: str) -> None:
     """Main function that calls the transcription, sorting, and logging"""
     try:
         logging.info(f"Starting processing of {audio_file}")
@@ -205,7 +205,6 @@ def process_audio(audio_file: str) -> bool:
         transcription = transcriber.transcribe_audio(audio_file)
         if not transcription:
             logging.error(f"No transcription generated for {audio_file}")
-            return False
         
         # Determine destination
         destination, processed_content = content_router.determine_destination(
@@ -218,40 +217,24 @@ def process_audio(audio_file: str) -> bool:
         
         if success:
             logging.info(f"Successfully processed {audio_file} to {destination}")
-            return True
         else:
             logging.error(f"Failed to append transcription for {audio_file}")
-            return False
             
     except Exception as e:
         logging.error(f"Failed to process {audio_file}: {e}")
-        return False
 
 def main():
     try:
         # Initialize the transcription service
         global transcriber, content_router
-        if list(RECORDING_DIR.glob("*.m4a")):
-            transcriber = TranscriptionService()
-        else:
-            logging.info(f"No files present")
+        transcriber = TranscriptionService()
         content_router = ContentRouter(NOTES_MAP)
  
-        # Track success/failure counts
-        total_files = 0
-        successful_files = 0
-        
         # Process all audio files in the recording directory
         for audio_file in RECORDING_DIR.glob("*"):
             if audio_file.is_file() and not audio_file.name.startswith('.'):
-                total_files += 1
                 logging.info(f"Processing: {audio_file.name}")
-                
-                if process_audio(audio_file.name):
-                    successful_files += 1
-        
-        # Report summary
-        logging.info(f"Processing complete. Successfully processed {successful_files}/{total_files} files")
+                process_audio(audio_file.name)
         
     except Exception as e:
         logging.error(f"Critical error in main process: {e}")
