@@ -17,13 +17,22 @@ export function ClientConfig({
 	onSuccess,
 }: ClientConfigProps) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const [values, setValues] = useState<Record<string, any>>({})
+	const [values, setValues] = useState<Record<string, any>>(() =>
+		Object.entries(schema?.properties || {}).reduce(
+			(acc, [key, field]: [string, JSONSchema]) => {
+				acc[key] = field.default || ""
+				return acc
+			},
+			{} as Record<string, any>,
+		),
+	)
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsSubmitting(true)
 		try {
+			// Since values are already initialized with defaults, we can just submit values directly
 			await onSubmit(values)
 			onSuccess?.()
 		} finally {
@@ -43,11 +52,17 @@ export function ClientConfig({
 							<Input
 								id={key}
 								type={
-									key.toLowerCase().includes("key") ? "password" : field.type
+									key.toLowerCase().match(/(password|token|key|secret)/i)
+										? "password"
+										: field.type
 								}
 								required={field.required}
-								placeholder={field.description}
-								value={values[key] || ""}
+								placeholder={
+									field.default
+										? `${field.description} (default: ${field.default})`
+										: field.description
+								}
+								value={values[key]}
 								onChange={(e) =>
 									setValues({ ...values, [key]: e.target.value })
 								}
