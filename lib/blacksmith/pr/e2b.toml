@@ -1,0 +1,18 @@
+# This is a config for E2B sandbox template.
+# You can use template ID (37y8oevtqpl85zy5t1bn) or template name (smithery-builder) to create a sandbox:
+
+# Python SDK
+# from e2b import Sandbox, AsyncSandbox
+# sandbox = Sandbox("smithery-builder") # Sync sandbox
+# sandbox = await AsyncSandbox.create("smithery-builder") # Async sandbox
+
+# JS SDK
+# import { Sandbox } from 'e2b'
+# const sandbox = await Sandbox.create('smithery-builder')
+
+team_id = "e855fb74-c382-48b7-89cf-d1adf5b56a88"
+memory_mb = 2_048
+cpu_count = 1
+dockerfile = "e2b.Dockerfile"
+template_name = "smithery-builder"
+template_id = "37y8oevtqpl85zy5t1bn"
