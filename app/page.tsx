@@ -6,9 +6,10 @@ import { sql } from "drizzle-orm"
 export const revalidate = 3600
 
 export default async function Home(props: {
-	searchParams: Promise<{ q?: string }>
+	searchParams: Promise<{ q?: string; page?: string }>
 }) {
 	const searchParams = await props.searchParams
+	const page = Number(searchParams.page) || 1 // Convert page to number, default to 1
 
 	const [serverCountData] = await db
 		.select({
@@ -20,6 +21,7 @@ export default async function Home(props: {
 		<HomeSearch
 			serverCount={serverCountData.count ?? 0}
 			query={searchParams.q}
+			page={page}
 		/>
 	)
 }

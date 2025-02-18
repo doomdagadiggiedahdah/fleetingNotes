@@ -8,9 +8,11 @@ import { Skeleton } from "../ui/skeleton"
 export const HomeSearch = ({
 	serverCount,
 	query,
+	page,
 }: {
 	serverCount: number
 	query?: string
+	page?: number
 }) => {
 	return (
 		<main className="min-h-screen bg-background">
@@ -43,7 +45,7 @@ export const HomeSearch = ({
 						</div>
 					}
 				>
-					<ServerList query={query} />
+					<ServerList query={query} page={page} />
 				</Suspense>
 			</Container>
 		</main>

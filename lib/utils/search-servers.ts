@@ -5,6 +5,8 @@ import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
 import { llm } from "./braintrust"
 
+export const DEFAULT_PAGE_SIZE = 18
+
 export interface PaginationParams {
 	page: number
 	pageSize: number
@@ -84,7 +86,7 @@ export async function getAllServers(
 		.then((result) => Number(result[0].count))
 
 	// Calculate pagination values
-	const { page = 1, pageSize = 18 } = pagination || {}
+	const { page = 1, pageSize = DEFAULT_PAGE_SIZE } = pagination || {}
 	const offset = (page - 1) * pageSize
 	const totalPages = Math.ceil(totalCount / pageSize)
 
