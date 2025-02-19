@@ -5,6 +5,7 @@ import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import { AlertCircle, Bug, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
 import type { JSONSchema } from "@/lib/types/server"
+import type { JsonObject } from "@/lib/types/json"
 
 export const ClientInstallContent = ({
 	server,
@@ -14,8 +15,7 @@ export const ClientInstallContent = ({
 }: {
 	server: FetchedServer
 	client: "claude" | "cline" | "cursor" | "windsurf"
-	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-	config?: Record<string, any>
+	config?: JsonObject
 	isConfigured?: boolean
 }) => {
 	const command =

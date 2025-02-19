@@ -31,6 +31,7 @@ import {
 	getDefaultBranch,
 } from "../utils/github"
 import { err, ok, type Result } from "../utils/result"
+import type { JsonObject } from "../types/json"
 
 // Create a Cloud Build client
 const cloudCredentials = JSON.parse(
@@ -325,9 +326,8 @@ fly deploy --yes --remote-only --ha=false --dockerfile Dockerfile.smithery -c fl
 		})
 
 		// Create build record
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const buildMeta = operation.metadata as any
-		const buildId = buildMeta.build?.id
+		const buildMeta = operation.metadata as JsonObject | null
+		const buildId = (buildMeta?.build as JsonObject | null)?.id as string
 		if (!buildId) {
 			return err({ message: "Failed to generate build ID." })
 		}

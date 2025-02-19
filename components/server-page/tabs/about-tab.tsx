@@ -2,7 +2,6 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import { ServerInstallation } from "../server-installation"
 import { ServerStats } from "../server-stats"
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ReadingPanelProps {
 	server: FetchedServer
 }

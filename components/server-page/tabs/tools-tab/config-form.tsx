@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useState } from "react"
 import { useMCP } from "@/context/mcp-context"
 import type { JSONSchema } from "@/lib/types/server"
+import type { JsonObject } from "@/lib/types/json"
 
 interface ConfigFormProps {
 	schema: JSONSchema
@@ -25,8 +26,8 @@ export function ConfigurationForm({
 }: ConfigFormProps) {
 	const { status } = useMCP()
 	const isConnected = status === "connected"
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const [values, setValues] = useState<Record<string, any>>(initialConfig)
+
+	const [values, setValues] = useState<JsonObject>(initialConfig)
 	const [isConnecting, setIsConnecting] = useState(false)
 
 	const handleSubmit = async (e: React.FormEvent) => {

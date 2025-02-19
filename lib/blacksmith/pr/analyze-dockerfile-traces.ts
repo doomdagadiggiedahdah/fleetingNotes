@@ -90,10 +90,13 @@ async function analyzeDockerfileTraces() {
 
 	// Analyze each event
 	for (const event of events) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const output: any = event.output
+		const output = event.output as {
+			newFiles?: {
+				dockerFile?: string
+			}
+		}
 
-		if (!output || !Object.keys(output).includes("newFiles")) continue
+		if (!output || !output.newFiles) continue
 
 		try {
 			const dockerfile = output.newFiles.dockerFile

@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState } from "react"
+import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
+import { useState } from "react"
 
 interface ClientConfigProps {
 	schema: JSONSchema
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	onSubmit: (config: Record<string, any>) => Promise<void>
+	onSubmit: (config: JsonObject) => Promise<void>
 	onSuccess?: () => void
 }
 
@@ -16,14 +16,13 @@ export function ClientConfig({
 	onSubmit,
 	onSuccess,
 }: ClientConfigProps) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const [values, setValues] = useState<Record<string, any>>(() =>
+	const [values, setValues] = useState<JsonObject>(() =>
 		Object.entries(schema?.properties || {}).reduce(
 			(acc, [key, field]: [string, JSONSchema]) => {
 				acc[key] = field.default || ""
 				return acc
 			},
-			{} as Record<string, any>,
+			{} as JsonObject,
 		),
 	)
 	const [isSubmitting, setIsSubmitting] = useState(false)
@@ -62,7 +61,7 @@ export function ClientConfig({
 										? `${field.description} (default: ${field.default})`
 										: field.description
 								}
-								value={values[key]}
+								value={values[key] as string}
 								onChange={(e) =>
 									setValues({ ...values, [key]: e.target.value })
 								}

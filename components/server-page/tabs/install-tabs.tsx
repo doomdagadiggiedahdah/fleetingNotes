@@ -17,6 +17,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
+import type { JsonObject } from "@/lib/types/json"
 
 export type InstallTabStates =
 	| "claude"
@@ -42,8 +43,8 @@ export function InstallationTabs({
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
-	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-	const [configValues, setConfigValues] = useState<Record<string, any>>({})
+
+	const [configValues, setConfigValues] = useState<JsonObject>({})
 
 	const hasConfigProperties =
 		configSchema && Object.keys(configSchema?.properties || {}).length > 0
@@ -79,8 +80,7 @@ export function InstallationTabs({
 		getConfig()
 	}, [activeTab, server, configSchema])
 
-	/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-	const handleClientConfig = async (values: Record<string, any>) => {
+	const handleClientConfig = async (values: JsonObject) => {
 		setConfigValues(values)
 		setIsClientConfigured(true)
 	}
