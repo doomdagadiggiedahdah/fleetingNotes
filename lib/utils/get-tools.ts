@@ -1,20 +1,15 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { createSmitheryUrl } from "@smithery/sdk"
 import { withTimeout } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk"
+import { err, ok } from "./result"
 
-export async function fetchServerTools(deploymentUrl: string | null) {
-	if (!deploymentUrl) {
-		return {
-			tools: [],
-			config: {},
-			configSchema: {},
-			error: "No deployment URL available",
-		}
-	}
-
+/**
+ * @returns ok({ tools, configSchema }) if deployment is available
+ */
+export async function fetchServerTools(deploymentUrl: string) {
 	// Fetch schema using the new utility
 	const configSchema = await fetchConfigSchema(deploymentUrl)
 	// Use createDummyConfig with empty config if no schema
@@ -41,31 +36,24 @@ export async function fetchServerTools(deploymentUrl: string | null) {
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
 		await client.close()
-		return {
-			tools: [],
-			config: mockConfig,
-			configSchema: configSchema || {},
-			error: e instanceof Error ? e.message : "Unable to connect to server",
-		}
+		return err(
+			`Unable to connect to server: ${e instanceof Error ? e.message : "Unknown error"}`,
+		)
 	}
 
 	try {
 		const toolResult = await withTimeout(client.listTools(), 10000)
 
-		return {
+		return ok({
 			tools: toolResult.tools,
 			config: mockConfig,
 			configSchema: configSchema || {},
-			error: null,
-		}
+		})
 	} catch (error) {
 		console.error(`[MCP] Tool fetch error ${deploymentUrl}:`, error)
-		return {
-			tools: [],
-			config: mockConfig,
-			configSchema: configSchema || {},
-			error: error instanceof Error ? error.message : "Unknown error",
-		}
+		return err(
+			`Unable to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
+		)
 	} finally {
 		await client.close()
 	}

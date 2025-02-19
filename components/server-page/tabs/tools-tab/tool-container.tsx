@@ -1,6 +1,7 @@
 import { MCPProvider } from "@/context/mcp-context"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { fetchServerTools } from "@/lib/utils/get-tools"
+import { err } from "@/lib/utils/result"
 import { ToolsPanel } from "./index"
 
 interface ServerTabsProps {
@@ -9,13 +10,12 @@ interface ServerTabsProps {
 
 export async function ToolPanelContainer({ server }: ServerTabsProps) {
 	// Start the fetch immediately but don't await it yet
-	const toolsPromise = server?.deploymentUrl
-		? fetchServerTools(server.deploymentUrl)
-		: Promise.resolve({ tools: [], configSchema: {} })
+	const toolResult = server?.deploymentUrl
+		? await fetchServerTools(server.deploymentUrl)
+		: err("No deployment URL available")
 
-	// Fetch tools in parallel with any other operations we might need
-	const { tools, configSchema } = await toolsPromise
-
+	const tools = toolResult.ok ? toolResult.value.tools : []
+	const configSchema = toolResult.ok ? toolResult.value.configSchema : {}
 	return (
 		<MCPProvider>
 			<ToolsPanel
