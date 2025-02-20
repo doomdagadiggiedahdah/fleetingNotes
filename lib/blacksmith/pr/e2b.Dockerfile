@@ -1,21 +1,33 @@
 # You can use most Debian-based base images
-FROM debian:bullseye-slim
+FROM ubuntu:20.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Create a non-root user
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    git
+
+# Non-root user
 RUN useradd -m -s /bin/bash runner
 
-# Install dependencies
-RUN apt-get update && apt-get install -y ca-certificates curl gnupg git sudo
+# Install Fly CLI as user
+USER runner
+RUN curl -L https://fly.io/install.sh | sh
 
-# Install Fly CLI as the non-root user
-RUN su - runner -c 'curl -L https://fly.io/install.sh | sh'
+# Install Depot CLI as user
+RUN curl -L https://depot.dev/install-cli.sh | sh
 
+USER root
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Switch to non-root user
-USER runner
 ENV FLYCTL_INSTALL="/home/runner/.fly"
-ENV PATH="$FLYCTL_INSTALL/bin:$PATH"
+ENV DEPOT_INSTALL="/home/runner/.depot"
+ENV PATH="$FLYCTL_INSTALL/bin:$DEPOT_INSTALL/bin:$PATH"
+
+CMD ["/bin/bash"]
