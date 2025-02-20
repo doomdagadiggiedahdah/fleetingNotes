@@ -18,6 +18,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import type { JsonObject } from "@/lib/types/json"
+import { InstallWarning } from "../install-warning"
 
 export type InstallTabStates =
 	| "claude"
@@ -48,6 +49,10 @@ export function InstallationTabs({
 
 	const hasConfigProperties =
 		configSchema && Object.keys(configSchema?.properties || {}).length > 0
+
+	const isAnyConnectionPublished = server.connections.some(
+		(conn) => "published" in conn && conn.published,
+	)
 
 	useEffect(() => {
 		async function getConfig() {
@@ -110,6 +115,10 @@ export function InstallationTabs({
 			icon: <SiTypescript className="w-4 h-4" />,
 		},
 	]
+
+	if (!server.isDeployed && !isAnyConnectionPublished) {
+		return <InstallWarning />
+	}
 
 	return (
 		<Tabs
