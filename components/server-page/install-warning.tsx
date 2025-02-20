@@ -14,8 +14,8 @@ export function InstallWarning() {
 			<div className="flex items-center gap-3">
 				<AlertTriangle className="h-6 w-6 text-yellow-500" />
 				<AlertDescription>
-					The author hasn't published this server yet. Once published, it will
-					be available for installation.
+					The author hasn&apos;t published this server yet. Once published, it
+					will be available for installation.
 				</AlertDescription>
 			</div>
 		</Alert>
