@@ -11,12 +11,12 @@ export const navigation = [
 			// { title: "Profiles", href: "/docs/profiles" },
 			{ title: "Git Integration", href: "/docs/git" },
 			{ title: "Data Policy", href: "/docs/data-policy" },
-			{ 
+			{
 				title: "FAQ",
 				links: [
 					{ title: "Users", href: "/docs/faq/users" },
-					{ title: "Developers", href: "/docs/faq/developers" }
-				]
+					{ title: "Developers", href: "/docs/faq/developers" },
+				],
 			},
 		],
 	},
@@ -41,9 +41,7 @@ export default function DocsSidebar() {
 								{section.links.map((link) => (
 									<div key={link.href || link.title}>
 										{link.href ? (
-											<NavLink href={link.href}>
-												{link.title}
-											</NavLink>
+											<NavLink href={link.href}>{link.title}</NavLink>
 										) : (
 											<div className="px-4 py-2 text-sm text-muted-foreground">
 												{link.title}
@@ -52,10 +50,7 @@ export default function DocsSidebar() {
 										{link.links && (
 											<div className="ml-4 mt-2">
 												{link.links.map((subLink) => (
-													<NavLink
-														key={subLink.href}
-														href={subLink.href}
-													>
+													<NavLink key={subLink.href} href={subLink.href}>
 														{subLink.title}
 													</NavLink>
 												))}

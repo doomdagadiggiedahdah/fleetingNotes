@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { useState, useEffect } from "react"
 import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,12 +20,14 @@ import {
 } from "@/components/ui/select"
 import type { JsonObject } from "@/lib/types/json"
 import { InstallWarning } from "../install-warning"
+import { OverflowMenu } from "./overflow-menu"
 
 export type InstallTabStates =
 	| "claude"
 	| "cline"
 	| "cursor"
 	| "windsurf"
+	| "witsy"
 	| "code"
 
 type InstallationTabsProps = {
@@ -34,13 +37,138 @@ type InstallationTabsProps = {
 	onTabChange?: (tab: InstallTabStates) => void
 }
 
+type TabOption = {
+	value: InstallTabStates
+	label: string
+	icon: React.ReactNode
+}
+
+function InstallTabOptions({
+	activeTab,
+	tabOrder,
+	visibleCount,
+	onTabChange,
+	onOverflowSelect,
+}: {
+	activeTab: InstallTabStates
+	tabOrder: InstallTabStates[]
+	visibleCount: number
+	onTabChange: (tab: InstallTabStates) => void
+	onOverflowSelect: (tab: InstallTabStates) => void
+}) {
+	const tabOptions: TabOption[] = [
+		{
+			value: "claude",
+			label: "Claude",
+			icon: <SiAnthropic className="w-4 h-4" />,
+		},
+		{
+			value: "cursor",
+			label: "Cursor",
+			icon: <ServerFavicon homepage="https://cursor.sh" displayName="Cursor" />,
+		},
+		{
+			value: "windsurf",
+			label: "Windsurf",
+			icon: (
+				<ServerFavicon homepage="https://codeium.com" displayName="Windsurf" />
+			),
+		},
+		{
+			value: "cline",
+			label: "Cline",
+			icon: (
+				<ServerFavicon homepage="http://cline.bot" displayName="Windsurf" />
+			),
+		},
+		{
+			value: "witsy",
+			label: "Witsy",
+			icon: (
+				<ServerFavicon homepage="https://witsyai.com" displayName="Windsurf" />
+			),
+		},
+		{
+			value: "code",
+			label: "Typescript",
+			icon: <SiTypescript className="w-4 h-4" />,
+		},
+	]
+
+	const mainTabs = tabOrder.slice(0, visibleCount)
+	const overflowTabs = tabOrder.slice(visibleCount)
+
+	const getTabOption = (value: InstallTabStates) =>
+		tabOptions.find((tab) => tab.value === value)!
+
+	return (
+		<div className="border-b border-border mb-3">
+			<div className="lg:hidden">
+				<Select
+					value={activeTab}
+					onValueChange={(value) => onTabChange(value as InstallTabStates)}
+				>
+					<SelectTrigger className="w-[150px]">
+						<SelectValue>
+							<span className="flex items-center gap-2">
+								{tabOptions.find((tab) => tab.value === activeTab)?.icon}
+								{tabOptions.find((tab) => tab.value === activeTab)?.label}
+							</span>
+						</SelectValue>
+					</SelectTrigger>
+					<SelectContent>
+						{tabOptions.map((tab) => (
+							<SelectItem key={tab.value} value={tab.value}>
+								<span className="flex items-center gap-2">
+									{tab.icon}
+									{tab.label}
+								</span>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+			<div className="hidden lg:flex w-full justify-start items-center">
+				<TabsList>
+					{mainTabs.map((tabValue) => {
+						const tab = getTabOption(tabValue)
+						return (
+							<TabsTrigger
+								key={tab.value}
+								value={tab.value}
+								className="flex items-center gap-2"
+							>
+								{tab.icon}
+								{tab.label}
+							</TabsTrigger>
+						)
+					})}
+				</TabsList>
+				<OverflowMenu
+					tabs={overflowTabs.map(getTabOption)}
+					onSelect={onOverflowSelect}
+				/>
+			</div>
+		</div>
+	)
+}
+
 export function InstallationTabs({
 	server,
 	initTab = "claude",
 	className,
 	onTabChange,
 }: InstallationTabsProps) {
+	const [visibleCount] = useState(4) // Changed from 5 to 4
 	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
+	const [tabOrder, setTabOrder] = useState<InstallTabStates[]>([
+		"claude",
+		"cursor",
+		"windsurf",
+		"cline",
+		"witsy",
+		"code",
+	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
@@ -90,31 +218,16 @@ export function InstallationTabs({
 		setIsClientConfigured(true)
 	}
 
-	const tabOptions = [
-		{
-			value: "claude",
-			label: "Claude",
-			icon: <SiAnthropic className="w-4 h-4" />,
-		},
-		{
-			value: "cursor",
-			label: "Cursor",
-			icon: <ServerFavicon homepage="https://cursor.sh" displayName="Cursor" />,
-		},
-		{
-			value: "windsurf",
-			label: "Windsurf",
-			icon: (
-				<ServerFavicon homepage="https://codeium.com" displayName="Windsurf" />
-			),
-		},
-		{ value: "cline", label: "Cline", icon: null },
-		{
-			value: "code",
-			label: "Typescript",
-			icon: <SiTypescript className="w-4 h-4" />,
-		},
-	]
+	const handleOverflowSelect = (selected: InstallTabStates) => {
+		const newOrder = [...tabOrder]
+		const selectedIndex = newOrder.indexOf(selected)
+		const temp = newOrder[visibleCount - 1]
+		newOrder[visibleCount - 1] = newOrder[selectedIndex]
+		newOrder[selectedIndex] = temp
+		setTabOrder(newOrder)
+		setActiveTab(selected)
+		onTabChange?.(selected)
+	}
 
 	if (!server.isDeployed && !isAnyConnectionPublished) {
 		return <InstallWarning />
@@ -129,69 +242,13 @@ export function InstallationTabs({
 				onTabChange?.(tab as InstallTabStates)
 			}}
 		>
-			<div className="border-b border-border mb-3">
-				<div className="lg:hidden">
-					<Select
-						value={activeTab}
-						onValueChange={(value) => {
-							setActiveTab(value as InstallTabStates)
-							onTabChange?.(value as InstallTabStates)
-						}}
-					>
-						<SelectTrigger className="w-[150px]">
-							<SelectValue>
-								<span className="flex items-center gap-2">
-									{tabOptions.find((tab) => tab.value === activeTab)?.icon}
-									{tabOptions.find((tab) => tab.value === activeTab)?.label}
-								</span>
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent>
-							{tabOptions.map((tab) => (
-								<SelectItem key={tab.value} value={tab.value}>
-									<span className="flex items-center gap-2">
-										{tab.icon}
-										{tab.label}
-									</span>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-				<TabsList className="hidden lg:flex w-full justify-start">
-					<TabsTrigger value="claude">
-						<span className="flex items-center gap-2">
-							<SiAnthropic className="w-4 h-4" />
-							Claude
-						</span>
-					</TabsTrigger>
-					<TabsTrigger value="cursor">
-						<span className="flex items-center gap-2">
-							<ServerFavicon
-								homepage="https://cursor.sh"
-								displayName="Cursor"
-							/>
-							Cursor
-						</span>
-					</TabsTrigger>
-					<TabsTrigger value="windsurf">
-						<span className="flex items-center gap-2">
-							<ServerFavicon
-								homepage="https://codeium.com"
-								displayName="Windsurf"
-							/>
-							Windsurf
-						</span>
-					</TabsTrigger>
-					<TabsTrigger value="cline">Cline</TabsTrigger>
-					<TabsTrigger value="code">
-						<span className="flex items-center gap-2">
-							<SiTypescript className="w-4 h-4" />
-							Typescript
-						</span>
-					</TabsTrigger>
-				</TabsList>
-			</div>
+			<InstallTabOptions
+				activeTab={activeTab}
+				tabOrder={tabOrder}
+				visibleCount={visibleCount}
+				onTabChange={setActiveTab}
+				onOverflowSelect={handleOverflowSelect}
+			/>
 			<TabsContent value="claude">
 				<ClientInstallContent server={server} client="claude" />
 			</TabsContent>
@@ -226,6 +283,9 @@ export function InstallationTabs({
 			</TabsContent>
 			<TabsContent value="cline">
 				<ClientInstallContent server={server} client="cline" />
+			</TabsContent>
+			<TabsContent value="witsy">
+				<ClientInstallContent server={server} client="witsy" />
 			</TabsContent>
 			<TabsContent value="code">
 				<TypeScriptContent server={server} configSchema={configSchema} />

@@ -14,7 +14,7 @@ export const ClientInstallContent = ({
 	isConfigured,
 }: {
 	server: FetchedServer
-	client: "claude" | "cline" | "cursor" | "windsurf"
+	client: "claude" | "cline" | "cursor" | "windsurf" | "witsy"
 	config?: JsonObject
 	isConfigured?: boolean
 }) => {
@@ -77,6 +77,17 @@ export const ClientInstallContent = ({
 							Cursor
 						</a>{" "}
 						by copying the following into Cursor&apos;s MCP command.
+					</>
+				) : client === "witsy" ? (
+					<>
+						<a
+							href="https://witsyai.com"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Witsy
+						</a>
+						.
 					</>
 				) : null}
 			</p>
