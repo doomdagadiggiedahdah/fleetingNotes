@@ -2,7 +2,7 @@ import { CodeBlock } from "@/components/docs/code-block"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
-import { AlertCircle, Bug, ExternalLink } from "lucide-react"
+import { AlertCircle, Bug, ExternalLink, FileText } from "lucide-react"
 import posthog from "posthog-js"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -76,7 +76,16 @@ export const ClientInstallContent = ({
 						>
 							Cursor
 						</a>{" "}
-						by copying the following into Cursor&apos;s MCP command.
+						by copying the following into Cursor&apos;s MCP command. For more
+						info, see the{" "}
+						<a
+							href="https://docs.cursor.com/context/model-context-protocol"
+							target="_blank"
+							className="hover:text-primary inline-flex items-center"
+						>
+							docs <ExternalLink className="w-4 h-4 ml-1" />
+						</a>
+						.
 					</>
 				) : client === "witsy" ? (
 					<>
@@ -114,7 +123,7 @@ export const ClientInstallContent = ({
 					</AlertDescription>
 				</Alert>
 			)}
-			<p className="mt-3 text-muted-foreground hover:text-primary">
+			<div className="flex gap-4 mt-3 text-muted-foreground">
 				<a
 					href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
 					target="_blank"
@@ -124,7 +133,15 @@ export const ClientInstallContent = ({
 					<Bug className="w-4 h-4 mr-1" />
 					Report Bug
 				</a>
-			</p>
+				<a
+					href="/docs/faq/users"
+					target="_blank"
+					className="flex items-center hover:text-primary"
+				>
+					<FileText className="w-4 h-4 mr-1" />
+					Troubleshoot
+				</a>
+			</div>
 		</>
 	)
 }

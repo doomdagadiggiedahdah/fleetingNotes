@@ -1,12 +1,6 @@
 export function ToolsPanelSkeleton() {
 	return (
 		<div className="space-y-6">
-			{/* Config section skeleton */}
-			<div className="rounded-lg border border-border p-4 space-y-3">
-				<div className="h-6 w-1/4 bg-muted animate-pulse rounded" />
-				<div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
-			</div>
-
 			{/* Tools and results section */}
 			<div className="flex flex-col lg:flex-row gap-6">
 				{/* Tools list skeleton */}

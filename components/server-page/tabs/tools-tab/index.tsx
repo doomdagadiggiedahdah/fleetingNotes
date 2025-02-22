@@ -12,7 +12,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
-import { ConfigurationForm } from "./config-form"
+import { ConfigForm } from "./config-form"
 import { Button } from "@/components/ui/button"
 import type { JSONSchema } from "@/lib/types/server"
 import { ToolsPanelSkeleton } from "./skeleton"
@@ -162,7 +162,7 @@ export function ToolsPanel({
 			{((showConfigForm && status !== "connected" && server.deploymentUrl) ||
 				isEditingConfig) && (
 				<div className="lg:hidden">
-					<ConfigurationForm
+					<ConfigForm
 						schema={configSchema!}
 						onSubmit={handleConfigSubmit}
 						onCancel={() => {
@@ -249,7 +249,7 @@ export function ToolsPanel({
 							server.deploymentUrl) ||
 						isEditingConfig ? (
 							<div className="hidden lg:block mb-6">
-								<ConfigurationForm
+								<ConfigForm
 									schema={configSchema!}
 									onSubmit={handleConfigSubmit}
 									onCancel={() => {

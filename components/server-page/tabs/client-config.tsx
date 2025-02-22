@@ -1,81 +1,53 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { useState } from "react"
+import { SchemaForm } from "@/components/server-page/shared/schema-form"
 
 interface ClientConfigProps {
 	schema: JSONSchema
 	onSubmit: (config: JsonObject) => Promise<void>
 	onSuccess?: () => void
+	initialConfig?: JsonObject
 }
 
 export function ClientConfig({
 	schema,
 	onSubmit,
 	onSuccess,
+	initialConfig = {},
 }: ClientConfigProps) {
-	const [values, setValues] = useState<JsonObject>(() =>
-		Object.entries(schema?.properties || {}).reduce(
-			(acc, [key, field]: [string, JSONSchema]) => {
-				acc[key] = field.default || ""
-				return acc
-			},
-			{} as JsonObject,
-		),
-	)
+	const [values, setValues] = useState<JsonObject>(initialConfig)
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [error, setError] = useState<string | null>(null)
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsSubmitting(true)
+		setError(null)
 		try {
-			// Since values are already initialized with defaults, we can just submit values directly
 			await onSubmit(values)
 			onSuccess?.()
+		} catch (err) {
+			setError(
+				err instanceof Error ? err.message : "Failed to generate command",
+			)
 		} finally {
 			setIsSubmitting(false)
 		}
 	}
 
 	return (
-		<>
-			<h4 className="font-semibold mb-2 text-primary">Add Configuration</h4>
-			<p className="my-2">Add configuration to generate command.</p>
-			<form onSubmit={handleSubmit} className="space-y-4">
-				{Object.entries(schema?.properties || {}).map(
-					([key, field]: [string, JSONSchema]) => (
-						<div key={key} className="space-y-2">
-							<Label htmlFor={key}>{key}</Label>
-							<Input
-								id={key}
-								type={
-									key.toLowerCase().match(/(password|token|key|secret)/i)
-										? "password"
-										: field.type
-								}
-								required={field.required}
-								placeholder={
-									field.default
-										? `${field.description} (default: ${field.default})`
-										: field.description
-								}
-								value={values[key] as string}
-								onChange={(e) =>
-									setValues({ ...values, [key]: e.target.value })
-								}
-							/>
-						</div>
-					),
-				)}
-
-				<div className="flex justify-end">
-					<Button type="submit" disabled={isSubmitting}>
-						{isSubmitting ? "Loading..." : "Generate Command"}
-					</Button>
-				</div>
-			</form>
-		</>
+		<SchemaForm
+			schema={schema}
+			initialValues={initialConfig}
+			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+			onSubmit={handleSubmit}
+			isLoading={isSubmitting}
+			submitText="Generate Command"
+			loadingText="Loading..."
+			title="Add Configuration"
+			description="Add configuration to generate command."
+			error={error}
+		/>
 	)
 }
