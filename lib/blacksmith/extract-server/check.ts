@@ -124,6 +124,7 @@ Examples of that are NOT MCP servers:
 - Repos that provide a framework for building an MCP, but isn't an MCP server itself
 - Repos that aggregate a list of MCPs in a single file.
 - Repos that implement an MCP client, but is not a server. An MCP client connects to potential MCP servers, but is not a server itself.
+- Empty repository
 
 If you're not sure and there's not enough evidence to confirm, err on determining it's not a server.
 </invalid_repos>

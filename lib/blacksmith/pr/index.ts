@@ -8,7 +8,7 @@ import { err, ok, toResult } from "@/lib/utils/result"
 import { retry } from "@lifeomic/attempt"
 import { Octokit } from "@octokit/rest"
 import { checkPullRequests } from "./check-prs"
-import { generatePullRequest } from "./gen-all"
+import { generatePullRequestFiles } from "./gen-pr"
 
 import "@/lib/utils/braintrust"
 import { posthog } from "@/lib/posthog_server"
@@ -36,7 +36,7 @@ async function applyPullRequest(
 	useFork = false,
 ) {
 	if (!Object.values(newFiles).some(Boolean)) {
-		return err("No changes to apply")
+		return err("No files changed")
 	}
 
 	const changeBranchName = `smithery/config-${Math.random().toString(36).slice(2, 6)}`
@@ -170,7 +170,7 @@ async function applyPullRequest(
 
 	const changes = [
 		newFiles.dockerFile &&
-			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments.`,
+			`- **Dockerfile**: Introduces a Dockerfile to package the MCP for deployment across various environments. Dockerfile has been tested to successfully build. ✅ `,
 		newFiles.smitheryConfig &&
 			`- **Smithery Configuration**: Adds a Smithery YAML file, which specifies how to start the MCP and the configuration options it supports. It allows you to [deploy](https://smithery.ai/docs/deployments) your MCP to [Smithery](https://smithery.ai?utm_campaign=pr), serving it over WebSockets so end-users do not need to install additional dependencies. To deploy, merge this PR, then visit your [server page](https://smithery.ai/server/${qualifiedName}?utm_campaign=pr&modal=claim) and click "Deploy" under the deployments page.`,
 		addedBadge && addedInstallInstructions
@@ -181,6 +181,10 @@ async function applyPullRequest(
 					? `- **README**: Updates the README to include installation instructions via Smithery. _Note that the installation only works after the server is deployed on Smithery._`
 					: null,
 	].filter(Boolean)
+
+	if (changes.length === 0) {
+		return err("No changes to make")
+	}
 
 	const prBody = `\
 This pull request introduces the following updates:
@@ -223,7 +227,7 @@ export async function createServerRepoPullRequest(
 	])
 	if (!prChecksResult.ok) return prChecksResult
 	if (prChecksResult.value.length > 0) {
-		return err("A config PR has already been made previously.")
+		return err("A pull request has already been made previously.")
 	}
 	if (!serverRepo) {
 		return err("No repository connected to this server")
@@ -258,15 +262,13 @@ export async function createServerRepoPullRequest(
 	}
 	const { octokit, token } = octokitResult.value
 
-	const { newFiles, oldFiles, patchingRootReadme } = await generatePullRequest(
-		octokit,
-		token,
-	)({
-		repoOwner,
-		repoName,
-		basePath: baseDirectory,
-		server,
-	})
+	const { newFiles, oldFiles, patchingRootReadme } =
+		await generatePullRequestFiles(token)({
+			repoOwner,
+			repoName,
+			basePath: baseDirectory,
+			server,
+		})
 
 	const prResult = await applyPullRequest(
 		octokit,
@@ -281,7 +283,7 @@ export async function createServerRepoPullRequest(
 	)
 	if (!prResult.ok) {
 		console.warn(prResult.error)
-		return err("No changes were made to the server")
+		return err("Unable to automatically create pull request.")
 	}
 
 	posthog.capture({

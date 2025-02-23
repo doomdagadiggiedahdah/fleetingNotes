@@ -31,7 +31,7 @@ interface StdioConnection {
 `,
 		),
 		exampleConfig: z.any().describe(`
-Create an example config object that will be used to help users fill out the form. Use dummy variables for any API keys. The example config should showcase all possible configuration variables defined in the configSchema.`),
+Create an example config object that will be used to help users fill out the form. Make this look as realistic as possible with dummy variables. The example config should showcase all possible configuration variables defined in the configSchema. This example will be used to create test connections to the server.`),
 	})
 	.describe(`\
 The startCommand object will be used to MCP server locally. We will use the startCommand by asking the end user of the MCP to fill out a form using the configSchema, validate the user's configuration, and pass the configuration to the commandFunction to generate the command and arguments to start the server.
@@ -39,6 +39,17 @@ The startCommand object will be used to MCP server locally. We will use the star
 
 // Smithery.yaml
 export const ExtractServerConfigSchema = ServerConfigSchema.extend({
+	build: z
+		.object({
+			dockerBuildPath: z
+				.string()
+				.describe(
+					"Relative path for Docker build context, relative to the base path of the MCP. Defaults to the current directory. If this is a monorepo, sometimes we need to include the entire repo into the Docker build context by referencing the parent directory to build properly (i.e., ../..)",
+				)
+				.default(".")
+				.optional(),
+		})
+		.optional(),
 	startCommand: StartCommandSchema,
 }).strict()
 

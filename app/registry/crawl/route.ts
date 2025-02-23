@@ -8,7 +8,7 @@ import { logger } from "@/lib/utils/braintrust"
 import { NextResponse } from "next/server"
 
 export const revalidate = 0
-export const maxDuration = 300
+export const maxDuration = 800
 
 const urlRegex = /https:\/\/github.com[^\s\)]+/g
 
@@ -85,9 +85,8 @@ export async function GET(request: Request) {
 	}
 
 	try {
-		const crawlLimit = 3
-		await crawlServers(crawlLimit)
-		await Promise.all([createOutboundPR(crawlLimit), cleanupForkedRepos()])
+		await crawlServers(3)
+		await Promise.all([createOutboundPR(1), cleanupForkedRepos()])
 	} catch (e) {
 		console.error(`Background task error: ${e}`)
 	} finally {

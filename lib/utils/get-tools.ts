@@ -9,11 +9,18 @@ import { err, ok } from "./result"
 /**
  * @returns ok({ tools, configSchema }) if deployment is available
  */
-export async function fetchServerTools(deploymentUrl: string) {
+export async function fetchServerTools(
+	deploymentUrl: string,
+	config?: Record<string, unknown>,
+) {
 	// Fetch schema using the new utility
-	const configSchema = await fetchConfigSchema(deploymentUrl)
+	const configSchemaResult = await fetchConfigSchema(deploymentUrl)
+
+	if (!configSchemaResult.ok) return configSchemaResult
+
 	// Use createDummyConfig with empty config if no schema
-	const mockConfig = createDummyConfig(configSchema)
+	const configSchema = configSchemaResult.value
+	const mockConfig = config ?? createDummyConfig(configSchema)
 
 	const client = new Client(
 		{

@@ -201,6 +201,12 @@ export function MissingFilesDialog({
 										</ButtonLoading>
 									)}
 								</div>
+								{isLoading && (
+									<p className="text-sm text-muted-foreground">
+										This automation may take ~10 minutes. You can leave this
+										page and come back later.
+									</p>
+								)}
 							</>
 						)}
 					</>

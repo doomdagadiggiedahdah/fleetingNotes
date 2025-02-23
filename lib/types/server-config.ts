@@ -12,6 +12,10 @@ export const StartCommandSchema = z
 			.describe(
 				"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
 			),
+		exampleConfig: z
+			.any()
+			.optional()
+			.describe("An example config that satisfies the configSchema"),
 	})
 	.describe("Determines how to start the server.")
 

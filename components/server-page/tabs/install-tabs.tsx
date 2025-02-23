@@ -1,16 +1,5 @@
 "use client"
 
-import React from "react"
-import { useState, useEffect } from "react"
-import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
-import type { FetchedServer } from "@/lib/utils/get-server"
-import type { JSONSchema } from "@/lib/types/server"
-import { ServerFavicon } from "../server-favicon"
-import { ClientConfig } from "./client-config"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
 	Select,
 	SelectContent,
@@ -18,8 +7,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { JsonObject } from "@/lib/types/json"
+import type { JSONSchema } from "@/lib/types/server"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
+import type { FetchedServer } from "@/lib/utils/get-server"
+import { err, ok, type Result } from "@/lib/utils/result"
+import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
+import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
+import { ServerFavicon } from "../server-favicon"
+import { ClientConfig } from "./client-config"
+import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
 import { OverflowMenu } from "./overflow-menu"
 
 export type InstallTabStates =
@@ -186,24 +186,29 @@ export function InstallationTabs({
 		async function getConfig() {
 			if ((activeTab === "cursor" || activeTab === "code") && !configSchema) {
 				setIsLoadingSchema(true)
-				let schema: JSONSchema | null = null
+				let schemaResult: Result<JSONSchema> = err()
 
 				if (server.deploymentUrl) {
-					schema = await fetchConfigSchema(server.deploymentUrl)
+					schemaResult = await fetchConfigSchema(server.deploymentUrl)
 				} else {
 					// Get schema from stdio connection if available
 					const stdioConnection = server.connections.find(
 						(conn) => conn.type === "stdio",
 					)
 					if (stdioConnection) {
-						schema = stdioConnection.configSchema
+						schemaResult = ok(stdioConnection.configSchema)
 					}
 				}
 
-				setConfigSchema(schema)
+				if (schemaResult.ok) {
+					setConfigSchema(schemaResult.value)
+				}
 				setIsLoadingSchema(false)
 				// Auto-configure if schema is empty
-				if (schema && Object.keys(schema?.properties || {}).length === 0) {
+				if (
+					schemaResult.ok &&
+					Object.keys(schemaResult.value?.properties || {}).length === 0
+				) {
 					setConfigValues({})
 					setIsClientConfigured(true)
 				}
