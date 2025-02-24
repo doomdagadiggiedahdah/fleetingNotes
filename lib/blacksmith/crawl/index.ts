@@ -6,7 +6,7 @@ import { Octokit } from "@octokit/rest"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { shuffle } from "lodash"
 import { extractServer } from "../extract-server"
-import { isMCPServer } from "../extract-server/check"
+import { isMCPServer } from "../check"
 import { isRepositoryFork } from "@/lib/utils/github"
 import { extractRepo } from "@/lib/utils/github"
 
@@ -115,7 +115,7 @@ export async function crawlServers(limit = 10) {
 					baseDirectory: repoInfo.baseDirectory,
 				}))
 			) {
-				console.error("Not an MCP server", url)
+				console.log("Not an MCP server", url)
 				continue
 			}
 

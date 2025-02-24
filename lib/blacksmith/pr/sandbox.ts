@@ -245,7 +245,7 @@ set -e
 				// Trim by the region logs
 				const idx = data.indexOf("iad")
 				const line = idx !== -1 ? data.slice(idx + 6) : data
-				console.log(`[${flyAppId}] logs:`, line)
+				// console.log(`[${flyAppId}] logs:`, line)
 				logs += line
 			},
 		},
