@@ -12,7 +12,7 @@ import { wait } from "@/lib/utils"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { fetchServerTools } from "@/lib/utils/get-tools"
 import { joinGithubPath } from "@/lib/utils/github"
-import { err, ok, toResult } from "@/lib/utils/result"
+import { err, ok, type Result, toResult } from "@/lib/utils/result"
 import {
 	CommandExitError,
 	type CommandResult,
@@ -34,23 +34,33 @@ export interface GitSandbox {
 export async function setupSandbox(
 	gitUrl: string,
 	baseDirectory: string,
-): Promise<GitSandbox> {
+): Promise<Result<GitSandbox, Error>> {
 	// Uses the E2B template Dockerfile
-	const sandbox = await Sandbox.create("78kugsgw16cm5ttks6fy")
 	try {
-		await sandbox.commands.run("mkdir ~/workspace")
-		await sandbox.commands.run(
-			`git clone --single-branch --depth 1 ${gitUrl} .`,
-			{ cwd: REPO_WORKING_DIR },
-		)
-		return {
-			sandbox,
-			workingDir: joinGithubPath(REPO_WORKING_DIR, baseDirectory),
+		const sandbox = await Sandbox.create("78kugsgw16cm5ttks6fy")
+		try {
+			await sandbox.commands.run("mkdir ~/workspace")
+			const cloneRepoResult = await toCommandResult(
+				sandbox.commands.run(
+					`git clone --single-branch --depth 1 ${gitUrl} .`,
+					{ cwd: REPO_WORKING_DIR },
+				),
+			)
+
+			if (!cloneRepoResult.ok) return cloneRepoResult
+
+			return ok({
+				sandbox,
+				workingDir: joinGithubPath(REPO_WORKING_DIR, baseDirectory),
+			})
+		} catch (e) {
+			console.error("Error setting up sandbox:", e)
+			await sandbox.kill()
+			return err(e instanceof Error ? e : new Error(String(e)))
 		}
 	} catch (e) {
-		console.error("Error setting up sandbox:", e)
-		await sandbox.kill()
-		throw e
+		console.error("Error creating sandbox:", e)
+		return err(e instanceof Error ? e : new Error(String(e)))
 	}
 }
 

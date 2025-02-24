@@ -262,13 +262,17 @@ export async function createServerRepoPullRequest(
 	}
 	const { octokit, token } = octokitResult.value
 
-	const { newFiles, oldFiles, patchingRootReadme } =
-		await generatePullRequestFiles(token)({
-			repoOwner,
-			repoName,
-			basePath: baseDirectory,
-			server,
-		})
+	const genFilesResult = await generatePullRequestFiles(token)({
+		repoOwner,
+		repoName,
+		basePath: baseDirectory,
+		server,
+	})
+
+	if (!genFilesResult.ok)
+		return err("Unable to generate files for pull request.")
+	
+	const { newFiles, oldFiles, patchingRootReadme } = genFilesResult.value
 
 	const prResult = await applyPullRequest(
 		octokit,

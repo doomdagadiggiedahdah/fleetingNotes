@@ -1,4 +1,4 @@
-import { toResult } from "@/lib/utils/result"
+import { ok, toResult } from "@/lib/utils/result"
 import { wrapTraced } from "braintrust"
 import { generateServerFiles } from "./gen-server-files"
 import { patchReadme } from "./patch-readme"
@@ -27,25 +27,20 @@ export const generatePullRequestFiles = (accessToken: string) =>
 		repoName,
 		basePath,
 	}: GeneratePullRequestProps) {
-		const sandbox = await setupSandbox(
+		const sandboxResult = await setupSandbox(
 			`https://x-access-token:${accessToken}@github.com/${repoOwner}/${repoName}`,
 			basePath,
 		)
+
+		if (!sandboxResult.ok) return sandboxResult
+		const sandbox = sandboxResult.value
 
 		try {
 			const filesResult = await generateServerFiles(sandbox)()
 
 			if (!filesResult.ok) {
 				// Unable to build this repo. Skip.
-				return {
-					patchingRootReadme: false,
-					oldFiles: { readme: null },
-					newFiles: {
-						dockerFile: null,
-						smitheryConfig: null,
-						readme: null,
-					},
-				}
+				return filesResult
 			}
 
 			// Update README
@@ -89,7 +84,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 						})()
 					: null
 
-			return {
+			return ok({
 				patchingRootReadme,
 				oldFiles: { readme: currentReadme?.content ?? null },
 				newFiles: {
@@ -100,7 +95,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 					smitheryConfig: newSmitheryYaml,
 					readme: newReadme,
 				},
-			}
+			})
 		} finally {
 			await sandbox.sandbox.kill()
 		}

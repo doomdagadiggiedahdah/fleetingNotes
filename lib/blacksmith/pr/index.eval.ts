@@ -83,10 +83,16 @@ Eval<PRInput, PROutput, null>("Smithery", {
 		const token = process.env.GITHUB_BOT_UAT
 
 		// TODO: Repo must be commit checkpointed for reproducibility.
-		const sandbox = await setupSandbox(
+		const sandboxResult = await setupSandbox(
 			`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
 			baseDirectory,
 		)
+
+		if (!sandboxResult.ok) {
+			throw sandboxResult.error
+		}
+
+		const sandbox = sandboxResult.value
 
 		// Remove existing files for benchmark purposes
 		await sandbox.sandbox.commands.run("rm -f Dockerfile", {

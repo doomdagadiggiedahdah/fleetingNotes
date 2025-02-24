@@ -1,17 +1,13 @@
-import {
-	getGithubFile,
-	getREADMEResult,
-	joinGithubPath,
-} from "@/lib/utils/github"
 import { err, ok, toResult } from "@/lib/utils/result"
-import type { Octokit } from "@octokit/rest"
 import { wrapOpenAI, wrapTraced } from "braintrust"
 
 import "@/lib/utils/braintrust"
 import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
+import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import mcpPrompt from "../mcp-prompt-mini.txt"
+import { REPO_WORKING_DIR, setupSandbox } from "../pr/sandbox"
 
 interface Args {
 	repoOwner: string
@@ -19,136 +15,141 @@ interface Args {
 	baseDirectory: string
 }
 
+const COMMAND_FUNC_NAME = "bash"
 /**
  * Checks if a given Github repository is an MCP server
  */
-export const isMCPServer = (octokit: Octokit) =>
+export const isMCPServer = (githubToken: string) =>
 	wrapTraced(async function isMCPServer({
 		repoOwner,
 		repoName,
 		baseDirectory,
 	}: Args) {
-		// Extract essential files
-		const [readme, dockerfile, packageJson, pyProjectToml] = await Promise.all([
-			getREADMEResult(octokit, repoOwner, repoName, baseDirectory),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "Dockerfile"),
-				),
-			),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "package.json"),
-				),
-			),
-			toResult(
-				getGithubFile(
-					octokit,
-					repoOwner,
-					repoName,
-					joinGithubPath(baseDirectory, "pyproject.toml"),
-				),
-			),
-			toResult(
-				octokit.request("GET /repos/{owner}/{repo}/license", {
-					owner: repoOwner,
-					repo: repoName,
+		const gitSandboxResult = await setupSandbox(
+			`https://x-access-token:${githubToken}@github.com/${repoOwner}/${repoName}`,
+			baseDirectory,
+		)
+
+		if (!gitSandboxResult.ok) return ok(false)
+		const gitSandbox = gitSandboxResult.value
+
+		try {
+			const inRepoRoot = baseDirectory === "."
+			const commandsToRun = [
+				// This helps the model be aware of the current working directory
+				`pwd`,
+				...(!inRepoRoot ? [`cat ${REPO_WORKING_DIR}/README.md`] : []),
+				`cat README.md`,
+				`cat readme`,
+				`cat package.json`,
+				`cat pyproject.toml`,
+				`cat Dockerfile`,
+				`ls -la`,
+			]
+			const commandResults = await Promise.all(
+				commandsToRun.map(async (c) => {
+					return {
+						command: c,
+						result: await toResult(
+							gitSandbox.sandbox.commands.run(c, {
+								cwd: gitSandbox.workingDir,
+							}),
+						),
+					}
 				}),
-			),
-		])
-
-		if (!pyProjectToml.ok && !packageJson.ok && !dockerfile.ok) {
-			return err("Server doesn't have minimumally required files.")
-		}
-
-		const files = [
-			{
-				name: "README.md",
-				content: readme,
-			},
-			{
-				name: "Dockerfile",
-				content: dockerfile,
-			},
-			{
-				name: "pyproject.toml",
-				content: pyProjectToml,
-			},
-			{
-				name: "package.json",
-				content: packageJson,
-			},
-		]
-			.map((file) =>
-				file.content.ok && file.content.value
-					? { ...file, content: file.content.value }
-					: null,
 			)
-			.filter((file): file is NonNullable<typeof file> => file !== null)
 
-		const llm = wrapOpenAI(new OpenAI())
+			const llm = wrapOpenAI(new OpenAI())
 
-		const completion = await llm.beta.chat.completions.parse({
-			model: "gpt-4o",
-			temperature: 0,
-			messages: [
+			const messages: ChatCompletionMessageParam[] = [
 				{
-					role: "developer",
+					role: "user",
 					content: `\
 <mcp_info>
 ${mcpPrompt}
 
-When MCP servers are installed on Claude (an MCP client), they usually have a JSON config that looks like the following example:
+Valid MCP servers usually specify a JSON config to detail how to launch it. Example:
 \`\`\`
 {
-  "mcpServers": {
-    "CyberChitta": {
-      "command": "uvx",
-      "args": ["--from", "llm-context", "lc-mcp"]
-    }
-  }
+	"mcpServers": {
+		"CyberChitta": {
+			"command": "uvx",
+			"args": ["--from", "llm-context", "lc-mcp"]
+		}
+	}
 }
 \`\`\`
 </mcp_info>
-<task>
-Based on the files provided from this Github repository, check if the given Github repository is an MCP server.
 
-<invalid_repos>
-Examples of that are NOT MCP servers:
-- Repos that provide a framework for building an MCP, but isn't an MCP server itself
-- Repos that aggregate a list of MCPs in a single file.
-- Repos that implement an MCP client, but is not a server. An MCP client connects to potential MCP servers, but is not a server itself.
-- Empty repository
+# Task
+You are a crawler for an MCP server registry. This registry is designed so MCP clients can easily connect to deployed versions of these MCP servers.
+Your task is to check if the given source code repository is a valid MCP server that can be deployed to production and should be added to the registry.
+\`bash\` commands are used to inspect the repository.
 
-If you're not sure and there's not enough evidence to confirm, err on determining it's not a server.
-</invalid_repos>
-</task>`,
-				},
-				{
-					role: "user",
-					content: `\
+## Examples of repos that are not MCP servers
+- Repos that provide a framework for building an MCP server, but isn't an MCP server itself.
+- Repos that aggregate a list of MCP-related resources.
+- Repos that implement an MCP client instead of a server. An MCP client connects to potential MCP servers, but is not a server itself.
+- Repo is a guide on how to use MCPs.
+- Repo that is primarily test code, a demo example or a playground for developers to test MCPs. These repos can deceptively look like MCP servers but are not meant for production use. Rather, they serve to demo how MCP works.
+- Repo that turns an existing product/service into an MCP server, but is not a standalone server itself. Examples may include repos that extend some product so the product becomes MCP-compatible. Because we can't deploy this into a standalone server, it is not a valid MCP server.
+- Empty repository.
+- Repos that are low quality or lack clear documentation that supports that it's an MCP server.
+
+If you see any of the above cases, mark it as not an MCP server.
+
+# Details:
 <repo_owner>${repoOwner}</repo_owner>
 <repo_name>${repoName}</repo_name>
-${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
+<base_directory>${baseDirectory}</base_directory>`,
 				},
-			],
-			response_format: zodResponseFormat(
-				z.object({
-					reasoning: z.string(),
-					isServer: z.boolean(),
-				}),
-				"extract",
-			),
-		})
+				...commandResults
+					.filter((r) => r.result.ok)
+					.flatMap((r) => [
+						{
+							role: "assistant" as const,
+							tool_calls: [
+								{
+									type: "function" as const,
+									id: `bash_${r.command.replace(/[^a-zA-Z0-9]/g, "_")}`,
+									function: {
+										name: COMMAND_FUNC_NAME,
+										arguments: JSON.stringify({
+											command: r.command,
+										}),
+									},
+								},
+							],
+						},
+						{
+							role: "tool" as const,
+							tool_call_id: `bash_${r.command.replace(/[^a-zA-Z0-9]/g, "_")}`,
+							content: r.result.ok
+								? r.result.value.stdout
+								: JSON.stringify(r.result.error),
+							name: COMMAND_FUNC_NAME,
+						},
+					]),
+			]
 
-		const parsed = completion.choices[0].message.parsed
+			const completion = await llm.beta.chat.completions.parse({
+				model: "o3-mini",
+				reasoning_effort: "low",
+				messages,
+				response_format: zodResponseFormat(
+					z.object({
+						isValidMCPServer: z
+							.boolean()
+							.describe("True if it's a valid MCP server."),
+					}),
+					"output",
+				),
+			})
+			const parsed = completion.choices[0].message.parsed
 
-		if (!parsed) return err("Failed to check server.")
-		return ok(parsed.isServer)
+			if (!parsed) return err("Failed to check server.")
+			return ok(parsed.isValidMCPServer)
+		} finally {
+			await gitSandbox.sandbox.kill()
+		}
 	})

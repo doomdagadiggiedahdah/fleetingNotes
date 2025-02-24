@@ -67,8 +67,9 @@ export async function crawlServers(limit = 10) {
 	)
 	console.log("URLs to process:", urlsToCrawl.length)
 
+	const token = process.env.GITHUB_BOT_UAT!
 	const octokit = new Octokit({
-		auth: process.env.GITHUB_BOT_UAT,
+		auth: token,
 	})
 
 	for (const url of urlsToCrawl) {
@@ -109,7 +110,7 @@ export async function crawlServers(limit = 10) {
 			}
 
 			if (
-				!(await isMCPServer(octokit)({
+				!(await isMCPServer(token)({
 					repoOwner: repoInfo.owner,
 					repoName: repoInfo.repo,
 					baseDirectory: repoInfo.baseDirectory,
