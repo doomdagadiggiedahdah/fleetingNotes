@@ -28,6 +28,7 @@ export type InstallTabStates =
 	| "cursor"
 	| "windsurf"
 	| "witsy"
+	| "enconvo"
 	| "code"
 
 type InstallationTabsProps = {
@@ -86,6 +87,13 @@ function InstallTabOptions({
 			label: "Witsy",
 			icon: (
 				<ServerFavicon homepage="https://witsyai.com" displayName="Windsurf" />
+			),
+		},
+		{
+			value: "enconvo",
+			label: "Enconvo",
+			icon: (
+				<ServerFavicon homepage="https://www.enconvo.com" displayName="Enconvo" />
 			),
 		},
 		{
@@ -167,6 +175,7 @@ export function InstallationTabs({
 		"windsurf",
 		"cline",
 		"witsy",
+		"enconvo",
 		"code",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
@@ -291,6 +300,9 @@ export function InstallationTabs({
 			</TabsContent>
 			<TabsContent value="witsy">
 				<ClientInstallContent server={server} client="witsy" />
+			</TabsContent>
+			<TabsContent value="enconvo">
+				<ClientInstallContent server={server} client="enconvo" />
 			</TabsContent>
 			<TabsContent value="code">
 				<TypeScriptContent server={server} configSchema={configSchema} />

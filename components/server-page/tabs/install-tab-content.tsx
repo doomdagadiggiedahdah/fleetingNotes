@@ -14,7 +14,7 @@ export const ClientInstallContent = ({
 	isConfigured,
 }: {
 	server: FetchedServer
-	client: "claude" | "cline" | "cursor" | "windsurf" | "witsy"
+	client: "claude" | "cline" | "cursor" | "windsurf" | "witsy" | "enconvo"
 	config?: JsonObject
 	isConfigured?: boolean
 }) => {
@@ -95,6 +95,17 @@ export const ClientInstallContent = ({
 							className="hover:text-primary"
 						>
 							Witsy
+						</a>
+						.
+					</>
+				) : client === "enconvo" ? (
+					<>
+						<a
+							href="https://www.enconvo.com"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Enconvo
 						</a>
 						.
 					</>
