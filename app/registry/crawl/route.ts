@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { candidate_urls } from "@/db/schema/blacksmith"
 import { crawlServers } from "@/lib/blacksmith/crawl"
+import { cleanupUnclaimedServers } from "@/lib/blacksmith/crawl/cleanup-servers"
 import { cleanupForkedRepos } from "@/lib/blacksmith/pr/cleanup-forks"
 import { createOutboundPR } from "@/lib/blacksmith/pr/outbound-pr"
 import "@/lib/utils/braintrust"
@@ -86,7 +87,11 @@ export async function GET(request: Request) {
 
 	try {
 		await crawlServers(3)
-		await Promise.all([createOutboundPR(1), cleanupForkedRepos()])
+		await Promise.all([
+			createOutboundPR(1),
+			cleanupForkedRepos(),
+			cleanupUnclaimedServers(),
+		])
 	} catch (e) {
 		console.error(`Background task error: ${e}`)
 	} finally {

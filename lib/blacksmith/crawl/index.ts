@@ -100,7 +100,7 @@ export async function crawlServers(limit = 10) {
 				.limit(1)
 
 			if (existingRepo.length > 0) {
-				console.log(`Repo already exists: ${url}`)
+				console.log(`Repo already exists in registry: ${url}. Skipping`)
 				continue
 			}
 
