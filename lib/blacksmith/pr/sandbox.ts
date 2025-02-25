@@ -89,29 +89,16 @@ git push origin HEAD
 }
 
 // Check Dockerfile from sandbox
-export async function getDockerfile({ sandbox, workingDir }: GitSandbox) {
-	const result = await toCommandResult(
-		sandbox.commands.run(`cat Dockerfile`, {
-			cwd: workingDir,
-		}),
-	)
-
-	if (!result.ok) return result
-
-	return ok(result.value.stdout)
+export async function getDockerfile(sbx: GitSandbox) {
+	return readFile(sbx, "Dockerfile")
 }
-export async function getSmitheryConfig({ sandbox, workingDir }: GitSandbox) {
-	// Check existing Smithery file
-	const existingSmitheryConfig = await toCommandResult(
-		sandbox.commands.run(`cat smithery.yaml`, {
-			cwd: workingDir,
-		}),
-	)
-	if (!existingSmitheryConfig.ok) return existingSmitheryConfig
 
-	const result = ServerConfigSchema.safeParse(
-		YAML.parse(existingSmitheryConfig.value.stdout),
-	)
+export async function getSmitheryConfig(sbx: GitSandbox) {
+	// Check existing Smithery file
+	const configResult = await readFile(sbx, "smithery.yaml")
+	if (!configResult.ok) return configResult
+
+	const result = ServerConfigSchema.safeParse(YAML.parse(configResult.value))
 	if (!result.success) {
 		return err({
 			message: `Failed to parse smithery.yaml: ${result.error.message}`,
@@ -131,6 +118,17 @@ cat > ${filePath} << 'EOL'\n${content}\nEOL
 `,
 		{ cwd: sbx.workingDir },
 	)
+}
+
+export async function readFile(sbx: GitSandbox, filePath: string) {
+	const result = await toCommandResult(
+		sbx.sandbox.commands.run(`cat ${filePath}`, {
+			cwd: sbx.workingDir,
+		}),
+	)
+
+	if (!result.ok) return result
+	return ok(result.value.stdout)
 }
 
 /**

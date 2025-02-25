@@ -1,0 +1,1 @@
+ALTER TABLE "build_cache" ADD CONSTRAINT "build_cache_server_id_unique" UNIQUE("server_id");

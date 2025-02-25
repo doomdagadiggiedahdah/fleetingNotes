@@ -15,7 +15,7 @@ import { getDeployments } from "@/lib/actions/deployment"
 import { createClient } from "@/lib/supabase/client"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { ChevronDown, ChevronRight, GitBranch, Loader2 } from "lucide-react"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
 
 export type Deployment = Database["public"]["Tables"]["deployments"]["Row"]
@@ -298,25 +298,12 @@ const SkeletonRow = () => (
 	</TableRow>
 )
 
-// Helper component to render logs with clickable links
-function BuildLogs({ logs }: { logs: string }) {
-	// URL regex pattern that matches common URL formats
+// Helper function to parse logs and extract URLs
+function parseLogsWithUrls(logs: string): React.ReactNode[] {
 	const urlRegex = /(https?:\/\/[^\s]+)/g
-
-	// Create an array to hold the processed content
 	const content: React.ReactNode[] = []
 	let lastIndex = 0
 	let match: RegExpExecArray | null
-
-	// Reference for the log container
-	const logContainerRef = React.useRef<HTMLDivElement>(null)
-
-	// Auto-scroll to bottom when logs update
-	React.useEffect(() => {
-		if (logContainerRef.current) {
-			logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight
-		}
-	}, [logs])
 
 	// Find all URLs in the text
 	// biome-ignore lint/suspicious/noAssignInExpressions: Needed for regex exec pattern
@@ -348,6 +335,24 @@ function BuildLogs({ logs }: { logs: string }) {
 	if (lastIndex < logs.length) {
 		content.push(logs.substring(lastIndex))
 	}
+
+	return content
+}
+
+// Helper component to render logs with clickable links
+function BuildLogs({ logs }: { logs: string }) {
+	// Reference for the log container - now at top level
+	const logContainerRef = useRef<HTMLDivElement>(null)
+
+	// Auto-scroll to bottom when logs update - now at top level
+	useEffect(() => {
+		if (logContainerRef.current) {
+			logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight
+		}
+	}, [logs])
+
+	// Parse logs and extract URLs
+	const content = parseLogsWithUrls(logs)
 
 	return (
 		<div ref={logContainerRef} className="max-h-96 overflow-auto">

@@ -1,4 +1,5 @@
 import {
+	jsonb,
 	pgEnum,
 	pgPolicy,
 	pgTable,
@@ -10,6 +11,7 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import { serverRepos, servers } from "./servers"
 import { authenticatedRole } from "drizzle-orm/supabase"
 import { sql } from "drizzle-orm"
+import type { ServerConfig } from "@/lib/types/server-config"
 
 export const deploymentStatus = pgEnum("deployment_status", [
 	"QUEUED",
@@ -63,3 +65,19 @@ export const selectDeploymentSchema = createSelectSchema(deployments)
 export type Deployment = typeof deployments.$inferSelect
 export type NewDeployment = typeof deployments.$inferInsert
 export type DeploymentStatus = (typeof deploymentStatus.enumValues)[number]
+
+// Holds build files that should be cached
+export const buildCache = pgTable("build_cache", {
+	serverId: uuid("server_id")
+		.notNull()
+		.references(() => servers.id, { onDelete: "cascade" })
+		.unique(),
+	files: jsonb("files"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}).enableRLS()
+
+export interface BuildFiles {
+	dockerfile: { content: string }
+	smitheryConfig: { content: ServerConfig }
+}

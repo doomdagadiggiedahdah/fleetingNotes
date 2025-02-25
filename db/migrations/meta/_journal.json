@@ -218,6 +218,20 @@
 			"when": 1739248817838,
 			"tag": "0031_dear_madelyne_pryor",
 			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1740495124771,
+			"tag": "0032_complex_justice",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "7",
+			"when": 1740497507502,
+			"tag": "0033_cynical_retro_girl",
+			"breakpoints": true
 		}
 	]
 }

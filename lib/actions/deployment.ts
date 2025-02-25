@@ -2,6 +2,8 @@
 
 import { db } from "@/db"
 import {
+	buildCache,
+	type BuildFiles,
 	deployments,
 	type DeploymentStatus,
 	type Server,
@@ -23,7 +25,9 @@ import { generateServerFiles } from "../blacksmith/pr/gen-server-files"
 import {
 	buildAndDeploySandbox,
 	getDeployedUrl,
+	getDockerfile,
 	getFlyAppId,
+	getSmitheryConfig,
 	prepareBuild,
 	setupGitSandbox,
 } from "../blacksmith/pr/sandbox"
@@ -182,32 +186,53 @@ export async function createDeploymentForServer(
 				.prepare("append_log")
 				.execute({ log: `${log}\n` }),
 		)
+		return lastAppend
 	}
 
 	// Run in background
 	waitUntil(
 		(async () => {
 			try {
-				// TODO: Inject cached files if they exist
+				let buildFiles: BuildFiles | null = null
 
-				// TODO: Reduce build time via direct build (optimization?)
-				appendLog("Setting up build files...")
-				const buildFilesResult = await generateServerFiles(gitSandbox, {
-					onUpdate: appendLog,
-				})()
+				// Check cached build files
+				const [buildCacheRow] = await db
+					.select()
+					.from(buildCache)
+					.where(eq(buildCache.serverId, server.id))
 
-				if (!buildFilesResult.ok) {
-					await appendLog(
-						"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
-						"FAILURE",
-					)
-					return err({
-						type: "setupBuildFileError",
-						// TOOD: We need better error message, espsecially for parsing smithery yaml
-					} as const)
+				if (buildCacheRow) {
+					appendLog("Using cached build config files...")
+					buildFiles = buildCacheRow.files as BuildFiles
+
+					// Overwrite with files defined by user in repository
+					const [smitheryConfigResult, dockerfileResult] = await Promise.all([
+						getSmitheryConfig(gitSandbox),
+						getDockerfile(gitSandbox),
+					])
+
+					if (smitheryConfigResult.ok)
+						buildFiles.smitheryConfig = { content: smitheryConfigResult.value }
+					if (dockerfileResult.ok)
+						buildFiles.dockerfile = { content: dockerfileResult.value }
+				} else {
+					// Cache miss
+					const buildFilesResult = await generateServerFiles(gitSandbox, {
+						onUpdate: appendLog,
+					})()
+
+					if (!buildFilesResult.ok) {
+						await appendLog(
+							"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
+							"FAILURE",
+						)
+						return err({
+							type: "setupBuildFileError",
+							// TOOD: We need better error message, espsecially for parsing smithery yaml
+						} as const)
+					}
+					buildFiles = buildFilesResult.value
 				}
-
-				const buildFiles = buildFilesResult.value
 
 				appendLog(
 					"Successfully obtained required build config files. Preparing build...",
@@ -233,7 +258,6 @@ export async function createDeploymentForServer(
 					} as const)
 				}
 
-				appendLog("Starting deployment...")
 				const flyAppId = getFlyAppId(server.id)
 				const buildResult = await buildAndDeploySandbox(
 					gitSandbox,
@@ -244,7 +268,7 @@ export async function createDeploymentForServer(
 
 				if (!buildResult.ok) {
 					await appendLog(
-						"Error while deploying. Please see logs above or contact support.",
+						"Error while deploying. Please review the logs above or contact support.",
 						"FAILURE",
 					)
 					return err({
@@ -253,18 +277,31 @@ export async function createDeploymentForServer(
 				}
 
 				appendLog("Deployment successful!")
-				await db
-					.update(deployments)
-					.set({
-						status: "SUCCESS",
-						updatedAt: sql`NOW()`,
-						deploymentUrl: getDeployedUrl(flyAppId),
-					})
-					.where(eq(deployments.id, deploymentRow.id))
+				await Promise.all([
+					db
+						.update(deployments)
+						.set({
+							status: "SUCCESS",
+							updatedAt: sql`NOW()`,
+							deploymentUrl: getDeployedUrl(flyAppId),
+						})
+						.where(eq(deployments.id, deploymentRow.id)),
+					db
+						.insert(buildCache)
+						.values({
+							serverId: server.id,
+							files: buildFiles,
+						})
+						.onConflictDoUpdate({
+							target: buildCache.serverId,
+							set: { files: buildFiles },
+						}),
+				])
+				await lastAppend
 				return ok()
 			} catch (e) {
-				console.error("Unexpected error", e)
-				await appendLog("Unexpected error.", "FAILURE")
+				console.error("Unexpected internal error", e)
+				await appendLog("Unexpected internal error.", "FAILURE")
 				return err({ type: "unexpected" })
 			} finally {
 				await gitSandbox.sandbox.kill()
