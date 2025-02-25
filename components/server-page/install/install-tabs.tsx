@@ -7,7 +7,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
@@ -18,9 +17,9 @@ import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
 import { ServerFavicon } from "../server-favicon"
-import { ClientConfig } from "./client-config"
 import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
 import { OverflowMenu } from "./overflow-menu"
+import { ClientContent } from "./client-content"
 
 export type InstallTabStates =
 	| "claude"
@@ -29,6 +28,7 @@ export type InstallTabStates =
 	| "windsurf"
 	| "witsy"
 	| "enconvo"
+	| "goose"
 	| "code"
 
 type InstallationTabsProps = {
@@ -93,7 +93,20 @@ function InstallTabOptions({
 			value: "enconvo",
 			label: "Enconvo",
 			icon: (
-				<ServerFavicon homepage="https://www.enconvo.com" displayName="Enconvo" />
+				<ServerFavicon
+					homepage="https://www.enconvo.com"
+					displayName="Enconvo"
+				/>
+			),
+		},
+		{
+			value: "goose",
+			label: "Goose",
+			icon: (
+				<ServerFavicon
+					homepage="https://block.github.io/goose/"
+					displayName="Goose"
+				/>
 			),
 		},
 		{
@@ -176,6 +189,7 @@ export function InstallationTabs({
 		"cline",
 		"witsy",
 		"enconvo",
+		"goose",
 		"code",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
@@ -193,7 +207,12 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function getConfig() {
-			if ((activeTab === "cursor" || activeTab === "code") && !configSchema) {
+			if (
+				(activeTab === "cursor" ||
+					activeTab === "goose" ||
+					activeTab === "code") &&
+				!configSchema
+			) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
@@ -230,6 +249,7 @@ export function InstallationTabs({
 	const handleClientConfig = async (values: JsonObject) => {
 		setConfigValues(values)
 		setIsClientConfigured(true)
+		return Promise.resolve()
 	}
 
 	const handleOverflowSelect = (selected: InstallTabStates) => {
@@ -267,30 +287,16 @@ export function InstallationTabs({
 				<ClientInstallContent server={server} client="claude" />
 			</TabsContent>
 			<TabsContent value="cursor">
-				{isLoadingSchema ? (
-					<div className="space-y-2">
-						<Skeleton className="h-4 w-1/4" />
-						<Skeleton className="h-4 w-1/2" />
-						<Skeleton className="h-10 w-full" />
-					</div>
-				) : !isClientConfigured && hasConfigProperties ? (
-					<ClientConfig
-						schema={configSchema}
-						onSubmit={handleClientConfig}
-						onSuccess={() => setIsClientConfigured(true)}
-					/>
-				) : configSchema ? (
-					<ClientInstallContent
-						server={server}
-						client="cursor"
-						config={configValues}
-						isConfigured={isClientConfigured}
-					/>
-				) : (
-					<p className="text-center text-muted-foreground">
-						No configuration schema available for this server.
-					</p>
-				)}
+				<ClientContent
+					server={server}
+					client="cursor"
+					configSchema={configSchema}
+					isLoadingSchema={isLoadingSchema}
+					isClientConfigured={isClientConfigured}
+					hasConfigProperties={hasConfigProperties}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+				/>
 			</TabsContent>
 			<TabsContent value="windsurf">
 				<ClientInstallContent server={server} client="windsurf" />
@@ -303,6 +309,18 @@ export function InstallationTabs({
 			</TabsContent>
 			<TabsContent value="enconvo">
 				<ClientInstallContent server={server} client="enconvo" />
+			</TabsContent>
+			<TabsContent value="goose">
+				<ClientContent
+					server={server}
+					client="goose"
+					configSchema={configSchema}
+					isLoadingSchema={isLoadingSchema}
+					isClientConfigured={isClientConfigured}
+					hasConfigProperties={hasConfigProperties}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+				/>
 			</TabsContent>
 			<TabsContent value="code">
 				<TypeScriptContent server={server} configSchema={configSchema} />

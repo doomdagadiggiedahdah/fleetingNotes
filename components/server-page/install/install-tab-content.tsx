@@ -14,12 +14,19 @@ export const ClientInstallContent = ({
 	isConfigured,
 }: {
 	server: FetchedServer
-	client: "claude" | "cline" | "cursor" | "windsurf" | "witsy" | "enconvo"
+	client:
+		| "claude"
+		| "cline"
+		| "cursor"
+		| "windsurf"
+		| "witsy"
+		| "enconvo"
+		| "goose"
 	config?: JsonObject
 	isConfigured?: boolean
 }) => {
 	const command =
-		client === "cursor" && isConfigured && config
+		(client === "cursor" || client === "goose") && isConfigured && config
 			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
 			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
 
@@ -106,6 +113,26 @@ export const ClientInstallContent = ({
 							className="hover:text-primary"
 						>
 							Enconvo
+						</a>
+						.
+					</>
+				) : client === "goose" ? (
+					<>
+						<a
+							href="https://block.github.io/goose/"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Goose
+						</a>{" "}
+						by copying the following into Goose&apos;s extension command. For
+						more info, see the{" "}
+						<a
+							href="https://block.github.io/goose/docs/getting-started/using-extensions"
+							target="_blank"
+							className="hover:text-primary inline-flex items-center"
+						>
+							docs <ExternalLink className="w-4 h-4 ml-1" />
 						</a>
 						.
 					</>

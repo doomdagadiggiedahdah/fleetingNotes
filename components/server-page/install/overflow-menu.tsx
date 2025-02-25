@@ -36,8 +36,8 @@ export function OverflowMenu({
 				>
 					<div className="flex -space-x-2 mr-1">
 						{tabs.slice(0, 3).map((tab, i) => (
-							<div 
-								key={tab.value} 
+							<div
+								key={tab.value}
 								className="w-5 h-5 rounded-full bg-muted flex items-center justify-center ring-1 ring-background text-xs"
 							>
 								{tab.icon}

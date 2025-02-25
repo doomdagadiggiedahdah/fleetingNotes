@@ -1,5 +1,5 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { InstallationTabs, type InstallTabStates } from "./tabs/install-tabs"
+import { InstallationTabs, type InstallTabStates } from "./install/install-tabs"
 
 type Props = {
 	server: FetchedServer
