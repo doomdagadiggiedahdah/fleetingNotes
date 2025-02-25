@@ -13,11 +13,13 @@ import {
 	updateServerSchema,
 } from "./servers.schema"
 
+import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getSessionUserOctokit } from "../auth/github/server"
 import { extractServer } from "../blacksmith/extract-server"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
+import { createDeployment } from "./deployment"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -156,6 +158,8 @@ export async function createServer(rawData: CreateServerInputs) {
 
 			return server
 		})
+
+		waitUntil(createDeployment(newServer.id))
 
 		return { server: newServer }
 	} catch (error) {

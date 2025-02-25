@@ -244,7 +244,7 @@ export async function createDeploymentForServer(
 
 				if (!buildResult.ok) {
 					await appendLog(
-						"Internal error while deploying. Please contact support.",
+						"Error while deploying. Please see logs above or contact support.",
 						"FAILURE",
 					)
 					return err({
