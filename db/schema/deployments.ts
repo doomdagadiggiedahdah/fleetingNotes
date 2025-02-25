@@ -62,3 +62,4 @@ export const selectDeploymentSchema = createSelectSchema(deployments)
 
 export type Deployment = typeof deployments.$inferSelect
 export type NewDeployment = typeof deployments.$inferInsert
+export type DeploymentStatus = (typeof deploymentStatus.enumValues)[number]

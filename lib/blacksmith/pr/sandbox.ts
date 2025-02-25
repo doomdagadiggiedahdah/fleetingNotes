@@ -31,6 +31,14 @@ export interface GitSandbox {
 	workingDir: string
 }
 
+export function getFlyAppId(serverId: string) {
+	return `smithery-${serverId}`
+}
+
+export function getDeployedUrl(flyAppId: string) {
+	return `https://${flyAppId}.fly.dev`
+}
+
 export async function setupGitSandbox(
 	gitUrl: string,
 	baseDirectory: string,
@@ -112,13 +120,33 @@ export async function getSmitheryConfig({ sandbox, workingDir }: GitSandbox) {
 	return ok(result.data)
 }
 
-export async function setupConfigFiles(
+export async function writeFile(
+	sbx: GitSandbox,
+	filePath: string,
+	content: string,
+) {
+	return await sbx.sandbox.commands.run(
+		`\
+cat > ${filePath} << 'EOL'\n${content}\nEOL
+`,
+		{ cwd: sbx.workingDir },
+	)
+}
+
+/**
+ * Injects Smithery-specified files and wraps the Dockerfile to prepare for a build
+ * @param sbx
+ * @param dockerfile
+ * @param smitheryConfig
+ * @returns
+ */
+export async function prepareBuild(
 	sbx: GitSandbox,
 	dockerfile?: string,
 	smitheryConfig?: ServerConfig,
 ) {
-	const { sandbox, workingDir } = sbx
-	// TODO: Use serverId
+	const { sandbox } = sbx
+	// This ID won't matter since it'll be overwritten anyway
 	const flyAppId = `test-${sandbox.sandboxId}`
 
 	const dockerfileResult = dockerfile
@@ -137,20 +165,9 @@ export async function setupConfigFiles(
 		smitheryConfigResult.value,
 	)
 
-	// TODO: Inject server ID into smithery config
-	await sandbox.commands.run(
-		`\
-cat > Dockerfile.smithery << 'EOL'\n${newDockerfile}\nEOL
-`,
-		{ cwd: workingDir },
-	)
+	await writeFile(sbx, "Dockerfile.smithery", newDockerfile)
 	// For testing we require at least one machine running
-	await sandbox.commands.run(
-		`\
-cat > fly.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL
-`,
-		{ cwd: workingDir },
-	)
+	await writeFile(sbx, "fly.toml", createFlyConfig(flyAppId))
 
 	return ok({
 		dockerfile: newDockerfile,
@@ -158,6 +175,7 @@ cat > fly.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL
 	})
 }
 
+// TODO: Refactor this to a general case of error wrapping utility
 export async function toCommandResult(result: Promise<CommandResult>) {
 	try {
 		return ok(await result)
@@ -169,23 +187,17 @@ export async function toCommandResult(result: Promise<CommandResult>) {
 	}
 }
 
-export async function testSandbox(
+export async function buildAndDeploySandbox(
 	{ sandbox, workingDir }: GitSandbox,
+	flyAppId: string,
 	smitheryConfig: ServerConfig,
+	options: { onUpdate?: (log: string) => void } = {},
 ) {
-	if (!(await sandbox.isRunning())) {
-		throw new Error("Sandbox is not running")
-	}
-
-	const flyAppId = `test-${sandbox.sandboxId}-${uniqid()}`
-
-	console.log(`[${flyAppId}] Building and deploying...`)
+	// Increase timeout
+	await sandbox.setTimeout(6 * 60_000)
 
 	// TODO: Not secure - subject to injection.
 	const dockerWorkingDir = smitheryConfig.build?.dockerBuildPath ?? "."
-
-	// Increase timeout
-	await sandbox.setTimeout(6 * 60_000)
 
 	// Fly outputs Docker build logs to stderr
 	await sandbox.commands.run(
@@ -200,6 +212,78 @@ set -e
 			},
 		},
 	)
+	options.onUpdate?.("Building Docker image...")
+	let buildStarted = false
+	let buildEnded = false
+
+	const buildResult = await toCommandResult(
+		sandbox.commands.run(
+			`/home/runner/.depot/bin/depot build -t registry.fly.io/${flyAppId}:latest --platform linux/amd64 --push -f Dockerfile.smithery --project dsk57gtb7p ${dockerWorkingDir}`,
+			{
+				cwd: workingDir,
+				envs: {
+					FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
+					DEPOT_TOKEN: process.env.DEPOT_TOKEN!,
+				},
+				timeoutMs: 3 * 60_000,
+				onStderr: (line) => {
+					// Start capturing after we see the start marker
+					if (line.includes("resolve registry.fly.io/sidecar")) {
+						buildStarted = true
+						return
+					}
+
+					// Stop capturing when we see the end marker
+					if (line.includes("COPY --from=gateway_image")) {
+						buildEnded = true
+						return
+					}
+
+					// Only output lines between start and end markers that don't contain filtered terms
+					if (
+						buildStarted &&
+						!buildEnded &&
+						!line.includes("depot") &&
+						!line.includes("fly.io")
+					) {
+						options.onUpdate?.(line.trim())
+					}
+				},
+			},
+		),
+	)
+	if (!buildResult.ok) return buildResult
+
+	const deployResult = await toCommandResult(
+		sandbox.commands.run(
+			`/home/runner/.fly/bin/fly deploy --image registry.fly.io/${flyAppId}:latest --remote-only --ha=false -a ${flyAppId}`,
+			{
+				cwd: workingDir,
+				envs: {
+					FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
+					DEPOT_TOKEN: process.env.DEPOT_TOKEN!,
+				},
+				timeoutMs: 60_000,
+			},
+		),
+	)
+
+	if (!deployResult.ok) return deployResult
+
+	return buildResult
+}
+
+export async function testSandbox(
+	{ sandbox, workingDir }: GitSandbox,
+	smitheryConfig: ServerConfig,
+) {
+	if (!(await sandbox.isRunning())) {
+		throw new Error("Sandbox is not running")
+	}
+
+	const flyAppId = `test-${sandbox.sandboxId}-${uniqid()}`
+
+	console.log(`[${flyAppId}] Building and deploying...`)
 
 	const cleanup = async () =>
 		await sandbox.commands.run(
@@ -211,33 +295,22 @@ set -e
 				},
 			},
 		)
-
-	const buildAndDeployResult = await toCommandResult(
-		sandbox.commands.run(
-			`\
-set -e
-/home/runner/.depot/bin/depot build -t registry.fly.io/${flyAppId}:latest --platform linux/amd64 --push -f Dockerfile.smithery --project dsk57gtb7p ${dockerWorkingDir}
-/home/runner/.fly/bin/fly deploy --image registry.fly.io/${flyAppId}:latest --remote-only --ha=false -a ${flyAppId}`,
-			{
-				cwd: workingDir,
-				envs: {
-					FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
-					DEPOT_TOKEN: process.env.DEPOT_TOKEN!,
-				},
-				timeoutMs: 3 * 60_000,
-			},
-		),
+	const buildResult = await buildAndDeploySandbox(
+		{ sandbox, workingDir },
+		flyAppId,
+		smitheryConfig,
 	)
+	const dockerWorkingDir = smitheryConfig.build?.dockerBuildPath ?? "."
 
 	// Ensure app is destroyed
-	console.log(`[${flyAppId}] deployResult.ok:`, buildAndDeployResult.ok)
+	console.log(`[${flyAppId}] deployResult.ok:`, buildResult.ok)
 
-	if (!buildAndDeployResult.ok) {
-		console.log(`[${flyAppId}] deployResult.error:`, buildAndDeployResult.error)
+	if (!buildResult.ok) {
+		console.log(`[${flyAppId}] deployResult.error:`, buildResult.error)
 		await cleanup()
 		return err({
 			commandExecuted: `docker build ${dockerWorkingDir}`,
-			buildDeployError: trimLines(buildAndDeployResult.error.stderr),
+			buildDeployError: trimLines(buildResult.error.stderr),
 		})
 	}
 
@@ -277,7 +350,7 @@ set -e
 		return logs
 	}
 
-	const deployedUrl = `https://${flyAppId}.fly.dev`
+	const deployedUrl = getDeployedUrl(flyAppId)
 
 	// Ping the server at least once
 	const pingResult = await toResult(
@@ -311,6 +384,7 @@ set -e
 	const toolFetchResult = await fetchServerTools(
 		deployedUrl,
 		smitheryConfig.startCommand.exampleConfig,
+		5000,
 	)
 	console.log(`[${flyAppId}] toolFetchResult.ok`, toolFetchResult.ok)
 

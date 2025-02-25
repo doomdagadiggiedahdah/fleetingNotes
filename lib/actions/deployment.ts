@@ -3,44 +3,31 @@
 import { db } from "@/db"
 import {
 	deployments,
+	type DeploymentStatus,
 	type Server,
 	type ServerRepo,
 	serverRepos,
 	servers,
 } from "@/db/schema"
 import { createClient, getMe } from "@/lib/supabase/server"
-import { CloudBuildClient } from "@google-cloud/cloudbuild"
 import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
-import { and, eq } from "drizzle-orm"
-import YAML from "yaml"
+import { and, eq, sql } from "drizzle-orm"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
+import { getInstallationToken } from "../auth/github/server"
+import { generateServerFiles } from "../blacksmith/pr/gen-server-files"
 import {
-	getInstallationOctokit,
-	getInstallationToken,
-} from "../auth/github/server"
+	buildAndDeploySandbox,
+	getDeployedUrl,
+	getFlyAppId,
+	prepareBuild,
+	setupGitSandbox,
+} from "../blacksmith/pr/sandbox"
 import { posthog } from "../posthog_server"
-import {
-	type ServerConfigGateway,
-	ServerConfigSchema,
-} from "../types/server-config"
-import {
-	getGithubFileResult,
-	joinGithubPath,
-	getDefaultBranch,
-} from "../utils/github"
-import { err, ok, type Result } from "../utils/result"
-import type { JsonObject } from "../types/json"
-import { createDockerfile, createFlyConfig } from "../deployment/config-files"
-
-// Create a Cloud Build client
-const cloudCredentials = JSON.parse(
-	process.env.GOOGLE_APPLICATION_CREDENTIALS as unknown as string,
-)
-const cloudBuildClient = new CloudBuildClient({
-	credentials: cloudCredentials,
-})
+import type { ServerConfigGateway } from "../types/server-config"
+import { getDefaultBranch } from "../utils/github"
+import { err, ok } from "../utils/result"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -85,16 +72,7 @@ async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
 	}
 }
 
-export interface DeploymentMissingFiles {
-	smitheryFile: boolean
-	dockerfile: boolean
-}
-
-export async function createDeployment(
-	serverId: string,
-): Promise<
-	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
-> {
+export async function createDeployment(serverId: string) {
 	const user = await getMe()
 
 	if (!user) {
@@ -119,8 +97,10 @@ export async function createDeployment(
 
 /**
  * Starts a deployment for a server
+ * Assumes authenticated
  * 1. Setup build files
  * 2. Trigger build & deployment
+ * 3. Async (generate a PR if we've never done so in the past for this repo)
  * @param server
  * @param serverRepo
  * @returns
@@ -128,19 +108,32 @@ export async function createDeployment(
 export async function createDeploymentForServer(
 	server: Omit<Server, "connections" | "tags">,
 	serverRepo: ServerRepo,
-): Promise<
-	Result<undefined, { message: string; missing?: DeploymentMissingFiles }>
-> {
+) {
 	// Get repo details
 	const { repoOwner, repoName } = serverRepo
 
 	const installTokenResult = await getInstallationToken(repoOwner, repoName)
 
 	if (!installTokenResult.ok) {
-		return err({ message: installTokenResult.error })
+		return err({
+			type: "installTokenError",
+		} as const)
 	}
 
 	const { installationId, installToken } = installTokenResult.value
+
+	const gitSandboxResult = await setupGitSandbox(
+		`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
+		serverRepo.baseDirectory,
+	)
+
+	if (!gitSandboxResult.ok) {
+		return err({
+			type: "gitPullError",
+		} as const)
+	}
+
+	const gitSandbox = gitSandboxResult.value
 
 	const installationOctokit = new Octokit({
 		authStrategy: createAppAuth,
@@ -151,126 +144,132 @@ export async function createDeploymentForServer(
 		},
 	})
 
-	const [files, commitInfo] = await Promise.all([
-		getDeployFiles(serverRepo),
-		getCommitInfo(installationOctokit, repoOwner, repoName),
-	])
-
-	if (!files.ok)
-		return err({
-			message: files.error.missingFiles?.smitheryFile
-				? "Failed to find smithery.yaml from repository"
-				: "Failed to find Dockerfile from repository",
-			missing: files.error.missingFiles,
-		})
-
-	const result = ServerConfigSchema.safeParse(
-		YAML.parse(files.value.smitheryFile),
-	)
-	if (!result.success) {
-		return err({
-			message: `Failed to parse smithery.yaml: ${result.error.message}`,
-		})
-	}
-	const smitheryConfig: ServerConfigGateway = {
-		...result.data,
-		serverId: server.id,
-	}
-
-	const dockerfileContents = createDockerfile(
-		files.value.dockerfile,
-		smitheryConfig,
+	const commitInfo = await getCommitInfo(
+		installationOctokit,
+		repoOwner,
+		repoName,
 	)
 
-	const workingDir =
-		joinGithubPath(
-			serverRepo.baseDirectory,
-			smitheryConfig.build?.dockerBuildPath ?? "",
-		) || "."
-	const flyAppId = `smithery-${server.id}`
-
-	try {
-		// Trigger Cloud Build using our builder configuration
-		const [operation] = await cloudBuildClient.createBuild({
-			projectId: cloudCredentials.project_id,
-			build: {
-				steps: [
-					// Clone the repo
-					{
-						name: "gcr.io/cloud-builders/git",
-						args: [
-							"clone",
-							`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
-							".",
-						],
-					},
-					// Write fly.toml
-					{
-						id: "fly.smithery.toml",
-						dir: workingDir,
-						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
-						script: `cat > fly.smithery.toml << 'EOL'\n${createFlyConfig(flyAppId)}\nEOL`,
-					},
-					// Write Dockerfile
-					{
-						id: "Dockerfile.smithery",
-						dir: workingDir,
-						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
-						script: `cat > Dockerfile.smithery << 'EOL'\n${dockerfileContents}\nEOL`,
-					},
-					// Install flyctl, create or deploy the app.
-					{
-						// Changing this requires change pubsub route.ts
-						id: "deploy",
-						name: "us-central1-docker.pkg.dev/smithery-ai/smithery/fly:latest",
-						secretEnv: ["FLY_API_TOKEN"],
-						dir: workingDir,
-						script: `set -ex d
-fly apps create "${flyAppId}" --json --org smithery || true
-fly deploy --yes --remote-only --ha=false --dockerfile Dockerfile.smithery -c fly.smithery.toml
-`,
-					},
-				],
-				logsBucket: `gs://smithery-build-logs/${server.id}`,
-				options: {
-					automapSubstitutions: true,
-				},
-				availableSecrets: {
-					secretManager: [
-						{
-							versionName:
-								"projects/$PROJECT_ID/secrets/FLY_API_TOKEN/versions/latest",
-							env: "FLY_API_TOKEN",
-						},
-					],
-				},
-				substitutions: {},
-			},
-		})
-
-		// Create build record
-		const buildMeta = operation.metadata as JsonObject | null
-		const buildId = (buildMeta?.build as JsonObject | null)?.id as string
-		if (!buildId) {
-			return err({ message: "Failed to generate build ID." })
-		}
-
-		await db.insert(deployments).values({
-			id: buildId,
+	const [deploymentRow] = await db
+		.insert(deployments)
+		.values({
 			serverId: server.id,
-			status: "QUEUED",
+			status: "WORKING",
 			deploymentUrl: null,
 			commit: commitInfo.data.sha,
 			commitMessage: commitInfo.data.commit.message,
 			branch: commitInfo.branch,
 			repo: serverRepo.id,
 		})
+		.returning({ id: deployments.id })
 
-		return ok()
-	} catch (error) {
-		console.error("Deployment error:", error)
-		return err({ message: "Failed to trigger deployment." })
+	console.log("Deployment ID:", deploymentRow.id)
+
+	let lastAppend: Promise<unknown> = Promise.resolve()
+	const appendLog = (log: string, status: DeploymentStatus = "WORKING") => {
+		lastAppend = lastAppend.then(() =>
+			db
+				.update(deployments)
+				.set({
+					status,
+					logs: sql`COALESCE(${deployments.logs}, '') || ${sql.placeholder("log")}::text`,
+					updatedAt: sql`NOW()`,
+				})
+				.where(eq(deployments.id, deploymentRow.id))
+				.prepare("append_log")
+				.execute({ log: `${log}\n` }),
+		)
 	}
+
+	// Run in background
+	waitUntil(
+		(async () => {
+			try {
+				// TODO: Inject cached files if they exist
+
+				// TODO: Reduce build time via direct build (optimization?)
+				appendLog("Setting up build files...")
+				const buildFilesResult = await generateServerFiles(gitSandbox, {
+					onUpdate: appendLog,
+				})()
+
+				if (!buildFilesResult.ok) {
+					await appendLog(
+						"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
+						"FAILURE",
+					)
+					return err({
+						type: "setupBuildFileError",
+						// TOOD: We need better error message, espsecially for parsing smithery yaml
+					} as const)
+				}
+
+				const buildFiles = buildFilesResult.value
+
+				appendLog(
+					"Successfully obtained required build config files. Preparing build...",
+				)
+				const smitheryConfig: ServerConfigGateway = {
+					...buildFiles.smitheryConfig.content,
+					serverId: server.id,
+				}
+
+				const prepareResult = await prepareBuild(
+					gitSandbox,
+					buildFiles.dockerfile.content,
+					smitheryConfig,
+				)
+
+				if (!prepareResult.ok) {
+					await appendLog(
+						"Could not prepare the build. Please contact support.",
+						"FAILURE",
+					)
+					return err({
+						type: "prepareBuildError",
+					} as const)
+				}
+
+				appendLog("Starting deployment...")
+				const flyAppId = getFlyAppId(server.id)
+				const buildResult = await buildAndDeploySandbox(
+					gitSandbox,
+					flyAppId,
+					smitheryConfig,
+					{ onUpdate: appendLog },
+				)
+
+				if (!buildResult.ok) {
+					await appendLog(
+						"Internal error while deploying. Please contact support.",
+						"FAILURE",
+					)
+					return err({
+						type: "deployError",
+					} as const)
+				}
+
+				appendLog("Deployment successful!")
+				await db
+					.update(deployments)
+					.set({
+						status: "SUCCESS",
+						updatedAt: sql`NOW()`,
+						deploymentUrl: getDeployedUrl(flyAppId),
+					})
+					.where(eq(deployments.id, deploymentRow.id))
+				return ok()
+			} catch (e) {
+				console.error("Unexpected error", e)
+				await appendLog("Unexpected error.", "FAILURE")
+				return err({ type: "unexpected" })
+			} finally {
+				await gitSandbox.sandbox.kill()
+			}
+		})(),
+	)
+
+	return ok()
 }
 
 /**
@@ -294,68 +293,16 @@ export async function checkDeployment(serverId: string) {
 	const { serverRepo } = row
 	const { repoOwner, repoName } = serverRepo
 
-	const [fileResult, permissionResult] = await Promise.all([
-		getDeployFiles(serverRepo),
+	const [permissionResult] = await Promise.all([
 		checkGithubPermissions(repoOwner, repoName),
 	])
 
-	if (!permissionResult.ok || !fileResult.ok)
+	if (!permissionResult.ok)
 		return err({
 			missingPermissions: !permissionResult.ok ? permissionResult.error : null,
-			...(!fileResult.ok && fileResult.error),
 		})
 
 	return ok()
-}
-
-/**
- * Gets the required files for deployment
- * @param serverRepo
- * @returns Files for deployment
- */
-async function getDeployFiles(
-	serverRepo: ServerRepo,
-): Promise<
-	Result<
-		{ smitheryFile: string; dockerfile: string },
-		{ missingInstallation: boolean; missingFiles?: DeploymentMissingFiles }
-	>
-> {
-	const { repoOwner, repoName } = serverRepo
-
-	const octokitResult = await getInstallationOctokit(repoOwner, repoName)
-
-	if (!octokitResult.ok) return err({ missingInstallation: true })
-	const octokit = octokitResult.value
-
-	const [smitheryFile, dockerfile] = await Promise.all([
-		getGithubFileResult(
-			octokit,
-			repoOwner,
-			repoName,
-			joinGithubPath(serverRepo.baseDirectory, "smithery.yaml"),
-		),
-		getGithubFileResult(
-			octokit,
-			repoOwner,
-			repoName,
-			joinGithubPath(serverRepo.baseDirectory, "Dockerfile"),
-		),
-	])
-
-	if (smitheryFile.ok && dockerfile.ok)
-		return ok({
-			smitheryFile: smitheryFile.value,
-			dockerfile: dockerfile.value,
-		})
-
-	return err({
-		missingInstallation: false,
-		missingFiles: {
-			smitheryFile: !smitheryFile.ok,
-			dockerfile: !dockerfile.ok,
-		},
-	})
 }
 
 async function getServerRepo(serverId: string, userId: string) {

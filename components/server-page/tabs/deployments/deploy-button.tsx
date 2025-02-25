@@ -5,7 +5,7 @@ import { createDeployment } from "@/lib/actions/deployment"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
 import type { Deployment } from "./deployments-table"
-import { MissingFilesDialog } from "./missing-files-dialog"
+import { ErrorDialog } from "./error-dialog"
 
 interface Props {
 	serverId: string
@@ -46,20 +46,16 @@ export function DeployButton({
 						})
 
 						const result = await createDeployment(serverId)
-						if (!result.ok && result.error.missing) {
-							setOpenModal(true)
-							return
-						}
+
 						if (result.ok) {
 							toast({
 								title: "Deployment started",
-								description: "This might take a minute...",
 							})
 						} else {
 							toast({
 								title: "Error starting deployment",
-								description: result.error.message,
 							})
+							setOpenModal(true)
 						}
 					} catch (error) {
 						toast({
@@ -79,7 +75,7 @@ export function DeployButton({
 				)}
 				Deploy
 			</Button>
-			<MissingFilesDialog
+			<ErrorDialog
 				open={openModal}
 				onOpenChange={(open) => setOpenModal(open)}
 				serverId={serverId}

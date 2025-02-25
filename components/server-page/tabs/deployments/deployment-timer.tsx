@@ -11,15 +11,37 @@ function formatBuildTime(startDate: Date, currentTime: Date) {
 	return `${remainingSeconds}s`
 }
 
+function formatBuildDuration(startDate: Date, endDate: Date) {
+	const seconds = differenceInSeconds(endDate, startDate)
+	const minutes = Math.floor(seconds / 60)
+	const remainingSeconds = seconds % 60
+
+	if (minutes > 0) {
+		return `${formatDistanceToNowStrict(startDate, { addSuffix: true })} (took ${minutes}m ${remainingSeconds}s)`
+	}
+	return `${formatDistanceToNowStrict(startDate, { addSuffix: true })} (took ${seconds}s)`
+}
+
 interface DeploymentTimerProps {
 	createdAt: string
+	updatedAt?: string
 	status: string
 }
 
-export function DeploymentTimer({ createdAt, status }: DeploymentTimerProps) {
+export function DeploymentTimer({
+	createdAt,
+	updatedAt,
+	status,
+}: DeploymentTimerProps) {
 	const [timeNow, setTimeNow] = useState(new Date())
-	const date = new Date(`${createdAt}Z`)
+	const startDate = new Date(`${createdAt}Z`)
+	const endDate = updatedAt ? new Date(`${updatedAt}Z`) : null
 	const isLive = status === "WORKING" || status === "QUEUED"
+	const isCompleted =
+		status === "SUCCESS" ||
+		status === "FAILURE" ||
+		status === "INTERNAL_ERROR" ||
+		status === "CANCELLED"
 
 	useEffect(() => {
 		if (!isLive) return
@@ -32,8 +54,12 @@ export function DeploymentTimer({ createdAt, status }: DeploymentTimerProps) {
 	}, [isLive])
 
 	if (isLive) {
-		return formatBuildTime(date, timeNow)
+		return formatBuildTime(startDate, timeNow)
 	}
 
-	return formatDistanceToNowStrict(date, { addSuffix: true })
+	if (isCompleted && endDate) {
+		return formatBuildDuration(startDate, endDate)
+	}
+
+	return formatDistanceToNowStrict(startDate, { addSuffix: true })
 }

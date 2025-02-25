@@ -19,13 +19,14 @@ import {
 } from "./extract-server-config"
 import {
 	REPO_WORKING_DIR,
-	setupConfigFiles,
+	prepareBuild,
 	testSandbox,
 	toCommandResult,
 	type GitSandbox,
 } from "./sandbox"
 const MAX_TURNS = 9
-const MAX_OUTPUT_ATTEMPTS = 3
+const MAX_BUILD_ATTEMPTS = 2
+const MAX_DEPLOY_ATTEMPTS = 2
 const FINAL_FUNC_NAME = "write_files"
 const FAILURE_FUNC_NAME = "mark_failure"
 const COMMAND_FUNC_NAME = "bash"
@@ -61,7 +62,7 @@ ${
 - Check build scripts and dependencies (e.g., prepare, dev dependencies) to avoid install or compile errors.
 - Skip prepare scripts if needed using npm install --ignore-scripts, then explicitly run your build command.
 - Verify Docker context and paths (especially in monorepos) so COPY matches the actual project structure.
-- There's a 3 minute limit to the build. You will only be given ${MAX_OUTPUT_ATTEMPTS} attempts to produce the Dockerfile, so research carefully first.
+- There's a 3 minute limit to the build. You have ${MAX_BUILD_ATTEMPTS} attempts to successfully build the server and ${MAX_DEPLOY_ATTEMPTS} attempts to successfully deploy it, so research carefully first.
 - We will build your Dockerfile in the current working directory (MCP base path) using a command like \`docker build -t <image-name> $dockerBuildPath\`.`
 		: ""
 }
@@ -94,11 +95,19 @@ interface FailureReason {
 	issue_body: string
 }
 
+interface Options {
+	// Update logs to inform the user
+	onUpdate?(log: string): void
+}
+
 /**
  * Generates a Dockerfile and Smithery Config file.
  * If these files already exist, we will not generate new ones and simply return them.
  */
-export const generateServerFiles = (sandbox: GitSandbox) =>
+export const generateServerFiles = (
+	sandbox: GitSandbox,
+	options: Options = {},
+) =>
 	wrapTraced(async function generateServerFiles(): Promise<
 		Result<OutputFiles>
 	> {
@@ -106,7 +115,8 @@ export const generateServerFiles = (sandbox: GitSandbox) =>
 		const llm = wrapOpenAI(new OpenAI())
 
 		let outputFiles: Files | null = null
-		let outputAttempted = 0
+		let buildsAttempted = 0
+		let deploysAttempted = 0
 		let markedFailure: FailureReason | null = null
 		let toolFatalErrored = false
 
@@ -145,6 +155,7 @@ export const generateServerFiles = (sandbox: GitSandbox) =>
 				)
 				.find((r) => r !== null) ?? null
 
+		// TOOD: Throw if Smithery yaml is broken?
 		const existingSmitheryConfig =
 			autoCommandResults
 				.map((r) => {
@@ -157,6 +168,17 @@ export const generateServerFiles = (sandbox: GitSandbox) =>
 					return null
 				})
 				.find((r) => r !== null) ?? null
+
+		options.onUpdate?.(
+			existingDockerfile
+				? "Found Dockerfile in repository."
+				: "Could not find Dockerfile in repository. Generating... (this could take 5 minutes)",
+		)
+		options.onUpdate?.(
+			existingSmitheryConfig
+				? "Found smithery.yaml in repository."
+				: "Could not find smithery.yaml in repository. Generating... (this could take 5 minutes)",
+		)
 
 		if (existingDockerfile && existingSmitheryConfig) {
 			// No changes needed
@@ -213,15 +235,23 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 			existingDockerfile,
 			existingSmitheryConfig,
 			(output) => {
+				options.onUpdate?.(`Successfully generated build config files.`)
 				outputFiles = output
 			},
-			() => {
-				outputAttempted += 1
+			(isDeploy) => {
+				if (isDeploy) {
+					deploysAttempted += 1
+				} else {
+					buildsAttempted += 1
+				}
 			},
 			() => {
 				toolFatalErrored = true
 			},
 			(reason) => {
+				options.onUpdate?.(
+					`Failed to generate missing build config files. Reason:\n${reason.type}`,
+				)
 				markedFailure = reason
 			},
 		)
@@ -230,17 +260,21 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 		for (let turn = 0; turn < MAX_TURNS; turn++) {
 			let tools = await adapter.listTools()
 
-			if (outputAttempted === MAX_OUTPUT_ATTEMPTS || turn === MAX_TURNS - 1) {
-				// Require give up
+			if (
+				buildsAttempted === MAX_BUILD_ATTEMPTS ||
+				deploysAttempted === MAX_DEPLOY_ATTEMPTS ||
+				turn === MAX_TURNS - 1
+			) {
+				// Force give up
 				tools = tools.filter((t) => t.function.name.includes(FAILURE_FUNC_NAME))
 			}
 
 			const response = await llm.chat.completions.create({
 				messages: messages,
 				reasoning_effort:
-					outputAttempted >= 2
+					buildsAttempted >= 2
 						? "high"
-						: outputAttempted >= 1
+						: buildsAttempted >= 1
 							? "medium"
 							: "low",
 				model: "o3-mini",
@@ -258,7 +292,7 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 			})
 
 			if (toolFatalErrored) {
-				return err("Tool caused fatal error.")
+				return err({ type: "toolFatalErrored" } as const)
 			}
 
 			messages.push(...toolMessages)
@@ -278,8 +312,10 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 					},
 				})
 			}
-			if (outputAttempted > MAX_OUTPUT_ATTEMPTS)
-				return err({ maxOutputExceeded: true })
+			if (buildsAttempted > MAX_BUILD_ATTEMPTS)
+				return err({ type: "maxBuildsExceeded" } as const)
+			if (deploysAttempted > MAX_DEPLOY_ATTEMPTS)
+				return err({ type: "maxDeploysExceeded" } as const)
 
 			if (markedFailure) return err(markedFailure)
 
@@ -291,7 +327,7 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 				})
 			}
 		}
-		return err({ maxTurnsExceeded: true })
+		return err({ type: "maxTurnsExceeded" } as const)
 	})
 
 interface ExtractOutput {
@@ -303,7 +339,7 @@ async function createMCPClient(
 	existingDockerfile: string | null,
 	existingSmitheryConfig: ServerConfig | null,
 	setOutput: (output: Files) => void,
-	onOutputAttempted: () => void,
+	onOutputAttempted: (isDeploy: boolean) => void,
 	markFatalError: (error: unknown) => void,
 	markFailure: (reason: FailureReason) => void,
 ) {
@@ -323,8 +359,6 @@ async function createMCPClient(
 				? { smitheryConfig: ExtractServerConfigSchema }
 				: { dockerfile: z.string() },
 		async (output: ExtractOutput) => {
-			onOutputAttempted()
-
 			const finalOutput = postProcessOutput(
 				output,
 				existingDockerfile,
@@ -366,8 +400,7 @@ async function createMCPClient(
 				markFatalError(new Error("Sandbox is not running"))
 				throw new Error("Sandbox is not running")
 			}
-
-			const setupResult = await setupConfigFiles(
+			const setupResult = await prepareBuild(
 				sbx,
 				finalOutput.dockerfile,
 				finalOutput.smitheryConfig,
@@ -388,6 +421,11 @@ async function createMCPClient(
 			console.log("done testing Docker in sandbox...")
 
 			if (!testResult.ok) {
+				if ("buildDeployError" in testResult.error) {
+					onOutputAttempted(false)
+				} else {
+					onOutputAttempted(true)
+				}
 				console.error("test failed")
 				const errString = JSON.stringify(testResult.error)
 				return {
@@ -451,7 +489,7 @@ async function createMCPClient(
 			issue_body: z
 				.string()
 				.describe(
-					"The feedback to give the author of this repository for the reason of the failure. This feedback will be used to create a Github issue.",
+					"A concise feedback to give the author of this repository for the reason of the failure. This will be used to create a Github issue. Mention only things relevant or specific to the authors' code and what they can do without referring to things outside of their control.",
 				),
 		},
 		async (output) => {

@@ -12,6 +12,7 @@ import { err, ok } from "./result"
 export async function fetchServerTools(
 	deploymentUrl: string,
 	config?: Record<string, unknown>,
+	timeoutMs = 10000,
 ) {
 	// Fetch schema using the new utility
 	const configSchemaResult = await fetchConfigSchema(deploymentUrl)
@@ -39,7 +40,7 @@ export async function fetchServerTools(
 	)
 
 	try {
-		await withTimeout(client.connect(transport), 10000)
+		await withTimeout(client.connect(transport), timeoutMs)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
 		await client.close()
@@ -49,7 +50,7 @@ export async function fetchServerTools(
 	}
 
 	try {
-		const toolResult = await withTimeout(client.listTools(), 10000)
+		const toolResult = await withTimeout(client.listTools(), timeoutMs)
 
 		return ok({
 			tools: toolResult.tools,

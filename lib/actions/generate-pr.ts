@@ -1,19 +1,7 @@
 "use server"
-import { createServerRepoPullRequest } from "../blacksmith/pr"
+import { checkPullRequests } from "../blacksmith/pr/check-prs"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
-import { getMyServer } from "./servers"
-import { checkPullRequests } from "../blacksmith/pr/check-prs"
-
-export async function createConfigPullRequest(serverId: string) {
-	const serverResult = await getMyServer(serverId)
-
-	if (!serverResult.ok) {
-		return serverResult
-	}
-
-	return await createServerRepoPullRequest(serverResult.value)
-}
 
 /**
  * Checks the status of the config PR and if it already exists.
