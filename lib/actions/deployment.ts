@@ -117,6 +117,14 @@ export async function createDeployment(
 	return await createDeploymentForServer(row.server, row.serverRepo)
 }
 
+/**
+ * Starts a deployment for a server
+ * 1. Setup build files
+ * 2. Trigger build & deployment
+ * @param server
+ * @param serverRepo
+ * @returns
+ */
 export async function createDeploymentForServer(
 	server: Omit<Server, "connections" | "tags">,
 	serverRepo: ServerRepo,

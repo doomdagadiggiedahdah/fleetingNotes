@@ -2,7 +2,7 @@ import { ok, toResult } from "@/lib/utils/result"
 import { wrapTraced } from "braintrust"
 import { generateServerFiles } from "./gen-server-files"
 import { patchReadme } from "./patch-readme"
-import { type GitSandbox, REPO_WORKING_DIR, setupSandbox } from "./sandbox"
+import { type GitSandbox, REPO_WORKING_DIR, setupGitSandbox } from "./sandbox"
 import YAML from "yaml"
 interface GeneratePullRequestProps {
 	server: { qualifiedName: string; displayName: string }
@@ -27,7 +27,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 		repoName,
 		basePath,
 	}: GeneratePullRequestProps) {
-		const sandboxResult = await setupSandbox(
+		const sandboxResult = await setupGitSandbox(
 			`https://x-access-token:${accessToken}@github.com/${repoOwner}/${repoName}`,
 			basePath,
 		)

@@ -6,7 +6,7 @@ import "@/lib/utils/braintrust"
 import Sandbox from "@e2b/code-interpreter"
 import { shuffle } from "lodash"
 import { generateServerFiles } from "./gen-server-files"
-import { setupSandbox } from "./sandbox"
+import { setupGitSandbox } from "./sandbox"
 
 interface PRInput {
 	repoOwner: string
@@ -83,7 +83,7 @@ Eval<PRInput, PROutput, null>("Smithery", {
 		const token = process.env.GITHUB_BOT_UAT
 
 		// TODO: Repo must be commit checkpointed for reproducibility.
-		const sandboxResult = await setupSandbox(
+		const sandboxResult = await setupGitSandbox(
 			`https://x-access-token:${token}@github.com/${repoOwner}/${repoName}`,
 			baseDirectory,
 		)

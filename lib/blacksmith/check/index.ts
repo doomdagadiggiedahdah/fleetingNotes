@@ -7,7 +7,7 @@ import { zodResponseFormat } from "openai/helpers/zod"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import mcpPrompt from "../mcp-prompt-mini.txt"
-import { REPO_WORKING_DIR, setupSandbox } from "../pr/sandbox"
+import { REPO_WORKING_DIR, setupGitSandbox } from "../pr/sandbox"
 
 interface Args {
 	repoOwner: string
@@ -25,7 +25,7 @@ export const isMCPServer = (githubToken: string) =>
 		repoName,
 		baseDirectory,
 	}: Args) {
-		const gitSandboxResult = await setupSandbox(
+		const gitSandboxResult = await setupGitSandbox(
 			`https://x-access-token:${githubToken}@github.com/${repoOwner}/${repoName}`,
 			baseDirectory,
 		)

@@ -31,7 +31,7 @@ export interface GitSandbox {
 	workingDir: string
 }
 
-export async function setupSandbox(
+export async function setupGitSandbox(
 	gitUrl: string,
 	baseDirectory: string,
 ): Promise<Result<GitSandbox, Error>> {
