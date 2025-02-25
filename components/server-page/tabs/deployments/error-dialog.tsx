@@ -41,13 +41,16 @@ export function ErrorDialog({
 				])
 
 				if (!checkResult.ok) {
-					if ("message" in checkResult.error) {
+					if (checkResult.error.type === "unauthorized") {
+						setErrorMessage("Permission denied.")
+						onOpenChange(true)
+					} else if (checkResult.error.type === "notFound") {
+						setErrorMessage("Server not found.")
+						onOpenChange(true)
+					} else if (checkResult.error.type === "missingPermissions") {
 						setErrorMessage(checkResult.error.message)
 						onOpenChange(true)
-					} else if (checkResult.error.missingPermissions) {
-						setErrorMessage(checkResult.error.missingPermissions)
-						onOpenChange(true)
-					} else if (checkResult.error.missingInstallation) {
+					} else if (checkResult.error.type === "missingInstallation") {
 						setErrorMessage("Smithery Github App not installed.")
 						onOpenChange(true)
 					}

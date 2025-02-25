@@ -15,7 +15,10 @@ import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
-import { getInstallationToken } from "../auth/github/server"
+import {
+	getInstallationOctokit,
+	getInstallationToken,
+} from "../auth/github/server"
 import { generateServerFiles } from "../blacksmith/pr/gen-server-files"
 import {
 	buildAndDeploySandbox,
@@ -281,17 +284,21 @@ export async function checkDeployment(serverId: string) {
 	const user = await getMe()
 
 	if (!user) {
-		return err({ message: "Unauthorized" })
+		return err({ type: "unauthorized" } as const)
 	}
 
 	const row = await getServerRepo(serverId, user.id)
 
 	if (!row) {
-		return err({ message: "Server not found" })
+		return err({ type: "notFound" } as const)
 	}
 	// Get repo details
 	const { serverRepo } = row
 	const { repoOwner, repoName } = serverRepo
+
+	const octokitResult = await getInstallationOctokit(repoOwner, repoName)
+
+	if (!octokitResult.ok) return err({ type: "missingInstallation" } as const)
 
 	const [permissionResult] = await Promise.all([
 		checkGithubPermissions(repoOwner, repoName),
@@ -299,8 +306,9 @@ export async function checkDeployment(serverId: string) {
 
 	if (!permissionResult.ok)
 		return err({
-			missingPermissions: !permissionResult.ok ? permissionResult.error : null,
-		})
+			type: "missingPermissions",
+			message: !permissionResult.ok ? permissionResult.error : null,
+		} as const)
 
 	return ok()
 }
