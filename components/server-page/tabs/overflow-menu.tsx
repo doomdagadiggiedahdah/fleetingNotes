@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
 	Popover,
@@ -32,9 +32,19 @@ export function OverflowMenu({
 			<PopoverTrigger asChild>
 				<Button
 					variant="ghost"
-					className="h-9 px-3 hover:text-primary flex items-center gap-2"
+					className="h-9 px-3 hover:text-primary flex items-center gap-1"
 				>
-					<Plus className="h-4 w-4" />
+					<div className="flex -space-x-2 mr-1">
+						{tabs.slice(0, 3).map((tab, i) => (
+							<div 
+								key={tab.value} 
+								className="w-5 h-5 rounded-full bg-muted flex items-center justify-center ring-1 ring-background text-xs"
+							>
+								{tab.icon}
+							</div>
+						))}
+					</div>
+					<ChevronDown className="w-4 h-4" />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-[200px] p-0">
