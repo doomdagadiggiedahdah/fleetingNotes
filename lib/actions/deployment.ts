@@ -21,9 +21,9 @@ import {
 	getInstallationOctokit,
 	getInstallationToken,
 } from "../auth/github/server"
-import { serializeSmitheryYaml } from "../blacksmith/pr/gen-pr"
-import { generateServerFiles } from "../blacksmith/pr/gen-server-files"
-import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr/pr"
+import { serializeSmitheryYaml } from "../blacksmith/build/gen-pr"
+import { generateBuildFiles } from "../blacksmith/build/gen-build-files"
+import { createServerRepoPullRequestFromBuild } from "../blacksmith/build/pr"
 import {
 	buildAndDeploySandbox,
 	getDeployedUrl,
@@ -33,7 +33,7 @@ import {
 	type GitSandbox,
 	prepareBuild,
 	setupGitSandbox,
-} from "../blacksmith/pr/sandbox"
+} from "../blacksmith/build/sandbox"
 import { posthog } from "../posthog_server"
 import type { ServerConfigGateway } from "../types/server-config"
 import { getDefaultBranch } from "../utils/github"
@@ -220,7 +220,7 @@ export async function createDeploymentForServer(
 							!buildFiles?.dockerfile.content
 						) {
 							// Missing required files. Try to generate it.
-							const buildFilesResult = await generateServerFiles(gitSandbox, {
+							const buildFilesResult = await generateBuildFiles(gitSandbox, {
 								onUpdate: appendLog,
 							})()
 

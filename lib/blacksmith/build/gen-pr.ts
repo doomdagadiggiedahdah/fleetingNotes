@@ -2,7 +2,7 @@ import type { ServerConfig } from "@/lib/types/server-config"
 import { ok } from "@/lib/utils/result"
 import { wrapTraced } from "braintrust"
 import YAML from "yaml"
-import { generateServerFiles } from "./gen-server-files"
+import { generateBuildFiles } from "./gen-build-files"
 import { getCurrentReadme, patchReadme } from "./patch-readme"
 import { setupGitSandbox } from "./sandbox"
 
@@ -69,7 +69,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 		const sandbox = sandboxResult.value
 
 		try {
-			const filesResult = await generateServerFiles(sandbox)()
+			const filesResult = await generateBuildFiles(sandbox)()
 
 			if (!filesResult.ok) {
 				// Unable to build this repo. Skip.

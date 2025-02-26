@@ -104,7 +104,7 @@ interface Options {
  * Generates a Dockerfile and Smithery Config file.
  * If these files already exist, we will not generate new ones and simply return them.
  */
-export const generateServerFiles = (
+export const generateBuildFiles = (
 	sandbox: GitSandbox,
 	options: Options = {},
 ) =>

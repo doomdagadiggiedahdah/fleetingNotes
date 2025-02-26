@@ -5,7 +5,7 @@ import { Eval, type EvalScorer, initDataset } from "braintrust"
 import "@/lib/utils/braintrust"
 import Sandbox from "@e2b/code-interpreter"
 import { shuffle } from "lodash"
-import { generateServerFiles } from "./gen-server-files"
+import { generateBuildFiles } from "./gen-build-files"
 import { setupGitSandbox } from "./sandbox"
 
 interface PRInput {
@@ -102,7 +102,7 @@ Eval<PRInput, PROutput, null>("Smithery", {
 			cwd: sandbox.workingDir,
 		})
 
-		const filesResult = await generateServerFiles(sandbox)()
+		const filesResult = await generateBuildFiles(sandbox)()
 
 		if (!filesResult.ok) {
 			console.error("No files generated")

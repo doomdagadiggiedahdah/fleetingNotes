@@ -7,7 +7,7 @@ import { zodResponseFormat } from "openai/helpers/zod"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 import { z } from "zod"
 import mcpPrompt from "../mcp-prompt-mini.txt"
-import { REPO_WORKING_DIR, setupGitSandbox } from "../pr/sandbox"
+import { REPO_WORKING_DIR, setupGitSandbox } from "../build/sandbox"
 
 interface Args {
 	repoOwner: string

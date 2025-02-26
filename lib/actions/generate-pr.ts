@@ -1,5 +1,5 @@
 "use server"
-import { checkPullRequests } from "../blacksmith/pr/check-prs"
+import { checkPullRequests } from "../blacksmith/build/check-prs"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
 
