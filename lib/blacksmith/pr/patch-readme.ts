@@ -3,6 +3,9 @@ import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
 import mcpPrompt from "../mcp-prompt-mini.txt"
+import { type GitSandbox, REPO_WORKING_DIR } from "./sandbox"
+import { toResult } from "@/lib/utils/result"
+import type { Server } from "@/db/schema"
 
 export function constructPatchMessages(
 	qualifiedName: string,
@@ -127,3 +130,66 @@ export const patchReadme = wrapTraced(async function patchReadme(
 	)
 	return fixedReadme
 })
+
+/**
+ * Gets the current README from the sandbox, trying several possible paths
+ * @param sandbox
+ * @param basePath
+ * @returns The README in the sandbox if it exists. Otherwise, returns null.
+ */
+export async function getCurrentReadme(sandbox: GitSandbox, basePath: string) {
+	// Paths are relative to repository root
+	// Fallbacks
+	const commands = [
+		...(basePath !== "."
+			? [
+					{ filePath: `${basePath}/README.md`, isRoot: false },
+					{ filePath: `${basePath}/readme.md`, isRoot: false },
+					{ filePath: `${basePath}/readme`, isRoot: false },
+				]
+			: []),
+		{ filePath: `README.md`, isRoot: true },
+		{ filePath: `readme.md`, isRoot: true },
+		{ filePath: `readme`, isRoot: true },
+	]
+
+	for (const command of commands) {
+		const result = await toResult(
+			sandbox.sandbox.commands.run(
+				`cat ${REPO_WORKING_DIR}/${command.filePath}`,
+			),
+		)
+		if (result.ok)
+			return {
+				content: result.value.stdout,
+				isRoot: command.isRoot,
+				path: command.filePath,
+			}
+	}
+
+	return null
+}
+
+export async function patchReadmeFromSandbox(
+	sandbox: GitSandbox,
+	server: Pick<Server, "qualifiedName" | "displayName">,
+	basePath: string,
+) {
+	// TODO: What if the repo has no README?
+	// Update README
+	const currentReadme = await getCurrentReadme(sandbox, basePath)
+
+	const isRoot = currentReadme?.isRoot ?? false
+	let newReadme = currentReadme
+		? await patchReadme(
+				server.qualifiedName,
+				server.displayName,
+				currentReadme.content,
+			)
+		: null
+	if (!newReadme || newReadme === currentReadme?.content) {
+		newReadme = null
+	}
+
+	return { newReadme, isRoot }
+}

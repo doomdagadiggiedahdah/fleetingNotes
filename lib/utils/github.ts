@@ -45,26 +45,6 @@ export function joinGithubPath(base: string, ...paths: string[]): string {
 }
 
 /**
- * Gets a README file from a GitHub repository.
- * @param octokit - The Octokit instance to use for the request.
- * @param owner - The owner of the repository.
- * @param repo - The name of the repository.
- * @returns The content of the README file.
- */
-// @deprecated
-export async function getREADME(
-	octokit: Octokit,
-	owner: string,
-	repo: string,
-): Promise<string | null> {
-	const { data } = await octokit.request("GET /repos/{owner}/{repo}/readme", {
-		owner,
-		repo,
-	})
-	return Buffer.from(data.content, "base64").toString("utf-8")
-}
-
-/**
  * Attempts to get the README file from the base directory, falling back to the repository root README if not found.
  */
 export async function getREADMEResult(

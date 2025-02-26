@@ -1,19 +1,51 @@
-import { ok, toResult } from "@/lib/utils/result"
+import type { ServerConfig } from "@/lib/types/server-config"
+import { ok } from "@/lib/utils/result"
 import { wrapTraced } from "braintrust"
-import { generateServerFiles } from "./gen-server-files"
-import { patchReadme } from "./patch-readme"
-import { type GitSandbox, REPO_WORKING_DIR, setupGitSandbox } from "./sandbox"
 import YAML from "yaml"
+import { generateServerFiles } from "./gen-server-files"
+import { getCurrentReadme, patchReadme } from "./patch-readme"
+import { setupGitSandbox } from "./sandbox"
+
 interface GeneratePullRequestProps {
 	server: { qualifiedName: string; displayName: string }
 	repoOwner: string
 	repoName: string
 	basePath: string
 }
+
 export interface FileNamedContent {
 	name: string
 	content: string
 }
+
+/**
+ * Formats the Smithery YAML configuration with appropriate comments.
+ * @param configContent The YAML content to format
+ * @returns Formatted YAML string with comments
+ */
+export function formatSmitheryYamlConfig(configContent: ServerConfig): string {
+	const doc = new YAML.Document(configContent)
+	const cmdFuncScalar = doc.getIn(
+		["startCommand", "commandFunction"],
+		true,
+	) as YAML.Scalar
+	const schemaScalar = doc.getIn(
+		["startCommand", "configSchema"],
+		true,
+	) as YAML.Scalar
+
+	doc.commentBefore =
+		" Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml"
+	cmdFuncScalar.commentBefore =
+		" A function that produces the CLI command to start the MCP on stdio."
+	cmdFuncScalar.type = "BLOCK_LITERAL"
+	schemaScalar.commentBefore =
+		" JSON Schema defining the configuration options for the MCP."
+
+	// Ensure trailing new line Unix standard
+	return `${doc.toString().trim()}\n`
+}
+
 /**
  * Generates a PR to help repositories with obtain the correct config using the GitHub app installation.
  * This function is run in the background and requires our GitHub app to be installed in the repo.
@@ -60,28 +92,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 
 			const newSmitheryYaml =
 				filesResult.ok && filesResult.value.smitheryConfig.changed
-					? (() => {
-							const doc = new YAML.Document(
-								filesResult.value.smitheryConfig.content,
-							)
-							const cmdFuncScalar = doc.getIn(
-								["startCommand", "commandFunction"],
-								true,
-							) as YAML.Scalar
-							const schemaScalar = doc.getIn(
-								["startCommand", "configSchema"],
-								true,
-							) as YAML.Scalar
-							doc.commentBefore =
-								" Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml"
-							cmdFuncScalar.commentBefore =
-								" A function that produces the CLI command to start the MCP on stdio."
-							cmdFuncScalar.type = "BLOCK_LITERAL"
-							schemaScalar.commentBefore =
-								" JSON Schema defining the configuration options for the MCP."
-							// Ensure trailing new line Unix standard
-							return `${doc.toString().trim()}\n`
-						})()
+					? formatSmitheryYamlConfig(filesResult.value.smitheryConfig.content)
 					: null
 
 			return ok({
@@ -100,32 +111,3 @@ export const generatePullRequestFiles = (accessToken: string) =>
 			await sandbox.sandbox.kill()
 		}
 	})
-
-async function getCurrentReadme(sandbox: GitSandbox, basePath: string) {
-	// Paths are relative to repository root
-	// Fallbacks
-	const commands = [
-		...(basePath !== "."
-			? [
-					{ filePath: `${basePath}/README.md`, isRoot: false },
-					{ filePath: `${basePath}/readme.md`, isRoot: false },
-					{ filePath: `${basePath}/readme`, isRoot: false },
-				]
-			: []),
-		{ filePath: `README.md`, isRoot: true },
-		{ filePath: `readme.md`, isRoot: true },
-		{ filePath: `readme`, isRoot: true },
-	]
-
-	for (const command of commands) {
-		const result = await toResult(
-			sandbox.sandbox.commands.run(
-				`cat ${REPO_WORKING_DIR}/${command.filePath}`,
-			),
-		)
-		if (result.ok)
-			return { content: result.value.stdout, isRoot: command.isRoot }
-	}
-
-	return null
-}
