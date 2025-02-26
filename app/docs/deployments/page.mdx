@@ -8,14 +8,11 @@ export const metadata = {
 }
 
 # Deployments
-
-<div className="inline-flex items-center mb-4"><CircleAlert className="w-4 h-4 mr-1" /> _Deployments is in early preview and we're rapidly improving it. Please report bugs to our Discord!_</div>
-
 Smithery Deployments allow you to host your [standard input/output (STDIO)](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server on Smithery served over a WebSocket connection.
 
 Benefits of hosting:
-- Smithery will show an MCP playground on your server page, allowing users to try your tool calls before installing.
-- Developers can use your server without needing to install dependencies or be concerned about installing insecure executable code.
+- Smithery will show an MCP playground on your server page, allowing users to try your MCP online.
+- Users can call your server without installing dependencies or be concerned about security.
 - Smithery will rank hosted servers higher in our search results.
 
 ## Overview
@@ -23,8 +20,7 @@ Benefits of hosting:
 Deploying on Smithery is straightforward:
 
 1. [Add your server](/new) to Smithery (or claim it if it's already listed)
-2. Setup deployment [configuration files](/docs/config) (we can generate this automatically for you)
-3. Click Deploy on Smithery Deployments tab on your server page (_only authenticated server owners can see this tab_)
+2. Click Deploy on Smithery Deployments tab on your server page (_only authenticated server owners can see this tab_)
 
 That's it! Your MCP server will be built and deployed according to your configuration.
 
@@ -41,9 +37,4 @@ WebSockets transport implementations are maintained by the official MCP SDK in [
 We serve your hosted MCP servers on Smithery over WebSockets (WS) in a serverless environment and they will timeout after 5 minutes.
 You will need to handle reconnection if needed.
 You should design your server with ephemeral storage in mind.
-
-## Best Practices
-
-1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector). If you run into build errors, test to ensure your Dockerfile builds locally.
-2. **Configuration**: Use the `configSchema` to properly define and validate your server's configuration options
-3. **Docker Optimization**: Keep your Docker image size minimal by using appropriate base images and multi-stage builds
+Persistent data should be stored in an external database.

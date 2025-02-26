@@ -97,7 +97,7 @@ export default function NewServerForm({ owner, repo }: Props) {
 				repoName: repo,
 			})
 
-			router.push(`/server/${server.qualifiedName}`)
+			router.push(`/server/${server.qualifiedName}/deployments`)
 
 			// Don't set loading false because we're redirecting
 		} catch (error) {

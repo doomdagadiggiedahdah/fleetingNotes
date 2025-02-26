@@ -16,14 +16,9 @@ There are two files required in your repository in order to deploy:
 
 The Dockerfile tells us how to build your server. The smithery.yaml file tells us how to start your server.
 
-## Automatic Setup
-Smithery automatically generates a pull-request with these files for you based on your repository structure.
-
-To obtain an automated pull-request:
-1. Go to your deployments tab on your server page
-2. Click "Deploy"
-
-You will see a dialog show up with the option to generate a pull-request. Click "Generate Pull Request" and Smithery will generate a pull-request for you.
+### Automatic Setup
+Smithery will try to automatically generate a pull-request with these files for you when you trigger a deployment.
+However, in some cases, the setup can fail and you may need to set this up manually.
 
 ## Manual Setup
 ### Dockerfile
@@ -105,6 +100,6 @@ For example, if your MCP server is in the `packages/mcp-server` directory, you w
 
 ## Best Practices
 
-1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
+1. **Testing**: Test your MCP server locally before deploying using [MCP Inspector](https://github.com/modelcontextprotocol/inspector). Please ensure your Dockerfile builds locally first before deploying.
 2. **Configuration**: Use the `configSchema` to properly define and validate your server's configuration options
 3. **Docker Optimization**: Keep your Docker image size minimal by using appropriate base images and multi-stage builds
