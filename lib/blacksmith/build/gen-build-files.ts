@@ -172,12 +172,12 @@ export const generateBuildFiles = (
 		options.onUpdate?.(
 			existingDockerfile
 				? "Found Dockerfile in repository."
-				: "Could not find Dockerfile in repository. Generating... (this could take 5 minutes)",
+				: "Could not find Dockerfile in repository. Generating... (this could take 10 minutes)",
 		)
 		options.onUpdate?.(
 			existingSmitheryConfig
 				? "Found smithery.yaml in repository."
-				: "Could not find smithery.yaml in repository. Generating... (this could take 5 minutes)",
+				: "Could not find smithery.yaml in repository. Generating... (this could take 10 minutes)",
 		)
 
 		if (existingDockerfile && existingSmitheryConfig) {

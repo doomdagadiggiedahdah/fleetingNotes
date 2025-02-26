@@ -38,3 +38,8 @@ We serve your hosted MCP servers on Smithery over WebSockets (WS) in a serverles
 You will need to handle reconnection if needed.
 You should design your server with ephemeral storage in mind.
 Persistent data should be stored in an external database.
+
+## Tool Lists
+Smithery can only display tool lists for servers that don't require authentication to list tools. Server developers must ensure that the list tools functionality is not dependent on any API keys or configurations that users have to provide.
+
+As a server developer, you can implement this by supporting "lazy loading" - only authenticating using your required configuration/API keys upon tool call, rather than upon initialization.

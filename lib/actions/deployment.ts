@@ -357,6 +357,7 @@ export async function createDeploymentForServer(
 								}),
 						])
 						// Clear the cache
+						revalidatePath(`/`)
 						revalidatePath(`/server/${server.qualifiedName}`)
 						await lastAppend
 						return ok()
