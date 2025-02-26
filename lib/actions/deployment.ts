@@ -38,6 +38,7 @@ import { posthog } from "../posthog_server"
 import type { ServerConfigGateway } from "../types/server-config"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok } from "../utils/result"
+import { withTimeout } from "../utils"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -185,164 +186,176 @@ export async function createDeploymentForServer(
 	waitUntil(
 		(async () => {
 			try {
-				let buildFiles: BuildFiles | null = null
+				await withTimeout(
+					(async () => {
+						let buildFiles: BuildFiles | null = null
 
-				// Check cached build files and repo files concurrently
-				const [buildCacheRow, repoFiles] = await Promise.all([
-					db
-						.select()
-						.from(buildCache)
-						.where(eq(buildCache.serverId, server.id))
-						.then((rows) => rows[0]),
-					getRepoFiles(gitSandbox),
-				])
+						// Check cached build files and repo files concurrently
+						const [buildCacheRow, repoFiles] = await Promise.all([
+							db
+								.select()
+								.from(buildCache)
+								.where(eq(buildCache.serverId, server.id))
+								.then((rows) => rows[0]),
+							getRepoFiles(gitSandbox),
+						])
 
-				if (buildCacheRow) {
-					appendLog("Found cached build config files...")
-					buildFiles = buildCacheRow.files as BuildFiles
-					// User-defined files always overrides cache
-					if (repoFiles.smitheryConfig) {
-						appendLog("Using smithery.yaml from repository")
+						if (buildCacheRow) {
+							appendLog("Found cached build config files...")
+							buildFiles = buildCacheRow.files as BuildFiles
+							// User-defined files always overrides cache
+							if (repoFiles.smitheryConfig) {
+								appendLog("Using smithery.yaml from repository")
 
-						buildFiles.smitheryConfig = repoFiles.smitheryConfig
-					}
-					if (repoFiles.dockerfile) {
-						appendLog("Using Dockerfile from repository")
-						buildFiles.dockerfile = repoFiles.dockerfile
-					}
-				}
-
-				if (
-					!buildFiles?.smitheryConfig.content ||
-					!buildFiles?.dockerfile.content
-				) {
-					// Missing required files. Try to generate it.
-					const buildFilesResult = await generateServerFiles(gitSandbox, {
-						onUpdate: appendLog,
-					})()
-
-					if (!buildFilesResult.ok) {
-						await appendLog(
-							"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
-							"FAILURE",
-						)
-						return err({
-							type: "setupBuildFileError",
-							// TOOD: We need better error message, espsecially for parsing smithery yaml
-						} as const)
-					}
-					buildFiles = buildFilesResult.value
-				}
-
-				appendLog(
-					"Successfully obtained required build config files. Preparing build...",
-				)
-				const smitheryConfig: ServerConfigGateway = {
-					...buildFiles.smitheryConfig.content,
-					serverId: server.id,
-				}
-
-				const prepareResult = await prepareBuild(
-					gitSandbox,
-					buildFiles.dockerfile.content,
-					smitheryConfig,
-				)
-
-				if (!prepareResult.ok) {
-					await appendLog(
-						"Could not prepare the build. Please contact support.",
-						"FAILURE",
-					)
-					return err({
-						type: "prepareBuildError",
-					} as const)
-				}
-
-				const flyAppId = getFlyAppId(server.id)
-				const buildResult = await buildAndDeploySandbox(
-					gitSandbox,
-					flyAppId,
-					smitheryConfig,
-					{ onUpdate: appendLog },
-				)
-
-				if (!buildResult.ok) {
-					await appendLog(
-						"Error while deploying. Please review the logs above or contact support.",
-						"FAILURE",
-					)
-					return err({
-						type: "deployError",
-					} as const)
-				}
-
-				appendLog("Deployment successful!")
-
-				// Only create PR if files have changed from what's already in the repo
-				const dockerfileChanged =
-					buildFiles.dockerfile.content !== repoFiles.dockerfile?.content
-				const configChanged = !isEqual(
-					buildFiles.smitheryConfig.content,
-					repoFiles.smitheryConfig?.content,
-				)
-
-				if (dockerfileChanged || configChanged) {
-					try {
-						// Create PR with the changed files
-						const prResult = await createServerRepoPullRequestFromBuild(
-							server,
-							serverRepo,
-							gitSandbox,
-							{
-								dockerfile: {
-									content: buildFiles?.dockerfile?.content || null,
-									oldContent: repoFiles.dockerfile?.content || null,
-								},
-								smitheryConfig: {
-									content: buildFiles?.smitheryConfig?.content
-										? serializeSmitheryYaml(buildFiles.smitheryConfig.content)
-										: null,
-									oldContent: repoFiles.smitheryConfig?.content
-										? serializeSmitheryYaml(repoFiles.smitheryConfig.content)
-										: null,
-								},
-							},
-						)
-
-						if (prResult.ok) {
-							appendLog(
-								`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
-							)
+								buildFiles.smitheryConfig = repoFiles.smitheryConfig
+							}
+							if (repoFiles.dockerfile) {
+								appendLog("Using Dockerfile from repository")
+								buildFiles.dockerfile = repoFiles.dockerfile
+							}
 						}
-					} catch (e) {
-						console.error("Critical error applying PR: ", e)
-					}
-				}
 
-				await Promise.all([
-					db
-						.update(deployments)
-						.set({
-							status: "SUCCESS",
-							updatedAt: sql`NOW()`,
-							deploymentUrl: getDeployedUrl(flyAppId),
-						})
-						.where(eq(deployments.id, deploymentRow.id)),
-					db
-						.insert(buildCache)
-						.values({
+						if (
+							!buildFiles?.smitheryConfig.content ||
+							!buildFiles?.dockerfile.content
+						) {
+							// Missing required files. Try to generate it.
+							const buildFilesResult = await generateServerFiles(gitSandbox, {
+								onUpdate: appendLog,
+							})()
+
+							if (!buildFilesResult.ok) {
+								await appendLog(
+									"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
+									"FAILURE",
+								)
+								return err({
+									type: "setupBuildFileError",
+									// TOOD: We need better error message, espsecially for parsing smithery yaml
+								} as const)
+							}
+							buildFiles = buildFilesResult.value
+						}
+
+						appendLog(
+							"Successfully obtained required build config files. Preparing build...",
+						)
+						const smitheryConfig: ServerConfigGateway = {
+							...buildFiles.smitheryConfig.content,
 							serverId: server.id,
-							files: buildFiles,
-						})
-						.onConflictDoUpdate({
-							target: buildCache.serverId,
-							set: { files: buildFiles },
-						}),
-				])
-				await lastAppend
-				return ok()
+						}
+
+						const prepareResult = await prepareBuild(
+							gitSandbox,
+							buildFiles.dockerfile.content,
+							smitheryConfig,
+						)
+
+						if (!prepareResult.ok) {
+							await appendLog(
+								"Could not prepare the build. Please contact support.",
+								"FAILURE",
+							)
+							return err({
+								type: "prepareBuildError",
+							} as const)
+						}
+
+						const flyAppId = getFlyAppId(server.id)
+						const buildResult = await buildAndDeploySandbox(
+							gitSandbox,
+							flyAppId,
+							smitheryConfig,
+							{ onUpdate: appendLog },
+						)
+
+						if (!buildResult.ok) {
+							await appendLog(
+								"Error while deploying. Please review the logs above or contact support.",
+								"FAILURE",
+							)
+							return err({
+								type: "deployError",
+							} as const)
+						}
+
+						appendLog("Deployment successful!")
+
+						// Only create PR if files have changed from what's already in the repo
+						const dockerfileChanged =
+							buildFiles.dockerfile.content !== repoFiles.dockerfile?.content
+						const configChanged = !isEqual(
+							buildFiles.smitheryConfig.content,
+							repoFiles.smitheryConfig?.content,
+						)
+
+						if (dockerfileChanged || configChanged) {
+							try {
+								// Create PR with the changed files
+								const prResult = await createServerRepoPullRequestFromBuild(
+									server,
+									serverRepo,
+									gitSandbox,
+									{
+										dockerfile: {
+											content: buildFiles?.dockerfile?.content || null,
+											oldContent: repoFiles.dockerfile?.content || null,
+										},
+										smitheryConfig: {
+											content: buildFiles?.smitheryConfig?.content
+												? serializeSmitheryYaml(
+														buildFiles.smitheryConfig.content,
+													)
+												: null,
+											oldContent: repoFiles.smitheryConfig?.content
+												? serializeSmitheryYaml(
+														repoFiles.smitheryConfig.content,
+													)
+												: null,
+										},
+									},
+								)
+
+								if (prResult.ok) {
+									console.log(
+										`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
+									)
+									appendLog(
+										`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
+									)
+								}
+							} catch (e) {
+								console.error("Critical error applying PR: ", e)
+							}
+						}
+
+						await Promise.all([
+							db
+								.update(deployments)
+								.set({
+									status: "SUCCESS",
+									updatedAt: sql`NOW()`,
+									deploymentUrl: getDeployedUrl(flyAppId),
+								})
+								.where(eq(deployments.id, deploymentRow.id)),
+							db
+								.insert(buildCache)
+								.values({
+									serverId: server.id,
+									files: buildFiles,
+								})
+								.onConflictDoUpdate({
+									target: buildCache.serverId,
+									set: { files: buildFiles },
+								}),
+						])
+						await lastAppend
+						return ok()
+					})(),
+					600 * 1000,
+				)
 			} catch (e) {
-				console.error("Unexpected internal error", e)
+				console.error("Unexpected internal error or timeout", e)
 				await appendLog("Unexpected internal error.", "FAILURE")
 				return err({ type: "unexpected" })
 			} finally {

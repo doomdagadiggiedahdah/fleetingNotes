@@ -3,7 +3,7 @@ import { candidate_urls } from "@/db/schema/blacksmith"
 import { crawlServers } from "@/lib/blacksmith/crawl"
 import { cleanupUnclaimedServers } from "@/lib/blacksmith/crawl/cleanup-servers"
 import { cleanupForkedRepos } from "@/lib/blacksmith/pr/cleanup-forks"
-import { createOutboundPR } from "@/lib/blacksmith/pr/outbound-pr"
+import { createOutboundDeployments } from "@/lib/blacksmith/pr/outbound-deploy"
 import "@/lib/utils/braintrust"
 import { logger } from "@/lib/utils/braintrust"
 import { NextResponse } from "next/server"
@@ -86,9 +86,9 @@ export async function GET(request: Request) {
 	}
 
 	try {
-		await crawlServers(3)
+		await crawlServers(5)
 		await Promise.all([
-			createOutboundPR(1),
+			createOutboundDeployments(1),
 			cleanupForkedRepos(),
 			cleanupUnclaimedServers(),
 		])

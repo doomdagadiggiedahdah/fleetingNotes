@@ -153,9 +153,8 @@ async function createPR(
 
 	const serverHomepage = `https://smithery.ai/server/${qualifiedName}?utm_campaign=pr&modal=claim`
 
-	// TODO: Use this for unclaimed servers
 	const claimMessage = showClaimMessage
-		? `- [ ] **Claim Server**: Head to your [server page](${serverHomepage}) to claim your server. This will let you edit your server listing on Smithery and for us to sync with your commits.\n`
+		? `- [ ] **Claim Server**: Head to your [server page](${serverHomepage}) to claim your server. This will let you edit your server listing on Smithery and deploy new versions of your server.\n`
 		: ""
 
 	const prBody = `\
@@ -200,6 +199,7 @@ async function commitAndPullRequest(
 	basePath: string,
 	files: PatchFiles,
 	useFork = false,
+	showClaimMessage = false,
 ) {
 	if (!Object.values(files).some((file) => file.content !== file.oldContent)) {
 		return err({ type: "noChanges" } as const)
@@ -282,6 +282,7 @@ async function commitAndPullRequest(
 		defaultBranchName,
 		changeBranchName,
 		files,
+		showClaimMessage,
 	)
 }
 
@@ -324,7 +325,7 @@ export async function createServerRepoPullRequestFromBuild(
 	)
 
 	// Use fork if we don't have installation token (the repo didn't install our GitHub app)
-	const useFork = !installationTokenResult.ok
+	const isAnonymousDeployment = !installationTokenResult.ok
 
 	const installToken = installationTokenResult.ok
 		? installationTokenResult.value.installToken
@@ -351,7 +352,8 @@ export async function createServerRepoPullRequestFromBuild(
 		repoName,
 		baseDirectory,
 		await applyReadmePatch(server, gitSandbox, baseDirectory, files),
-		useFork,
+		isAnonymousDeployment,
+		isAnonymousDeployment,
 	)
 	if (!prResult.ok) {
 		console.warn(prResult.error)

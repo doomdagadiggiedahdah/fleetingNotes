@@ -120,6 +120,8 @@ export async function crawlServers(limit = 10) {
 				continue
 			}
 
+			console.log("Extracting server...", repoInfo)
+
 			const insertDataResult = await extractServer(octokit)({
 				repoOwner: repoInfo.owner,
 				repoName: repoInfo.repo,

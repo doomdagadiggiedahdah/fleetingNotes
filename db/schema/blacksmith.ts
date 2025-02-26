@@ -54,6 +54,7 @@ export const pullRequests = pgTable(
 ).enableRLS()
 
 // A table to mark PR failures to avoid retries
+// @deprecated (legacy record)
 export const pullRequestsFailures = pgTable("pull_requests_failures", {
 	id: uuid("id").primaryKey().defaultRandom(),
 	// ID of the serverRepo
