@@ -175,21 +175,29 @@ export async function patchReadmeFromSandbox(
 	server: Pick<Server, "qualifiedName" | "displayName">,
 	basePath: string,
 ) {
-	// TODO: What if the repo has no README?
-	// Update README
+	// Get the current README if it exists
 	const currentReadme = await getCurrentReadme(sandbox, basePath)
 
-	const isRoot = currentReadme?.isRoot ?? false
-	let newReadme = currentReadme
-		? await patchReadme(
-				server.qualifiedName,
-				server.displayName,
-				currentReadme.content,
-			)
-		: null
-	if (!newReadme || newReadme === currentReadme?.content) {
-		newReadme = null
+	// If no README exists, return null (don't create one)
+	if (!currentReadme) {
+		return {
+			content: null,
+			oldContent: null,
+			path: "README.md", // Default path, though no changes will be made
+		}
 	}
 
-	return { newReadme, isRoot }
+	// If README exists, try to patch it
+	const patchedContent = await patchReadme(
+		server.qualifiedName,
+		server.displayName,
+		currentReadme.content,
+	)
+
+	// Return in DeltaFile format
+	return {
+		content: patchedContent,
+		oldContent: currentReadme.content,
+		path: currentReadme.path,
+	}
 }

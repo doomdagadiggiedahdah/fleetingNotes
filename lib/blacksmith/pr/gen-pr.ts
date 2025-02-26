@@ -20,11 +20,11 @@ export interface FileNamedContent {
 
 /**
  * Formats the Smithery YAML configuration with appropriate comments.
- * @param configContent The YAML content to format
+ * @param config The YAML content to format
  * @returns Formatted YAML string with comments
  */
-export function formatSmitheryYamlConfig(configContent: ServerConfig): string {
-	const doc = new YAML.Document(configContent)
+export function serializeSmitheryYaml(config: ServerConfig): string {
+	const doc = new YAML.Document(config)
 	const cmdFuncScalar = doc.getIn(
 		["startCommand", "commandFunction"],
 		true,
@@ -37,7 +37,7 @@ export function formatSmitheryYamlConfig(configContent: ServerConfig): string {
 	doc.commentBefore =
 		" Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml"
 	cmdFuncScalar.commentBefore =
-		" A function that produces the CLI command to start the MCP on stdio."
+		" A JS function that produces the CLI command based on the given config to start the MCP on stdio."
 	cmdFuncScalar.type = "BLOCK_LITERAL"
 	schemaScalar.commentBefore =
 		" JSON Schema defining the configuration options for the MCP."
@@ -52,6 +52,7 @@ export function formatSmitheryYamlConfig(configContent: ServerConfig): string {
  *
  * @param serverId The server ID
  */
+// @deprecated
 export const generatePullRequestFiles = (accessToken: string) =>
 	wrapTraced(async function generateConfigPR({
 		server,
@@ -92,7 +93,7 @@ export const generatePullRequestFiles = (accessToken: string) =>
 
 			const newSmitheryYaml =
 				filesResult.ok && filesResult.value.smitheryConfig.changed
-					? formatSmitheryYamlConfig(filesResult.value.smitheryConfig.content)
+					? serializeSmitheryYaml(filesResult.value.smitheryConfig.content)
 					: null
 
 			return ok({

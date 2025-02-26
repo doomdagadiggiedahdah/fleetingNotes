@@ -12,22 +12,25 @@ import {
 	servers,
 } from "@/db/schema"
 import { createClient, getMe } from "@/lib/supabase/server"
-import { createAppAuth } from "@octokit/auth-app"
 import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
+import { isEqual } from "lodash"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
 import {
 	getInstallationOctokit,
 	getInstallationToken,
 } from "../auth/github/server"
+import { serializeSmitheryYaml } from "../blacksmith/pr/gen-pr"
 import { generateServerFiles } from "../blacksmith/pr/gen-server-files"
+import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr/pr"
 import {
 	buildAndDeploySandbox,
 	getDeployedUrl,
 	getDockerfile,
 	getFlyAppId,
 	getSmitheryConfig,
+	type GitSandbox,
 	prepareBuild,
 	setupGitSandbox,
 } from "../blacksmith/pr/sandbox"
@@ -121,18 +124,22 @@ export async function createDeploymentForServer(
 
 	const installTokenResult = await getInstallationToken(repoOwner, repoName)
 
-	if (!installTokenResult.ok) {
-		return err({
-			type: "installTokenError",
-		} as const)
-	}
+	const isAnonymousDeployment = !installTokenResult.ok
+	const installToken = isAnonymousDeployment
+		? process.env.GITHUB_BOT_UAT
+		: installTokenResult.value.installToken
 
-	const { installationId, installToken } = installTokenResult.value
+	const octokit = new Octokit({
+		auth: installToken,
+	})
 
-	const gitSandboxResult = await setupGitSandbox(
-		`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
-		serverRepo.baseDirectory,
-	)
+	const [gitSandboxResult, commitInfo] = await Promise.all([
+		setupGitSandbox(
+			`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
+			serverRepo.baseDirectory,
+		),
+		getCommitInfo(octokit, repoOwner, repoName),
+	])
 
 	if (!gitSandboxResult.ok) {
 		return err({
@@ -141,21 +148,6 @@ export async function createDeploymentForServer(
 	}
 
 	const gitSandbox = gitSandboxResult.value
-
-	const installationOctokit = new Octokit({
-		authStrategy: createAppAuth,
-		auth: {
-			appId: process.env.GITHUB_APP_ID!,
-			privateKey: process.env.GITHUB_APP_PRIVATE_KEY!,
-			installationId,
-		},
-	})
-
-	const commitInfo = await getCommitInfo(
-		installationOctokit,
-		repoOwner,
-		repoName,
-	)
 
 	const [deploymentRow] = await db
 		.insert(deployments)
@@ -195,28 +187,36 @@ export async function createDeploymentForServer(
 			try {
 				let buildFiles: BuildFiles | null = null
 
-				// Check cached build files
-				const [buildCacheRow] = await db
-					.select()
-					.from(buildCache)
-					.where(eq(buildCache.serverId, server.id))
+				// Check cached build files and repo files concurrently
+				const [buildCacheRow, repoFiles] = await Promise.all([
+					db
+						.select()
+						.from(buildCache)
+						.where(eq(buildCache.serverId, server.id))
+						.then((rows) => rows[0]),
+					getRepoFiles(gitSandbox),
+				])
 
 				if (buildCacheRow) {
-					appendLog("Using cached build config files...")
+					appendLog("Found cached build config files...")
 					buildFiles = buildCacheRow.files as BuildFiles
+					// User-defined files always overrides cache
+					if (repoFiles.smitheryConfig) {
+						appendLog("Using smithery.yaml from repository")
 
-					// Overwrite with files defined by user in repository
-					const [smitheryConfigResult, dockerfileResult] = await Promise.all([
-						getSmitheryConfig(gitSandbox),
-						getDockerfile(gitSandbox),
-					])
+						buildFiles.smitheryConfig = repoFiles.smitheryConfig
+					}
+					if (repoFiles.dockerfile) {
+						appendLog("Using Dockerfile from repository")
+						buildFiles.dockerfile = repoFiles.dockerfile
+					}
+				}
 
-					if (smitheryConfigResult.ok)
-						buildFiles.smitheryConfig = { content: smitheryConfigResult.value }
-					if (dockerfileResult.ok)
-						buildFiles.dockerfile = { content: dockerfileResult.value }
-				} else {
-					// Cache miss
+				if (
+					!buildFiles?.smitheryConfig.content ||
+					!buildFiles?.dockerfile.content
+				) {
+					// Missing required files. Try to generate it.
 					const buildFilesResult = await generateServerFiles(gitSandbox, {
 						onUpdate: appendLog,
 					})()
@@ -277,6 +277,48 @@ export async function createDeploymentForServer(
 				}
 
 				appendLog("Deployment successful!")
+
+				// Only create PR if files have changed from what's already in the repo
+				const dockerfileChanged =
+					buildFiles.dockerfile.content !== repoFiles.dockerfile?.content
+				const configChanged = !isEqual(
+					buildFiles.smitheryConfig.content,
+					repoFiles.smitheryConfig?.content,
+				)
+
+				if (dockerfileChanged || configChanged) {
+					try {
+						// Create PR with the changed files
+						const prResult = await createServerRepoPullRequestFromBuild(
+							server,
+							serverRepo,
+							gitSandbox,
+							{
+								dockerfile: {
+									content: buildFiles?.dockerfile?.content || null,
+									oldContent: repoFiles.dockerfile?.content || null,
+								},
+								smitheryConfig: {
+									content: buildFiles?.smitheryConfig?.content
+										? serializeSmitheryYaml(buildFiles.smitheryConfig.content)
+										: null,
+									oldContent: repoFiles.smitheryConfig?.content
+										? serializeSmitheryYaml(repoFiles.smitheryConfig.content)
+										: null,
+								},
+							},
+						)
+
+						if (prResult.ok) {
+							appendLog(
+								`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
+							)
+						}
+					} catch (e) {
+						console.error("Critical error applying PR: ", e)
+					}
+				}
+
 				await Promise.all([
 					db
 						.update(deployments)
@@ -313,7 +355,7 @@ export async function createDeploymentForServer(
 }
 
 /**
- * Checks if this server is has the necessary requirements for deployment by examining the Github App installation and the repo required files.
+ * Checks if this server is has the necessary requirements for deployment by examining the Github App installation.
  * @returns OK if all requirements are met, error otherwise.
  * 			Error reveals the required files and whether they're satisfied. Returns true if the file is missing.
  */
@@ -360,4 +402,26 @@ async function getServerRepo(serverId: string, userId: string) {
 		.where(and(eq(servers.id, serverId), eq(servers.owner, userId)))
 		.limit(1)
 	return row
+}
+
+/**
+ * Gets a file from a repository, handling the case where the file doesn't exist
+ * @param serverRepo The server repository information
+ * @param filename The filename to fetch (relative to repository root)
+ * @returns The file content as a string, or null if the file doesn't exist
+ */
+
+async function getRepoFiles(gitSandbox: GitSandbox) {
+	const [smitheryConfigResult, dockerfileResult] = await Promise.all([
+		getSmitheryConfig(gitSandbox),
+		getDockerfile(gitSandbox),
+	])
+	return {
+		smitheryConfig: smitheryConfigResult.ok
+			? { content: smitheryConfigResult.value }
+			: null,
+		dockerfile: dockerfileResult.ok
+			? { content: dockerfileResult.value }
+			: null,
+	}
 }

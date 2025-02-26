@@ -50,8 +50,6 @@ export async function cleanupUnclaimedServers(limit = 50) {
 				// Note: this is never called in our dataset
 				console.warn("Server renamed", err)
 			}
-
-			continue
 		}
 	}
 
