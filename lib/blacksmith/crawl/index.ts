@@ -4,7 +4,6 @@ import { candidate_urls, serverRepos, servers } from "@/db/schema"
 import { canonicalizeGithubUrl } from "@/lib/utils/github"
 import { Octokit } from "@octokit/rest"
 import { and, desc, eq, sql } from "drizzle-orm"
-import { shuffle } from "lodash"
 import { extractServer } from "../extract-server"
 import { isMCPServer } from "../check"
 import { isRepositoryFork } from "@/lib/utils/github"
@@ -45,37 +44,19 @@ export async function crawlServers(limit = 10) {
 		// Need a limit otherwise Github will rate limit
 		.limit(limit)
 
-	const canonicalCrawls = await Promise.all(
-		rows.map((row) => canonicalizeGithubUrl(row.url)),
-	)
-
-	const existingUrls = await db
-		.select({ url: servers.crawlUrl })
-		.from(servers)
-		.execute()
-
-	const existingUrlsLower = new Set(
-		existingUrls
-			.filter((row): row is { url: string } => !!row.url)
-			.map((row) => row.url.toLowerCase().replace(/\/+$/, "")),
-	)
-
-	const urlsToCrawl = shuffle(
-		canonicalCrawls.filter(
-			(url) => !existingUrlsLower.has(url.toLowerCase().replace(/\/+$/, "")),
-		),
-	)
-	console.log("URLs to process:", urlsToCrawl.length)
+	console.log("URLs to process:", rows.length)
 
 	const token = process.env.GITHUB_BOT_UAT!
 	const octokit = new Octokit({
 		auth: token,
 	})
 
-	for (const url of urlsToCrawl) {
+	for (const row of rows) {
 		let errored = false
 
 		try {
+			const url = await canonicalizeGithubUrl(row.url)
+
 			const repoInfo = await extractRepo(octokit, url)
 			console.log(repoInfo)
 			if (!repoInfo) {
@@ -176,7 +157,7 @@ export async function crawlServers(limit = 10) {
 					processed: true,
 					errored,
 				})
-				.where(eq(candidate_urls.crawl_url, url))
+				.where(eq(candidate_urls.crawl_url, row.url))
 		}
 	}
 	console.log("Done extracting.")

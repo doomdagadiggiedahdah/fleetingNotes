@@ -37,7 +37,7 @@ import {
 import { posthog } from "../posthog_server"
 import type { ServerConfigGateway } from "../types/server-config"
 import { getDefaultBranch } from "../utils/github"
-import { err, ok } from "../utils/result"
+import { err, ok, toResult } from "../utils/result"
 import { withTimeout } from "../utils"
 
 export const getDeployments = async (serverId: string) => {
@@ -133,13 +133,12 @@ export async function createDeploymentForServer(
 	const octokit = new Octokit({
 		auth: installToken,
 	})
-
-	const [gitSandboxResult, commitInfo] = await Promise.all([
+	const [gitSandboxResult, commitInfoResult] = await Promise.all([
 		setupGitSandbox(
 			`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
 			serverRepo.baseDirectory,
 		),
-		getCommitInfo(octokit, repoOwner, repoName),
+		toResult(getCommitInfo(octokit, repoOwner, repoName)),
 	])
 
 	if (!gitSandboxResult.ok) {
@@ -148,7 +147,14 @@ export async function createDeploymentForServer(
 		} as const)
 	}
 
+	if (!commitInfoResult.ok) {
+		return err({
+			type: "gitCommitInfoError",
+		} as const)
+	}
+
 	const gitSandbox = gitSandboxResult.value
+	const commitInfo = commitInfoResult.value
 
 	const [deploymentRow] = await db
 		.insert(deployments)

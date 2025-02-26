@@ -76,6 +76,13 @@ export async function createOutboundDeployments(limit = 10) {
 			console.log(
 				`Deployment triggered: ${server.id} (${server.qualifiedName})`,
 			)
+		} else {
+			console.error(`Failed to create deployment: ${server.id}`, result.error)
+			await db.insert(pullRequestsFailures).values({
+				error: `${JSON.stringify(result.error)}`,
+				serverRepo: serverRepo.id,
+				task: "config",
+			})
 		}
 	}
 	console.log("Done.")
