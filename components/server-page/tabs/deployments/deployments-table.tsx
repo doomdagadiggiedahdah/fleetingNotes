@@ -14,6 +14,7 @@ import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { createClient } from "@/lib/supabase/client"
 import type { FetchedServer } from "@/lib/utils/get-server"
+import { differenceInSeconds } from "date-fns"
 import { ChevronDown, ChevronRight, GitBranch, Loader2 } from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
@@ -89,9 +90,17 @@ export function DeploymentsTable({ server }: Props) {
 		}
 	}, [server.id])
 
-	const hasPendingBuilding = deployments.some(
-		(d) => d.status === "WORKING" || d.status === "QUEUED",
-	)
+	const hasPendingBuilding = deployments.some((d) => {
+		const isPending = d.status === "WORKING" || d.status === "QUEUED"
+		if (!isPending) return false
+
+		// Check if the build might be hanging.
+		const startDate = new Date(`${d.created_at}Z`)
+		const buildDuration = differenceInSeconds(new Date(), startDate)
+
+		// Return true only if the build is pending AND hasn't exceeded the timeout
+		return buildDuration <= 600
+	})
 
 	return (
 		<div className="space-y-4 mt-8">

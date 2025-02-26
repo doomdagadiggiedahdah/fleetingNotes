@@ -39,6 +39,7 @@ import type { ServerConfigGateway } from "../types/server-config"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
 import { withTimeout } from "../utils"
+import { revalidatePath } from "next/cache"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -355,6 +356,8 @@ export async function createDeploymentForServer(
 									set: { files: buildFiles },
 								}),
 						])
+						// Clear the cache
+						revalidatePath(`/server/${server.qualifiedName}`)
 						await lastAppend
 						return ok()
 					})(),
