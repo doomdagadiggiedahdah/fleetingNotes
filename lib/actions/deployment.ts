@@ -365,10 +365,17 @@ export async function createDeploymentForServer(
 							try {
 								const paths = [`/`, `/server/${server.qualifiedName}`]
 
+								// For Vercel deployments, use VERCEL_URL environment variable
+								// This code always runs server-side
+								const baseUrl =
+									process.env.NEXT_PUBLIC_BASE_URL ||
+									(process.env.VERCEL_URL
+										? `https://${process.env.VERCEL_URL}`
+										: "http://localhost:3000")
+
 								// Trigger revalidation for each path
 								await Promise.all(
 									paths.map(async (path) => {
-										const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ""
 										await fetch(`${baseUrl}/api/revalidate`, {
 											method: "POST",
 											body: JSON.stringify({ path }),
