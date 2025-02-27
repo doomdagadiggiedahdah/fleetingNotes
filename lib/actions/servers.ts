@@ -3,7 +3,7 @@
 import { db } from "@/db"
 import { serverRepos, servers } from "@/db/schema/servers"
 import { and, eq } from "drizzle-orm"
-import { omit } from "lodash"
+import { omit, pick } from "lodash"
 import { revalidatePath } from "next/cache"
 import {
 	type CreateServerInputs,
@@ -13,13 +13,12 @@ import {
 	updateServerSchema,
 } from "./servers.schema"
 
-import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getSessionUserOctokit } from "../auth/github/server"
 import { extractServer } from "../blacksmith/extract-server"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
-import { createDeployment } from "./deployment"
+import { createDeploymentForServer } from "./deployment"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -125,7 +124,7 @@ export async function createServer(rawData: CreateServerInputs) {
 
 	try {
 		// Create both the server and repo connection in a single transaction
-		const newServer = await db.transaction(async (tx) => {
+		const newRow = await db.transaction(async (tx) => {
 			// TODO: Does this perform a lowercase qualifiedname check?
 			const [server] = await tx
 				.insert(servers)
@@ -143,28 +142,35 @@ export async function createServer(rawData: CreateServerInputs) {
 					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
 					remote: !insertData.local,
 				})
-				.returning({
-					id: servers.id,
-					qualifiedName: servers.qualifiedName,
-					displayName: servers.displayName,
+				.returning()
+
+			const [serverRepo] = await tx
+				.insert(serverRepos)
+				.values({
+					serverId: server.id,
+					type: "github",
+					repoOwner: insertData.repoOwner,
+					repoName: insertData.repoName,
+					baseDirectory: insertData.baseDirectory,
 				})
+				.returning()
 
-			await tx.insert(serverRepos).values({
-				serverId: server.id,
-				type: "github",
-				repoOwner: insertData.repoOwner,
-				repoName: insertData.repoName,
-				baseDirectory: insertData.baseDirectory,
-			})
-
-			return server
+			return { server, serverRepo }
 		})
 
 		if (!insertData.local) {
-			waitUntil(createDeployment(newServer.id))
+			// This will ensure deploy is triggered before returning and rerouting the user
+			const deployResult = await createDeploymentForServer(
+				newRow.server,
+				newRow.serverRepo,
+			)
+
+			if (!deployResult.ok) {
+				console.error("deployResult.error", deployResult.error)
+			}
 		}
 
-		return { server: newServer }
+		return { server: pick(newRow.server, ["qualifiedName"]) }
 	} catch (error) {
 		console.error(error)
 		return { error: "Server ID already taken." }
