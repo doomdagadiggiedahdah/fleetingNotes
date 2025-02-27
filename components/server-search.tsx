@@ -4,7 +4,6 @@ import { Search as SearchIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "nextjs-toploader/app"
 import { useCallback, useState } from "react"
-import { useDebouncedCallback } from "use-debounce"
 import { ButtonLoading } from "./ui/loading-button"
 
 interface SearchProps {
@@ -32,15 +31,6 @@ export default function ServerSearch({
 		router.replace(`/?${params.toString()}`)
 	}, [])
 
-	const debouncedSearch = useDebouncedCallback(async (value: string) => {
-		try {
-			setIsLoading(true)
-			onSearch(value)
-		} finally {
-			setIsLoading(false)
-		}
-	}, 500)
-
 	const handleSearch = async (e: React.FormEvent) => {
 		e.preventDefault()
 		try {
@@ -54,10 +44,6 @@ export default function ServerSearch({
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newQuery = e.target.value
 		setQuery(newQuery)
-		if (autosearch) {
-			setIsLoading(true)
-			debouncedSearch(newQuery)
-		}
 	}
 
 	return (

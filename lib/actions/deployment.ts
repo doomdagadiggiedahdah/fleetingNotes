@@ -232,6 +232,7 @@ export async function createDeploymentForServer(
 							})()
 
 							if (!buildFilesResult.ok) {
+								console.error(buildFilesResult.error)
 								await appendLog(
 									"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
 									"FAILURE",
@@ -259,8 +260,9 @@ export async function createDeploymentForServer(
 						)
 
 						if (!prepareResult.ok) {
+							console.error(prepareResult.error)
 							await appendLog(
-								"Could not prepare the build. Please contact support.",
+								"Could not prepare the build. This is an internal error. Please contact support.",
 								"FAILURE",
 							)
 							return err({
@@ -277,8 +279,9 @@ export async function createDeploymentForServer(
 						)
 
 						if (!buildResult.ok) {
+							console.error(buildResult.error)
 							await appendLog(
-								"Error while deploying. Please review the logs above or contact support.",
+								"Error while deploying. Please review the logs above or reach out to support.",
 								"FAILURE",
 							)
 							return err({
