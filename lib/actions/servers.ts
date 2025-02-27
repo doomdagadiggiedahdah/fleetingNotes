@@ -13,6 +13,8 @@ import {
 	updateServerSchema,
 } from "./servers.schema"
 
+import type { Octokit } from "@octokit/rest"
+import { waitUntil } from "@vercel/functions"
 import type { GithubAccount } from "../auth/github/common"
 import { getSessionUserOctokit } from "../auth/github/server"
 import { extractServer } from "../blacksmith/extract-server"
@@ -87,6 +89,35 @@ export async function getConnectedRepos(serverId: string) {
 	return rows
 }
 
+/**
+ * Performs asynchronous server extraction and updates the server with extraction data
+ * while preserving any user-specified values.
+ */
+async function extractServerBackground(
+	serverId: string,
+	repoOwner: string,
+	repoName: string,
+	baseDirectory: string,
+	octokit: Octokit,
+) {
+	const serverExtractionResult = await extractServer(octokit)({
+		repoOwner,
+		repoName,
+		baseDirectory,
+	})
+
+	if (serverExtractionResult.ok) {
+		// Update the server with extraction data while preserving user-specified values
+		const serverExtractionData = serverExtractionResult.value
+
+		// Update server with extraction data, but preserve user-specified values
+		await db
+			.update(servers)
+			.set(serverExtractionData)
+			.where(eq(servers.id, serverId))
+	}
+}
+
 // Server action to create project and commit config
 export async function createServer(rawData: CreateServerInputs) {
 	// Validate
@@ -102,11 +133,6 @@ export async function createServer(rawData: CreateServerInputs) {
 		return { error: "Unauthorized" }
 	}
 
-	const serverExtractionPromise = extractServer(octokit)({
-		repoOwner: insertData.repoOwner,
-		repoName: insertData.repoName,
-		baseDirectory: insertData.baseDirectory,
-	})
 	const installResp = await octokit.request("GET /user/installations")
 	const installationId = installResp.data.installations.find(
 		(install) =>
@@ -116,11 +142,6 @@ export async function createServer(rawData: CreateServerInputs) {
 
 	if (installationId === undefined)
 		return { error: "Failed to validate GitHub installation." }
-
-	const serverExtractionResult = await serverExtractionPromise
-	const serverExtractionData = serverExtractionResult.ok
-		? serverExtractionResult.value
-		: null
 
 	try {
 		// Create both the server and repo connection in a single transaction
@@ -136,7 +157,6 @@ export async function createServer(rawData: CreateServerInputs) {
 					license: null,
 					displayName: insertData.qualifiedName,
 					description: "",
-					...serverExtractionData,
 					// User specified data should override the above defaults
 					// TODO: Allow usernames
 					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
@@ -157,6 +177,17 @@ export async function createServer(rawData: CreateServerInputs) {
 
 			return { server, serverRepo }
 		})
+
+		// Start server extraction in the background
+		waitUntil(
+			extractServerBackground(
+				newRow.server.id,
+				insertData.repoOwner,
+				insertData.repoName,
+				insertData.baseDirectory,
+				octokit,
+			),
+		)
 
 		if (!insertData.local) {
 			// This will ensure deploy is triggered before returning and rerouting the user

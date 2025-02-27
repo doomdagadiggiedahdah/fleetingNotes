@@ -16,14 +16,13 @@ import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
 import { isEqual } from "lodash"
+import { revalidatePath } from "next/cache"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
 import {
 	getInstallationOctokit,
 	getInstallationToken,
 } from "../auth/github/server"
-import { serializeSmitheryYaml } from "../blacksmith/build/smithery-config"
 import { generateBuildFiles } from "../blacksmith/build/gen-build-files"
-import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr"
 import {
 	buildAndDeploySandbox,
 	getDeployedUrl,
@@ -34,12 +33,13 @@ import {
 	prepareBuild,
 	setupGitSandbox,
 } from "../blacksmith/build/sandbox"
+import { serializeSmitheryYaml } from "../blacksmith/build/smithery-config"
+import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr"
 import { posthog } from "../posthog_server"
 import type { ServerConfigGateway } from "../types/server-config"
+import { withTimeout } from "../utils"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
-import { withTimeout } from "../utils"
-import { revalidatePath } from "next/cache"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()

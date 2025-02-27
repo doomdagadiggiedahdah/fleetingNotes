@@ -121,12 +121,7 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 
 		const output: Pick<
 			NewServer,
-			| "license"
-			| "displayName"
-			| "description"
-			| "descriptionLong"
-			| "homepage"
-			| "remote"
+			"license" | "displayName" | "description" | "descriptionLong" | "homepage"
 		> = {
 			...parsed,
 			descriptionLong: parsed.descriptionLong,
@@ -161,11 +156,6 @@ const ExtractServerSchema = z.object({
 		.optional()
 		.describe(
 			"The homepage is the official website of the MCP, typically a company's website. The URL to the product page of the MCP, if it exists. (e.g,. https://search.brave.com/). The homepage should NOT be a page where this MCP is listed (e.g., glama, npm, github are not homepages). Leave null if it cannot be determined.",
-		),
-	remote: z
-		.boolean()
-		.describe(
-			"Whether it's possible to host this MCP remotely. For example, if a MCP accesses files local to a user's desktop or users some local commands/cli, then it should be false. If it wraps a remote API and doesn't depend on the end-users local environment, then it should be true. Only set this false if the end-user must run this locally. If unsure, set to false.",
 		),
 })
 
