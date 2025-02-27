@@ -6,9 +6,11 @@ import {
 	FormItem,
 	FormLabel,
 	FormMessage,
+	FormDescription,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { createServer } from "@/lib/actions/servers"
 import { createServerSchema } from "@/lib/actions/servers.schema"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -28,6 +30,7 @@ const normalizeId = (name: string) =>
 const projectFormSchema = createServerSchema.pick({
 	qualifiedName: true,
 	baseDirectory: true,
+	local: true,
 })
 
 type ProjectFormData = z.infer<typeof projectFormSchema>
@@ -44,6 +47,7 @@ export default function NewServerForm({ owner, repo }: Props) {
 		defaultValues: {
 			qualifiedName: repo ? normalizeId(repo) : "",
 			baseDirectory: ".",
+			local: false,
 		},
 	})
 
@@ -172,6 +176,28 @@ export default function NewServerForm({ owner, repo }: Props) {
 									directory.
 								</p>
 								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="local"
+						render={({ field }) => (
+							<FormItem className="flex flex-row items-center space-x-3 space-y-0">
+								<FormControl>
+									<Checkbox
+										checked={field.value}
+										onCheckedChange={field.onChange}
+									/>
+								</FormControl>
+								<div className="leading-none space-y-1">
+									<FormLabel>Local Only</FormLabel>
+									<FormDescription>
+										Enable this if your MCP requires local access (i.e.,
+										end-user file system access) and cannot be hosted.
+									</FormDescription>
+								</div>
 							</FormItem>
 						)}
 					/>

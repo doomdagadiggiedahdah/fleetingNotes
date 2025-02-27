@@ -36,6 +36,7 @@ export const createServerSchema = z.object({
 			(path) => !path.includes(".."),
 			"Base directory cannot contain parent directory references",
 		),
+	local: z.boolean().optional().default(false),
 })
 
 export type CreateServerInputs = z.infer<typeof createServerSchema>

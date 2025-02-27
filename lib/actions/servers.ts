@@ -138,9 +138,10 @@ export async function createServer(rawData: CreateServerInputs) {
 					displayName: insertData.qualifiedName,
 					description: "",
 					...serverExtractionData,
-					// User specified data
+					// User specified data should override the above defaults
 					// TODO: Allow usernames
 					qualifiedName: `@${insertData.repoOwner}/${insertData.qualifiedName}`,
+					remote: !insertData.local,
 				})
 				.returning({
 					id: servers.id,
@@ -159,7 +160,9 @@ export async function createServer(rawData: CreateServerInputs) {
 			return server
 		})
 
-		waitUntil(createDeployment(newServer.id))
+		if (!insertData.local) {
+			waitUntil(createDeployment(newServer.id))
+		}
 
 		return { server: newServer }
 	} catch (error) {
