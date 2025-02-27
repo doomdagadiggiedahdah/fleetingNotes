@@ -1,5 +1,6 @@
 "use server"
 
+import { REVALIDATE_AUTH_TOKEN } from "@/app/api/revalidate/auth-token"
 import { db } from "@/db"
 import {
 	buildCache,
@@ -16,7 +17,6 @@ import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
 import { isEqual } from "lodash"
-import { revalidatePath } from "next/cache"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
 import {
 	getInstallationOctokit,
@@ -360,11 +360,31 @@ export async function createDeploymentForServer(
 								}),
 						])
 						await lastAppend
-						setTimeout(() => {
-							// Clear the cache
-							revalidatePath(`/`)
-							revalidatePath(`/server/${server.qualifiedName}`)
-						}, 0)
+
+						const triggerRevalidation = async () => {
+							try {
+								const paths = [`/`, `/server/${server.qualifiedName}`]
+
+								// Trigger revalidation for each path
+								await Promise.all(
+									paths.map(async (path) => {
+										const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ""
+										await fetch(`${baseUrl}/api/revalidate`, {
+											method: "POST",
+											body: JSON.stringify({ path }),
+											headers: {
+												"Content-Type": "application/json",
+												Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
+											},
+										})
+									}),
+								)
+							} catch (e) {
+								console.error("Failed to trigger revalidation:", e)
+							}
+						}
+						waitUntil(triggerRevalidation())
+
 						return ok()
 					})(),
 					600 * 1000,
