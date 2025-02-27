@@ -356,17 +356,19 @@ export async function createDeploymentForServer(
 									set: { files: buildFiles },
 								}),
 						])
-						// Clear the cache
-						revalidatePath(`/`)
-						revalidatePath(`/server/${server.qualifiedName}`)
 						await lastAppend
+						setTimeout(() => {
+							// Clear the cache
+							revalidatePath(`/`)
+							revalidatePath(`/server/${server.qualifiedName}`)
+						}, 0)
 						return ok()
 					})(),
 					600 * 1000,
 				)
 			} catch (e) {
 				console.error("Unexpected internal error or timeout", e)
-				await appendLog("Unexpected internal error.", "FAILURE")
+				await appendLog("Unexpected internal error or timeout.", "FAILURE")
 				return err({ type: "unexpected" })
 			} finally {
 				await gitSandbox.sandbox.kill()
