@@ -3,7 +3,7 @@ import OpenAI from "openai"
 import type { ChatCompletionMessageParam } from "openai/resources/index.mjs"
 
 import mcpPrompt from "../mcp-prompt-mini.txt"
-import { type GitSandbox, REPO_WORKING_DIR } from "./sandbox"
+import { type GitSandbox, REPO_WORKING_DIR } from "../build/sandbox"
 import { toResult } from "@/lib/utils/result"
 import type { Server } from "@/db/schema"
 

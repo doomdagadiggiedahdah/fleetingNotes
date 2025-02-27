@@ -21,9 +21,9 @@ import {
 	getInstallationOctokit,
 	getInstallationToken,
 } from "../auth/github/server"
-import { serializeSmitheryYaml } from "../blacksmith/build/gen-pr"
+import { serializeSmitheryYaml } from "../blacksmith/build/smithery-config"
 import { generateBuildFiles } from "../blacksmith/build/gen-build-files"
-import { createServerRepoPullRequestFromBuild } from "../blacksmith/build/pr"
+import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr"
 import {
 	buildAndDeploySandbox,
 	getDeployedUrl,

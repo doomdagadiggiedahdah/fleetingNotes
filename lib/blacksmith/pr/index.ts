@@ -12,7 +12,7 @@ import { posthog } from "@/lib/posthog_server"
 import "@/lib/utils/braintrust"
 import { waitUntil } from "@vercel/functions"
 import { patchReadmeFromSandbox } from "./patch-readme"
-import type { GitSandbox } from "./sandbox"
+import type { GitSandbox } from "../build/sandbox"
 
 interface PatchFile {
 	content: string | null

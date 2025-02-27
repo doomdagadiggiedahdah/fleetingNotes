@@ -25,9 +25,9 @@ export function DeployButton({
 	useEffect(() => {
 		if (deployments !== null) {
 			// Deployments loaded
-			if (deployments.length === 0) {
-				setCheckOnLoad(true)
-			}
+
+			// Trigger a check to see if we have any errors or PRs.
+			setCheckOnLoad(true)
 			setIsLoading(false)
 		}
 	}, [deployments])
