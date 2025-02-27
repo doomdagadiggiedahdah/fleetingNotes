@@ -10,12 +10,24 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table"
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { Database } from "@/db/supabase.types"
 import { getDeployments } from "@/lib/actions/deployment"
 import { createClient } from "@/lib/supabase/client"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { differenceInSeconds } from "date-fns"
-import { ChevronDown, ChevronRight, GitBranch, Loader2 } from "lucide-react"
+import {
+	ChevronDown,
+	ChevronRight,
+	GitBranch,
+	Globe,
+	Loader2,
+} from "lucide-react"
 import React, { useEffect, useRef, useState } from "react"
 import { DeploymentTimer } from "./deployment-timer"
 
@@ -29,6 +41,8 @@ export function DeploymentsTable({ server }: Props) {
 	const [deployments, setDeployments] = useState<Deployment[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({})
+	const [latestSuccessfulDeploymentId, setLatestSuccessfulDeploymentId] =
+		useState<string | null>(null)
 
 	const toggleRowExpansion = (deploymentId: string) => {
 		setExpandedRows((prev) => ({
@@ -40,7 +54,22 @@ export function DeploymentsTable({ server }: Props) {
 	useEffect(() => {
 		;(async () => {
 			setIsLoading(true)
-			setDeployments(await getDeployments(server.id))
+			const fetchedDeployments = await getDeployments(server.id)
+			setDeployments(fetchedDeployments)
+
+			// Find the latest successful deployment
+			const successfulDeployments = fetchedDeployments.filter(
+				(d) => d.status === "SUCCESS",
+			)
+			if (successfulDeployments.length > 0) {
+				setLatestSuccessfulDeploymentId(successfulDeployments[0].id)
+			}
+
+			// If there's only one deployment, expand it by default
+			if (fetchedDeployments.length === 1) {
+				setExpandedRows({ [fetchedDeployments[0].id]: true })
+			}
+
 			setIsLoading(false)
 		})()
 
@@ -172,6 +201,20 @@ export function DeploymentsTable({ server }: Props) {
 										<TableCell>
 											<div>
 												<div className="flex items-center gap-2">
+													{deployment.id === latestSuccessfulDeploymentId && (
+														<TooltipProvider>
+															<Tooltip>
+																<TooltipTrigger asChild>
+																	<span className="inline-flex">
+																		<Globe className="h-4 w-4 text-green-500" />
+																	</span>
+																</TooltipTrigger>
+																<TooltipContent>
+																	<p>Live version</p>
+																</TooltipContent>
+															</Tooltip>
+														</TooltipProvider>
+													)}
 													<code className="text-sm">
 														<a
 															href={
