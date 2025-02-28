@@ -28,7 +28,6 @@ process_recordings() {
             source ../.venv/bin/activate
             python3 ../transcribe.py
         else
-            echo "sleeping"
             sleep 10
         fi
     done

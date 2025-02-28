@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
+from semantic_sort import sort_note_by_topic
 warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
 
 
@@ -33,10 +34,11 @@ NOTES_MAP = {
     "concept digest": ZETTLE_DIR / "concept digest.md",
     "memory dump": ZETTLE_DIR / "memory dump.md",
     "daily reflection": "daily",
-    "reminder": "reminder"
+    "reminder": "reminder",
+    "operator search": "sort" # TODO: return this back to "operator sort", I fucked up the test audio
 }
 
-WHISPER_MODEL = "turbo"
+WHISPER_MODEL = "turbo" # TODO: test out large instead. I've gotten weird hallucinations
 DEVICE = "cpu"
 
 # Set up logging
@@ -122,16 +124,21 @@ class ContentRouter:
         content = content.strip()
         
         # Check for keyword matches
-        for keyword, target in self.notes_map.items():
+        for keyword, target in self.notes_map.items(): # notes_map is the keyword:note list
             if keyword.lower() in content.lower():
                 logging.info(f"Keyword '{keyword}' found in content")
                 processed_content = content.lower().strip()
                 
-                if target == "daily":
+                if   target == "daily":
                     return self._get_daily_note_path(source_file), processed_content, keyword
                 elif target == "reminder":
                     md_filename = Path(source_file).stem + ".md"
                     return REMINDER_DIR / md_filename, processed_content, keyword
+                elif target == "sort":
+                    ## and here....
+                    destination_note, confidence, topic = sort_note_by_topic(processed_content) 
+                    logging.info(f"Content semantically sorted to '{destination_note}' (topic: {topic}, confidence: {confidence:.2f})")
+                    return ZETTLE_DIR / destination_note, processed_content
                 return Path(target), processed_content, keyword
                 
         # Default to inbox if no keywords match
