@@ -5,6 +5,7 @@ import Link from "next/link"
 import { PopularityCounter } from "../popularity-count"
 import { ServerFavicon } from "../server-page/server-favicon"
 import { ServerQualifiedName } from "../server-page/server-qualified-name"
+import posthog from "posthog-js"
 interface ToolCardProps {
 	server: FetchedServers[number]
 }
@@ -13,6 +14,12 @@ export function ServerListItem({ server }: ToolCardProps) {
 	return (
 		<Link
 			href={`/server/${server.qualifiedName}`}
+			onClick={() => {
+				posthog.capture("Server List Item Clicked", {
+					id: server.id,
+					qualifiedName: server.qualifiedName,
+				})
+			}}
 			role="listitem"
 			className="bg-card rounded-lg border border-border p-4 hover:bg-accent transition-colors h-full flex flex-col"
 		>

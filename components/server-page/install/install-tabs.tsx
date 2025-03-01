@@ -252,12 +252,13 @@ export function InstallationTabs({
 			(acc, [key, field]: [string, JSONSchema]) => {
 				// Use user value if provided and non-empty, otherwise use default
 				const userValue = values[key]
-				acc[key] = userValue !== "" && userValue !== undefined 
-					? userValue 
-					: field.default
+				acc[key] =
+					userValue !== "" && userValue !== undefined
+						? userValue
+						: field.default
 				return acc
 			},
-			{} as JsonObject
+			{} as JsonObject,
 		)
 
 		setConfigValues(finalValues)
