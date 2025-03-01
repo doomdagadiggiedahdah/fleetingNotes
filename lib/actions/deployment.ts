@@ -40,6 +40,7 @@ import type { ServerConfigGateway } from "../types/server-config"
 import { withTimeout } from "../utils"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
+import { fetchServerTools } from "../utils/get-tools"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -118,7 +119,7 @@ export async function createDeployment(serverId: string) {
  * @returns
  */
 export async function createDeploymentForServer(
-	server: Omit<Server, "connections" | "tags">,
+	server: Pick<Server, "id" | "qualifiedName" | "displayName">,
 	serverRepo: ServerRepo,
 ) {
 	// Get repo details
@@ -339,13 +340,14 @@ export async function createDeploymentForServer(
 							}
 						}
 
+						const deploymentUrl = getDeployedUrl(flyAppId)
 						await Promise.all([
 							db
 								.update(deployments)
 								.set({
 									status: "SUCCESS",
 									updatedAt: sql`NOW()`,
-									deploymentUrl: getDeployedUrl(flyAppId),
+									deploymentUrl,
 								})
 								.where(eq(deployments.id, deploymentRow.id)),
 							db
@@ -361,7 +363,21 @@ export async function createDeploymentForServer(
 						])
 						await lastAppend
 
-						const triggerRevalidation = async () => {
+						const backgroundUpdate = async () => {
+							// Populate `tools` in server based on call to server
+							// If there's a valid deployment URL, fetch the tools
+							const toolResult = await fetchServerTools(deploymentUrl)
+
+							if (toolResult.ok && toolResult.value.tools.length > 0) {
+								// Format the tools as a JSON string for the embedding
+								await db
+									.update(servers)
+									.set({
+										tools: toolResult.value.tools,
+									})
+									.where(eq(servers.id, server.id))
+							}
+
 							try {
 								const paths = [`/`, `/server/${server.qualifiedName}`]
 
@@ -390,7 +406,7 @@ export async function createDeploymentForServer(
 								console.error("Failed to trigger revalidation:", e)
 							}
 						}
-						waitUntil(triggerRevalidation())
+						waitUntil(backgroundUpdate())
 
 						return ok()
 					})(),

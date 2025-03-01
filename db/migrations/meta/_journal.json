@@ -239,6 +239,13 @@
 			"when": 1740818047420,
 			"tag": "0034_marvelous_caretaker",
 			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "7",
+			"when": 1740837467728,
+			"tag": "0035_illegal_stick",
+			"breakpoints": true
 		}
 	]
 }

@@ -27,6 +27,35 @@ export type Database = {
 				}
 				Relationships: []
 			}
+			build_cache: {
+				Row: {
+					created_at: string
+					files: Json | null
+					server_id: string
+					updated_at: string
+				}
+				Insert: {
+					created_at?: string
+					files?: Json | null
+					server_id: string
+					updated_at?: string
+				}
+				Update: {
+					created_at?: string
+					files?: Json | null
+					server_id?: string
+					updated_at?: string
+				}
+				Relationships: [
+					{
+						foreignKeyName: "build_cache_server_id_servers_id_fk"
+						columns: ["server_id"]
+						isOneToOne: true
+						referencedRelation: "servers"
+						referencedColumns: ["id"]
+					},
+				]
+			}
 			candidate_urls: {
 				Row: {
 					crawl_url: string
@@ -269,7 +298,6 @@ export type Database = {
 			}
 			servers: {
 				Row: {
-					checked: boolean
 					connections: Json
 					crawl_url: string | null
 					created_at: string
@@ -284,11 +312,11 @@ export type Database = {
 					published: boolean
 					qualified_name: string
 					remote: boolean
+					tools: Json | null
 					updated_at: string
 					verified: boolean | null
 				}
 				Insert: {
-					checked?: boolean
 					connections: Json
 					crawl_url?: string | null
 					created_at?: string
@@ -303,11 +331,11 @@ export type Database = {
 					published?: boolean
 					qualified_name: string
 					remote?: boolean
+					tools?: Json | null
 					updated_at?: string
 					verified?: boolean | null
 				}
 				Update: {
-					checked?: boolean
 					connections?: Json
 					crawl_url?: string | null
 					created_at?: string
@@ -322,6 +350,7 @@ export type Database = {
 					published?: boolean
 					qualified_name?: string
 					remote?: boolean
+					tools?: Json | null
 					updated_at?: string
 					verified?: boolean | null
 				}

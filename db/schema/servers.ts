@@ -48,6 +48,9 @@ export const servers = pgTable(
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 
+		// List of tools available for this server. Derived from MCP call data and populated upon deployment.
+		tools: jsonb("tools"),
+
 		// Search embedding
 		embedding: vector("embedding", { dimensions: 1536 }),
 	},
