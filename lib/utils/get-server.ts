@@ -31,6 +31,7 @@ const selectFetchedServerSchema = selectServerSchema
 		remote: true,
 		published: true,
 		owner: true,
+		tools: true,
 	})
 	.extend({
 		// The compiled Markdown component passed to the page
@@ -71,6 +72,7 @@ export async function getServer(qualifiedName: string) {
 			remote: servers.remote,
 			published: servers.published,
 			owner: servers.owner,
+			tools: servers.tools,
 			deploymentUrl: sql<string | null>`(
 				SELECT
 				CASE 

@@ -1,7 +1,8 @@
 import { MCPProvider } from "@/context/mcp-context"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { fetchServerTools } from "@/lib/utils/get-tools"
 import { err } from "@/lib/utils/result"
+import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { ToolsPanel } from "./index"
 
 interface ServerTabsProps {
@@ -9,13 +10,12 @@ interface ServerTabsProps {
 }
 
 export async function ToolPanelContainer({ server }: ServerTabsProps) {
-	// Start the fetch immediately but don't await it yet
-	const toolResult = server?.deploymentUrl
-		? await fetchServerTools(server.deploymentUrl)
-		: err("No deployment URL available")
+	const configSchemaResult = server.deploymentUrl
+		? await fetchConfigSchema(server.deploymentUrl)
+		: err()
 
-	const tools = toolResult.ok ? toolResult.value.tools : []
-	const configSchema = toolResult.ok ? toolResult.value.configSchema : {}
+	const tools = (server.tools as Tool[]) ?? []
+	const configSchema = configSchemaResult.ok ? configSchemaResult.value : {}
 	return (
 		<MCPProvider>
 			<ToolsPanel
