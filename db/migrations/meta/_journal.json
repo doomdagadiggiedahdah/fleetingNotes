@@ -232,6 +232,13 @@
 			"when": 1740497507502,
 			"tag": "0033_cynical_retro_girl",
 			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "7",
+			"when": 1740818047420,
+			"tag": "0034_marvelous_caretaker",
+			"breakpoints": true
 		}
 	]
 }

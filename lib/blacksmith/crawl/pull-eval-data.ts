@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
-import { and, eq, sql } from "drizzle-orm"
+import { sql } from "drizzle-orm"
 
 import { initDataset } from "braintrust"
 
@@ -22,7 +22,6 @@ async function main() {
 			),
 		})
 		.from(servers)
-		.where(and(eq(servers.checked, true)))
 		.groupBy(servers.crawlUrl)
 
 	const dataset = initDataset("Smithery", { dataset: "servers_checked" })
