@@ -247,7 +247,20 @@ export function InstallationTabs({
 	}, [activeTab, server, configSchema])
 
 	const handleClientConfig = async (values: JsonObject) => {
-		setConfigValues(values)
+		// Get defaults while preserving schema property order
+		const finalValues = Object.entries(configSchema?.properties || {}).reduce(
+			(acc, [key, field]: [string, JSONSchema]) => {
+				// Use user value if provided and non-empty, otherwise use default
+				const userValue = values[key]
+				acc[key] = userValue !== "" && userValue !== undefined 
+					? userValue 
+					: field.default
+				return acc
+			},
+			{} as JsonObject
+		)
+
+		setConfigValues(finalValues)
 		setIsClientConfigured(true)
 		return Promise.resolve()
 	}
