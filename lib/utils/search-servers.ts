@@ -119,8 +119,10 @@ export async function getAllServers(
 				? [desc(similarity)]
 				: // Prioritize the new servers
 					[desc(t.isNew)]),
-			desc(t.useCount),
-			sql`CASE WHEN ${servers.verified} THEN 0 ELSE 1 END`,
+			// Apply a 2x boost to useCount for verified servers
+			desc(
+				sql`CASE WHEN ${servers.verified} THEN ${t.useCount} * 2 ELSE ${t.useCount} END`,
+			),
 			sql`RANDOM()`,
 		])
 		.where(whereClause)

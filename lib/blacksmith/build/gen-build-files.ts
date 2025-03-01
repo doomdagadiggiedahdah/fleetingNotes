@@ -250,7 +250,7 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 			},
 			(reason) => {
 				options.onUpdate?.(
-					`Failed to generate missing build config files. Reason:\n${reason.type}`,
+					`Failed to generate missing build config files. Reason:\nError type: ${reason.type}\nReason:\n${reason.issue_body}`,
 				)
 				markedFailure = reason
 			},
