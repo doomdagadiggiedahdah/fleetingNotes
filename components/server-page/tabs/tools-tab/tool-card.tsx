@@ -19,7 +19,6 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import Ajv from "ajv"
 import { ToolInput } from "./tool-input"
 
@@ -123,11 +122,11 @@ export function ToolCard({
 								{tool.name}
 							</h3>
 							{isExpanded ? (
-								<ScrollArea className="h-[100px]">
-									<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line pr-4">
+								<div className="max-h-[300px] overflow-y-auto pr-2 dark-scrollbar">
+									<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line">
 										{tool.description || ""}
 									</p>
-								</ScrollArea>
+								</div>
 							) : (
 								<p className="text-sm text-muted-foreground text-left mt-1 whitespace-pre-line line-clamp-3">
 									{truncateDescription(tool.description || "")}
