@@ -18,10 +18,6 @@ interface CategoryServerListProps {
 }
 
 export function CategoryServerList({ category }: CategoryServerListProps) {
-	// If no servers found, don't render anything
-	if (category.servers.length === 0) {
-		return null
-	}
 	const [scrollPosition, setScrollPosition] = useState(0)
 	const containerRef = useRef<HTMLDivElement | null>(null)
 
@@ -45,6 +41,10 @@ export function CategoryServerList({ category }: CategoryServerListProps) {
 	}
 
 	const hasServers = category.servers.length > 0
+	// If no servers found, don't render anything
+	if (!hasServers) {
+		return null
+	}
 
 	return (
 		<div className="mb-6">
