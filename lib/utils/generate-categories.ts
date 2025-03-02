@@ -182,14 +182,7 @@ const CategorySchema = z.object({
 /**
  * Generate a descriptive category for a cluster of servers using OpenAI
  */
-async function generateCategoryForCluster(
-	servers: Array<{
-		id: string
-		name: string | null
-		description: string | null
-		embedding: any
-	}>,
-) {
+async function generateCategoryForCluster(servers: ServerWithEmbedding[]) {
 	// Create example servers content for the prompt (use at most 10)
 	const serversContent = servers
 		.slice(0, Math.min(servers.length, 10))
