@@ -3,6 +3,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { Suspense } from "react"
 import { AboutPanel } from "./about-tab"
+import { ApiPanel } from "./api-tab"
 import { DeploymentsPanel } from "./deployments/deployments-tab"
 import { SettingsPanel } from "./settings/settings-tab"
 import { ServerTabsNav } from "./tabs-nav"
@@ -32,6 +33,10 @@ export function ServerTabs({ server, activeTab }: ServerTabsProps) {
 							<ToolPanelContainer server={server} />
 						</Suspense>
 					)}
+				</TabsContent>
+
+				<TabsContent value="api">
+					{activeTab === "api" && <ApiPanel server={server} />}
 				</TabsContent>
 
 				<TabsContent value="deployments">

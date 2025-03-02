@@ -13,11 +13,11 @@ import type { JSONSchema } from "@/lib/types/server"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { err, ok, type Result } from "@/lib/utils/result"
-import { SiAnthropic, SiTypescript } from "@icons-pack/react-simple-icons"
+import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
 import { ServerFavicon } from "../server-favicon"
-import { ClientInstallContent, TypeScriptContent } from "./install-tab-content"
+import { ClientInstallContent } from "./install-tab-content"
 import { OverflowMenu } from "./overflow-menu"
 import { ClientContent } from "./client-content"
 
@@ -29,7 +29,6 @@ export type InstallTabStates =
 	| "witsy"
 	| "enconvo"
 	| "goose"
-	| "code"
 
 type InstallationTabsProps = {
 	server: FetchedServer
@@ -109,11 +108,6 @@ function InstallTabOptions({
 				/>
 			),
 		},
-		{
-			value: "code",
-			label: "Typescript",
-			icon: <SiTypescript className="w-4 h-4" />,
-		},
 	]
 
 	const mainTabs = tabOrder.slice(0, visibleCount)
@@ -190,7 +184,6 @@ export function InstallationTabs({
 		"witsy",
 		"enconvo",
 		"goose",
-		"code",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
@@ -207,12 +200,7 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function getConfig() {
-			if (
-				(activeTab === "cursor" ||
-					activeTab === "goose" ||
-					activeTab === "code") &&
-				!configSchema
-			) {
+			if ((activeTab === "cursor" || activeTab === "goose") && !configSchema) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
@@ -335,9 +323,6 @@ export function InstallationTabs({
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
 				/>
-			</TabsContent>
-			<TabsContent value="code">
-				<TypeScriptContent server={server} configSchema={configSchema} />
 			</TabsContent>
 		</Tabs>
 	)

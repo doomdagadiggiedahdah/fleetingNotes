@@ -1,6 +1,6 @@
 "use client"
 
-import { Info, Server, Settings, Wrench } from "lucide-react"
+import { Code, Info, Server, Settings, Wrench } from "lucide-react"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -62,6 +62,14 @@ export function ServerTabsNav({ server }: ServerTabsNavProps) {
 						<span className="flex items-center gap-2">
 							<Wrench size={16} />
 							Tools
+						</span>
+					</TabsTrigger>
+				</Link>
+				<Link href={getTabPath("api")}>
+					<TabsTrigger value="api">
+						<span className="flex items-center gap-2">
+							<Code size={16} />
+							API
 						</span>
 					</TabsTrigger>
 				</Link>

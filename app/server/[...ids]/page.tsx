@@ -30,6 +30,7 @@ export async function generateStaticParams() {
 		return [
 			{ ids: baseSegments }, // Overview tab (root path)
 			{ ids: [...baseSegments, "tools"] }, // Tools tab
+			{ ids: [...baseSegments, "api"] }, // API tab
 		]
 	})
 }
@@ -56,7 +57,13 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 }
 
 function parsePathParams(ids: string[]) {
-	const validTabs = new Set(["about", "tools", "deployments", "settings"])
+	const validTabs = new Set([
+		"about",
+		"tools",
+		"api",
+		"deployments",
+		"settings",
+	])
 
 	// Decode the segments first
 	const decodedIds = ids.map(decodeURIComponent)
