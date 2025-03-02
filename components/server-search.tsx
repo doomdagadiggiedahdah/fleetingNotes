@@ -6,19 +6,11 @@ import { useRouter } from "nextjs-toploader/app"
 import { useCallback, useState, useEffect } from "react"
 import { ButtonLoading } from "./ui/loading-button"
 import { cn } from "@/lib/utils"
+import { getRandomCategories } from "@/lib/actions/category"
 
 interface SearchProps {
 	placeholder?: string
 }
-
-// Common search prompts
-const COMMON_SEARCHES = [
-	"knowledge management",
-	"data analysis",
-	"code generation",
-	"deep research",
-	"memory enhancement",
-]
 
 export default function ServerSearch({
 	placeholder = "Search or prompt for servers...",
@@ -30,6 +22,9 @@ export default function ServerSearch({
 	const [isLoading, setIsLoading] = useState(false)
 	const [isFocused, setIsFocused] = useState(false)
 	const [selectedIndex, setSelectedIndex] = useState(-1)
+	const [searchSuggestions, setSearchSuggestions] = useState<
+		Array<{ id: string; query: string }>
+	>([])
 
 	// Update query state when URL search parameters change
 	useEffect(() => {
@@ -43,6 +38,16 @@ export default function ServerSearch({
 			setSelectedIndex(-1)
 		}
 	}, [isFocused])
+
+	// Fetch search suggestions when component mounts
+	useEffect(() => {
+		const fetchSuggestions = async () => {
+			const suggestions = await getRandomCategories()
+			setSearchSuggestions(suggestions)
+		}
+
+		fetchSuggestions()
+	}, [])
 
 	const onSearch = useCallback(async (value: string) => {
 		const params = new URLSearchParams(searchParams)
@@ -106,16 +111,18 @@ export default function ServerSearch({
 								if (e.key === "ArrowDown") {
 									e.preventDefault()
 									setSelectedIndex((prev) =>
-										prev < COMMON_SEARCHES.length - 1 ? prev + 1 : 0,
+										prev < searchSuggestions.length - 1 ? prev + 1 : 0,
 									)
 								} else if (e.key === "ArrowUp") {
 									e.preventDefault()
 									setSelectedIndex((prev) =>
-										prev > 0 ? prev - 1 : COMMON_SEARCHES.length - 1,
+										prev > 0 ? prev - 1 : searchSuggestions.length - 1,
 									)
 								} else if (e.key === "Enter" && selectedIndex >= 0) {
 									e.preventDefault()
-									handleCommonSearchClick(COMMON_SEARCHES[selectedIndex])
+									handleCommonSearchClick(
+										searchSuggestions[selectedIndex].query,
+									)
 								}
 							}}
 							className="w-full p-4 pr-12 text-foreground border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring"
@@ -131,35 +138,36 @@ export default function ServerSearch({
 					</div>
 				</form>
 
-				{/* Common searches section - animates when input is focused */}
-				<div
-					className={cn(
-						"absolute left-0 right-0 z-10 overflow-hidden transition-all duration-200 ease-in-out bg-background",
-						"border border-border rounded-lg mt-1",
-						isFocused
-							? "opacity-100 max-h-[400px] shadow-xl shadow-black/10"
-							: "opacity-0 max-h-0 border-0",
-					)}
-				>
-					<div className="py-2 px-0">
-						<div className="flex flex-col">
-							{COMMON_SEARCHES.map((searchTerm, index) => (
-								<button
-									type="button"
-									key={searchTerm}
-									onClick={() => handleCommonSearchClick(searchTerm)}
-									className={cn(
-										"px-4 py-3 text-left text-sm transition-colors text-foreground",
-										"hover:bg-secondary/50 w-full",
-										index === selectedIndex && "bg-secondary",
-									)}
-								>
-									{searchTerm}
-								</button>
-							))}
+				{searchSuggestions && (
+					<div
+						className={cn(
+							"absolute left-0 right-0 z-10 overflow-hidden transition-all duration-200 ease-in-out bg-background",
+							"border border-border rounded-lg mt-1",
+							isFocused
+								? "opacity-100 max-h-[400px] shadow-xl shadow-black/10"
+								: "opacity-0 max-h-0 border-0",
+						)}
+					>
+						<div className="py-2 px-0">
+							<div className="flex flex-col">
+								{searchSuggestions.map((suggestion, index) => (
+									<button
+										type="button"
+										key={suggestion.id}
+										onClick={() => handleCommonSearchClick(suggestion.query)}
+										className={cn(
+											"px-4 py-3 text-left text-sm transition-colors text-foreground",
+											"hover:bg-secondary/50 w-full",
+											index === selectedIndex && "bg-secondary",
+										)}
+									>
+										{suggestion.query}
+									</button>
+								))}
+							</div>
 						</div>
 					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	)

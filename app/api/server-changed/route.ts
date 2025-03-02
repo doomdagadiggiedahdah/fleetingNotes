@@ -1,8 +1,9 @@
 import { db } from "@/db"
-import { servers } from "@/db/schema"
+import { serverCategories, servers } from "@/db/schema"
 import type { Database } from "@/db/supabase.types"
+import { generateCategoriesFromServerEmbeddings } from "@/lib/utils/generate-categories"
 import { llm } from "@/lib/utils/braintrust"
-import { eq } from "drizzle-orm"
+import { eq, desc } from "drizzle-orm"
 import { dump as yamlDump } from "js-yaml"
 import { isEqual, pick } from "lodash"
 import { NextResponse } from "next/server"
@@ -35,6 +36,8 @@ const promptFields: (keyof Record)[] = [
 	"license",
 	"tools",
 ]
+
+export const maxDuration = 60
 
 // Callback function when servers row changes
 export async function POST(request: Request) {
@@ -80,6 +83,26 @@ export async function POST(request: Request) {
 			embedding: embedding.data[0].embedding,
 		})
 		.where(eq(servers.id, newServer.id))
+
+	// Check when categories were last generated
+	const lastCategory = await db
+		.select({ createdAt: serverCategories.createdAt })
+		.from(serverCategories)
+		.orderBy(desc(serverCategories.createdAt))
+		.limit(1)
+		.then((results) => results[0] || null)
+
+	// Generate categories if it has been at least 24 hours since last generation
+	// or if there are no categories yet
+	if (
+		!lastCategory ||
+		Date.now() - new Date(lastCategory.createdAt).getTime() >=
+			24 * 60 * 60 * 1000
+	) {
+		console.log("Generating categories after server update...")
+		// Run the generation asynchronously to avoid blocking the response
+		await generateCategoriesFromServerEmbeddings()
+	}
 
 	return new Response(
 		payload.type === "UPDATE" ? "Updated embedding" : "Created embedding",
