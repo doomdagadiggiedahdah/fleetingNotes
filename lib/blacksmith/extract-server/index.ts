@@ -1,6 +1,6 @@
 import type { NewServer } from "@/db/schema"
 import {
-	getGithubFile,
+	getGithubFileResult,
 	getREADMEResult,
 	joinGithubPath,
 } from "@/lib/utils/github"
@@ -33,30 +33,27 @@ export const extractServer = (octokit: Octokit) =>
 		const [readme, dockerfile, packageJson, pyProjectToml, licenseResp] =
 			await Promise.all([
 				getREADMEResult(octokit, repoOwner, repoName, baseDirectory),
-				toResult(
-					getGithubFile(
-						octokit,
-						repoOwner,
-						repoName,
-						joinGithubPath(baseDirectory, "Dockerfile"),
-					),
+				getGithubFileResult(
+					octokit,
+					repoOwner,
+					repoName,
+					joinGithubPath(baseDirectory, "Dockerfile"),
 				),
-				toResult(
-					getGithubFile(
-						octokit,
-						repoOwner,
-						repoName,
-						joinGithubPath(baseDirectory, "package.json"),
-					),
+
+				getGithubFileResult(
+					octokit,
+					repoOwner,
+					repoName,
+					joinGithubPath(baseDirectory, "package.json"),
 				),
-				toResult(
-					getGithubFile(
-						octokit,
-						repoOwner,
-						repoName,
-						joinGithubPath(baseDirectory, "pyproject.toml"),
-					),
+
+				getGithubFileResult(
+					octokit,
+					repoOwner,
+					repoName,
+					joinGithubPath(baseDirectory, "pyproject.toml"),
 				),
+
 				toResult(
 					octokit.request("GET /repos/{owner}/{repo}/license", {
 						owner: repoOwner,
@@ -121,10 +118,9 @@ ${files.map((f) => `<${f.name}>${f.content}</${f.name}>`).join("\n")}`,
 
 		const output: Pick<
 			NewServer,
-			"license" | "displayName" | "description" | "descriptionLong" | "homepage"
+			"license" | "displayName" | "description" | "homepage"
 		> = {
 			...parsed,
-			descriptionLong: parsed.descriptionLong,
 			license: licenseResp.ok
 				? licenseResp.value.data.license?.spdx_id
 				: undefined,
@@ -144,12 +140,7 @@ const ExtractServerSchema = z.object({
 	description: z
 		.string()
 		.describe(
-			"A concise one-line description of the MCP server for end-users. For example, 'Add code execution and interpreting capabilities.'. Start with a verb. Max 2 sentences.",
-		),
-	descriptionLong: z
-		.string()
-		.describe(
-			"A detailed description of the MCP server for end-users, describing the key features and capabilities. Do not describe how to install or run the MCP. Maximum 3 paragraphs.",
+			"A concise description of the MCP server for end-users. For example, `Add code execution and interpreting capabilities to your agents. Run arbitrary code securely on our sandboxed servers.`. Start with a verb and focus on the benefit the end-user will get by using the MCP. Avoid describing the implementation detail or things generic to MCPs. Max 3 sentences.",
 		),
 	homepage: z
 		.string()

@@ -4,13 +4,9 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { getServer } from "@/lib/utils/get-server"
-import { toResult } from "@/lib/utils/result"
-import { getMdxComponents } from "@/mdx-components"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
-import { MDXRemote } from "next-mdx-remote-client/rsc"
 import { notFound } from "next/navigation"
-import { ErrorBoundary } from "react-error-boundary"
 import { getMe } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 
@@ -118,46 +114,6 @@ export default async function Page(props: Props) {
 	if (["settings", "deployments"].includes(activeTab) && !isOwner) {
 		redirect(`/server/${encodeURIComponent(server.qualifiedName)}`)
 	}
-
-	if (server.descriptionLong) {
-		let longDescription = server.descriptionLong
-
-		// TODO: We should move this to post-processing README descriptions using GPT 4o-mini instead of doing it during runtime.
-		longDescription = longDescription
-			// Remove Smithery badges
-			.replaceAll(
-				/\[!\[smithery badge\]\(https:\/\/smithery\.ai\/badge\/[^)]+\)\]\(https:\/\/smithery\.ai\/[^)]+\)/g,
-				"",
-			)
-			// Remove first H1 title
-			.replace(/^#\s+.*$\n|^.*\n=+\s*\n/m, "")
-			// Remove images that are local
-			.replace(/!\[[^\]]*\]\((?!https?:\/\/)[^)]+\)/g, "")
-			// Remove images from glama.ai (both markdown and HTML)
-			.replace(/!\[[^\]]*\]\(https?:\/\/glama\.ai\/[^)]+\)/g, "")
-			.replace(/<img\b[^>]*src=["']https?:\/\/glama\.ai\/[^"']*["'][^>]*>/g, "")
-			// Escape { ... } brackets
-			.replace(
-				/\{(\s*[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*\s*)\}/g,
-				"\\{$1\\}",
-			)
-
-		const renderResult = await toResult(
-			MDXRemote({
-				source: longDescription,
-				components: getMdxComponents(),
-			}),
-		)
-
-		server.descriptionLongMdx = renderResult.ok ? (
-			<ErrorBoundary fallback={longDescription}>
-				{renderResult.value}
-			</ErrorBoundary>
-		) : (
-			longDescription
-		)
-	}
-
 	return (
 		<main className="min-h-screen bg-background">
 			{error ? (

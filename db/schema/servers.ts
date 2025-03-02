@@ -27,8 +27,6 @@ export const servers = pgTable(
 		displayName: text("display_name").notNull(),
 		// Short description snippet
 		description: text("description").notNull(),
-		// Long description, usually the README.
-		descriptionLong: text("description_long"),
 		// The URL this repo was crawled from. Null if it wasn't crawled.
 		crawlUrl: text("crawl_url"),
 		homepage: text("homepage"),
