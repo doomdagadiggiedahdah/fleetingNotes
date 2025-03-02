@@ -1,0 +1,1 @@
+ALTER TABLE "server_categories" ENABLE ROW LEVEL SECURITY;
