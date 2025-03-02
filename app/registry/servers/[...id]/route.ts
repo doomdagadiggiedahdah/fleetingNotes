@@ -18,6 +18,7 @@ import { z } from "zod"
 const ReturnTypeSchema = RegistryServerSchema.pick({
 	qualifiedName: true,
 	displayName: true,
+	remote: true,
 }).extend({
 	connections: z.array(ConnectionSchema),
 })
@@ -35,6 +36,7 @@ export async function GET(
 				qualifiedName: servers.qualifiedName,
 				displayName: servers.displayName,
 				connections: servers.connections,
+				remote: servers.remote,
 				deploymentUrl: sql<string>`(
 					SELECT
 					CASE
