@@ -1,7 +1,16 @@
 import { db } from "@/db"
 import { deployments, serverRepos, servers } from "@/db/schema"
 import { isDeployedQuery, isNewQuery, useCountQuery } from "@/db/schema/queries"
-import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
+import {
+	and,
+	desc,
+	eq,
+	gt,
+	innerProduct,
+	isNotNull,
+	or,
+	sql,
+} from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
 import { llm } from "./braintrust"
 
@@ -78,6 +87,12 @@ export async function getAllServers(
 			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoName}) = LOWER(${parsedQueryObj.repo}))`
 			: undefined,
 		parsedQueryObj?.is === "deployed" ? eq(isDeployedQuery, true) : undefined,
+		parsedQueryObj?.is === "installable"
+			? or(
+					eq(isDeployedQuery, true),
+					sql`(jsonb_typeof(${servers.connections}) IS NOT NULL AND ${servers.connections} != '[]'::jsonb)`,
+				)
+			: undefined,
 	)
 
 	// Get total count

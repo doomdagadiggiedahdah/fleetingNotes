@@ -49,7 +49,7 @@ export function ApiPanel({ server }: ApiPanelProps) {
 	// Generate transport code based on available connections
 	const transportCode = server.deploymentUrl
 		? `\
-import { createTransport } from "@smithery/sdk/config.js"
+import { createTransport } from "@smithery/sdk/transport.js"
 
 const transport = createTransport("${server.deploymentUrl}"${wsConfig})`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
