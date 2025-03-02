@@ -170,7 +170,7 @@ const CategorySchema = z.object({
 	query: z
 		.string()
 		.describe(
-			"Search prompt that defines this category. This prompt will be used for semantic vector search and succinctly capture the essense of the category. Do not include examples of specific servers in your prompt. Write 1 sentence.",
+			"Search prompt that defines this category. This prompt will be used for semantic vector search and succinctly capture the essense of the category. Do not include examples of specific servers in your prompt. Write 1 sentence, well capitalized. Don't mention 'Server' or 'MCP' or 'Service' since those are redundant.",
 		),
 	title: z
 		.string()
@@ -213,9 +213,10 @@ async function generateCategoryForCluster(servers: ServerWithEmbedding[]) {
 }
 
 // CLI manual trigger
+import dotenv from "dotenv"
 if (require.main === module) {
 	// Load environment variables from .env.local.development
-	require("dotenv").config({ path: ".env.local.development" })
+	dotenv.config({ path: ".env.local.development" })
 	generateCategoriesFromServerEmbeddings()
 		.then((result) => {
 			if (result.success) {
