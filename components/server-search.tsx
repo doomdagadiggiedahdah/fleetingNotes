@@ -137,7 +137,7 @@ export default function ServerSearch({
 						"absolute left-0 right-0 z-10 overflow-hidden transition-all duration-200 ease-in-out bg-background",
 						"border border-border rounded-lg mt-1",
 						isFocused
-							? "opacity-100 max-h-[400px] shadow-lg"
+							? "opacity-100 max-h-[400px] shadow-xl shadow-black/10"
 							: "opacity-0 max-h-0 border-0",
 					)}
 				>

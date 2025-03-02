@@ -5,7 +5,7 @@ import { and, desc, eq, gt, innerProduct, isNotNull, sql } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
 import { llm } from "./braintrust"
 
-export const DEFAULT_PAGE_SIZE = 18
+export const DEFAULT_PAGE_SIZE = 20
 
 export interface PaginationParams {
 	page: number
@@ -22,7 +22,9 @@ export interface PaginatedResult<T> {
 	}
 }
 
-const MIN_SIMILARITY = 0.25
+// Multiplies the similarity by this number and truncates it
+const SIMILARITY_MULTIPLIER = 25
+const MIN_SIMILARITY = 0.3 * SIMILARITY_MULTIPLIER
 
 /**
  * @param query A string to search for. If null, we won't search
@@ -57,7 +59,7 @@ export async function getAllServers(
 				model: "text-embedding-3-small",
 			})
 			// Quantize distances so things that are very similar get sorted by other factors
-			return sql<number>`floor(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * 25)`
+			return sql<number>`floor(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * ${SIMILARITY_MULTIPLIER})`
 		} catch (e) {
 			console.error(e)
 			return null
