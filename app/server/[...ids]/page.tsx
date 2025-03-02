@@ -32,8 +32,7 @@ export async function generateStaticParams() {
 	return servers.flatMap((server) => {
 		const baseSegments = server.qualifiedName.split("/")
 		return [
-			{ ids: baseSegments },
-			{ ids: [...baseSegments, "about"] }, // About tab
+			{ ids: baseSegments }, // Overview tab (root path)
 			{ ids: [...baseSegments, "tools"] }, // Tools tab
 		]
 	})
@@ -117,7 +116,7 @@ export default async function Page(props: Props) {
 
 	// Redirect if trying to access protected tabs without ownership
 	if (["settings", "deployments"].includes(activeTab) && !isOwner) {
-		redirect(`/server/${encodeURIComponent(server.qualifiedName)}/about`)
+		redirect(`/server/${encodeURIComponent(server.qualifiedName)}`)
 	}
 
 	if (server.descriptionLong) {

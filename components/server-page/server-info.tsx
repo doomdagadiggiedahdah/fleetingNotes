@@ -28,7 +28,7 @@ export function ServerPage({ server, activeTab }: Props) {
 
 				{/* Server Header */}
 				<div className="mb-6">
-					<div className="flex items-baseline justify-between mb-2">
+					<div className="flex items-baseline justify-between">
 						<div className="flex items-center gap-2">
 							<h1 className="text-2xl font-bold flex items-center gap-2">
 								{server.homepage && (

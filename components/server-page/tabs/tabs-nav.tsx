@@ -1,6 +1,6 @@
 "use client"
 
-import { Info, Server, Settings } from "lucide-react"
+import { Info, Server, Settings, Wrench } from "lucide-react"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -53,12 +53,17 @@ export function ServerTabsNav({ server }: ServerTabsNavProps) {
 					<TabsTrigger value="about">
 						<span className="flex items-center gap-2">
 							<Info size={16} />
-							About
+							Overview
 						</span>
 					</TabsTrigger>
 				</Link>
 				<Link href={getTabPath("tools")}>
-					<TabsTrigger value="tools">Tools</TabsTrigger>
+					<TabsTrigger value="tools">
+						<span className="flex items-center gap-2">
+							<Wrench size={16} />
+							Tools
+						</span>
+					</TabsTrigger>
 				</Link>
 			</div>
 
@@ -69,9 +74,6 @@ export function ServerTabsNav({ server }: ServerTabsNavProps) {
 							<span className="flex items-center gap-2">
 								<Server size={16} />
 								Deployments
-								<div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
-									preview
-								</div>
 							</span>
 						</TabsTrigger>
 					</Link>

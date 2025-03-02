@@ -192,7 +192,8 @@ function ArrayInput({
 	return (
 		<div className="space-y-2">
 			{(value || []).map((item, index) => (
-				<div key={`${id}-${index}-${String(item)}`} className="flex gap-2">
+				// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+				<div key={index} className="flex gap-2">
 					<Input
 						value={String(item)}
 						onChange={(e) => {
