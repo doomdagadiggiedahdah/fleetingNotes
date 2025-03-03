@@ -224,27 +224,29 @@ set -e
 					DEPOT_TOKEN: process.env.DEPOT_TOKEN!,
 				},
 				timeoutMs: 3 * 60_000,
-				onStderr: (line) => {
-					// Start capturing after we see the start marker
-					if (line.includes("resolve registry.fly.io/sidecar")) {
-						buildStarted = true
-						return
-					}
+				onStderr: (data) => {
+					for (const line in data.split("\n")) {
+						// Start capturing after we see the start marker
+						if (line.includes("resolve registry.fly.io/sidecar")) {
+							buildStarted = true
+							return
+						}
 
-					// Stop capturing when we see the end marker
-					if (line.includes("COPY --from=gateway_image")) {
-						buildEnded = true
-						return
-					}
+						// Stop capturing when we see the end marker
+						if (line.includes("COPY --from=gateway_image")) {
+							buildEnded = true
+							return
+						}
 
-					// Only output lines between start and end markers that don't contain filtered terms
-					if (
-						buildStarted &&
-						!buildEnded &&
-						!line.includes("depot") &&
-						!line.includes("fly.io")
-					) {
-						options.onUpdate?.(line.trim())
+						// Only output lines between start and end markers that don't contain filtered terms
+						if (
+							buildStarted &&
+							!buildEnded &&
+							!line.includes("depot") &&
+							!line.includes("fly.io")
+						) {
+							options.onUpdate?.(line.trim())
+						}
 					}
 				},
 			},
