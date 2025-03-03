@@ -91,7 +91,7 @@ class TranscriptionService:
             if full_audio_path.stat().st_size == 0:
                 raise ValueError(f"Audio file is empty: {full_audio_path}")
             
-            result = self.model.transcribe(str(full_audio_path), fp16=False, language="English")
+            result = self.model.transcribe(str(full_audio_path), fp16=False, language="en")
             
             if not result or "text" not in result:
                 raise TranscriptionError("Transcription returned no text")
