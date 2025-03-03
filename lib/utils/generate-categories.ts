@@ -16,6 +16,17 @@ type ServerWithEmbedding = {
 	embedding: number[] | null
 }
 
+// Clustering parameters
+const MIN_SERVERS_FOR_CLUSTERING = 30
+const UMAP_N_COMPONENTS = 20
+const UMAP_N_NEIGHBORS = 15
+const UMAP_MIN_DIST = 0.1
+const UMAP_EPOCHS = 500
+const MIN_CLUSTER_SIZE = 10
+const MIN_SAMPLES = 10
+const ALPHA = 1.0
+const LEAF_SIZE = 40
+
 /**
  * Cluster embeddings using UMAP for dimensionality reduction and HDBSCAN for clustering
  * @param embeddings Array of embedding vectors
@@ -72,17 +83,6 @@ function clusterEmbeddings(
 		.filter((cluster) => cluster.length >= MIN_CLUSTER_SIZE)
 		.map((cluster) => cluster.map((index) => servers[index]))
 }
-
-// Clustering parameters
-const MIN_SERVERS_FOR_CLUSTERING = 30
-const UMAP_N_COMPONENTS = 20
-const UMAP_N_NEIGHBORS = 15
-const UMAP_MIN_DIST = 0.1
-const UMAP_EPOCHS = 500
-const MIN_CLUSTER_SIZE = 10
-const MIN_SAMPLES = 10
-const ALPHA = 1.0
-const LEAF_SIZE = 40
 
 /**
  * Generate categories from server embeddings using UMAP and HDBSCAN clustering
