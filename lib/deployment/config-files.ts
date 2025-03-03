@@ -51,10 +51,22 @@ COPY --from=gateway_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
 
 USER root
 
-# "Detect" script: tries ldd on /bin/sh (or /usr/bin/env) to see if it's musl or glibc.
-# If ldd or /bin/sh doesn't exist, this might fail.
-# We store the result in /tmp/os-family.
+# Install required dependencies for Alpine
 RUN /bin/sh -c 'set -eux && \
+  if grep -q "Alpine" /etc/os-release 2>/dev/null; then \
+    echo "Alpine Linux detected, installing required libraries" && \
+    apk add --no-cache libstdc++ libgcc && \
+    echo "musl" > /tmp/os-family; \
+    exit 0; \
+  fi'
+
+# Fallback detection script if not Alpine: tries ldd on /bin/sh (or /usr/bin/env) to see if it's musl or glibc.
+# If ldd or /bin/sh doesn't exist, this might fail.
+RUN /bin/sh -c 'set -eux && \
+  if [ -f /tmp/os-family ]; then \
+    echo "OS family already detected, skipping detection"; \
+    exit 0; \
+  fi && \
   if [ ! -x /bin/sh ] && [ ! -x /usr/bin/env ]; then \
     echo "ERROR: No shell found in the user image. Can not detect OS family." >&2 && \
     exit 1; \
