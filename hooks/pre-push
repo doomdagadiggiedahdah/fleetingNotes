@@ -3,7 +3,7 @@
 echo "Running pre-push checks..."
 
 echo "Running build..."
-npm run build:check
+npm run build
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then

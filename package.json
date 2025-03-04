@@ -6,7 +6,6 @@
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
-		"build:check": "next build --experimental-build-mode compile",
 		"start": "next start",
 		"check": "npx @biomejs/biome check --write --unsafe",
 		"db:generate": "drizzle-kit generate",

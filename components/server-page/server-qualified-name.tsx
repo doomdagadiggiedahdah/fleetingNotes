@@ -11,7 +11,7 @@ import { useState } from "react"
 
 interface Props {
 	server: FetchedServer | FetchedServers[number]
-	copyable: boolean
+	copyable?: boolean
 }
 
 export function ServerQualifiedName({ server, copyable = false }: Props) {
