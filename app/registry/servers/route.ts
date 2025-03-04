@@ -1,31 +1,17 @@
-import { db } from "@/db"
-import { apiKeys } from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { NextResponse } from "next/server"
+import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { getAllServers } from "@/lib/utils/search-servers"
 import { pick } from "lodash"
+import { NextResponse } from "next/server"
 
 const DEFAULT_PAGE_SIZE = 10
 
 export async function GET(request: Request) {
 	try {
-		// Get authorization header
-		const authorization = request.headers.get("Authorization")
-
-		if (!authorization || !authorization.startsWith("Bearer ")) {
-			return NextResponse.json(
-				{ error: "Missing or invalid authorization token" },
-				{ status: 401 },
-			)
+		const token = extractBearerToken(request)
+		if (!token) {
+			return NextResponse.json({ error: "Missing API key" }, { status: 401 })
 		}
-
-		const token = authorization.split(" ")[1]
-
-		// Verify token exists in API keys table
-		const apiKey = await db.query.apiKeys.findFirst({
-			where: eq(apiKeys.key, token),
-		})
-
+		const apiKey = await checkApiKey(token)
 		if (!apiKey) {
 			return NextResponse.json({ error: "Invalid API key" }, { status: 401 })
 		}

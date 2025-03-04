@@ -2,6 +2,7 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
+import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { posthog } from "@/lib/posthog_server"
 import {
 	ConnectionSchema,
@@ -113,10 +114,18 @@ const RequestSchema = z.object({
 	config: z.record(z.unknown()).describe("The configuration for the server"),
 })
 
+// Called by stdio setup
+// @deprecated, because in the future you can just pull Docker images with the config inside the server.
 export async function POST(
 	request: Request,
 	props: { params: Promise<{ id: string[] }> },
 ) {
+	let apiKey: Awaited<ReturnType<typeof checkApiKey>> = null
+	const token = extractBearerToken(request)
+	if (token) {
+		apiKey = await checkApiKey(token)
+	}
+
 	const params = await props.params
 	const serverId = params.id.join("/")
 	try {
@@ -160,7 +169,7 @@ export async function POST(
 
 		posthog.capture({
 			event: "Config Generated",
-			distinctId: data.userId ?? "anonymous",
+			distinctId: apiKey?.owner ?? data.userId ?? "anonymous",
 			properties: {
 				$process_person_profile: false,
 				serverId,
