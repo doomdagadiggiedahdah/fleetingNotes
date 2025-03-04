@@ -51,7 +51,13 @@ export async function run() {
 				eq(pullRequests.task, "config"),
 			),
 		)
-		.where(eq(serverRepos.type, "github"))
+		.where(
+			and(
+				eq(serverRepos.type, "github"),
+				// Date filter
+				// gt(servers.createdAt, new Date("2025-02-24T00:00:00.000Z")),
+			),
+		)
 
 	for (const { isDeployed, repo, pr, isClaimed, attemptedDeploy } of rows) {
 		const [prResult, commitsResult] = await Promise.all([
@@ -98,6 +104,7 @@ export async function run() {
 					isDeployed,
 					isClaimed,
 					attemptedDeploy,
+					createdAt: prResult.value.data.created_at,
 				}
 				// Append stat to file
 				fs.appendFileSync(statsFile, `${JSON.stringify(stat)}\n`)

@@ -11,9 +11,10 @@ import { useState } from "react"
 
 interface Props {
 	server: FetchedServer | FetchedServers[number]
+	copyable: boolean
 }
 
-export function ServerQualifiedName({ server }: Props) {
+export function ServerQualifiedName({ server, copyable = false }: Props) {
 	const [copied, setCopied] = useState(false)
 
 	const copyToClipboard = () => {
@@ -36,7 +37,7 @@ export function ServerQualifiedName({ server }: Props) {
 				<Tooltip open={copied}>
 					<TooltipTrigger asChild>
 						<button
-							onClick={copyToClipboard}
+							onClick={copyable ? copyToClipboard : undefined}
 							className="hover:text-foreground transition-colors cursor-pointer"
 							type="button"
 						>

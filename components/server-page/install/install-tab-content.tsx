@@ -6,6 +6,7 @@ import { AlertCircle, Bug, ExternalLink, FileText } from "lucide-react"
 import posthog from "posthog-js"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
+import { AuthCommandBlock } from "./auth-command-block"
 
 export const ClientInstallContent = ({
 	server,
@@ -40,7 +41,7 @@ export const ClientInstallContent = ({
 		<>
 			<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
 			<p className="my-2">
-				Integrate this tool for{" "}
+				Use this server with{" "}
 				{client === "claude" ? (
 					<>
 						<a
@@ -140,19 +141,13 @@ export const ClientInstallContent = ({
 			</p>
 
 			{hasValidConnection ? (
-				<CodeBlock
-					className="language-shell"
-					lineCount={2}
-					onCopy={() => {
-						posthog.capture("Code Copied", {
-							serverQualifiedName: server.qualifiedName,
-							eventTag: "install_command",
-						})
-					}}
-				>
-					{command ||
-						`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`}
-				</CodeBlock>
+				<AuthCommandBlock
+					command={
+						command ||
+						`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
+					}
+					serverQualifiedName={server.qualifiedName}
+				/>
 			) : (
 				<Alert>
 					<AlertCircle className="h-4 w-4" />

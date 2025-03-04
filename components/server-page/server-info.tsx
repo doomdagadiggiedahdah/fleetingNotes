@@ -48,7 +48,7 @@ export function ServerPage({ server, activeTab }: Props) {
 						</Suspense>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
-						<ServerQualifiedName server={server} />
+						<ServerQualifiedName server={server} copyable={true} />
 						{server.sourceUrl && (
 							<a
 								href={server.sourceUrl}

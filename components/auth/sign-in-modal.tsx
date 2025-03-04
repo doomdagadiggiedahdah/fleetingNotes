@@ -17,7 +17,7 @@ export function SignInModal() {
 				<DialogHeader>
 					<DialogTitle>Sign in</DialogTitle>
 					<DialogDescription>
-						Manage and deploy your MCP servers.
+						Access, manage, and deploy MCP servers.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-4 py-4">
