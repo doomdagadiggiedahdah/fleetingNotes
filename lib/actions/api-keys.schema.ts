@@ -8,3 +8,9 @@ export const deleteApiKeySchema = z.object({
 })
 
 export type DeleteApiKeyInput = z.infer<typeof deleteApiKeySchema>
+
+export type ReturnApiKeys = {
+	id: string
+	displayKey: string
+	timestamp: Date
+}

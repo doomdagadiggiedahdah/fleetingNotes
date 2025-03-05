@@ -1,12 +1,5 @@
 "use client"
 
-import { createApiKey, deleteApiKey } from "@/lib/actions/api-keys"
-import { Button } from "@/components/ui/button"
-import { PlusIcon, Trash2Icon, CopyIcon } from "lucide-react"
-import { useState, useCallback } from "react"
-import { useToast } from "@/lib/hooks/use-toast"
-import { useRouter } from "next/navigation"
-import { format } from "date-fns"
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -18,6 +11,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import {
 	Card,
 	CardContent,
@@ -26,6 +20,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card"
+import { createApiKey, deleteApiKey } from "@/lib/actions/api-keys"
+import type { ReturnApiKeys } from "@/lib/actions/api-keys.schema"
+import { useToast } from "@/lib/hooks/use-toast"
+import { format } from "date-fns"
+import { CopyIcon, PlusIcon, Trash2Icon } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useCallback, useState } from "react"
 
 // Client component for creating API keys
 export function CreateApiKey({ count }: { count: number }) {
@@ -210,7 +211,7 @@ export function DeleteApiKeyButton({
 }
 
 // Client component for rendering API keys list with optimistic UI updates
-export function ApiKeysListClient({ apiKeys }: { apiKeys: Array<any> }) {
+export function ApiKeysListClient({ apiKeys }: { apiKeys: ReturnApiKeys[] }) {
 	const [deletedKeyIds, setDeletedKeyIds] = useState<Set<string>>(new Set())
 
 	// Handle optimistic deletion
