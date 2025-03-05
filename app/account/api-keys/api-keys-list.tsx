@@ -6,13 +6,14 @@ import {
 	CardDescription,
 } from "@/components/ui/card"
 import { ApiKeysListClient } from "./api-keys-client"
+import { redirect } from "next/navigation"
 
 // This is an async server component that fetches and renders the API keys
 export async function ApiKeysList() {
 	const result = await getMyApiKeys()
 
 	if (!result.ok) {
-		throw new Error(result.error)
+		redirect("/")
 	}
 
 	const apiKeys = result.value || []
