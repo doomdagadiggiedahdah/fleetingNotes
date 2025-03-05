@@ -35,6 +35,7 @@ export function ServerPage({ server, activeTab }: Props) {
 									<ServerFavicon
 										homepage={server.homepage}
 										displayName={server.displayName}
+										className="w-6 h-6"
 									/>
 								)}
 								{server.displayName}

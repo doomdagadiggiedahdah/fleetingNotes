@@ -31,6 +31,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 								<ServerFavicon
 									homepage={server.homepage}
 									displayName={server.displayName}
+									className="w-6 h-6"
 								/>
 								{server.displayName}
 							</h3>

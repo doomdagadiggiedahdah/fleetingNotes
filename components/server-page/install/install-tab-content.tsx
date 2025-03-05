@@ -2,11 +2,13 @@ import { CodeBlock } from "@/components/docs/code-block"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
-import { AlertCircle, Bug, ExternalLink, FileText } from "lucide-react"
+import { AlertCircle, Bug, ExternalLink, FileText, Terminal } from "lucide-react"
 import posthog from "posthog-js"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { AuthCommandBlock } from "./auth-command-block"
+import { ServerFavicon } from "@/components/server-page/server-favicon"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export const ClientInstallContent = ({
 	server,
@@ -26,10 +28,17 @@ export const ClientInstallContent = ({
 	config?: JsonObject
 	isConfigured?: boolean
 }) => {
-	const command =
+	// Standard command (for Unix-based systems)
+	const unixCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
 			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
 			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
+
+	// Windows command
+	const windowsCommand = 
+		(client === "cursor" || client === "goose") && isConfigured && config
+			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			: `smithery install ${server.qualifiedName} --client ${client}`
 
 	const hasValidConnection =
 		server.deploymentUrl ||
@@ -39,7 +48,12 @@ export const ClientInstallContent = ({
 
 	return (
 		<>
-			<h4 className="font-semibold mb-2 text-primary">Install Command</h4>
+			<h4 className="font-semibold mb-2 text-primary">
+				<span className="flex items-center gap-2">
+					<Terminal className="h-4 w-4" />
+					Install Command
+				</span>
+			</h4>
 			<p className="my-2">
 				Use this server with{" "}
 				{client === "claude" ? (
@@ -141,13 +155,61 @@ export const ClientInstallContent = ({
 			</p>
 
 			{hasValidConnection ? (
-				<AuthCommandBlock
-					command={
-						command ||
-						`npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
-					}
-					serverQualifiedName={server.qualifiedName}
-				/>
+				<Tabs defaultValue="standard" className="w-full">
+					<TabsList className="mb-2">
+						<TabsTrigger value="standard" className="flex items-center gap-2">
+							<ServerFavicon homepage="https://www.npmjs.com" displayName="npm" />
+							npm
+						</TabsTrigger>
+						<TabsTrigger value="windows" className="flex items-center gap-2">
+							<ServerFavicon homepage="https://microsoft.com" displayName="Windows" />
+							Windows
+						</TabsTrigger>
+					</TabsList>
+					
+					<TabsContent value="standard">
+						<AuthCommandBlock
+							command={unixCommand}
+							serverQualifiedName={server.qualifiedName}
+						/>
+					</TabsContent>
+					
+					<TabsContent value="windows">
+						<Alert variant="default" className="mb-3 bg-muted/50">
+							<AlertDescription className="flex items-center">
+								<AlertCircle className="h-4 w-4 mr-2" /> Windows support is still in beta. Please report any issues!
+							</AlertDescription>
+						</Alert>
+						<p className="text-sm mb-2">
+							For Windows users experiencing installation issues, install the native Smithery CLI via <a 
+								href="https://scoop.sh/" 
+								target="_blank"
+								className="hover:text-primary"
+							>
+								Scoop
+							</a>.
+							<a 
+								href="/docs/smithery-cli" 
+								target="_blank"
+								className="ml-1 hover:text-primary inline-flex items-center"
+							>
+								View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
+							</a>
+						</p>
+						<CodeBlock 
+							language="bash" 
+							className="text-sm mb-3"
+							lineCount={2}
+						>
+							{`scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery`}
+						</CodeBlock>
+						<p className="text-sm mb-2">Then directly use:</p>
+						<AuthCommandBlock
+							command={windowsCommand}
+							serverQualifiedName={server.qualifiedName}
+						/>
+					</TabsContent>
+				</Tabs>
 			) : (
 				<Alert>
 					<AlertCircle className="h-4 w-4" />
@@ -156,14 +218,15 @@ export const ClientInstallContent = ({
 					</AlertDescription>
 				</Alert>
 			)}
-			<div className="flex gap-4 mt-3 text-muted-foreground">
+			
+			<div className="flex gap-4 mt-3 text-muted-foreground text-sm">
 				<a
 					href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center hover:text-primary"
 				>
-					<Bug className="w-4 h-4 mr-1" />
+					<Bug className="w-3.5 h-3.5 mr-1" />
 					Report Bug
 				</a>
 				<a
@@ -171,7 +234,7 @@ export const ClientInstallContent = ({
 					target="_blank"
 					className="flex items-center hover:text-primary"
 				>
-					<FileText className="w-4 h-4 mr-1" />
+					<FileText className="w-3.5 h-3.5 mr-1" />
 					Troubleshoot
 				</a>
 			</div>

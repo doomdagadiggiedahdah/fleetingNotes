@@ -1,0 +1,81 @@
+import { CircleAlert, AlertTriangle, Info } from "lucide-react"
+import { Maintainers } from "@/components/docs/maintainers"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export const metadata = {
+  title: 'Smithery CLI | Smithery Documentation',
+  description: 'Learn how to install and use the Smithery CLI on Windows.',
+}
+
+# Smithery CLI Installation (Windows)
+
+<Alert className="my-6 border-amber-500/50 bg-amber-500/10">
+  <div>
+    <AlertTitle className="text-amber-500 font-medium">Beta Software</AlertTitle>
+    <AlertDescription className="text-muted-foreground">
+      The Smithery CLI is currently in beta and has been tested primarily on Windows 11. It's designed to solve Windows runtime issues for MCP servers. Currently, it only works with Smithery-hosted servers, and local server support is in active development. You may encounter issues on other Windows versions. Please report any issues or feedback through our <a href="https://discord.gg/Afd38S5p9A" className="text-amber-500 hover:underline">Discord community</a>.
+    </AlertDescription>
+  </div>
+</Alert>
+
+This guide will walk you through installing the Smithery CLI on Windows using Scoop.
+## Installation Steps
+### <span className="text-foreground">Step 1:</span> Install Scoop
+For more information about Scoop, visit [the official Scoop GitHub repository](https://github.com/ScoopInstaller/Scoop).<br />
+In Windows PowerShell:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+```powershell
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+```
+
+### Step 2: Add Scoop to your PATH
+
+```powershell
+$oldPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+```
+
+```powershell
+$newPath = $oldPath + ";$env:USERPROFILE\scoop\shims"
+```
+
+```powershell
+[Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+```
+
+### Step 3: Restart Powershell
+
+### Step 4: Check Scoop installation
+
+```powershell
+scoop --version
+```
+
+### Step 5: Install Smithery
+
+```powershell
+scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery
+```
+
+```powershell
+scoop install smithery
+```
+
+### Step 6: Check smithery installation
+
+```powershell
+smithery --help
+```
+
+### Step 7: Install server
+
+```powershell
+smithery install @smithery-ai/server-sequential-thinking --client claude
+```
+
+Enjoy!
+
+

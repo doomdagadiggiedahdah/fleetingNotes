@@ -3,9 +3,10 @@
 interface ServerFaviconProps {
 	homepage: string | null
 	displayName: string
+	className?: string
 }
 
-export function ServerFavicon({ homepage, displayName }: ServerFaviconProps) {
+export function ServerFavicon({ homepage, displayName, className = "w-4 h-4" }: ServerFaviconProps) {
 	if (!homepage) return null
 
 	try {
@@ -13,14 +14,18 @@ export function ServerFavicon({ homepage, displayName }: ServerFaviconProps) {
 
 		return (
 			<img
-				src={`https://icon.horse/icon/${hostname}`}
+				src={`https://api.faviconkit.com/${hostname}/`}
 				onError={(e) => {
 					if (homepage) {
-						e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`
+						e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${hostname}.ico`
+						e.currentTarget.onerror = () => {
+							e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`
+							e.currentTarget.onerror = null
+						}
 					}
 				}}
 				alt={displayName}
-				className="w-4 h-4 rounded-sm bg-background/50 backdrop-blur-sm p-[1px]"
+				className={`${className} rounded-sm bg-background/50 backdrop-blur-sm p-[1px]`}
 				style={{
 					filter: "contrast(1.1) brightness(1.1)",
 				}}
