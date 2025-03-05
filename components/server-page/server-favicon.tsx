@@ -6,7 +6,11 @@ interface ServerFaviconProps {
 	className?: string
 }
 
-export function ServerFavicon({ homepage, displayName, className = "w-4 h-4" }: ServerFaviconProps) {
+export function ServerFavicon({
+	homepage,
+	displayName,
+	className = "w-4 h-4",
+}: ServerFaviconProps) {
 	if (!homepage) return null
 
 	try {

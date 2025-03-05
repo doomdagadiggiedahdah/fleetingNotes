@@ -10,7 +10,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
-import { LogOut, User as UserIcon, Server as ServerIcon } from "lucide-react"
+import {
+	Key,
+	LogOut,
+	User as UserIcon,
+	Server as ServerIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/lib/hooks/use-toast"
 
@@ -58,7 +63,10 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" className="relative h-8 w-8 rounded-full">
+				<Button
+					variant="ghost"
+					className="relative h-8 w-8 rounded-full cursor-pointer"
+				>
 					<Avatar className="h-8 w-8">
 						<AvatarImage src={avatarUrl} alt={name || ""} />
 						<AvatarFallback>{initials}</AvatarFallback>
@@ -66,19 +74,26 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem className="flex items-center gap-2">
+				<DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
 					<UserIcon className="h-4 w-4" />
 					<span>{name}</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					className="flex items-center gap-2"
+					className="flex items-center gap-2 cursor-pointer"
 					onClick={handleServersClick}
 				>
 					<ServerIcon className="h-4 w-4" />
 					<span>Servers</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem
-					className="flex items-center gap-2 text-destructive focus:text-destructive"
+					className="flex items-center gap-2 cursor-pointer"
+					onClick={() => router.push("/account/api-keys")}
+				>
+					<Key className="h-4 w-4" />
+					<span>API Keys</span>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
 					onClick={handleSignOut}
 				>
 					<LogOut className="h-4 w-4" />

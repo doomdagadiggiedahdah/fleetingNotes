@@ -28,6 +28,18 @@ export async function updateSession(request: NextRequest) {
 			},
 		},
 	)
+	const url = request.nextUrl.clone()
+
+	// Protect account routes
+	if (url.pathname.startsWith("/account")) {
+		const { data } = await supabase.auth.getSession()
+
+		if (!data.session) {
+			// Redirect to home if not authenticated
+			url.pathname = "/"
+			return NextResponse.redirect(url)
+		}
+	}
 
 	// IMPORTANT: Avoid writing any logic between createServerClient and
 	// supabase.auth.getUser(). A simple mistake could make it very hard to debug
