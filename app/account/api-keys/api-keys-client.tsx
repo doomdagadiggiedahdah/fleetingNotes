@@ -27,6 +27,7 @@ import { format } from "date-fns"
 import { CopyIcon, PlusIcon, Trash2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCallback, useState } from "react"
+import posthog from "posthog-js"
 
 // Client component for creating API keys
 export function CreateApiKey({ count }: { count: number }) {
@@ -44,6 +45,10 @@ export function CreateApiKey({ count }: { count: number }) {
 
 	const handleCreateKey = async () => {
 		setIsLoading(true)
+
+		// Track API key creation button click
+		posthog.capture("Create API Key Clicked")
+
 		try {
 			const result = await createApiKey()
 
@@ -150,6 +155,11 @@ export function DeleteApiKeyButton({
 	const handleDeleteKey = async () => {
 		// Close the dialog
 		setDialogOpen(false)
+
+		// Track API key deletion button click
+		posthog.capture("Delete API Key Clicked", {
+			key_id: keyId,
+		})
 
 		// Trigger optimistic UI update through parent component
 		onDelete(keyId)
