@@ -262,3 +262,26 @@ export async function updateRepoConnection(
 		return { error: "Failed to update base directory" }
 	}
 }
+
+/**
+ * Deletes a server owned by the current authenticated user
+ * @param serverId The ID of the server to delete
+ * @returns Result indicating success or failure
+ */
+export async function deleteServer(serverId: string) {
+	// Check ownership first
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
+		return serverResult
+	}
+
+	try {
+		await db.delete(servers).where(eq(servers.id, serverId))
+
+		revalidatePath("/")
+		return ok()
+	} catch (error) {
+		console.error("Failed to delete server:", error)
+		return err("Internal error.")
+	}
+}

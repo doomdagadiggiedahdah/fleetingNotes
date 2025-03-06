@@ -1,5 +1,11 @@
 import { z } from "zod"
 
+export const deleteServerSchema = z.object({
+	serverId: z.string().min(1, "Server ID is required"),
+})
+
+export type DeleteServerInput = z.infer<typeof deleteServerSchema>
+
 export const updateServerSchema = z
 	.object({
 		displayName: z.string().min(3, "Name is required"),
