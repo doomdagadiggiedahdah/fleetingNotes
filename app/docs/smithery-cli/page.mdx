@@ -70,11 +70,23 @@ scoop install smithery
 smithery --help
 ```
 
-### Step 7: Install server
+### Step 7: Install and Run Server
 
+Install the server:
 ```powershell
 smithery install @smithery-ai/server-sequential-thinking --client claude
 ```
+
+Run the server in cursor MCP settings:
+```powershell
+smithery run @smithery-ai/server-sequential-thinking --config "{}"
+```
+
+If the above command doesn't work, try using the full Scoop shim path:
+```powershell
+C:\Users\YourUsername\scoop\shims\smithery.exe run @smithery-ai/server-sequential-thinking --config "{}"
+```
+Note: Replace `YourUsername` with your actual Windows username.
 
 Enjoy!
 

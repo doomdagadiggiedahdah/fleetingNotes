@@ -32,7 +32,7 @@ export const metadata = {
     <AccordionItem value="npx-cursor">
       <AccordionTrigger className="text-xl font-normal hover:text-orange-500 hover:no-underline">How do I fix npx on Cursor (Windows)?</AccordionTrigger>
       <AccordionContent>
-        If you're experiencing issues with npx on Cursor, there are two workarounds:
+        If you're experiencing issues with npx on Cursor, there are three workarounds:
 
         - Use the full Windows path command:
         ```shell
@@ -43,6 +43,10 @@ export const metadata = {
            - Open System Properties > Advanced > Environment Variables
            - Under System Variables, find and select "Path"
            - Click Edit and add the npm directory (typically `C:\Users\{username}\AppData\Roaming\npm`)
+
+        - Use Smithery's native CLI instead:
+           - Follow the installation guide at [Smithery CLI Installation](/docs/smithery-cli)
+           - Then run: `smithery run @smithery-ai/server-sequential-thinking --config "{}"`
       </AccordionContent>
     </AccordionItem>
 
