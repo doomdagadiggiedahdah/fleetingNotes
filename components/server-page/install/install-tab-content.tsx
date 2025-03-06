@@ -170,13 +170,15 @@ export const ClientInstallContent = ({
 							/>
 							npm
 						</TabsTrigger>
-						<TabsTrigger value="windows" className="flex items-center gap-2">
-							<ServerFavicon
-								homepage="https://microsoft.com"
-								displayName="Windows"
-							/>
-							Windows
-						</TabsTrigger>
+						{server.remote && server.deploymentUrl && (
+							<TabsTrigger value="windows" className="flex items-center gap-2">
+								<ServerFavicon
+									homepage="https://microsoft.com"
+									displayName="Windows"
+								/>
+								Windows
+							</TabsTrigger>
+						)}
 					</TabsList>
 
 					<TabsContent value="standard">
@@ -186,41 +188,43 @@ export const ClientInstallContent = ({
 						/>
 					</TabsContent>
 
-					<TabsContent value="windows">
-						<Alert variant="default" className="mb-3 bg-muted/50">
-							<AlertDescription className="flex items-center">
-								<AlertCircle className="h-4 w-4 mr-2" /> Windows support is
-								still in beta. Please report any issues!
-							</AlertDescription>
-						</Alert>
-						<p className="text-sm mb-2">
-							For Windows users experiencing installation issues, install the
-							native Smithery CLI via{" "}
-							<a
-								href="https://scoop.sh/"
-								target="_blank"
-								className="hover:text-primary"
-							>
-								Scoop
-							</a>
-							.
-							<a
-								href="/docs/smithery-cli"
-								target="_blank"
-								className="ml-1 hover:text-primary inline-flex items-center"
-							>
-								View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
-							</a>
-						</p>
-						<CodeBlock language="bash" className="text-sm mb-3" lineCount={2}>
-							{`scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery`}
-						</CodeBlock>
-						<p className="text-sm mb-2">Then directly use:</p>
-						<AuthCommandBlock
-							command={windowsCommand}
-							serverQualifiedName={server.qualifiedName}
-						/>
-					</TabsContent>
+					{server.remote && server.deploymentUrl && (
+						<TabsContent value="windows">
+							<Alert variant="default" className="mb-3 bg-muted/50">
+								<AlertDescription className="flex items-center">
+									<AlertCircle className="h-4 w-4 mr-2" /> Windows support is
+									still in beta. Please report any issues!
+								</AlertDescription>
+							</Alert>
+							<p className="text-sm mb-2">
+								For Windows users experiencing installation issues, install the
+								native Smithery CLI via{" "}
+								<a
+									href="https://scoop.sh/"
+									target="_blank"
+									className="hover:text-primary"
+								>
+									Scoop
+								</a>
+								.
+								<a
+									href="/docs/smithery-cli"
+									target="_blank"
+									className="ml-1 hover:text-primary inline-flex items-center"
+								>
+									View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
+								</a>
+							</p>
+							<CodeBlock language="bash" className="text-sm mb-3" lineCount={2}>
+								{`scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery`}
+							</CodeBlock>
+							<p className="text-sm mb-2">Then directly use:</p>
+							<AuthCommandBlock
+								command={windowsCommand}
+								serverQualifiedName={server.qualifiedName}
+							/>
+						</TabsContent>
+					)}
 				</Tabs>
 			) : (
 				<Alert>
