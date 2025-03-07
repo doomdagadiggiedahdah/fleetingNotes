@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Wrench } from "lucide-react"
 import Link from "next/link"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
+import { CodeBlock } from "@/components/docs/code-block"
 
 interface ReadingPanelProps {
 	server: FetchedServer
@@ -88,9 +89,12 @@ const ToolsPreview = ({
 						)
 					) : (
 						<div className="p-4 text-center text-muted-foreground bg-muted/30 rounded-md">
-							<p className="text-muted-foreground">
-								This server has not been deployed.
-							</p>
+							<div className="text-muted-foreground">
+								Inspect available tools by running:
+							</div>
+							<div className="max-w-[450px] mx-auto">
+								<CodeBlock className="language-bash">{`npx -y @smithery/cli@latest inspect ${qualifiedName}`.trim()}</CodeBlock>
+							</div>
 						</div>
 					)}
 				</div>

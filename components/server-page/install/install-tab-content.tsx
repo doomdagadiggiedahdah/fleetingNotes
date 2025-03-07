@@ -171,34 +171,54 @@ export const ClientInstallContent = ({
 							npm
 						</TabsTrigger>
 						{server.remote && server.deploymentUrl && (
-							<TabsTrigger value="windows" className="flex items-center gap-2">
+							<TabsTrigger value="scoop" className="flex items-center gap-2">
 								<ServerFavicon
-									homepage="https://microsoft.com"
-									displayName="Windows"
+									homepage="https://scoop.sh"
+									displayName="Scoop"
 								/>
-								Windows
+								Scoop
 							</TabsTrigger>
 						)}
 					</TabsList>
 
 					<TabsContent value="standard">
-						<AuthCommandBlock
-							command={unixCommand}
-							serverQualifiedName={server.qualifiedName}
-						/>
+						{client === "cursor" ? (
+							<>
+								<div className="mb-4">
+									<AuthCommandBlock
+										command={unixCommand}
+										serverQualifiedName={server.qualifiedName}
+									/>
+								</div>
+								<div>
+									<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+										<ServerFavicon
+											homepage="https://microsoft.com"
+											displayName="Windows"
+										/>
+										Windows
+									</div>
+									<p className="text-xs text-muted-foreground mb-1 italic">
+										Try this if npx commands don&apos;t work
+									</p>
+									<AuthCommandBlock
+										command={`cmd /c ${unixCommand}`}
+										serverQualifiedName={server.qualifiedName}
+									/>
+								</div>
+							</>
+						) : (
+							<AuthCommandBlock
+								command={unixCommand}
+								serverQualifiedName={server.qualifiedName}
+							/>
+						)}
 					</TabsContent>
 
 					{server.remote && server.deploymentUrl && (
-						<TabsContent value="windows">
-							<Alert variant="default" className="mb-3 bg-muted/50">
-								<AlertDescription className="flex items-center">
-									<AlertCircle className="h-4 w-4 mr-2" /> Windows support is
-									still in beta. Please report any issues!
-								</AlertDescription>
-							</Alert>
+						<TabsContent value="scoop">
 							<p className="text-sm mb-2">
-								For Windows users experiencing installation issues, install the
-								native Smithery CLI via{" "}
+								Install the native Smithery CLI via{" "}
 								<a
 									href="https://scoop.sh/"
 									target="_blank"
