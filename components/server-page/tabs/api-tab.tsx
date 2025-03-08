@@ -1,10 +1,12 @@
 "use client"
 
 import { CodeBlock } from "@/components/docs/code-block"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
+import { useEffect, useState } from "react"
 
 interface ApiPanelProps {
 	server: FetchedServer
@@ -40,10 +42,31 @@ export function ApiPanel({ server }: ApiPanelProps) {
 
 	// Get WebSocket config if available
 	let wsConfig = ""
-	const wsConnection = server.connections.find((conn) => conn.type === "ws")
 
-	if (wsConnection?.configSchema) {
-		wsConfig = `, ${JSON.stringify(createDummyConfig(wsConnection.configSchema), null, 2)}`
+	// State to store config schema
+	const [configSchema, setConfigSchema] = useState(null)
+
+	// Fetch config schema when component mounts or server changes
+	useEffect(() => {
+		const getConfigSchema = async () => {
+			if (server.deploymentUrl) {
+				try {
+					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
+
+					if (schemaResult.ok) {
+						setConfigSchema(schemaResult.value)
+					}
+				} catch (error) {
+					console.error("Failed to fetch config schema:", error)
+				}
+			}
+		}
+
+		getConfigSchema()
+	}, [server.deploymentUrl])
+
+	if (configSchema) {
+		wsConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`
 	}
 
 	// Generate transport code based on available connections
