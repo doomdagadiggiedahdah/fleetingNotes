@@ -8,6 +8,7 @@ import {
 	ExternalLink,
 	FileText,
 	Terminal,
+	Braces,
 } from "lucide-react"
 import posthog from "posthog-js"
 import type { JSONSchema } from "@/lib/types/server"
@@ -15,6 +16,7 @@ import type { JsonObject } from "@/lib/types/json"
 import { AuthCommandBlock } from "./auth-command-block"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { normalizeId } from "@/lib/utils/normalise-id"
 
 export const ClientInstallContent = ({
 	server,
@@ -179,6 +181,12 @@ export const ClientInstallContent = ({
 								Scoop
 							</TabsTrigger>
 						)}
+						{client === "cursor" && (
+							<TabsTrigger value="json" className="flex items-center gap-2">
+								<Braces className="w-4 h-4" />
+								JSON
+							</TabsTrigger>
+						)}
 					</TabsList>
 
 					<TabsContent value="standard">
@@ -243,6 +251,35 @@ export const ClientInstallContent = ({
 								command={windowsCommand}
 								serverQualifiedName={server.qualifiedName}
 							/>
+						</TabsContent>
+					)}
+
+					{client === "cursor" && (
+						<TabsContent value="json">
+							<p className="text-sm mb-2">
+								Paste the following into your project&apos;s <code>.cursor/mcp.json</code>:
+							</p>
+							<CodeBlock language="json" className="text-sm mb-3">
+								{JSON.stringify(
+									{
+										mcpServers: {
+											[normalizeId(server.qualifiedName)]: {
+												command: "npx",
+												args: [
+													"-y",
+													"@smithery/cli@latest",
+													"run",
+													server.qualifiedName,
+													"--config",
+													config ? JSON.stringify(config) : "<your-config-here>",
+												],
+											},
+										},
+									},
+									null,
+									2,
+								)}
+							</CodeBlock>
 						</TabsContent>
 					)}
 				</Tabs>
