@@ -45,8 +45,9 @@ CASE
 		SELECT ${servers.createdAt}
 		FROM ${servers}
 		WHERE ${servers.createdAt} > NOW() - INTERVAL '3 days'
-		ORDER BY ${servers.createdAt}
-		DESC OFFSET 3
+		ORDER BY ${servers.createdAt} DESC
 		LIMIT 1
 	)
 THEN TRUE ELSE FALSE END`
+// Add this to make it top 3
+// DESC OFFSET 3

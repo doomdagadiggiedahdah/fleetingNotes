@@ -14,7 +14,7 @@ export default async function SwimlaneShowcase() {
 	categories.splice(0, 0, {
 		id: "featured",
 		title: "Featured",
-		query: "is:installable",
+		query: "is:deployed",
 	})
 
 	return (

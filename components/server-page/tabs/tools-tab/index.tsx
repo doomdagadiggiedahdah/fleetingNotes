@@ -141,8 +141,8 @@ export function ToolsPanel({
 				<div className="w-full lg:w-1/2">
 					<Card className="p-6">
 						<div className="text-sm text-muted-foreground text-center">
-							Tool listing on web is only available for hosted servers. <br/> To find out
-							more, check out our{" "}
+							Tool listing on web is only available for hosted servers. <br />{" "}
+							To find out more, check out our{" "}
 							<a
 								href="https://smithery.ai/docs/deployments"
 								className="text-primary hover:underline"

@@ -93,7 +93,9 @@ const ToolsPreview = ({
 								Inspect available tools by running:
 							</div>
 							<div className="max-w-[450px] mx-auto">
-								<CodeBlock className="language-bash">{`npx -y @smithery/cli@latest inspect ${qualifiedName}`.trim()}</CodeBlock>
+								<CodeBlock className="language-bash">
+									{`npx -y @smithery/cli@latest inspect ${qualifiedName}`.trim()}
+								</CodeBlock>
 							</div>
 						</div>
 					)}
