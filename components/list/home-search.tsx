@@ -21,7 +21,8 @@ export const HomeSearch = ({
 			<Container size="xl" className="mt-4">
 				<div className="mb-8">
 					<p className="text-lg text-muted-foreground text-center">
-						Extend your language model with {serverCount} capabilities via{" "}
+						Extend your agent with {new Number(serverCount).toLocaleString()}{" "}
+						capabilities via{" "}
 						<a
 							href="https://modelcontextprotocol.io/"
 							target="_blank"

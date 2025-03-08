@@ -3,6 +3,7 @@ import { getMyApiKeys } from "@/lib/actions/api-keys"
 import { ApiKeysList } from "./api-keys-list"
 import { CreateApiKey } from "./api-keys-client"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 export const metadata: Metadata = {
 	title: "API Keys - Smithery",
@@ -33,7 +34,14 @@ export default async function ApiKeysPage() {
 			<div className="flex flex-col gap-1.5">
 				<h2 className="text-2xl font-semibold">API Keys</h2>
 				<p className="text-muted-foreground">
-					Manage API keys for accessing Smithery programmatically
+					Manage API keys for accessing Smithery programmatically.{" "}
+					<Link
+						href="/docs/registry"
+						target="_blank"
+						className="text-primary hover:underline"
+					>
+						Learn more
+					</Link>
 				</p>
 			</div>
 
