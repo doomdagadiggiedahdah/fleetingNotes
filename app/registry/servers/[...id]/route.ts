@@ -11,6 +11,7 @@ import {
 } from "@/lib/types/server"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
+import { chooseConnection } from "@/lib/utils/choose-connection"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -146,14 +147,9 @@ export async function POST(
 		const connections = RegistryServerSchema.shape.connections.parse(
 			result.connections,
 		)
-		// Find the right connection
-		const connection = connections.find((connection) => {
-			if (connection.type === "stdio" && data.connectionType === "stdio") {
-				return true
-			}
-			return false
-		})
-
+		// choose connection based on priority
+		const connection = chooseConnection(connections)
+		
 		if (!connection) {
 			return NextResponse.json(
 				{ error: "Connection not found" },
