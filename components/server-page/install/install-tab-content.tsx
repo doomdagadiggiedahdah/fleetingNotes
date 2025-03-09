@@ -257,7 +257,8 @@ export const ClientInstallContent = ({
 					{client === "cursor" && (
 						<TabsContent value="json">
 							<p className="text-sm mb-2">
-								Paste the following into your project&apos;s <code>.cursor/mcp.json</code>:
+								Paste the following into your project&apos;s{" "}
+								<code>.cursor/mcp.json</code>:
 							</p>
 							<CodeBlock language="json" className="text-sm mb-3">
 								{JSON.stringify(
@@ -271,7 +272,9 @@ export const ClientInstallContent = ({
 													"run",
 													server.qualifiedName,
 													"--config",
-													config ? JSON.stringify(config) : "<your-config-here>",
+													config
+														? JSON.stringify(config)
+														: "<your-config-here>",
 												],
 											},
 										},
