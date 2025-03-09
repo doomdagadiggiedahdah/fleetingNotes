@@ -149,7 +149,7 @@ export async function POST(
 		)
 		// choose connection based on priority
 		const connection = chooseConnection(connections)
-		
+
 		if (!connection) {
 			return NextResponse.json(
 				{ error: "Connection not found" },

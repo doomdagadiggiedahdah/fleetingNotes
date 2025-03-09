@@ -38,16 +38,7 @@ export function SchemaForm({
 }: SchemaFormProps) {
 	const hasConfigFields = Object.keys(schema?.properties || {}).length > 0
 
-	const [values, setValues] = useState<JsonObject>(() => {
-		const defaults = Object.entries(schema?.properties || {}).reduce(
-			(acc, [key, field]: [string, JSONSchema]) => {
-				acc[key] = field.default || ""
-				return acc
-			},
-			{} as JsonObject,
-		)
-		return { ...defaults, ...initialValues }
-	})
+	const [values, setValues] = useState<JsonObject>(initialValues)
 
 	const handleValueChange = (key: string, value: string) => {
 		setValues((prev) => ({ ...prev, [key]: value }))

@@ -16,7 +16,18 @@ export function ClientConfig({
 	onSuccess,
 	initialConfig = {},
 }: ClientConfigProps) {
-	const [values, setValues] = useState<JsonObject>(initialConfig)
+	// Initialize values with schema defaults merged with initialConfig
+	const [values, setValues] = useState<JsonObject>(() => {
+		const defaults = Object.entries(schema?.properties || {}).reduce(
+			(acc, [key, field]: [string, JSONSchema]) => {
+				acc[key] = field.default || ""
+				return acc
+			},
+			{} as JsonObject,
+		)
+		return { ...defaults, ...initialConfig }
+	})
+
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +50,7 @@ export function ClientConfig({
 	return (
 		<SchemaForm
 			schema={schema}
-			initialValues={initialConfig}
+			initialValues={values}
 			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
 			onSubmit={handleSubmit}
 			isLoading={isSubmitting}

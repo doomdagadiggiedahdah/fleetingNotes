@@ -25,7 +25,18 @@ export function ConfigForm({
 	const isConnected = status === "connected"
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [values, setValues] = useState<JsonObject>({})
+
+	// Initialize values with schema defaults merged with initialConfig
+	const [values, setValues] = useState<JsonObject>(() => {
+		const defaults = Object.entries(schema?.properties || {}).reduce(
+			(acc, [key, field]: [string, JSONSchema]) => {
+				acc[key] = field.default || ""
+				return acc
+			},
+			{} as JsonObject,
+		)
+		return { ...defaults, ...initialConfig }
+	})
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -46,8 +57,10 @@ export function ConfigForm({
 	return (
 		<SchemaForm
 			schema={schema}
-			initialValues={initialConfig}
-			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+			initialValues={values}
+			onValueChange={(key, value) => {
+				setValues({ ...values, [key]: value })
+			}}
 			onSubmit={handleSubmit}
 			isLoading={isConnecting}
 			submitText={isConnected ? "Reconnect" : "Connect"}
