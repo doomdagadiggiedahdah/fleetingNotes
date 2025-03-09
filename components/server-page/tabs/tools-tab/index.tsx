@@ -174,7 +174,6 @@ export function ToolsPanel({
 							setIsEditingConfig(false)
 							onConfigSuccess?.()
 						}}
-						defaultEditMode={false}
 					/>
 				</div>
 			)}
@@ -261,7 +260,6 @@ export function ToolsPanel({
 										setIsEditingConfig(false)
 										onConfigSuccess?.()
 									}}
-									defaultEditMode={false}
 								/>
 							</div>
 						) : isExpanded ? (

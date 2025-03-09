@@ -1,6 +1,6 @@
 import Image from "next/image"
 
-export function Maintainers() {
+export function Team() {
 	return (
 		<div className="flex flex-row gap-8">
 			<div className="flex flex-col items-center space-y-2">
@@ -14,6 +14,7 @@ export function Maintainers() {
 					/>
 				</div>
 				<h3 className="font-medium">Henry Mao</h3>
+				<h4 className="text-muted-foreground">Founder</h4>
 				<a
 					href="https://x.com/calclavia"
 					target="_blank"
@@ -34,6 +35,7 @@ export function Maintainers() {
 					/>
 				</div>
 				<h3 className="font-medium">Arjun Kumar</h3>
+				<h4 className="text-muted-foreground">Founding Engineer</h4>
 				<a
 					href="https://x.com/arjunkmrm"
 					target="_blank"
