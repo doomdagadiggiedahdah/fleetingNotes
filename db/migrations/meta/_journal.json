@@ -274,6 +274,34 @@
 			"when": 1741186893939,
 			"tag": "0039_keen_lady_bullseye",
 			"breakpoints": true
+		},
+		{
+			"idx": 40,
+			"version": "7",
+			"when": 1741241009027,
+			"tag": "0040_yellow_greymalkin",
+			"breakpoints": true
+		},
+		{
+			"idx": 41,
+			"version": "7",
+			"when": 1741265873973,
+			"tag": "0041_greedy_norman_osborn",
+			"breakpoints": true
+		},
+		{
+			"idx": 42,
+			"version": "7",
+			"when": 1741513352501,
+			"tag": "0042_marvelous_nova",
+			"breakpoints": true
+		},
+		{
+			"idx": 43,
+			"version": "7",
+			"when": 1741513439892,
+			"tag": "0043_fluffy_rogue",
+			"breakpoints": true
 		}
 	]
 }
