@@ -45,6 +45,58 @@ export function SchemaForm({
 		onValueChange(key, value)
 	}
 
+	const renderInput = (key: string, field: JSONSchema) => {
+		switch (field.type) {
+			case "boolean":
+				return (
+					<div className="inline-flex rounded-lg border border-border/40 p-0.5">
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => handleValueChange(key, "true")}
+							className={`h-7 px-3 rounded-md transition-colors ${
+								values[key] === true ? "bg-secondary text-secondary-foreground" : "hover:bg-secondary/10"
+							}`}
+						>
+							True
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => handleValueChange(key, "false")}
+							className={`h-7 px-3 rounded-md transition-colors ${
+								values[key] === false ? "bg-secondary text-secondary-foreground" : "hover:bg-secondary/10"
+							}`}
+						>
+							False
+						</Button>
+					</div>
+				)
+			case "number":
+				return (
+					<Input
+						id={key}
+						type="number"
+						required={field.required}
+						placeholder={field.description || ""}
+						value={values[key] != null ? values[key].toString() : ""}
+						onChange={(e) => handleValueChange(key, e.target.value)}
+					/>
+				)
+			default:
+				return (
+					<Input
+						id={key}
+						type={field.type}
+						required={field.required}
+						placeholder={field.description || ""}
+						value={values[key] != null ? values[key].toString() : ""}
+						onChange={(e) => handleValueChange(key, e.target.value)}
+					/>
+				)
+		}
+	}
+
 	return (
 		<div>
 			{title && (
@@ -62,22 +114,7 @@ export function SchemaForm({
 							([key, field]: [string, JSONSchema]) => (
 								<div key={key} className="space-y-2">
 									<Label htmlFor={key}>{key}</Label>
-									<Input
-										id={key}
-										type={
-											key.toLowerCase().match(/(password|token|key|secret)/i)
-												? "password"
-												: field.type
-										}
-										required={field.required}
-										placeholder={
-											field.default
-												? `${field.description} (default: ${field.default})`
-												: field.description
-										}
-										value={String(values[key] || "")}
-										onChange={(e) => handleValueChange(key, e.target.value)}
-									/>
+									{renderInput(key, field)}
 								</div>
 							),
 						)}
