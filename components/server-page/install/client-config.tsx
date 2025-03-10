@@ -2,6 +2,7 @@ import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { useState } from "react"
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
+import { getInitialConfig, parseConfigValue } from "@/lib/utils/set-config"
 
 interface ClientConfigProps {
 	schema: JSONSchema
@@ -17,16 +18,7 @@ export function ClientConfig({
 	initialConfig = {},
 }: ClientConfigProps) {
 	// Initialize values with schema defaults merged with initialConfig
-	const [values, setValues] = useState<JsonObject>(() => {
-		const defaults = Object.entries(schema?.properties || {}).reduce(
-			(acc, [key, field]: [string, JSONSchema]) => {
-				acc[key] = field.default || ""
-				return acc
-			},
-			{} as JsonObject,
-		)
-		return { ...defaults, ...initialConfig }
-	})
+	const [values, setValues] = useState<JsonObject>(() => getInitialConfig(schema, initialConfig))
 
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -51,7 +43,11 @@ export function ClientConfig({
 		<SchemaForm
 			schema={schema}
 			initialValues={values}
-			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
+			onValueChange={(key, value) => {
+				const field = schema.properties?.[key];
+				const parsedValue = parseConfigValue(field, value);
+				setValues((prevValues) => ({ ...prevValues, [key]: parsedValue }));
+			}}
 			onSubmit={handleSubmit}
 			isLoading={isSubmitting}
 			submitText="Generate Command"
