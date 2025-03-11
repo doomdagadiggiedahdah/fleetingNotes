@@ -1,6 +1,6 @@
 import { CircleAlert, AlertTriangle, Info } from "lucide-react"
-import { Maintainers } from "@/components/docs/maintainers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CodeBlock } from "@/components/docs/simple-code-block"
 
 export const metadata = {
   title: 'Smithery CLI | Smithery Documentation',
@@ -24,68 +24,97 @@ This guide will walk you through installing the Smithery CLI on Windows using Sc
 For more information about Scoop, visit [the official Scoop GitHub repository](https://github.com/ScoopInstaller/Scoop).<br />
 In Windows PowerShell:
 
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+<CodeBlock 
+  language="powershell" 
+  code="Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser"
+  showHeader={true}
+  className="mb-4"
+/>
 
-```powershell
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
-```
+<CodeBlock 
+  language="powershell" 
+  code="Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression"
+  showHeader={true}
+  className="mb-6"
+/>
 
 ### Step 2: Add Scoop to your PATH
 
-```powershell
-$oldPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-```
+<CodeBlock 
+  language="powershell" 
+  code="$oldPath = [Environment]::GetEnvironmentVariable('Path', 'User')"
+  showHeader={true}
+  className="mb-4"
+/>
 
-```powershell
-$newPath = $oldPath + ";$env:USERPROFILE\scoop\shims"
-```
+<CodeBlock 
+  language="powershell" 
+  code='$newPath = "$oldPath;$env:USERPROFILE\scoop\shims"'
+  showHeader={true}
+  className="mb-4"
+/>
 
-```powershell
-[Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
-```
+<CodeBlock 
+  language="powershell" 
+  code="[Environment]::SetEnvironmentVariable('Path', $newPath, 'User')"
+  showHeader={true}
+  className="mb-6"
+/>
 
 ### Step 3: Restart Powershell
 
 ### Step 4: Check Scoop installation
 
-```powershell
-scoop --version
-```
+<CodeBlock 
+  language="powershell" 
+  code="scoop --version"
+  showHeader={true}
+/>
 
 ### Step 5: Install Smithery
 
-```powershell
-scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery
-```
+<CodeBlock 
+  language="powershell" 
+  code="scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery"
+  showHeader={true}
+/>
 
-```powershell
-scoop install smithery
-```
+<CodeBlock 
+  language="powershell" 
+  code="scoop install smithery"
+  showHeader={true}
+/>
 
 ### Step 6: Check smithery installation
 
-```powershell
-smithery --help
-```
+<CodeBlock 
+  language="powershell" 
+  code="smithery --help"
+  showHeader={true}
+/>
 
 ### Step 7: Install and Run Server
 
 Install the server:
-```powershell
-smithery install @smithery-ai/server-sequential-thinking --client claude
-```
+<CodeBlock 
+  language="powershell" 
+  code="smithery install @smithery-ai/server-sequential-thinking --client claude"
+  showHeader={true}
+/>
 
 Run the server in cursor MCP settings:
-```powershell
-smithery run @smithery-ai/server-sequential-thinking --config "{}"
-```
+<CodeBlock 
+  language="powershell" 
+  code='smithery run @smithery-ai/server-sequential-thinking --config "{}"'
+  showHeader={true}
+/>
 
 If the above command doesn't work, try using the full Scoop shim path:
-```powershell
-C:\Users\YourUsername\scoop\shims\smithery.exe run @smithery-ai/server-sequential-thinking --config "{}"
-```
+<CodeBlock 
+  language="powershell" 
+  code='C:\Users\YourUsername\scoop\shims\smithery.exe run @smithery-ai/server-sequential-thinking --config "{}"'
+  showHeader={true}
+/>
 Note: Replace `YourUsername` with your actual Windows username.
 
 Enjoy!

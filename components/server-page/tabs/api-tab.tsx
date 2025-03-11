@@ -1,6 +1,6 @@
 "use client"
 
-import { CodeBlock } from "@/components/docs/code-block"
+import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
@@ -113,7 +113,8 @@ console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
 					<>
 						<h3 className="font-semibold mb-2 text-primary">Installation</h3>
 						<p className="mb-4">Install the Smithery and MCP SDKs using npm:</p>
-						<CodeBlock
+						<SimpleCodeBlock
+							code="npm install @smithery/sdk @modelcontextprotocol/sdk"
 							language="bash"
 							onCopy={() => {
 								posthog.capture("Code Copied", {
@@ -121,9 +122,7 @@ console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
 									eventTag: "install_npm",
 								})
 							}}
-						>
-							npm install @smithery/sdk @modelcontextprotocol/sdk
-						</CodeBlock>
+						/>
 
 						<h3 className="font-semibold mb-2 mt-6 text-primary">
 							TypeScript SDK
@@ -140,17 +139,17 @@ console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
 							</a>{" "}
 							to connect to this MCP server:
 						</p>
-						<CodeBlock
+						<SimpleCodeBlock
+							code={fullExample}
 							language="typescript"
+							showHeader={true}
 							onCopy={() => {
 								posthog.capture("Code Copied", {
 									serverQualifiedName: server.qualifiedName,
 									eventTag: "typescript_api",
 								})
 							}}
-						>
-							{fullExample}
-						</CodeBlock>
+						/>
 					</>
 				) : (
 					<div className="p-4 bg-muted/30 rounded-md text-center">

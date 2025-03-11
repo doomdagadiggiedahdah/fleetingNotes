@@ -1,6 +1,6 @@
 import { CircleAlert } from "lucide-react"
-import { Maintainers } from "@/components/docs/maintainers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CodeBlock } from "@/components/docs/simple-code-block"
 import {
   Accordion,
   AccordionContent,
@@ -34,19 +34,32 @@ export const metadata = {
       <AccordionContent>
         If you're experiencing issues with npx on Cursor, there are three workarounds:
 
-        - Use the full Windows path command:
-        ```shell
-        C:\Windows\System32\cmd.exe /c npx -y @smithery/cli@latest run @smithery-ai/fetch --config "{}"
-        ```
+        **Option 1:** Use the full Windows path command:
+        
+        <CodeBlock 
+          language="shell" 
+          code='C:\Windows\System32\cmd.exe /c npx -y @smithery/cli@latest run @smithery-ai/fetch --config "{}"'
+          showHeader={true}
+          className="my-4"
+        />
 
-        - Add npx to your system PATH:
-           - Open System Properties > Advanced > Environment Variables
-           - Under System Variables, find and select "Path"
-           - Click Edit and add the npm directory (typically `C:\Users\{username}\AppData\Roaming\npm`)
+        **Option 2:** Add npx to your system PATH:
+        
+        - Open System Properties > Advanced > Environment Variables
+        - Under System Variables, find and select "Path"
+        - Click Edit and add the npm directory (typically `C:\Users\{username}\AppData\Roaming\npm`)
 
-        - Use Smithery's native CLI instead:
-           - Follow the installation guide at [Smithery CLI Installation](/docs/smithery-cli)
-           - Then run: `smithery run @smithery-ai/server-sequential-thinking --config "{}"`
+        **Option 3:** Use Smithery's native CLI instead:
+        
+        - Follow the installation guide at [Smithery CLI Installation](/docs/smithery-cli)
+        - Then run: 
+        
+        <CodeBlock 
+          language="shell" 
+          code='smithery run @smithery-ai/server-sequential-thinking --config "{}"'
+          showHeader={true}
+          className="my-4"
+        />
       </AccordionContent>
     </AccordionItem>
 

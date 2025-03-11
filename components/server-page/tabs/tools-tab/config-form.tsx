@@ -11,7 +11,6 @@ interface ConfigFormProps {
 	onCancel: () => void
 	initialConfig?: JSONSchema
 	onSuccess?: () => void
-	defaultEditMode?: boolean
 }
 
 export function ConfigForm({
@@ -20,7 +19,6 @@ export function ConfigForm({
 	onCancel,
 	initialConfig = {},
 	onSuccess,
-	defaultEditMode = false,
 }: ConfigFormProps) {
 	const { status } = useMCP()
 	const isConnected = status === "connected"
