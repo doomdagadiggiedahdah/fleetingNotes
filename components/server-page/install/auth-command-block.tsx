@@ -1,6 +1,6 @@
 "use client"
 
-import { CodeBlock } from "@/components/docs/code-block"
+import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { useAuth } from "@/context/auth-context"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
@@ -29,18 +29,17 @@ export function AuthCommandBlock({
 	}, [])
 
 	const codeBlockComponent = (
-		<CodeBlock
-			className="language-shell"
-			lineCount={2}
-			onCopy={() => {
+		<SimpleCodeBlock
+			code={command}
+			className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors"
+			disableAutoScroll={true}
+			onMouseDown={() => {
 				posthog.capture("Code Copied", {
 					serverQualifiedName,
 					eventTag: "install_command",
 				})
 			}}
-		>
-			{command}
-		</CodeBlock>
+		/>
 	)
 
 	if (!isFeatureEnabled) {
