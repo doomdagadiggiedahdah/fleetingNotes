@@ -17,6 +17,7 @@ import { AuthCommandBlock } from "./auth-command-block"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { normalizeId } from "@/lib/utils/normalise-id"
+import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 
 export const ClientInstallContent = ({
 	server,
@@ -243,9 +244,18 @@ export const ClientInstallContent = ({
 									View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
 								</a>
 							</p>
-							<CodeBlock language="bash" className="text-sm mb-3" lineCount={2}>
-								{`scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery`}
-							</CodeBlock>
+							<SimpleCodeBlock 
+								code="scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery"
+								language="bash" 
+								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
+								disableAutoScroll={true}
+								onMouseDown={() => {
+									posthog.capture("Code Copied", {
+										serverQualifiedName: server.qualifiedName,
+										eventTag: "scoop_install",
+									})
+								}}
+							/>
 							<p className="text-sm mb-2">Then directly use:</p>
 							<AuthCommandBlock
 								command={windowsCommand}
@@ -260,8 +270,8 @@ export const ClientInstallContent = ({
 								Paste the following into your project&apos;s{" "}
 								<code>.cursor/mcp.json</code>:
 							</p>
-							<CodeBlock language="json" className="text-sm mb-3">
-								{JSON.stringify(
+							<SimpleCodeBlock 
+								code={JSON.stringify(
 									{
 										mcpServers: {
 											[normalizeId(server.qualifiedName)]: {
@@ -282,7 +292,18 @@ export const ClientInstallContent = ({
 									null,
 									2,
 								)}
-							</CodeBlock>
+								language="json" 
+								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
+								disableAutoScroll={true}
+								showHeader={true}
+								headerLabel="JSON"
+								onMouseDown={() => {
+									posthog.capture("Code Copied", {
+										serverQualifiedName: server.qualifiedName,
+										eventTag: "json_config",
+									})
+								}}
+							/>
 						</TabsContent>
 					)}
 				</Tabs>
@@ -380,19 +401,20 @@ const transport = new StdioClientTransport(${stdioConfig})`
 				</a>
 				:
 			</p>
-			<CodeBlock
+			<SimpleCodeBlock
+				code={`${transportCode}`}
 				language="typescript"
-				lineCount={8}
-				onCopy={() => {
+				className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors mb-3"
+				disableAutoScroll={true}
+				showHeader={true}
+				headerLabel="TypeScript"
+				onMouseDown={() => {
 					posthog.capture("Code Copied", {
 						serverQualifiedName: server.qualifiedName,
 						eventTag: "typescript",
 					})
 				}}
-			>
-				{`\
-${transportCode}`}
-			</CodeBlock>
+			/>
 		</>
 	)
 }
