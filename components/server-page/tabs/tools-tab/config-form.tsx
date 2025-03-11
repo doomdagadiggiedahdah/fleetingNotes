@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { useMCP } from "@/context/mcp-context"
-import type { JSONSchema } from "@/lib/types/server"
+import type { JSONSchema, SchemaValueType } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
+import { getInitialConfig, parseConfigValue, applyDefaultValues } from "@/lib/utils/set-config"
 
 interface ConfigFormProps {
 	schema: JSONSchema
@@ -25,23 +26,24 @@ export function ConfigForm({
 	const [error, setError] = useState<string | null>(null)
 
 	// Initialize values with schema defaults merged with initialConfig
-	const [values, setValues] = useState<JsonObject>(() => {
-		const defaults = Object.entries(schema?.properties || {}).reduce(
-			(acc, [key, field]: [string, JSONSchema]) => {
-				acc[key] = field.default || ""
-				return acc
-			},
-			{} as JsonObject,
-		)
-		return { ...defaults, ...initialConfig }
-	})
+	const [values, setValues] = useState<JsonObject>(() => getInitialConfig(schema, initialConfig))
+
+	const handleValueChange = (key: string, value: SchemaValueType) => {
+		const field = schema.properties?.[key]
+		const parsedValue = parseConfigValue(field, value)
+		setValues((prevValues) => ({ ...prevValues, [key]: parsedValue }))
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsConnecting(true)
 		setError(null)
+		
+		// Apply default values to empty fields
+		const finalValues = applyDefaultValues(values, schema);
+		
 		try {
-			await onSubmit(values)
+			await onSubmit(finalValues)
 			onSuccess?.()
 		} catch (err) {
 			setError(
@@ -56,9 +58,7 @@ export function ConfigForm({
 		<SchemaForm
 			schema={schema}
 			initialValues={values}
-			onValueChange={(key, value) => {
-				setValues({ ...values, [key]: value })
-			}}
+			onValueChange={handleValueChange}
 			onSubmit={handleSubmit}
 			isLoading={isConnecting}
 			submitText={isConnected ? "Reconnect" : "Connect"}
