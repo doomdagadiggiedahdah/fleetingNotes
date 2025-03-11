@@ -61,6 +61,9 @@ export const JSONSchemaSchema: z.ZodType = z
 
 export type JSONSchema = z.infer<typeof JSONSchemaSchema>
 
+// Define a type for schema values based on the allowed primitive types
+export type SchemaValueType = string | boolean | number | null;
+
 export const ConnectionSchema = z.union([
 	z
 		.object({
