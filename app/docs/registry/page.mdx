@@ -1,6 +1,7 @@
 import { CircleAlert } from "lucide-react"
 import { Maintainers } from "@/components/docs/maintainers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CodeBlock } from "@/components/docs/simple-code-block"
 
 export const metadata = {
   title: 'Registry API | Smithery Documentation',
@@ -21,17 +22,21 @@ All endpoints require authentication via a bearer token. You can create an API k
 
 Include the following header in your API requests:
 
-```typescript
-headers: {
+<CodeBlock 
+  language="typescript" 
+  code={`headers: {
   'Authorization': 'Bearer your-api-token'
-}
-```
+}`}
+  showHeader={true}
+/>
 
 ### List Servers
 
-```http
-GET https://registry.smithery.ai/servers
-```
+<CodeBlock 
+  language="http" 
+  code="GET https://registry.smithery.ai/servers"
+  showHeader={true}
+/>
 
 Retrieves a paginated list of all available servers.
 
@@ -50,14 +55,17 @@ Retrieves a paginated list of all available servers.
 
 You can combine multiple filters together. For example:
 
-```text
-owner:smithery-ai repo:fetch is:deployed machine learning
-```
+<CodeBlock 
+  language="text" 
+  code="owner:smithery-ai repo:fetch is:deployed machine learning"
+  showHeader={true}
+/>
 
 #### Response
 
-```typescript
-{
+<CodeBlock 
+  language="typescript" 
+  code={`{
   servers: Array<{
     qualifiedName: string;
     displayName: string;
@@ -76,23 +84,27 @@ owner:smithery-ai repo:fetch is:deployed machine learning
     totalPages: number;
     totalCount: number;
   };
-}
-```
+}`}
+  showHeader={true}
+/>
 
 The response includes basic information about each server and pagination details to help you navigate through the list of servers.
 
 ### Get Server
 
-```http
-GET https://registry.smithery.ai/servers/{qualifiedName}
-```
+<CodeBlock 
+  language="http" 
+  code="GET https://registry.smithery.ai/servers/{qualifiedName}"
+  showHeader={true}
+/>
 
 Retrieves information about a specific server by its qualified name. The qualified name is a unique human-readable identifier for the server. You can find the qualified name from the server page's url: `https://smithery.ai/server/{qualifiedName}`.
 
 #### Response
 
-```typescript
-{
+<CodeBlock 
+  language="typescript" 
+  code={`{
   qualifiedName: string;
   displayName: string;
   deploymentUrl: string;
@@ -101,8 +113,9 @@ Retrieves information about a specific server by its qualified name. The qualifi
     url?: string;
     configSchema: JSONSchema;
   }>;
-}
-```
+}`}
+  showHeader={true}
+/>
 
 We will return you a response containing information about the server, including its qualified name, display name, and connection details.
 
@@ -119,16 +132,19 @@ The connection details specify how you can connect to this server.
 
 To connect to WebSocket servers, you have to format your URL as such:
 
-```http
-https://server.smithery.ai/${qualifiedName}/ws?config=${base64encode(config)}
-```
+<CodeBlock 
+  language="http" 
+  code="https://server.smithery.ai/${qualifiedName}/ws?config=${base64encode(config)}"
+  showHeader={true}
+/>
 
 where `{url}` is the URL of the server served over WebSocket and `config` is the JSON configuration for the server that complies with the `configSchema` encoded in base64 format.
 
 If you're using our [Typescript SDK](https://github.com/smithery-ai/typescript-sdk/), you can use the `createSmitheryUrl` function to produce the URL. 
 
-```typescript
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+<CodeBlock 
+  language="typescript" 
+  code={`import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 const url = createSmitheryUrl(
@@ -138,4 +154,6 @@ const url = createSmitheryUrl(
   },
 )
 
-const transport = new WebSocketClientTransport(url)
+const transport = new WebSocketClientTransport(url)`}
+  showHeader={true}
+/>
