@@ -1,4 +1,3 @@
-import { CodeBlock } from "@/components/docs/code-block"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
@@ -215,14 +214,14 @@ export const ClientInstallContent = ({
 										Windows
 									</div>
 									<p className="text-xs mb-3 text-muted-foreground">
-										We're actively working on improving Windows support!
+										We&apos;re actively working on improving Windows support!
 									</p>
 									<AuthCommandBlock
 										command={`cmd /c ${unixCommand}`}
 										serverQualifiedName={server.qualifiedName}
 									/>
 									<p className="text-xs mt-2 mb-3 text-muted-foreground">
-										If the above doesn't work, try this alternative:
+										If the above doesn&apos;t work, try this alternative:
 									</p>
 									<AuthCommandBlock
 										command={`C:\\Windows\\System32\\cmd.exe /c ${unixCommand}`}
