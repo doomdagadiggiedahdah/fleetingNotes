@@ -1,8 +1,8 @@
 import type { JsonObject } from "@/lib/types/json"
-import type { JSONSchema } from "@/lib/types/server"
+import type { JSONSchema, SchemaValueType } from "@/lib/types/server"
 import { useState } from "react"
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
-import { getInitialConfig, parseConfigValue } from "@/lib/utils/set-config"
+import { getInitialConfig, parseConfigValue, applyDefaultValues } from "@/lib/utils/set-config"
 
 interface ClientConfigProps {
 	schema: JSONSchema
@@ -27,8 +27,12 @@ export function ClientConfig({
 		e.preventDefault()
 		setIsSubmitting(true)
 		setError(null)
+		
+		// Apply default values to empty fields
+		const finalValues = applyDefaultValues(values, schema);
+		
 		try {
-			await onSubmit(values)
+			await onSubmit(finalValues)
 			onSuccess?.()
 		} catch (err) {
 			setError(
@@ -43,7 +47,7 @@ export function ClientConfig({
 		<SchemaForm
 			schema={schema}
 			initialValues={values}
-			onValueChange={(key, value) => {
+			onValueChange={(key, value: SchemaValueType) => {
 				const field = schema.properties?.[key];
 				const parsedValue = parseConfigValue(field, value);
 				setValues((prevValues) => ({ ...prevValues, [key]: parsedValue }));
