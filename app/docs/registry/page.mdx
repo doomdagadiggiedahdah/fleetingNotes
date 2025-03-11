@@ -28,6 +28,7 @@ Include the following header in your API requests:
   'Authorization': 'Bearer your-api-token'
 }`}
   showHeader={true}
+  className="my-4"
 />
 
 ### List Servers
@@ -36,6 +37,7 @@ Include the following header in your API requests:
   language="http" 
   code="GET https://registry.smithery.ai/servers"
   showHeader={true}
+  className="my-4"
 />
 
 Retrieves a paginated list of all available servers.
@@ -59,6 +61,7 @@ You can combine multiple filters together. For example:
   language="text" 
   code="owner:smithery-ai repo:fetch is:deployed machine learning"
   showHeader={true}
+  className="my-4"
 />
 
 #### Response
@@ -86,6 +89,7 @@ You can combine multiple filters together. For example:
   };
 }`}
   showHeader={true}
+  className="my-4"
 />
 
 The response includes basic information about each server and pagination details to help you navigate through the list of servers.
@@ -96,6 +100,7 @@ The response includes basic information about each server and pagination details
   language="http" 
   code="GET https://registry.smithery.ai/servers/{qualifiedName}"
   showHeader={true}
+  className="my-4"
 />
 
 Retrieves information about a specific server by its qualified name. The qualified name is a unique human-readable identifier for the server. You can find the qualified name from the server page's url: `https://smithery.ai/server/{qualifiedName}`.
@@ -115,6 +120,7 @@ Retrieves information about a specific server by its qualified name. The qualifi
   }>;
 }`}
   showHeader={true}
+  className="my-4"
 />
 
 We will return you a response containing information about the server, including its qualified name, display name, and connection details.
@@ -136,6 +142,7 @@ To connect to WebSocket servers, you have to format your URL as such:
   language="http" 
   code="https://server.smithery.ai/${qualifiedName}/ws?config=${base64encode(config)}"
   showHeader={true}
+  className="my-4"
 />
 
 where `{url}` is the URL of the server served over WebSocket and `config` is the JSON configuration for the server that complies with the `configSchema` encoded in base64 format.
@@ -156,4 +163,5 @@ const url = createSmitheryUrl(
 
 const transport = new WebSocketClientTransport(url)`}
   showHeader={true}
+  className="my-4"
 />
