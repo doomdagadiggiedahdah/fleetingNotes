@@ -191,9 +191,16 @@ export const ClientInstallContent = ({
 					</TabsList>
 
 					<TabsContent value="standard">
-						{client === "cursor" ? (
+						{client === "cursor" || client === "goose" ? (
 							<>
 								<div className="mb-4">
+									<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+										<ServerFavicon
+											homepage="https://www.apple.com"
+											displayName="Mac/Linux"
+										/>
+										Mac/Linux
+									</div>
 									<AuthCommandBlock
 										command={unixCommand}
 										serverQualifiedName={server.qualifiedName}
@@ -207,11 +214,18 @@ export const ClientInstallContent = ({
 										/>
 										Windows
 									</div>
-									<p className="text-xs text-muted-foreground mb-1 italic">
-										Try this if npx commands don&apos;t work
+									<p className="text-xs mb-3 text-muted-foreground">
+										We're actively working on improving Windows support!
 									</p>
 									<AuthCommandBlock
 										command={`cmd /c ${unixCommand}`}
+										serverQualifiedName={server.qualifiedName}
+									/>
+									<p className="text-xs mt-2 mb-3 text-muted-foreground">
+										If the above doesn't work, try this alternative:
+									</p>
+									<AuthCommandBlock
+										command={`C:\\Windows\\System32\\cmd.exe /c ${unixCommand}`}
 										serverQualifiedName={server.qualifiedName}
 									/>
 								</div>
@@ -226,6 +240,13 @@ export const ClientInstallContent = ({
 
 					{server.remote && server.deploymentUrl && (
 						<TabsContent value="scoop">
+							<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+								<ServerFavicon
+									homepage="https://microsoft.com"
+									displayName="Windows"
+								/>
+								Windows
+							</div>
 							<p className="text-sm mb-2">
 								Install the native Smithery CLI via{" "}
 								<a
