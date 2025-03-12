@@ -17,9 +17,7 @@ import { normalizeId } from "@/lib/utils/normalise-id"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 
 // Server Configuration key value pairs
-export interface ServerConfig {
-	[key: string]: unknown
-}
+export type ServerConfig = JsonObject
 
 export const ClientInstallContent = ({
 	server,
