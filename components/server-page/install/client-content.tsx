@@ -7,7 +7,7 @@ import type { JsonObject } from "@/lib/types/json"
 
 interface ClientContentProps {
 	server: FetchedServer
-	client: "cursor" | "goose"
+	client: "cursor" | "goose" | "spinai"
 	configSchema: JSONSchema | null
 	isLoadingSchema: boolean
 	isClientConfigured: boolean
