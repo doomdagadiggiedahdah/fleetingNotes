@@ -29,6 +29,7 @@ export type InstallTabStates =
 	| "witsy"
 	| "enconvo"
 	| "goose"
+	| "spinai"
 
 type InstallationTabsProps = {
 	server: FetchedServer
@@ -108,6 +109,16 @@ function InstallTabOptions({
 				/>
 			),
 		},
+		{
+			value: "spinai",
+			label: "SpinAI",
+			icon: (
+				<ServerFavicon
+					homepage="https://docs.spinai.dev/"
+					displayName="SpinAI"
+				/>
+			),
+		},
 	]
 
 	const mainTabs = tabOrder.slice(0, visibleCount)
@@ -184,6 +195,7 @@ export function InstallationTabs({
 		"witsy",
 		"enconvo",
 		"goose",
+		"spinai",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
@@ -200,7 +212,7 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function getConfig() {
-			if ((activeTab === "cursor" || activeTab === "goose") && !configSchema) {
+			if ((activeTab === "cursor" || activeTab === "goose" || activeTab === "spinai") && !configSchema) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
@@ -316,6 +328,18 @@ export function InstallationTabs({
 				<ClientContent
 					server={server}
 					client="goose"
+					configSchema={configSchema}
+					isLoadingSchema={isLoadingSchema}
+					isClientConfigured={isClientConfigured}
+					hasConfigProperties={hasConfigProperties}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+				/>
+			</TabsContent>
+			<TabsContent value="spinai">
+				<ClientContent
+					server={server}
+					client="spinai"
 					configSchema={configSchema}
 					isLoadingSchema={isLoadingSchema}
 					isClientConfigured={isClientConfigured}

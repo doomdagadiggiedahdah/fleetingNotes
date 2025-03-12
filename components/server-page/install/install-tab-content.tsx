@@ -33,6 +33,7 @@ export const ClientInstallContent = ({
 		| "witsy"
 		| "enconvo"
 		| "goose"
+		| "spinai"
 	config?: JsonObject
 	isConfigured?: boolean
 }) => {
@@ -40,12 +41,20 @@ export const ClientInstallContent = ({
 	const unixCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
 			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			: client === "spinai"
+			? isConfigured && config
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config "${JSON.stringify(config).replace(/"/g, '\\"')}"`
+				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
 
 	// Windows command
 	const windowsCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
 			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			: client === "spinai"
+			? isConfigured && config
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config "${JSON.stringify(config).replace(/"/g, '\\"')}"`
+				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `smithery install ${server.qualifiedName} --client ${client}`
 
 	const hasValidConnection =
@@ -159,6 +168,17 @@ export const ClientInstallContent = ({
 						</a>
 						.
 					</>
+				) : client === "spinai" ? (
+					<>
+						<a
+							href="https://www.spinai.dev"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							SpinAI
+						</a>
+						.
+					</>
 				) : null}
 			</p>
 
@@ -172,7 +192,7 @@ export const ClientInstallContent = ({
 							/>
 							npm
 						</TabsTrigger>
-						{server.remote && server.deploymentUrl && (
+						{server.remote && server.deploymentUrl && client !== "spinai" && (
 							<TabsTrigger value="scoop" className="flex items-center gap-2">
 								<ServerFavicon
 									homepage="https://scoop.sh"
@@ -237,7 +257,7 @@ export const ClientInstallContent = ({
 						)}
 					</TabsContent>
 
-					{server.remote && server.deploymentUrl && (
+					{server.remote && server.deploymentUrl && client !== "spinai" && (
 						<TabsContent value="scoop">
 							<div className="flex items-center gap-2 mb-2 text-sm font-medium">
 								<ServerFavicon
