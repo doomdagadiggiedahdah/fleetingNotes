@@ -39,18 +39,22 @@ export function SchemaForm({
 }: SchemaFormProps) {
 	const hasConfigFields = Object.keys(schema?.properties || {}).length > 0
 	const [values, setValues] = useState<JsonObject>(initialValues)
-	const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({})
+	const [validationErrors, setValidationErrors] = useState<
+		Record<string, boolean>
+	>({})
 	const [showValidation, setShowValidation] = useState(false)
-	const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({})
+	const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(
+		{},
+	)
 
 	const handleValueChange = (key: string, value: SchemaValueType) => {
 		setValues((prev) => ({ ...prev, [key]: value }))
-		
+
 		// Clear validation error for this field if it has a value
 		if (value !== undefined && value !== "" && validationErrors[key]) {
 			setValidationErrors((prev) => ({ ...prev, [key]: false }))
 		}
-		
+
 		onValueChange(key, value)
 	}
 
@@ -75,7 +79,7 @@ export function SchemaForm({
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault()
-		
+
 		if (validateForm()) {
 			onSubmit(e)
 		}
@@ -86,23 +90,25 @@ export function SchemaForm({
 	}
 
 	const toggleFieldVisibility = (key: string) => {
-		setVisibleFields(prev => ({
+		setVisibleFields((prev) => ({
 			...prev,
-			[key]: !prev[key]
+			[key]: !prev[key],
 		}))
 	}
 
 	const shouldMaskField = (key: string) => {
 		const lowercaseKey = key.toLowerCase()
 		return (
-			lowercaseKey.includes('password') || 
-			lowercaseKey.includes('key') || 
-			lowercaseKey.includes('token')) && !visibleFields[key]
+			(lowercaseKey.includes("password") ||
+				lowercaseKey.includes("key") ||
+				lowercaseKey.includes("token")) &&
+			!visibleFields[key]
+		)
 	}
 
 	const renderInput = (key: string, field: JSONSchema) => {
 		const isSensitiveField = shouldMaskField(key)
-		
+
 		switch (field.type) {
 			case "boolean":
 				return (
@@ -112,7 +118,9 @@ export function SchemaForm({
 							variant="ghost"
 							onClick={() => handleValueChange(key, true)}
 							className={`h-7 px-3 rounded-md transition-colors ${
-								values[key] === true ? "bg-secondary text-secondary-foreground" : "hover:bg-secondary/10"
+								values[key] === true
+									? "bg-secondary text-secondary-foreground"
+									: "hover:bg-secondary/10"
 							}`}
 						>
 							True
@@ -122,7 +130,9 @@ export function SchemaForm({
 							variant="ghost"
 							onClick={() => handleValueChange(key, false)}
 							className={`h-7 px-3 rounded-md transition-colors ${
-								values[key] === false ? "bg-secondary text-secondary-foreground" : "hover:bg-secondary/10"
+								values[key] === false
+									? "bg-secondary text-secondary-foreground"
+									: "hover:bg-secondary/10"
 							}`}
 						>
 							False
@@ -131,31 +141,46 @@ export function SchemaForm({
 				)
 			case "number":
 				return (
-					<div className={isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}>
+					<div
+						className={
+							isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""
+						}
+					>
 						<Input
 							id={key}
 							type="number"
-							required={Array.isArray(schema.required) && schema.required.includes(key)}
+							required={
+								Array.isArray(schema.required) && schema.required.includes(key)
+							}
 							placeholder={field.description || ""}
 							value={values[key] != null ? values[key].toString() : ""}
-							onChange={(e) => handleValueChange(key, e.target.value ? Number(e.target.value) : "")}
+							onChange={(e) =>
+								handleValueChange(
+									key,
+									e.target.value ? Number(e.target.value) : "",
+								)
+							}
 						/>
 					</div>
 				)
 			default:
 				return (
-					<div className={`relative ${isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}`}>
+					<div
+						className={`relative ${isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}`}
+					>
 						<Input
 							id={key}
 							type={isSensitiveField ? "password" : "text"}
-							required={Array.isArray(schema.required) && schema.required.includes(key)}
+							required={
+								Array.isArray(schema.required) && schema.required.includes(key)
+							}
 							placeholder={field.description || ""}
 							value={values[key] != null ? values[key].toString() : ""}
 							onChange={(e) => handleValueChange(key, e.target.value)}
 						/>
-						{(key.toLowerCase().includes('password') || 
-						  key.toLowerCase().includes('key') || 
-						  key.toLowerCase().includes('token')) && (
+						{(key.toLowerCase().includes("password") ||
+							key.toLowerCase().includes("key") ||
+							key.toLowerCase().includes("token")) && (
 							<Button
 								type="button"
 								variant="ghost"
@@ -163,7 +188,11 @@ export function SchemaForm({
 								className="absolute right-0 top-0 h-full px-3 py-2"
 								onClick={() => toggleFieldVisibility(key)}
 							>
-								{visibleFields[key] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+								{visibleFields[key] ? (
+									<EyeOff className="h-4 w-4" />
+								) : (
+									<Eye className="h-4 w-4" />
+								)}
 								<span className="sr-only">
 									{visibleFields[key] ? "Hide" : "Show"} {key}
 								</span>
@@ -189,7 +218,9 @@ export function SchemaForm({
 					<>
 						{Object.entries(schema?.properties || {}).map(
 							([key, field]: [string, JSONSchema]) => {
-								const isRequired = Array.isArray(schema.required) && schema.required.includes(key);
+								const isRequired =
+									Array.isArray(schema.required) &&
+									schema.required.includes(key)
 								return (
 									<div key={key} className="space-y-2">
 										<Label htmlFor={key}>
@@ -200,11 +231,13 @@ export function SchemaForm({
 										</Label>
 										{renderInput(key, field)}
 										{isFieldInvalid(key) && (
-											<p className="text-xs text-destructive mt-1">This field is required</p>
+											<p className="text-xs text-destructive mt-1">
+												This field is required
+											</p>
 										)}
 									</div>
-								);
-							}
+								)
+							},
 						)}
 					</>
 				) : (

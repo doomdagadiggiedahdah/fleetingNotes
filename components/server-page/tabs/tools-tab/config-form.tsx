@@ -3,7 +3,11 @@ import { useMCP } from "@/context/mcp-context"
 import type { JSONSchema, SchemaValueType } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
-import { getInitialConfig, parseConfigValue, applyDefaultValues } from "@/lib/utils/set-config"
+import {
+	getInitialConfig,
+	parseConfigValue,
+	applyDefaultValues,
+} from "@/lib/utils/set-config"
 
 interface ConfigFormProps {
 	schema: JSONSchema
@@ -26,7 +30,9 @@ export function ConfigForm({
 	const [error, setError] = useState<string | null>(null)
 
 	// Initialize values with schema defaults merged with initialConfig
-	const [values, setValues] = useState<JsonObject>(() => getInitialConfig(schema, initialConfig))
+	const [values, setValues] = useState<JsonObject>(() =>
+		getInitialConfig(schema, initialConfig),
+	)
 
 	const handleValueChange = (key: string, value: SchemaValueType) => {
 		const field = schema.properties?.[key]
@@ -38,10 +44,10 @@ export function ConfigForm({
 		e.preventDefault()
 		setIsConnecting(true)
 		setError(null)
-		
+
 		// Apply default values to empty fields
-		const finalValues = applyDefaultValues(values, schema);
-		
+		const finalValues = applyDefaultValues(values, schema)
+
 		try {
 			await onSubmit(finalValues)
 			onSuccess?.()

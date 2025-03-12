@@ -41,7 +41,7 @@ export const ClientInstallContent = ({
 	// Clean config by replacing undefined values with empty strings
 	const cleanConfig = (inputConfig?: ServerConfig): ServerConfig => {
 		if (!inputConfig) return {}
-		
+
 		return Object.entries(inputConfig).reduce((acc, [key, value]) => {
 			// If value is undefined, replace with empty string
 			if (value === undefined) {
@@ -52,28 +52,28 @@ export const ClientInstallContent = ({
 			return acc
 		}, {} as ServerConfig)
 	}
-	
+
 	const cleanedConfig = cleanConfig(config)
-	
+
 	// Standard command (for Unix-based systems)
 	const unixCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
 			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 			: client === "spinai"
-			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
-			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
+				? isConfigured && config
+					? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
+					: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
+				: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
 
 	// Windows command
 	const windowsCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
 			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 			: client === "spinai"
-			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
-			: `smithery install ${server.qualifiedName} --client ${client}`
+				? isConfigured && config
+					? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
+					: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
+				: `smithery install ${server.qualifiedName} --client ${client}`
 
 	const hasValidConnection =
 		server.deploymentUrl ||
@@ -302,9 +302,9 @@ export const ClientInstallContent = ({
 									View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
 								</a>
 							</p>
-							<SimpleCodeBlock 
+							<SimpleCodeBlock
 								code="scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery"
-								language="bash" 
+								language="bash"
 								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
 								disableAutoScroll={true}
 								onMouseDown={() => {
@@ -328,7 +328,7 @@ export const ClientInstallContent = ({
 								Paste the following into your project&apos;s{" "}
 								<code>.cursor/mcp.json</code>:
 							</p>
-							<SimpleCodeBlock 
+							<SimpleCodeBlock
 								code={JSON.stringify(
 									{
 										mcpServers: {
@@ -350,7 +350,7 @@ export const ClientInstallContent = ({
 									null,
 									2,
 								)}
-								language="json" 
+								language="json"
 								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
 								disableAutoScroll={true}
 								showHeader={true}

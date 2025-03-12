@@ -212,7 +212,12 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function getConfig() {
-			if ((activeTab === "cursor" || activeTab === "goose" || activeTab === "spinai") && !configSchema) {
+			if (
+				(activeTab === "cursor" ||
+					activeTab === "goose" ||
+					activeTab === "spinai") &&
+				!configSchema
+			) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
