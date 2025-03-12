@@ -43,7 +43,7 @@ export const ClientInstallContent = ({
 			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
 			: client === "spinai"
 			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config "${JSON.stringify(config).replace(/"/g, '\\"')}"`
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(config))}`
 				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
 
@@ -53,7 +53,7 @@ export const ClientInstallContent = ({
 			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
 			: client === "spinai"
 			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config "${JSON.stringify(config).replace(/"/g, '\\"')}"`
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(config))}`
 				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `smithery install ${server.qualifiedName} --client ${client}`
 
