@@ -1,4 +1,4 @@
-import { SiDiscord, SiGithub } from "@icons-pack/react-simple-icons"
+import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons"
 import { Anvil, Plus } from "lucide-react"
 import Link from "next/link"
 import { LoginButton } from "./auth/login-button"
@@ -17,6 +17,15 @@ export function Header() {
 					</Link>
 					<div className="flex items-center gap-2 md:gap-6">
 						<div className="flex items-center gap-2">
+							<a
+								href="https://x.com/Calclavia"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-muted-foreground hover:text-foreground transition-colors"
+								aria-label="X"
+							>
+								<SiX className="w-5 h-5" />
+							</a>
 							<a
 								href="https://github.com/smithery-ai"
 								target="_blank"
