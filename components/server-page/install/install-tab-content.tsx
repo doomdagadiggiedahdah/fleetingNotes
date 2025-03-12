@@ -1,6 +1,5 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import {
 	AlertCircle,
 	Bug,
@@ -10,13 +9,15 @@ import {
 	Braces,
 } from "lucide-react"
 import posthog from "posthog-js"
-import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { AuthCommandBlock } from "./auth-command-block"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { normalizeId } from "@/lib/utils/normalise-id"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
+
+// Server Configuration key value pairs
+export type ServerConfig = JsonObject
 
 export const ClientInstallContent = ({
 	server,
@@ -34,26 +35,43 @@ export const ClientInstallContent = ({
 		| "enconvo"
 		| "goose"
 		| "spinai"
-	config?: JsonObject
+	config?: ServerConfig
 	isConfigured?: boolean
 }) => {
+	// Clean config by replacing undefined values with empty strings
+	const cleanConfig = (inputConfig?: ServerConfig): ServerConfig => {
+		if (!inputConfig) return {}
+		
+		return Object.entries(inputConfig).reduce((acc, [key, value]) => {
+			// If value is undefined, replace with empty string
+			if (value === undefined) {
+				acc[key] = ""
+			} else {
+				acc[key] = value
+			}
+			return acc
+		}, {} as ServerConfig)
+	}
+	
+	const cleanedConfig = cleanConfig(config)
+	
 	// Standard command (for Unix-based systems)
 	const unixCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
-			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 			: client === "spinai"
 			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(config))}`
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
 
 	// Windows command
 	const windowsCommand =
 		(client === "cursor" || client === "goose") && isConfigured && config
-			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(config))}`
+			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 			: client === "spinai"
 			? isConfigured && config
-				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(config))}`
+				? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
 				: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
 			: `smithery install ${server.qualifiedName} --client ${client}`
 
@@ -322,8 +340,8 @@ export const ClientInstallContent = ({
 													"run",
 													server.qualifiedName,
 													"--config",
-													config
-														? JSON.stringify(config)
+													cleanedConfig
+														? JSON.stringify(cleanedConfig)
 														: "<your-config-here>",
 												],
 											},
@@ -375,86 +393,6 @@ export const ClientInstallContent = ({
 					Troubleshoot
 				</a>
 			</div>
-		</>
-	)
-}
-
-export const TypeScriptContent = ({
-	server,
-	configSchema,
-}: { server: FetchedServer; configSchema?: JSONSchema }) => {
-	const stdioConnection = server.connections.find(
-		(conn) => conn.type === "stdio",
-	)
-
-	if (!server.deploymentUrl && !stdioConnection) {
-		return <p>Unavailable</p>
-	}
-
-	// Generate example config for stdio if needed
-	let stdioConfig = ""
-	if (!server.deploymentUrl && stdioConnection) {
-		const exampleConfigResult = generateConfig(
-			stdioConnection,
-			stdioConnection.exampleConfig ??
-				createDummyConfig(stdioConnection.configSchema),
-		)
-		const exampleConfig = exampleConfigResult.success
-			? exampleConfigResult.result
-			: {}
-		if (exampleConfig.command === "npx" && exampleConfig.env) {
-			exampleConfig.env.PATH = "process.env.PATH"
-		}
-		stdioConfig = JSON.stringify(exampleConfig, null, 2).replace(
-			'"process.env.PATH"',
-			"process.env.PATH",
-		)
-	}
-
-	let wsConfig = ""
-	if (configSchema) {
-		wsConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`
-	}
-
-	const transportCode = server.deploymentUrl
-		? `import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
-
-const url = createSmitheryUrl("${server.deploymentUrl}/ws"${wsConfig})
-const transport = new WebSocketClientTransport(url)`
-		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-
-const transport = new StdioClientTransport(${stdioConfig})`
-
-	return (
-		<>
-			<h4 className="font-semibold mb-2 text-primary">TypeScript SDK</h4>
-			<p className="my-2">
-				Integrate with your model with this tool with{" "}
-				<a
-					href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
-					target="_blank"
-					className="hover:text-primary underline"
-				>
-					Smithery&apos;s TypeScript SDK
-					<ExternalLink className="w-4 h-4 ml-1 inline" />
-				</a>
-				:
-			</p>
-			<SimpleCodeBlock
-				code={`${transportCode}`}
-				language="typescript"
-				className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors mb-3"
-				disableAutoScroll={true}
-				showHeader={true}
-				headerLabel="TypeScript"
-				onMouseDown={() => {
-					posthog.capture("Code Copied", {
-						serverQualifiedName: server.qualifiedName,
-						eventTag: "typescript",
-					})
-				}}
-			/>
 		</>
 	)
 }
