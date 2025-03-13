@@ -21,18 +21,36 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	const servers = await db.query.servers.findMany({
-		columns: { qualifiedName: true },
-	})
-
-	return servers.flatMap((server) => {
-		const baseSegments = server.qualifiedName.split("/")
-		return [
-			{ ids: baseSegments }, // Overview tab (root path)
-			{ ids: [...baseSegments, "tools"] }, // Tools tab
-			{ ids: [...baseSegments, "api"] }, // API tab
-		]
-	})
+	const batchSize = 50;
+	const paths: { ids: string[] }[] = [];
+	
+	let page = 0;
+	let hasMore = true;
+	
+	while (hasMore) {
+		const batch = await db.query.servers.findMany({
+			columns: { qualifiedName: true },
+			limit: batchSize,
+			offset: page * batchSize,
+		});
+		
+		if (batch.length === 0) break;
+		
+		paths.push(
+			...batch.flatMap(server => {
+				const segments = server.qualifiedName.split("/");
+				return [
+					{ ids: segments },
+					{ ids: [...segments, "tools"] },
+					{ ids: [...segments, "api"] },
+				];
+			})
+		);
+		
+		page++;
+	}
+	
+	return paths;
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
