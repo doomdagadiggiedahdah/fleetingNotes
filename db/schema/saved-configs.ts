@@ -2,6 +2,7 @@ import { jsonb, pgTable, timestamp, uuid } from "drizzle-orm/pg-core"
 
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 
+import { authUsers } from "drizzle-orm/supabase"
 import type { z } from "zod"
 
 import { servers } from "./servers"
@@ -15,6 +16,11 @@ export const savedConfigs = pgTable("saved_configs", {
 
 	// Configuration data stored as JSON
 	configData: jsonb("config_data").notNull(),
+
+	owner: uuid("owner")
+		.notNull()
+		.references(() => authUsers.id, { onDelete: "cascade" }),
+
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }).enableRLS()
