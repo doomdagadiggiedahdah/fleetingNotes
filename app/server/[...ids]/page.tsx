@@ -25,9 +25,8 @@ export async function generateStaticParams() {
 	const paths: { ids: string[] }[] = [];
 	
 	let page = 0;
-	let hasMore = true;
 	
-	while (hasMore) {
+	while (true) {
 		const batch = await db.query.servers.findMany({
 			columns: { qualifiedName: true },
 			limit: batchSize,
