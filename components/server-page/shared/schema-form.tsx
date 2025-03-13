@@ -248,7 +248,7 @@ export function SchemaForm({
 							Cancel
 						</Button>
 					)}
-					{onSaveAndConnect && (
+					{onSaveAndConnect && hasConfigFields && (
 						<Button
 							type="button"
 							variant="secondary"

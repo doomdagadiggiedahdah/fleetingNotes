@@ -1,6 +1,7 @@
 "use client"
 
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
+import { useAuth } from "@/context/auth-context"
 import { useMCP } from "@/context/mcp-context"
 import {
 	getSavedConfig,
@@ -32,12 +33,15 @@ interface ConfigFormProps {
 export function ConfigForm(props: ConfigFormProps) {
 	const [savedConfig, setSavedConfig] = useState(null)
 	const [isLoading, setIsLoading] = useState(true)
+	const { currentSession } = useAuth()
 
 	useEffect(() => {
 		async function loadConfig() {
 			try {
-				const config = await getSavedConfig(props.serverId)
-				if (config.ok) setSavedConfig(config.value)
+				if (currentSession) {
+					const config = await getSavedConfig(props.serverId)
+					if (config.ok) setSavedConfig(config.value)
+				}
 			} catch (error) {
 				console.error(error)
 			} finally {
@@ -46,7 +50,7 @@ export function ConfigForm(props: ConfigFormProps) {
 		}
 
 		loadConfig()
-	}, [props.serverId])
+	}, [props.serverId, currentSession])
 
 	if (isLoading) return <ConfigFormLoading />
 
@@ -66,6 +70,7 @@ export function ConfigFormInner({
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const { setIsSignInOpen, currentSession } = useAuth()
 
 	// Use savedConfig if available, otherwise use initialConfig
 	const configToUse = savedConfig || initialConfig
@@ -74,25 +79,25 @@ export function ConfigFormInner({
 	// Ensure all schema fields are included in the submission
 	const getCompleteValues = () => {
 		const completeValues = { ...values }
-		
+
 		// Add all schema properties with empty values if they don't exist
 		if (schema?.properties) {
-			Object.keys(schema.properties).forEach(key => {
+			Object.keys(schema.properties).forEach((key) => {
 				if (completeValues[key] === undefined) {
-					completeValues[key] = "";
+					completeValues[key] = ""
 				}
-			});
+			})
 		}
-		
-		return completeValues;
-	};
+
+		return completeValues
+	}
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsConnecting(true)
 		setError(null)
 		try {
-			const completeValues = getCompleteValues();
+			const completeValues = getCompleteValues()
 			await onSubmit(completeValues)
 			onSuccess?.()
 		} catch (err) {
@@ -109,22 +114,26 @@ export function ConfigFormInner({
 		setIsSaving(true)
 		setError(null)
 		try {
-			// Connect first with complete values
-			const completeValues = getCompleteValues();
-			console.log("Saving and connecting with configuration:", completeValues);
-			await onSubmit(completeValues)
+			if (!currentSession) {
+				setIsSignInOpen(true)
+			} else {
+				const completeValues = getCompleteValues()
 
-			// Save the configuration using server action
-			const result = await saveConfiguration({
-				serverId,
-				configData: completeValues,
-			})
+				// Connect first
+				await onSubmit(completeValues)
 
-			if (!result.ok) {
-				throw new Error(result.error || "Failed to save configuration")
+				// Save the configuration using server action
+				const result = await saveConfiguration({
+					serverId,
+					configData: completeValues,
+				})
+
+				if (!result.ok) {
+					throw new Error(result.error || "Failed to save configuration")
+				}
+
+				onSuccess?.()
 			}
-
-			onSuccess?.()
 		} catch (err) {
 			setError(
 				err instanceof Error

@@ -21,35 +21,35 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	const batchSize = 50;
-	const paths: { ids: string[] }[] = [];
-	
-	let page = 0;
-	
+	const batchSize = 50
+	const paths: { ids: string[] }[] = []
+
+	let page = 0
+
 	while (true) {
 		const batch = await db.query.servers.findMany({
 			columns: { qualifiedName: true },
 			limit: batchSize,
 			offset: page * batchSize,
-		});
-		
-		if (batch.length === 0) break;
-		
+		})
+
+		if (batch.length === 0) break
+
 		paths.push(
-			...batch.flatMap(server => {
-				const segments = server.qualifiedName.split("/");
+			...batch.flatMap((server) => {
+				const segments = server.qualifiedName.split("/")
 				return [
 					{ ids: segments },
 					{ ids: [...segments, "tools"] },
 					{ ids: [...segments, "api"] },
-				];
-			})
-		);
-		
-		page++;
+				]
+			}),
+		)
+
+		page++
 	}
-	
-	return paths;
+
+	return paths
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
