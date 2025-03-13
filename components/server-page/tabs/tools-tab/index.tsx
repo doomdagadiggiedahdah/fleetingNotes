@@ -1,21 +1,21 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Settings } from "lucide-react"
-import { useState, useEffect } from "react"
 import { useMCP } from "@/context/mcp-context"
+import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import {
-	type Tool,
 	type CompatibilityCallToolResult,
 	CompatibilityCallToolResultSchema,
+	type Tool,
 } from "@modelcontextprotocol/sdk/types.js"
+import { Settings } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ConfigForm } from "./config-form"
+import { ToolsPanelSkeleton } from "./skeleton"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
-import { ConfigForm } from "./config-form"
-import { Button } from "@/components/ui/button"
-import type { JSONSchema } from "@/lib/types/server"
-import { ToolsPanelSkeleton } from "./skeleton"
 
 interface ToolsPanelProps {
 	server: FetchedServer
@@ -159,25 +159,6 @@ export function ToolsPanel({
 
 	return (
 		<div className="space-y-6">
-			{((showConfigForm && status !== "connected" && server.deploymentUrl) ||
-				isEditingConfig) && (
-				<div className="lg:hidden">
-					<ConfigForm
-						schema={configSchema!}
-						onSubmit={handleConfigSubmit}
-						onCancel={() => {
-							setIsEditingConfig(false)
-							onConfigCancel?.()
-						}}
-						initialConfig={initialConfig}
-						onSuccess={() => {
-							setIsEditingConfig(false)
-							onConfigSuccess?.()
-						}}
-					/>
-				</div>
-			)}
-
 			<div className="flex justify-between items-center">
 				{status === "connected" && !isEditingConfig && tools.length > 0 && (
 					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
@@ -260,6 +241,7 @@ export function ToolsPanel({
 										setIsEditingConfig(false)
 										onConfigSuccess?.()
 									}}
+									serverId={server.id}
 								/>
 							</div>
 						) : isExpanded ? (

@@ -12,14 +12,12 @@ interface SchemaFormProps {
 	onValueChange: (key: string, value: SchemaValueType) => void
 	onSubmit: (e: React.FormEvent) => void
 	isLoading: boolean
-	submitText: string
-	loadingText: string
-	title?: string
-	description?: string
-	onCancel?: () => void
-	cancelText?: string
 	buttonAlignment?: "start" | "center" | "end"
 	error?: string | null
+	onCancel?: () => void
+	onSaveAndConnect?: (e: React.MouseEvent) => void
+	isSaving?: boolean
+	isConnected?: boolean
 }
 
 export function SchemaForm({
@@ -28,14 +26,12 @@ export function SchemaForm({
 	onValueChange,
 	onSubmit,
 	isLoading,
-	submitText,
-	loadingText,
-	title,
-	description,
-	onCancel,
-	cancelText = "Cancel",
 	buttonAlignment = "end",
 	error,
+	onCancel,
+	onSaveAndConnect,
+	isSaving = false,
+	isConnected = false,
 }: SchemaFormProps) {
 	const hasConfigFields = Object.keys(schema?.properties || {}).length > 0
 	const [values, setValues] = useState<JsonObject>(initialValues)
@@ -205,12 +201,7 @@ export function SchemaForm({
 
 	return (
 		<div>
-			{title && (
-				<h1 className="text-md font-bold text-primary mb-1">{title}</h1>
-			)}
-			{description && (
-				<p className="text-base text-muted-foreground mb-4">{description}</p>
-			)}
+			<h1 className="text-md font-bold text-primary mb-1">Configuration</h1>
 			{error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
 			<form onSubmit={handleSubmit} className="space-y-4">
@@ -252,13 +243,27 @@ export function SchemaForm({
 							type="button"
 							variant="outline"
 							onClick={onCancel}
-							disabled={isLoading}
+							disabled={isLoading || isSaving}
 						>
-							{cancelText}
+							Cancel
 						</Button>
 					)}
-					<Button type="submit" disabled={isLoading}>
-						{isLoading ? loadingText : submitText}
+					{onSaveAndConnect && (
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={onSaveAndConnect}
+							disabled={isLoading || isSaving}
+						>
+							{isSaving ? "Saving & Connecting..." : "Save and Connect"}
+						</Button>
+					)}
+					<Button type="submit" disabled={isLoading || isSaving}>
+						{isLoading
+							? "Connecting..."
+							: isConnected
+								? "Reconnect"
+								: "Connect"}
 					</Button>
 				</div>
 			</form>

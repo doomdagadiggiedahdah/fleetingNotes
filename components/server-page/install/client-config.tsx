@@ -60,10 +60,6 @@ export function ClientConfig({
 			}}
 			onSubmit={handleSubmit}
 			isLoading={isSubmitting}
-			submitText="Generate Command"
-			loadingText="Loading..."
-			title="Add Configuration"
-			description="Add configuration to generate command."
 			error={error}
 		/>
 	)

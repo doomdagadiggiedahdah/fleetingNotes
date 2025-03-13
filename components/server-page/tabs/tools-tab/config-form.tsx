@@ -1,13 +1,23 @@
-import { useState } from "react"
-import { useMCP } from "@/context/mcp-context"
-import type { JSONSchema, SchemaValueType } from "@/lib/types/server"
-import type { JsonObject } from "@/lib/types/json"
+"use client"
+
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
+import { useMCP } from "@/context/mcp-context"
 import {
-	getInitialConfig,
-	parseConfigValue,
-	applyDefaultValues,
-} from "@/lib/utils/set-config"
+	getSavedConfig,
+	saveConfiguration,
+} from "@/lib/actions/save-configuration"
+import type { JsonObject } from "@/lib/types/json"
+import type { JSONSchema } from "@/lib/types/server"
+import { useEffect, useState } from "react"
+
+// Loading fallback UI shown while configuration is being loaded
+export function ConfigFormLoading() {
+	return (
+		<div className="p-4 text-sm text-muted-foreground">
+			Loading configuration...
+		</div>
+	)
+}
 
 interface ConfigFormProps {
 	schema: JSONSchema
@@ -15,41 +25,58 @@ interface ConfigFormProps {
 	onCancel: () => void
 	initialConfig?: JSONSchema
 	onSuccess?: () => void
+	serverId: string
+	savedConfig?: JSONSchema
 }
 
-export function ConfigForm({
+export function ConfigForm(props: ConfigFormProps) {
+	const [savedConfig, setSavedConfig] = useState(null)
+	const [isLoading, setIsLoading] = useState(true)
+
+	useEffect(() => {
+		async function loadConfig() {
+			try {
+				const config = await getSavedConfig(props.serverId)
+				if (config.ok) setSavedConfig(config.value)
+			} catch (error) {
+				console.error(error)
+			} finally {
+				setIsLoading(false)
+			}
+		}
+
+		loadConfig()
+	}, [props.serverId])
+
+	if (isLoading) return <ConfigFormLoading />
+
+	return <ConfigFormInner {...props} savedConfig={savedConfig} />
+}
+export function ConfigFormInner({
 	schema,
 	onSubmit,
 	onCancel,
 	initialConfig = {},
 	onSuccess,
+	serverId,
+	savedConfig,
 }: ConfigFormProps) {
 	const { status } = useMCP()
 	const isConnected = status === "connected"
 	const [isConnecting, setIsConnecting] = useState(false)
+	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
-	// Initialize values with schema defaults merged with initialConfig
-	const [values, setValues] = useState<JsonObject>(() =>
-		getInitialConfig(schema, initialConfig),
-	)
-
-	const handleValueChange = (key: string, value: SchemaValueType) => {
-		const field = schema.properties?.[key]
-		const parsedValue = parseConfigValue(field, value)
-		setValues((prevValues) => ({ ...prevValues, [key]: parsedValue }))
-	}
+	// Use savedConfig if available, otherwise use initialConfig
+	const configToUse = savedConfig || initialConfig
+	const [values, setValues] = useState<JsonObject>(configToUse || {})
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsConnecting(true)
 		setError(null)
-
-		// Apply default values to empty fields
-		const finalValues = applyDefaultValues(values, schema)
-
 		try {
-			await onSubmit(finalValues)
+			await onSubmit(values)
 			onSuccess?.()
 		} catch (err) {
 			setError(
@@ -60,21 +87,51 @@ export function ConfigForm({
 		}
 	}
 
+	const handleSaveAndConnect = async (e: React.MouseEvent) => {
+		e.preventDefault()
+		setIsSaving(true)
+		setError(null)
+		try {
+			// Connect first
+			await onSubmit(values)
+
+			// Save the configuration using server action
+			const result = await saveConfiguration({
+				serverId,
+				configData: values,
+			})
+
+			if (!result.ok) {
+				throw new Error(result.error || "Failed to save configuration")
+			}
+
+			onSuccess?.()
+		} catch (err) {
+			setError(
+				err instanceof Error
+					? err.message
+					: "Failed to connect to server and save configuration",
+			)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
 	return (
 		<SchemaForm
 			schema={schema}
 			initialValues={values}
-			onValueChange={handleValueChange}
+			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
 			onSubmit={handleSubmit}
 			isLoading={isConnecting}
-			submitText={isConnected ? "Reconnect" : "Connect"}
-			loadingText="Connecting..."
-			title="Configuration"
 			onCancel={isConnected ? onCancel : undefined}
 			buttonAlignment={
 				Object.keys(schema?.properties || {}).length > 0 ? "end" : "start"
 			}
 			error={error}
+			onSaveAndConnect={handleSaveAndConnect}
+			isSaving={isSaving}
+			isConnected={isConnected}
 		/>
 	)
 }
