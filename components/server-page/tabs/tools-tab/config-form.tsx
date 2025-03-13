@@ -71,12 +71,29 @@ export function ConfigFormInner({
 	const configToUse = savedConfig || initialConfig
 	const [values, setValues] = useState<JsonObject>(configToUse || {})
 
+	// Ensure all schema fields are included in the submission
+	const getCompleteValues = () => {
+		const completeValues = { ...values }
+		
+		// Add all schema properties with empty values if they don't exist
+		if (schema?.properties) {
+			Object.keys(schema.properties).forEach(key => {
+				if (completeValues[key] === undefined) {
+					completeValues[key] = "";
+				}
+			});
+		}
+		
+		return completeValues;
+	};
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsConnecting(true)
 		setError(null)
 		try {
-			await onSubmit(values)
+			const completeValues = getCompleteValues();
+			await onSubmit(completeValues)
 			onSuccess?.()
 		} catch (err) {
 			setError(
@@ -92,13 +109,15 @@ export function ConfigFormInner({
 		setIsSaving(true)
 		setError(null)
 		try {
-			// Connect first
-			await onSubmit(values)
+			// Connect first with complete values
+			const completeValues = getCompleteValues();
+			console.log("Saving and connecting with configuration:", completeValues);
+			await onSubmit(completeValues)
 
 			// Save the configuration using server action
 			const result = await saveConfiguration({
 				serverId,
-				configData: values,
+				configData: completeValues,
 			})
 
 			if (!result.ok) {
