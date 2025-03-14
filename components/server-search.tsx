@@ -3,7 +3,7 @@
 import { Search as SearchIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "nextjs-toploader/app"
-import { useCallback, useState, useEffect } from "react"
+import { useCallback, useState, useEffect, useRef } from "react"
 import { ButtonLoading } from "./ui/loading-button"
 import { cn } from "@/lib/utils"
 import { getRandomCategories } from "@/lib/actions/category"
@@ -25,6 +25,9 @@ export default function ServerSearch({
 	const [searchSuggestions, setSearchSuggestions] = useState<
 		Array<{ id: string; query: string }>
 	>([])
+
+	// Add ref for the search component container
+	const searchContainerRef = useRef<HTMLDivElement>(null)
 
 	// Update query state when URL search parameters change
 	useEffect(() => {
@@ -91,7 +94,7 @@ export default function ServerSearch({
 
 	return (
 		<div className="mb-8">
-			<div className="relative">
+			<div className="relative" ref={searchContainerRef}>
 				<form onSubmit={handleSearch}>
 					<div className="relative">
 						<input
@@ -100,9 +103,13 @@ export default function ServerSearch({
 							value={query}
 							onChange={handleChange}
 							onFocus={() => setIsFocused(true)}
-							onBlur={() => {
-								// Delay hiding suggestions to allow click events to process
-								setTimeout(() => setIsFocused(false), 200)
+							onBlur={(e) => {
+								if (
+									searchContainerRef.current &&
+									!searchContainerRef.current.contains(e.relatedTarget as Node)
+								) {
+									setIsFocused(false)
+								}
 							}}
 							onKeyDown={(e) => {
 								if (!isFocused) return
@@ -141,7 +148,7 @@ export default function ServerSearch({
 				{searchSuggestions && (
 					<div
 						className={cn(
-							"absolute left-0 right-0 z-10 overflow-hidden transition-all duration-200 ease-in-out bg-background",
+							"absolute left-0 right-0 z-10 overflow-hidden bg-background",
 							"border border-border rounded-lg mt-1",
 							isFocused
 								? "opacity-100 max-h-[400px] shadow-xl shadow-black/10"

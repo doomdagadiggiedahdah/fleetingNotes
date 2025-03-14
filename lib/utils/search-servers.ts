@@ -12,7 +12,7 @@ import {
 	sql,
 } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
-import { llm } from "./braintrust"
+import OpenAI from "openai"
 
 export const DEFAULT_PAGE_SIZE = 20
 
@@ -34,6 +34,8 @@ export interface PaginatedResult<T> {
 // Multiplies the similarity by this number and truncates it
 const SIMILARITY_MULTIPLIER = 25
 const MIN_SIMILARITY = 0.3 * SIMILARITY_MULTIPLIER
+
+const openAI = new OpenAI()
 
 /**
  * @param query A string to search for. If null, we won't search
@@ -63,7 +65,7 @@ export async function getAllServers(
 	const similarity = await (async () => {
 		if (!semanticQuery) return null
 		try {
-			const queryEmbedding = await llm.embeddings.create({
+			const queryEmbedding = await openAI.embeddings.create({
 				input: semanticQuery,
 				model: "text-embedding-3-small",
 			})

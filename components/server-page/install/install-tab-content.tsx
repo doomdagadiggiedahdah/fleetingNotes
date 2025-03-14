@@ -17,7 +17,6 @@ import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-bloc
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 import { JsonConfigBlock } from "./json-block"
 
-
 export const ClientInstallContent = ({
 	server,
 	client,
@@ -42,11 +41,11 @@ export const ClientInstallContent = ({
 		unixCommand,
 		windowsScoopCommand,
 		windowsCmdCommand,
-		windowsCmdFullCommand
+		windowsCmdFullCommand,
 	} = generateCommandSet({
 		server,
 		client,
-		config
+		config,
 	})
 
 	const hasValidConnection =
