@@ -88,7 +88,7 @@ export async function getServer(qualifiedName: string) {
 		.from(servers)
 		// TODO: Won't work if user has 2 repos connected
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-		.where(eq(servers.qualifiedName, qualifiedName))
+		.where(sql`LOWER(${servers.qualifiedName}) = LOWER(${qualifiedName})`)
 		.groupBy(servers.id, serverRepos.id)
 		.limit(1)
 

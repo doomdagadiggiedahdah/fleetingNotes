@@ -131,12 +131,19 @@ export default async function Page(props: Props) {
 		notFound()
 	}
 
+	// Redirect if the URL's qualified name doesn't match the server's actual qualified name casing
+	if (qualifiedName !== server.qualifiedName) {
+		let redirectPath = `/server/${server.qualifiedName}`
+		if (activeTab !== "about") redirectPath += `/${activeTab}`
+		redirect(redirectPath)
+	}
+
 	const user = await getMe()
 	const isOwner = user?.id === server.owner
 
 	// Redirect if trying to access protected tabs without ownership
 	if (["settings", "deployments"].includes(activeTab) && !isOwner) {
-		redirect(`/server/${encodeURIComponent(server.qualifiedName)}`)
+		redirect(`/server/${server.qualifiedName}`)
 	}
 	return (
 		<main className="min-h-screen bg-background">
