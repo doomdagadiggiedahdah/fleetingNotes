@@ -25,7 +25,7 @@ const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
 const isRunCommandClient = (client: ClientType): boolean => 
   CLIENT_CONFIGS[client].usesRunCommand;
 
-/* Feels a little off, but ok for now */
+// Feels a little off to have a custom client - but keep for now
 const isCustomInstallClient = (client: ClientType): boolean =>
   CLIENT_CONFIGS[client].usesCustomInstall;
 
@@ -37,21 +37,24 @@ export enum WindowsExecMethod {
 }
 
 /* Command templates */
+const NPX_SMITHERY_PREFIX = `npx -y @smithery/cli@latest`;
+const NPX_SPINAI_PREFIX = `npx spinai-mcp`;
+
 const COMMAND_TEMPLATES = {
     STANDARD_INSTALL: (serverName: string, clientName: string) =>
-      `npx -y @smithery/cli@latest install ${serverName} --client ${clientName}`,
+      `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`,
     STANDARD_RUN: (serverName: string, config: string) =>
-      `npx -y @smithery/cli@latest run ${serverName} --config ${config}`,
+      `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`,
     SPINAI_INSTALL: (serverName: string) =>
-      `npx spinai-mcp install ${serverName} --provider smithery`,
+      `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery`,
     SPINAI_RUN: (serverName: string, config: string) =>
-      `npx spinai-mcp install ${serverName} --provider smithery --config ${config}`
+      `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery --config ${config}`
   } as const
 
 /* Platform-specific command generators */
 const platformHandlers = {
   windows: {
-    [WindowsExecMethod.SCOOP]: (cmd: string) => cmd.replace('npx -y @smithery/cli@latest', 'smithery'),
+    [WindowsExecMethod.SCOOP]: (cmd: string) => cmd.replace(NPX_SMITHERY_PREFIX, 'smithery'),
     [WindowsExecMethod.CMD]: (cmd: string) => `cmd /c ${cmd}`,
     [WindowsExecMethod.CMD_FULL]: (cmd: string) => `C:\\Windows\\System32\\cmd.exe /c ${cmd}`
   },
