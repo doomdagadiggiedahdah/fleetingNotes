@@ -15,6 +15,7 @@ import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { normalizeId } from "@/lib/utils/normalise-id"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
+import { generateCommand } from "@/lib/utils/generate-command"
 
 // Server Configuration key value pairs
 export type ServerConfig = JsonObject
@@ -56,24 +57,19 @@ export const ClientInstallContent = ({
 	const cleanedConfig = cleanConfig(config)
 
 	// Standard command (for Unix-based systems)
-	const unixCommand =
-		(client === "cursor" || client === "goose") && isConfigured && config
-			? `npx -y @smithery/cli@latest run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-			: client === "spinai"
-				? isConfigured && config
-					? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-					: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
-				: `npx -y @smithery/cli@latest install ${server.qualifiedName} --client ${client}`
+	const unixCommand = generateCommand({
+		server,
+		client,
+		config
+	})
 
 	// Windows command
-	const windowsCommand =
-		(client === "cursor" || client === "goose") && isConfigured && config
-			? `smithery run ${server.qualifiedName} --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-			: client === "spinai"
-				? isConfigured && config
-					? `npx spinai-mcp install ${server.qualifiedName} --provider smithery --config ${JSON.stringify(JSON.stringify(cleanedConfig))}`
-					: `npx spinai-mcp install ${server.qualifiedName} --provider smithery`
-				: `smithery install ${server.qualifiedName} --client ${client}`
+	const windowsCommand = generateCommand({
+		server,
+		client,
+		config,
+		isWindows: true
+	})
 
 	const hasValidConnection =
 		server.deploymentUrl ||
