@@ -13,9 +13,9 @@ import type { JsonObject } from "@/lib/types/json"
 import { AuthCommandBlock } from "./auth-command-block"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { normalizeId } from "@/lib/utils/normalise-id"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
+import { JsonConfigBlock } from "./json-block"
 
 
 export const ClientInstallContent = ({
@@ -299,44 +299,7 @@ export const ClientInstallContent = ({
 
 					{client === "cursor" && (
 						<TabsContent value="json">
-							<p className="text-sm mb-2">
-								Paste the following into your project&apos;s{" "}
-								<code>.cursor/mcp.json</code>:
-							</p>
-							<SimpleCodeBlock
-								code={JSON.stringify(
-									{
-										mcpServers: {
-											[normalizeId(server.qualifiedName)]: {
-												command: "npx",
-												args: [
-													"-y",
-													"@smithery/cli@latest",
-													"run",
-													server.qualifiedName,
-													"--config",
-													cleanedConfig
-														? JSON.stringify(cleanedConfig)
-														: "<your-config-here>",
-												],
-											},
-										},
-									},
-									null,
-									2,
-								)}
-								language="json"
-								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
-								disableAutoScroll={true}
-								showHeader={true}
-								headerLabel="JSON"
-								onMouseDown={() => {
-									posthog.capture("Code Copied", {
-										serverQualifiedName: server.qualifiedName,
-										eventTag: "json_config",
-									})
-								}}
-							/>
+							<JsonConfigBlock server={server} cleanedConfig={cleanedConfig} />
 						</TabsContent>
 					)}
 				</Tabs>
