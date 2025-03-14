@@ -29,13 +29,19 @@ export function GithubRepoList({
 	return (
 		<div className="space-y-2">
 			{isSearching ? (
-				<div className="flex h-32 flex-col gap-3 py-2">
-					{["skeleton-repo-1", "skeleton-repo-2", "skeleton-repo-3"].map((key) => (
-						<div key={key} className="flex items-center justify-between rounded-md p-1 px-3">
-							<Skeleton className="h-6 w-40" />
-							<Skeleton className="h-8 w-20" />
-						</div>
-					))}
+				<div className="flex flex-col gap-3 py-2">
+					{Array(4)
+						.fill(0)
+						.map((_, i) => (
+							<div
+								// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+								key={i}
+								className="flex items-center justify-between rounded-md p-1 px-3"
+							>
+								<Skeleton className="h-6 w-40" />
+								<Skeleton className="h-8 w-20" />
+							</div>
+						))}
 				</div>
 			) : (
 				repos.map((repo) => (
