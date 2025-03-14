@@ -52,7 +52,6 @@ export function ClientContent({
 				server={server}
 				client={client}
 				config={configValues}
-				isConfigured={isClientConfigured}
 			/>
 		)
 	}
