@@ -45,10 +45,10 @@ const COMMAND_TEMPLATES = {
       `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`,
     STANDARD_RUN: (serverName: string, config: string) =>
       `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`,
-    SPINAI_INSTALL: (serverName: string) =>
-      `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery`,
-    SPINAI_RUN: (serverName: string, config: string) =>
-      `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery --config ${config}`
+    SPINAI_INSTALL: (serverName: string, config?: string) =>
+      config 
+        ? `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery --config ${config}`
+        : `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery`
   } as const
 
 /* Platform-specific command generators */
@@ -88,7 +88,7 @@ export const generateRunCommand = (
 ): string => {
   const cleanedConfig = JSON.stringify(JSON.stringify(cleanConfig(config)))
   return isCustomInstallClient(client)
-    ? COMMAND_TEMPLATES.SPINAI_RUN(server.qualifiedName, cleanedConfig)
+    ? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
     : COMMAND_TEMPLATES.STANDARD_RUN(server.qualifiedName, cleanedConfig)
 }
 
