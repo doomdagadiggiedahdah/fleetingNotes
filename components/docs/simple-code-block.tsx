@@ -101,6 +101,7 @@ export function CodeBlock({
 				</div>
 
 				{/* Code content */}
+				{/* biome-ignore lint/nursery/noStaticElementInteractions: <explanation> */}
 				<div
 					className="bg-[#282828] text-white py-2 px-3 overflow-auto max-h-[400px]"
 					onMouseEnter={() => setIsHovering(true)}
@@ -122,6 +123,7 @@ export function CodeBlock({
 
 	// Original implementation without header (for single-line commands)
 	return (
+		// biome-ignore lint/nursery/noStaticElementInteractions: <explanation>
 		<div
 			className={cn(
 				"relative rounded-md bg-[#282828] text-white py-2 px-3 overflow-hidden flex items-center h-9",
