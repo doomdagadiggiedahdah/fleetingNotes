@@ -3,7 +3,7 @@ import {
 	ServerConfigSchema,
 	type ServerConfig,
 } from "@/lib/types/server-config"
-import { err, ok, type Result } from "@/lib/utils/result"
+import { err, ok } from "@/lib/utils/result"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { MultiClient, OpenAIChatAdapter, wrapErrorAdapter } from "@smithery/sdk"
 import Ajv from "ajv"
@@ -108,9 +108,7 @@ export const generateBuildFiles = (
 	sandbox: GitSandbox,
 	options: Options = {},
 ) =>
-	wrapTraced(async function generateServerFiles(): Promise<
-		Result<OutputFiles>
-	> {
+	wrapTraced(async function generateServerFiles() {
 		// TODO: Handle the case when the user already supplies the Dockerfile already exists. We shouldn't generate those in that case.
 		const llm = wrapOpenAI(new OpenAI())
 
@@ -155,19 +153,29 @@ export const generateBuildFiles = (
 				)
 				.find((r) => r !== null) ?? null
 
-		// TOOD: Throw if Smithery yaml is broken?
-		const existingSmitheryConfig =
+		const existingSmitheryConfigResult =
 			autoCommandResults
 				.map((r) => {
 					if (r.command.includes("smithery.yaml") && r.result.ok) {
 						const result = ServerConfigSchema.safeParse(
 							YAML.parse(r.result.value.stdout),
 						)
-						if (result.success) return result.data
+						if (result.success) return ok(result.data)
+						else return err(result.error)
 					}
 					return null
 				})
 				.find((r) => r !== null) ?? null
+
+		if (existingSmitheryConfigResult && !existingSmitheryConfigResult.ok) {
+			// Error parsing config
+			return err({
+				type: "configParseError",
+				zodError: existingSmitheryConfigResult.error,
+			} as const)
+		}
+
+		const existingSmitheryConfig = existingSmitheryConfigResult?.value ?? null
 
 		options.onUpdate?.(
 			existingDockerfile
@@ -317,7 +325,7 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 			if (deploysAttempted > MAX_DEPLOY_ATTEMPTS)
 				return err({ type: "maxDeploysExceeded" } as const)
 
-			if (markedFailure) return err(markedFailure)
+			if (markedFailure) return err(markedFailure as FailureReason)
 
 			if (toolMessages.length === 0) {
 				// No more tools used, but model did not produce an output.

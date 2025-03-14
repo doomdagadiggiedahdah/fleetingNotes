@@ -41,6 +41,7 @@ import { withTimeout } from "../utils"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
 import { fetchServerTools } from "../utils/get-tools"
+import type { ZodError } from "zod"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -234,13 +235,32 @@ export async function createDeploymentForServer(
 
 							if (!buildFilesResult.ok) {
 								console.error(buildFilesResult.error)
-								await appendLog(
-									"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
-									"FAILURE",
-								)
+
+								const error = buildFilesResult.error as {
+									type: string
+									zodError: ZodError
+								}
+								// Check if this is a smithery.yaml parse error
+								if (error.type === "configParseError") {
+									await appendLog(
+										`Smithery.yaml configuration error: ${error.zodError.format()}\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
+										"FAILURE",
+									)
+								} else if (error.type === "yamlParseError") {
+									await appendLog(
+										`Smithery.yaml file contains syntax errors.\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
+										"FAILURE",
+									)
+								} else {
+									await appendLog(
+										"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
+										"FAILURE",
+									)
+								}
+
 								return err({
 									type: "setupBuildFileError",
-									// TOOD: We need better error message, espsecially for parsing smithery yaml
+									parent: error,
 								} as const)
 							}
 							buildFiles = buildFilesResult.value
@@ -280,11 +300,24 @@ export async function createDeploymentForServer(
 						)
 
 						if (!buildResult.ok) {
-							console.error(buildResult.error)
-							await appendLog(
-								"Error while deploying. Please review the logs above or reach out to support.",
-								"FAILURE",
-							)
+							console.error(JSON.stringify(buildResult.error))
+
+							if (buildResult.error.type === "dockerBuildError") {
+								await appendLog(
+									"Error while building Docker image. Please ensure your Docker image builds locally and try again.\n\nLearn more: https://smithery.ai/docs/deployments",
+									"FAILURE",
+								)
+							} else if (buildResult.error.type === "deployError") {
+								await appendLog(
+									"Error while deploying. This could be an internal error. Please reach out to support.",
+									"FAILURE",
+								)
+							} else {
+								await appendLog(
+									"Error while building or deploying. Please review the logs above or reach out to support.",
+									"FAILURE",
+								)
+							}
 							return err({
 								type: "deployError",
 							} as const)
@@ -469,8 +502,13 @@ async function getServerRepo(serverId: string, userId: string) {
 		.select({ server: servers, serverRepo: serverRepos })
 		.from(servers)
 		.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
-		// Ensures logged-in user owns this server
-		.where(and(eq(servers.id, serverId), eq(servers.owner, userId)))
+		.where(
+			and(
+				eq(servers.id, serverId),
+				// Ensures logged-in user owns this server
+				eq(servers.owner, userId),
+			),
+		)
 		.limit(1)
 	return row
 }

@@ -98,13 +98,22 @@ export async function getSmitheryConfig(sbx: GitSandbox) {
 	const configResult = await readFile(sbx, "smithery.yaml")
 	if (!configResult.ok) return configResult
 
-	const result = ServerConfigSchema.safeParse(YAML.parse(configResult.value))
-	if (!result.success) {
+	try {
+		const parsed = YAML.parse(configResult.value)
+		const result = ServerConfigSchema.safeParse(parsed)
+		if (!result.success) {
+			return err({
+				type: "configParseError",
+				zodError: result.error,
+			} as const)
+		}
+		return ok(result.data)
+	} catch (e) {
+		console.warn(e)
 		return err({
-			message: `Failed to parse smithery.yaml: ${result.error.message}`,
+			type: "yamlParseError",
 		})
 	}
-	return ok(result.data)
 }
 
 export async function writeFile(
@@ -214,6 +223,7 @@ set -e
 	let buildStarted = false
 	let buildEnded = false
 
+	// TODO: A much better way is to isolate the user image on a separate container build.
 	const buildResult = await toCommandResult(
 		sandbox.commands.run(
 			`/home/runner/.depot/bin/depot build -t registry.fly.io/${flyAppId}:latest --platform linux/amd64 --push -f Dockerfile.smithery --project dsk57gtb7p ${dockerWorkingDir}`,
@@ -252,7 +262,8 @@ set -e
 			},
 		),
 	)
-	if (!buildResult.ok) return buildResult
+	if (!buildResult.ok)
+		return err({ type: "dockerBuildError", parent: buildResult.error })
 
 	options.onUpdate?.("Starting deployment...")
 	const deployResult = await toCommandResult(
@@ -269,7 +280,8 @@ set -e
 		),
 	)
 
-	if (!deployResult.ok) return deployResult
+	if (!deployResult.ok)
+		return err({ type: "deployError", parent: deployResult.error })
 
 	return buildResult
 }
@@ -311,7 +323,7 @@ export async function testSandbox(
 		await cleanup()
 		return err({
 			commandExecuted: `docker build ${dockerWorkingDir}`,
-			buildDeployError: trimLines(buildResult.error.stderr),
+			buildDeployError: trimLines(buildResult.error.parent.stderr),
 		})
 	}
 
