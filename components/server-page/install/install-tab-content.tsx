@@ -15,16 +15,13 @@ import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { normalizeId } from "@/lib/utils/normalise-id"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
-import { generateCommand } from "@/lib/utils/generate-command"
+import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 
-// Server Configuration key value pairs
-export type ServerConfig = JsonObject
 
 export const ClientInstallContent = ({
 	server,
 	client,
 	config,
-	isConfigured,
 }: {
 	server: FetchedServer
 	client:
@@ -36,39 +33,20 @@ export const ClientInstallContent = ({
 		| "enconvo"
 		| "goose"
 		| "spinai"
-	config?: ServerConfig
-	isConfigured?: boolean
+	config?: JsonObject
+	// isConfigured?: boolean
 }) => {
-	// Clean config by replacing undefined values with empty strings
-	const cleanConfig = (inputConfig?: ServerConfig): ServerConfig => {
-		if (!inputConfig) return {}
-
-		return Object.entries(inputConfig).reduce((acc, [key, value]) => {
-			// If value is undefined, replace with empty string
-			if (value === undefined) {
-				acc[key] = ""
-			} else {
-				acc[key] = value
-			}
-			return acc
-		}, {} as ServerConfig)
-	}
-
 	const cleanedConfig = cleanConfig(config)
 
-	// Standard command (for Unix-based systems)
-	const unixCommand = generateCommand({
+	const {
+		unixCommand,
+		windowsScoopCommand,
+		windowsCmdCommand,
+		windowsCmdFullCommand
+	} = generateCommandSet({
 		server,
 		client,
 		config
-	})
-
-	// Windows command
-	const windowsCommand = generateCommand({
-		server,
-		client,
-		config,
-		isWindows: true
 	})
 
 	const hasValidConnection =
@@ -197,6 +175,7 @@ export const ClientInstallContent = ({
 			</p>
 
 			{hasValidConnection ? (
+				/* Tab List */
 				<Tabs defaultValue="standard" className="w-full">
 					<TabsList className="mb-2">
 						<TabsTrigger value="standard" className="flex items-center gap-2">
@@ -251,14 +230,14 @@ export const ClientInstallContent = ({
 										We&apos;re actively working on improving Windows support!
 									</p>
 									<AuthCommandBlock
-										command={`cmd /c ${unixCommand}`}
+										command={windowsCmdCommand}
 										serverQualifiedName={server.qualifiedName}
 									/>
 									<p className="text-xs mt-2 mb-3 text-muted-foreground">
 										If the above doesn&apos;t work, try this alternative:
 									</p>
 									<AuthCommandBlock
-										command={`C:\\Windows\\System32\\cmd.exe /c ${unixCommand}`}
+										command={windowsCmdFullCommand}
 										serverQualifiedName={server.qualifiedName}
 									/>
 								</div>
@@ -312,7 +291,7 @@ export const ClientInstallContent = ({
 							/>
 							<p className="text-sm mb-2">Then directly use:</p>
 							<AuthCommandBlock
-								command={windowsCommand}
+								command={windowsScoopCommand}
 								serverQualifiedName={server.qualifiedName}
 							/>
 						</TabsContent>

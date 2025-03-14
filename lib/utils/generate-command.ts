@@ -4,15 +4,30 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 /* Supported clients */
 type ClientType = "claude" | "cline" | "cursor" | "windsurf" | "witsy" | "enconvo" | "goose" | "spinai"
 
-/* Client behaviour constants */
-const CLIENTS_USING_RUN_COMMAND = ["cursor", "goose"] as const
-const CLIENTS_USING_CUSTOM_INSTALL = ["spinai"] as const
+/* Client configuration */
+interface ClientConfig {
+  usesRunCommand: boolean;
+  usesCustomInstall: boolean;
+}
+
+/* Client specific configurations */
+const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
+  claude: { usesRunCommand: false, usesCustomInstall: false },
+  cline: { usesRunCommand: false, usesCustomInstall: false },
+  cursor: { usesRunCommand: true, usesCustomInstall: false },
+  windsurf: { usesRunCommand: false, usesCustomInstall: false },
+  witsy: { usesRunCommand: false, usesCustomInstall: false },
+  enconvo: { usesRunCommand: false, usesCustomInstall: false },
+  goose: { usesRunCommand: true, usesCustomInstall: false },
+  spinai: { usesRunCommand: false, usesCustomInstall: true }
+};
 
 const isRunCommandClient = (client: ClientType): boolean => 
-  CLIENTS_USING_RUN_COMMAND.includes(client as typeof CLIENTS_USING_RUN_COMMAND[number])
+  CLIENT_CONFIGS[client].usesRunCommand;
 
+/* Feels a little off, but ok for now */
 const isCustomInstallClient = (client: ClientType): boolean =>
-  CLIENTS_USING_CUSTOM_INSTALL.includes(client as typeof CLIENTS_USING_CUSTOM_INSTALL[number])
+  CLIENT_CONFIGS[client].usesCustomInstall;
 
 /* Windows execution methods */
 export enum WindowsExecMethod {
@@ -21,94 +36,73 @@ export enum WindowsExecMethod {
   CMD_FULL = "CMD_FULL"      // C:\Windows\System32\cmd.exe /c
 }
 
-/* Replaces undefined values with empty string ! workaround - fix yet to be implemented */
-const cleanConfig = (config?: JsonObject): JsonObject => {
-  if (!config) return {}
-  return Object.entries(config).reduce((acc, [key, value]) => {
-    acc[key] = value === undefined ? "" : value
-    return acc
-  }, {} as JsonObject)
-}
+/* Command templates */
+const COMMAND_TEMPLATES = {
+    STANDARD_INSTALL: (serverName: string, clientName: string) =>
+      `npx -y @smithery/cli@latest install ${serverName} --client ${clientName}`,
+    STANDARD_RUN: (serverName: string, config: string) =>
+      `npx -y @smithery/cli@latest run ${serverName} --config ${config}`,
+    SPINAI_INSTALL: (serverName: string) =>
+      `npx spinai-mcp install ${serverName} --provider smithery`,
+    SPINAI_RUN: (serverName: string, config: string) =>
+      `npx spinai-mcp install ${serverName} --provider smithery --config ${config}`
+  } as const
 
-/* Windows command generators */
+/* Platform-specific command generators */
+const platformHandlers = {
+  windows: {
+    [WindowsExecMethod.SCOOP]: (cmd: string) => cmd.replace('npx -y @smithery/cli@latest', 'smithery'),
+    [WindowsExecMethod.CMD]: (cmd: string) => `cmd /c ${cmd}`,
+    [WindowsExecMethod.CMD_FULL]: (cmd: string) => `C:\\Windows\\System32\\cmd.exe /c ${cmd}`
+  },
+  unix: (cmd: string) => cmd 
+};
+
+/* Windows command generator */
 export const generateWindowsCommand = (
   method: WindowsExecMethod,
   baseCommand: string
-): string => {
-  switch (method) {
-    case WindowsExecMethod.SCOOP:
-      return baseCommand.replace('npx -y @smithery/cli@latest', 'smithery')
-    case WindowsExecMethod.CMD:
-      return `cmd /c ${baseCommand}`
-    case WindowsExecMethod.CMD_FULL:
-      return `C:\\Windows\\System32\\cmd.exe /c ${baseCommand}`
-  }
-}
+): string => platformHandlers.windows[method](baseCommand);
 
 /* Unix command generator */
-export const generateUnixCommand = (baseCommand: string): string => baseCommand
+export const generateUnixCommand = (baseCommand: string): string => platformHandlers.unix(baseCommand);
 
-/* Command templates */
-const COMMAND_TEMPLATES = {
-  STANDARD_INSTALL: 'npx -y @smithery/cli@latest install {serverName} --client {clientName}',
-  STANDARD_RUN: 'npx -y @smithery/cli@latest run {serverName} --config {config}',
-  SPINAI_INSTALL: 'npx spinai-mcp install {serverName} --provider smithery',
-  SPINAI_RUN: 'npx spinai-mcp install {serverName} --provider smithery --config {config}'
-} as const
-
-/* Command builder helper */
-const buildCommand = (
-  template: string, 
-  params: Record<string, string>
-): string => {
-  return Object.entries(params).reduce(
-    (cmd, [key, value]) => cmd.replace(`{${key}}`, value),
-    template
-  )
-}
-
+/* Install command */
 export const generateInstallCommand = (
   server: FetchedServer,
   client: ClientType
 ): string => {
-  const template = isCustomInstallClient(client) 
-    ? COMMAND_TEMPLATES.SPINAI_INSTALL
-    : COMMAND_TEMPLATES.STANDARD_INSTALL
-
-  return buildCommand(template, {
-    serverName: server.qualifiedName,
-    clientName: client
-  })
+  return isCustomInstallClient(client)
+    ? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName)
+    : COMMAND_TEMPLATES.STANDARD_INSTALL(server.qualifiedName, client)
 }
 
+/* Run command */
 export const generateRunCommand = (
   server: FetchedServer,
   client: ClientType,
   config?: JsonObject
 ): string => {
   const cleanedConfig = JSON.stringify(JSON.stringify(cleanConfig(config)))
-  const template = isCustomInstallClient(client)
-    ? COMMAND_TEMPLATES.SPINAI_RUN
-    : COMMAND_TEMPLATES.STANDARD_RUN
-
-  return buildCommand(template, {
-    serverName: server.qualifiedName,
-    config: cleanedConfig
-  })
+  return isCustomInstallClient(client)
+    ? COMMAND_TEMPLATES.SPINAI_RUN(server.qualifiedName, cleanedConfig)
+    : COMMAND_TEMPLATES.STANDARD_RUN(server.qualifiedName, cleanedConfig)
 }
 
-// Main command generator that puts it all together
+type Platform = 'unix' | 'windows'
+
+// Main command generator
 export const generateCommand = ({
   server,
   client,
   config,
-  isWindows = false,
+  platform = 'unix',
   windowsMethod = WindowsExecMethod.SCOOP,
 }: {
   server: FetchedServer
   client: ClientType
   config?: JsonObject
-  isWindows?: boolean
+  platform?: Platform
   windowsMethod?: WindowsExecMethod
 }): string => {
   // Determine command type based on client
@@ -116,8 +110,65 @@ export const generateCommand = ({
     ? generateRunCommand(server, client, config)
     : generateInstallCommand(server, client)
 
-  // Apply OS-specific formatting
-  return isWindows 
+  // Apply platform-specific formatting
+  return platform === 'windows'
     ? generateWindowsCommand(windowsMethod, baseCommand)
     : generateUnixCommand(baseCommand)
+}
+
+type CommandSet = {
+  unixCommand: string
+  windowsScoopCommand: string
+  windowsCmdCommand: string
+  windowsCmdFullCommand: string
+}
+
+/* Complete command set */
+export const generateCommandSet = ({
+  server,
+  client,
+  config,
+}: {
+  server: FetchedServer
+  client: ClientType
+  config?: JsonObject
+}): CommandSet => {
+  return {
+    unixCommand: generateCommand({
+      server,
+      client,
+      config,
+      platform: 'unix'
+    }),
+    windowsScoopCommand: generateCommand({
+      server,
+      client,
+      config,
+      platform: 'windows',
+      windowsMethod: WindowsExecMethod.SCOOP
+    }),
+    windowsCmdCommand: generateCommand({
+      server,
+      client,
+      config,
+      platform: 'windows',
+      windowsMethod: WindowsExecMethod.CMD
+    }),
+    windowsCmdFullCommand: generateCommand({
+      server,
+      client,
+      config,
+      platform: 'windows',
+      windowsMethod: WindowsExecMethod.CMD_FULL
+    })
+  }
+}
+
+/* Replaces undefined values with empty string ! workaround - fix yet to be implemented */
+export const cleanConfig = (config?: JsonObject): JsonObject => {
+  if (!config) return {}
+  
+  return Object.fromEntries(
+    Object.entries(config).map(([key, value]) => [key, value === undefined ? "" : value])
+  );
 }
