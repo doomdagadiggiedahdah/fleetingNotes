@@ -2,6 +2,7 @@
 import { LockClosedIcon } from "@radix-ui/react-icons"
 import { useState } from "react"
 import { ButtonLoading } from "../ui/loading-button"
+import { Skeleton } from "../ui/skeleton"
 
 interface GithubRepo {
 	name: string
@@ -28,8 +29,13 @@ export function GithubRepoList({
 	return (
 		<div className="space-y-2">
 			{isSearching ? (
-				<div className="flex h-32 items-center justify-center">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-400 border-t-transparent" />
+				<div className="flex h-32 flex-col gap-3 py-2">
+					{["skeleton-repo-1", "skeleton-repo-2", "skeleton-repo-3"].map((key) => (
+						<div key={key} className="flex items-center justify-between rounded-md p-1 px-3">
+							<Skeleton className="h-6 w-40" />
+							<Skeleton className="h-8 w-20" />
+						</div>
+					))}
 				</div>
 			) : (
 				repos.map((repo) => (

@@ -5,7 +5,6 @@ import { GithubRepoList } from "./github-repo-list"
 import { GithubSearch } from "./github-search"
 import { GithubUserContext } from "./github-user-provider"
 import { GithubUserSelector } from "./github-user-selector"
-import Link from "next/link"
 
 interface RepoSelectorProps {
 	onRepoSelect: (owner: string, repo: string) => void
@@ -46,16 +45,6 @@ export function RepoSelector({ onRepoSelect, buttonText }: RepoSelectorProps) {
 					buttonText={buttonText}
 				/>
 			</div>
-			<p className="text-sm text-muted-foreground max-w-md">
-				<Link
-					href="/docs/git"
-					className="underline hover:opacity-80 text-primary"
-					target="_blank"
-				>
-					Read more
-				</Link>{" "}
-				about how we use Github permissions to deploy your server.
-			</p>
 		</div>
 	)
 }
