@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import type { ReactNode } from "react"
 
 interface LoginBlurProps {
 	children: ReactNode
@@ -6,10 +6,10 @@ interface LoginBlurProps {
 	promptText: string
 }
 
-export function LoginBlur({ 
-	children, 
-	setIsSignInOpen, 
-	promptText 
+export function LoginBlur({
+	children,
+	setIsSignInOpen,
+	promptText,
 }: LoginBlurProps) {
 	return (
 		<div className="relative">
@@ -27,4 +27,4 @@ export function LoginBlur({
 			<div className="blur-sm pointer-events-none">{children}</div>
 		</div>
 	)
-} 
+}

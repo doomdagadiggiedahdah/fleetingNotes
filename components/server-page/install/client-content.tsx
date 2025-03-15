@@ -61,7 +61,7 @@ export function ClientContent({
 		// If user is not logged in, show blurred content with login prompt
 		if (!currentSession) {
 			return (
-				<LoginBlur 
+				<LoginBlur
 					setIsSignInOpen={setIsSignInOpen}
 					promptText="Login to configure client"
 				>

@@ -219,49 +219,49 @@ export function InstallationTabs({
 		async function loadConfigurations() {
 			// Load saved config if user is logged in
 			if (currentSession && server.id) {
-				setIsLoadingSavedConfig(true);
+				setIsLoadingSavedConfig(true)
 				try {
-					const config = await getSavedConfig(server.id);
-					if (config.ok) setSavedConfig(config.value);
+					const config = await getSavedConfig(server.id)
+					if (config.ok) setSavedConfig(config.value)
 				} catch (error) {
-					console.error("Failed to load saved configuration:", error);
+					console.error("Failed to load saved configuration:", error)
 				} finally {
-					setIsLoadingSavedConfig(false);
+					setIsLoadingSavedConfig(false)
 				}
 			}
 
 			// Get schema config if not already loaded
 			if (!configSchema) {
-				setIsLoadingSchema(true);
-				let schemaResult: Result<JSONSchema> = err();
+				setIsLoadingSchema(true)
+				let schemaResult: Result<JSONSchema> = err()
 
 				if (server.deploymentUrl) {
-					schemaResult = await fetchConfigSchema(server.deploymentUrl);
+					schemaResult = await fetchConfigSchema(server.deploymentUrl)
 				} else {
 					// Get schema from stdio connection if available
 					const stdioConnection = server.connections.find(
 						(conn) => conn.type === "stdio",
-					);
+					)
 					if (stdioConnection) {
-						schemaResult = ok(stdioConnection.configSchema);
+						schemaResult = ok(stdioConnection.configSchema)
 					}
 				}
 
 				if (schemaResult.ok) {
-					setConfigSchema(schemaResult.value);
-					
+					setConfigSchema(schemaResult.value)
+
 					// Auto-configure if schema is empty
 					if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
-						setConfigValues({});
-						setIsClientConfigured(true);
+						setConfigValues({})
+						setIsClientConfigured(true)
 					}
 				}
-				setIsLoadingSchema(false);
+				setIsLoadingSchema(false)
 			}
 		}
 
-		loadConfigurations();
-	}, [server, configSchema, currentSession]);
+		loadConfigurations()
+	}, [server, configSchema, currentSession])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
