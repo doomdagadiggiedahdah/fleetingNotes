@@ -218,7 +218,7 @@ export function InstallationTabs({
 	useEffect(() => {
 		async function loadConfigurations() {
 			// Load saved config if user is logged in
-			if (currentSession && server.id) {
+			if (currentSession && server.id && !savedConfig && !isLoadingSavedConfig) {
 				setIsLoadingSavedConfig(true)
 				try {
 					const config = await getSavedConfig(server.id)
@@ -231,7 +231,7 @@ export function InstallationTabs({
 			}
 
 			// Get schema config if not already loaded
-			if (!configSchema) {
+			if (!configSchema && !isLoadingSchema) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
@@ -261,7 +261,7 @@ export function InstallationTabs({
 		}
 
 		loadConfigurations()
-	}, [server, configSchema, currentSession])
+	}, [server, currentSession, configSchema, savedConfig, isLoadingSchema, isLoadingSavedConfig])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
