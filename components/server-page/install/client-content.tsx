@@ -4,6 +4,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { ConfigForm } from "../shared/config-form"
+import { LoginBlur } from "./login-blur"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -43,7 +44,7 @@ export function ClientContent({
 	}
 
 	if (!isClientConfigured && hasConfigProperties) {
-		return (
+		const configFormComponent = (
 			<ConfigForm
 				schema={configSchema}
 				onSubmit={async (values) => await onClientConfig(values)}
@@ -56,6 +57,20 @@ export function ClientContent({
 				setIsSignInOpen={setIsSignInOpen}
 			/>
 		)
+
+		// If user is not logged in, show blurred content with login prompt
+		if (!currentSession) {
+			return (
+				<LoginBlur 
+					setIsSignInOpen={setIsSignInOpen}
+					promptText="Login to configure client"
+				>
+					{configFormComponent}
+				</LoginBlur>
+			)
+		}
+
+		return configFormComponent
 	}
 
 	if (configSchema) {
