@@ -1,14 +1,12 @@
 "use client"
 
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
-import { useAuth } from "@/context/auth-context"
 import {
-	getSavedConfig,
 	saveConfiguration,
 } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 // Loading fallback UI shown while configuration is being loaded
 export function ConfigFormLoading() {
@@ -28,35 +26,11 @@ interface ConfigFormProps {
 	serverId: string
 	savedConfig?: JSONSchema
 	isConnected?: boolean
+	currentSession?: any
+	setIsSignInOpen?: (isOpen: boolean) => void
 }
 
-export function ConfigForm(props: ConfigFormProps) {
-	const [savedConfig, setSavedConfig] = useState(null)
-	const [isLoading, setIsLoading] = useState(true)
-	const { currentSession } = useAuth()
-
-	useEffect(() => {
-		async function loadConfig() {
-			try {
-				if (currentSession) {
-					const config = await getSavedConfig(props.serverId)
-					if (config.ok) setSavedConfig(config.value)
-				}
-			} catch (error) {
-				console.error(error)
-			} finally {
-				setIsLoading(false)
-			}
-		}
-
-		loadConfig()
-	}, [props.serverId, currentSession])
-
-	if (isLoading) return <ConfigFormLoading />
-
-	return <ConfigFormInner {...props} savedConfig={savedConfig} />
-}
-export function ConfigFormInner({
+export function ConfigForm({
 	schema,
 	onSubmit,
 	onCancel,
@@ -65,12 +39,13 @@ export function ConfigFormInner({
 	serverId,
 	savedConfig,
 	isConnected = false,
+	currentSession,
+	setIsSignInOpen,
 }: ConfigFormProps) {
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const { setIsSignInOpen, currentSession } = useAuth()
-
+	
 	// Use savedConfig if available, otherwise use initialConfig
 	const configToUse = savedConfig || initialConfig
 	const [values, setValues] = useState<JsonObject>(configToUse || {})
@@ -114,7 +89,7 @@ export function ConfigFormInner({
 		setError(null)
 		try {
 			if (!currentSession) {
-				setIsSignInOpen(true)
+				setIsSignInOpen?.(true)
 			} else {
 				const completeValues = getCompleteValues()
 
