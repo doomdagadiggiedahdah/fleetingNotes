@@ -374,6 +374,8 @@ export async function createDeploymentForServer(
 						}
 
 						const deploymentUrl = getDeployedUrl(flyAppId)
+						// Must await this first to prevent race condition
+						await lastAppend
 						await Promise.all([
 							db
 								.update(deployments)
@@ -394,7 +396,6 @@ export async function createDeploymentForServer(
 									set: { files: buildFiles },
 								}),
 						])
-						await lastAppend
 
 						const backgroundUpdate = async () => {
 							// Populate `tools` in server based on call to server

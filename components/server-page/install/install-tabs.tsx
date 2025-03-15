@@ -218,7 +218,12 @@ export function InstallationTabs({
 	useEffect(() => {
 		async function loadSavedConfig() {
 			// Load saved config if user is logged in
-			if (currentSession && server.id && !savedConfig && !isLoadingSavedConfig) {
+			if (
+				currentSession &&
+				server.id &&
+				!savedConfig &&
+				!isLoadingSavedConfig
+			) {
 				setIsLoadingSavedConfig(true)
 				try {
 					const config = await getSavedConfig(server.id)
@@ -267,7 +272,7 @@ export function InstallationTabs({
 					setConfigValues({})
 					setIsClientConfigured(true)
 				}
-				
+
 				setIsLoadingSchema(false)
 			}
 		}
