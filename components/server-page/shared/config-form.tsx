@@ -5,6 +5,7 @@ import { saveConfiguration } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { useState } from "react"
+import type { Session } from "@supabase/supabase-js"
 
 // Loading fallback UI shown while configuration is being loaded
 export function ConfigFormLoading() {
@@ -24,7 +25,7 @@ interface ConfigFormProps {
 	serverId: string
 	savedConfig?: JSONSchema
 	isConnected?: boolean
-	currentSession?: any
+	currentSession?: Session | null
 	setIsSignInOpen?: (isOpen: boolean) => void
 }
 

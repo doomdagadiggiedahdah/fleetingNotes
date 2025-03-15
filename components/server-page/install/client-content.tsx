@@ -5,6 +5,7 @@ import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
 import { ConfigForm } from "../shared/config-form"
 import { LoginBlur } from "./login-blur"
+import type { Session } from "@supabase/supabase-js"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -16,7 +17,7 @@ interface ClientContentProps {
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
 	savedConfig?: JSONSchema | null
-	currentSession?: any
+	currentSession?: Session | null
 	setIsSignInOpen?: (isOpen: boolean) => void
 }
 
