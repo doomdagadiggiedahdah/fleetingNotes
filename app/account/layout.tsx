@@ -1,7 +1,6 @@
 "use client"
 
 import { Container } from "@/components/layouts/container"
-import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/context/auth-context"
@@ -31,7 +30,6 @@ export default function AccountLayout({
 
 	return (
 		<>
-			<Header />
 			<Container>
 				<div className="py-8">
 					<h1 className="text-3xl font-bold mb-2">Account</h1>

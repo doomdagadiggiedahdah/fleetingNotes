@@ -1,7 +1,6 @@
 import ServerList from "@/components/list/server-list"
 import SwimlaneShowcase from "@/components/list/swimlane-showcase"
 import { Suspense } from "react"
-import { Header } from "../header"
 import { Container } from "../layouts/container"
 import ServerSearch from "../server-search"
 import { Skeleton } from "../ui/skeleton"
@@ -17,7 +16,6 @@ export const HomeSearch = ({
 }) => {
 	return (
 		<main className="min-h-screen bg-background">
-			<Header />
 			<Container size="xl" className="mt-4">
 				<div className="mb-8">
 					<p className="text-lg text-muted-foreground text-center">

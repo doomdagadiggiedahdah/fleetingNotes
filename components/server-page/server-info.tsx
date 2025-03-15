@@ -1,7 +1,6 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { BadgeCheck, ExternalLink, Github } from "lucide-react"
 import { Suspense } from "react"
-import { Header } from "../header"
 import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
@@ -17,7 +16,6 @@ interface Props {
 export function ServerPage({ server, activeTab }: Props) {
 	return (
 		<>
-			<Header />
 			<Container className="mt-4">
 				{/* Search */}
 				<div className="mb-6">

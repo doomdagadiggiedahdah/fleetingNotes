@@ -1,9 +1,11 @@
 import { CSPostHogProvider } from "@/components/analytics"
+import { Footer } from "@/components/footer"
+import { Header } from "@/components/header"
+import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/context/auth-context"
 import { Inter } from "next/font/google"
-import "./globals.css"
-import { Toaster } from "@/components/ui/toaster"
 import NextTopLoader from "nextjs-toploader"
+import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,7 +26,9 @@ export default function RootLayout({
 				<AuthProvider>
 					<body className={inter.className}>
 						<NextTopLoader color="#D3500E" showSpinner={false} />
+						<Header />
 						{children}
+						<Footer />
 						<Toaster />
 						<script
 							src="https://cdn.jsdelivr.net/npm/@widgetbot/crate@3"
