@@ -216,7 +216,7 @@ export function InstallationTabs({
 	)
 
 	useEffect(() => {
-		async function loadConfigurations() {
+		async function loadSavedConfig() {
 			// Load saved config if user is logged in
 			if (currentSession && server.id && !savedConfig && !isLoadingSavedConfig) {
 				setIsLoadingSavedConfig(true)
@@ -229,7 +229,13 @@ export function InstallationTabs({
 					setIsLoadingSavedConfig(false)
 				}
 			}
+		}
 
+		loadSavedConfig()
+	}, [currentSession])
+
+	useEffect(() => {
+		async function loadConfigSchema() {
 			// Get schema config if not already loaded
 			if (!configSchema && !isLoadingSchema) {
 				setIsLoadingSchema(true)
@@ -255,13 +261,19 @@ export function InstallationTabs({
 						setConfigValues({})
 						setIsClientConfigured(true)
 					}
+				} else {
+					// Set a default empty schema when no config is available
+					setConfigSchema({ properties: {} })
+					setConfigValues({})
+					setIsClientConfigured(true)
 				}
+				
 				setIsLoadingSchema(false)
 			}
 		}
 
-		loadConfigurations()
-	}, [server, currentSession, configSchema, savedConfig, isLoadingSchema, isLoadingSavedConfig])
+		loadConfigSchema()
+	}, [])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
