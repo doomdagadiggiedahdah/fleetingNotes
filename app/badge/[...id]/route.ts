@@ -1,3 +1,4 @@
+import { formatCount } from "@/components/popularity-count"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { events } from "@/db/schema/events"
@@ -43,20 +44,13 @@ export async function GET(
 	const [row]: { count: number }[] = await db.execute(sql`
 		SELECT COUNT(*) FROM ${events}
 		WHERE
-			(
-				${events.eventName} = 'tool_call' AND
-				${events.payload}->>'serverId' = (SELECT ${servers.id} FROM ${servers} WHERE ${servers.qualifiedName} = ${qualifiedName})::text
-			)
-			OR
-			(
-				${events.eventName} = 'config' AND
-				${events.payload}->>'serverId' = ${qualifiedName}
-			)
+			${events.eventName} = 'tool_call' AND
+			${events.payload}->>'serverId' = (SELECT ${servers.id} FROM ${servers} WHERE ${servers.qualifiedName} = ${qualifiedName})::text
 	`)
 
 	const count = row.count
 
-	const badgeUrl = `https://img.shields.io/badge/smithery.ai-▲%20${count}-%23ea580c`
+	const badgeUrl = `https://img.shields.io/badge/smithery.ai-▲%20${formatCount(count)}-%23ea580c`
 
 	const response = await fetch(badgeUrl, { cache: "force-cache" })
 	if (!response.ok) {

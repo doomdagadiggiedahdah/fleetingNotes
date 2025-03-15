@@ -10,7 +10,7 @@ interface Props {
 	count?: number
 }
 
-function formatCount(num: number): string {
+export function formatCount(num: number): string {
 	if (num >= 1_000_000) {
 		return `${(Math.floor(num / 10000) / 100).toFixed(2)}m`
 	} else if (num >= 1000) {
