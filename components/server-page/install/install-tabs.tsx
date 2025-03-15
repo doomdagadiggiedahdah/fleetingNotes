@@ -8,6 +8,10 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/context/auth-context"
+import {
+	getSavedConfig,
+} from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
@@ -185,7 +189,7 @@ export function InstallationTabs({
 	className,
 	onTabChange,
 }: InstallationTabsProps) {
-	const [visibleCount] = useState(4) // Changed from 5 to 4
+	const [visibleCount] = useState(4)
 	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
 	const [tabOrder, setTabOrder] = useState<InstallTabStates[]>([
 		"claude",
@@ -200,8 +204,11 @@ export function InstallationTabs({
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
-
 	const [configValues, setConfigValues] = useState<JsonObject>({})
+	
+	const { currentSession, setIsSignInOpen } = useAuth()
+	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
+	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 
 	const hasConfigProperties =
 		configSchema && Object.keys(configSchema?.properties || {}).length > 0
@@ -211,13 +218,28 @@ export function InstallationTabs({
 	)
 
 	useEffect(() => {
+		async function loadSavedConfig() {
+			if (!server.id) return;
+			
+			setIsLoadingSavedConfig(true);
+			try {
+				const config = await getSavedConfig(server.id);
+				if (config.ok) setSavedConfig(config.value);
+			} catch (error) {
+				console.error("Failed to load saved configuration:", error);
+			} finally {
+				setIsLoadingSavedConfig(false);
+			}
+		}
+
+		if (currentSession) {
+			loadSavedConfig();
+		}
+	}, [server.id, currentSession]);
+
+	useEffect(() => {
 		async function getConfig() {
-			if (
-				(activeTab === "cursor" ||
-					activeTab === "goose" ||
-					activeTab === "spinai") &&
-				!configSchema
-			) {
+			if (!configSchema) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
 
@@ -249,7 +271,7 @@ export function InstallationTabs({
 		}
 
 		getConfig()
-	}, [activeTab, server, configSchema])
+	}, [server, configSchema])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
@@ -310,11 +332,14 @@ export function InstallationTabs({
 					server={server}
 					client="cursor"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema}
+					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
 					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
 				/>
 			</TabsContent>
 			<TabsContent value="windsurf">
@@ -334,11 +359,14 @@ export function InstallationTabs({
 					server={server}
 					client="goose"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema}
+					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
 					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
 				/>
 			</TabsContent>
 			<TabsContent value="spinai">
@@ -346,11 +374,14 @@ export function InstallationTabs({
 					server={server}
 					client="spinai"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema}
+					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
 					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
 				/>
 			</TabsContent>
 		</Tabs>

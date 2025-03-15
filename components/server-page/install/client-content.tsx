@@ -14,6 +14,9 @@ interface ClientContentProps {
 	hasConfigProperties: boolean
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
+	savedConfig?: JSONSchema | null
+	currentSession?: any
+	setIsSignInOpen?: (isOpen: boolean) => void
 }
 
 export function ClientContent({
@@ -25,6 +28,9 @@ export function ClientContent({
 	hasConfigProperties,
 	configValues,
 	onClientConfig,
+	savedConfig,
+	currentSession,
+	setIsSignInOpen,
 }: ClientContentProps) {
 	if (isLoadingSchema) {
 		return (
@@ -45,6 +51,9 @@ export function ClientContent({
 				onSuccess={() => {}}
 				serverId={server.id}
 				initialConfig={configValues}
+				savedConfig={savedConfig}
+				currentSession={currentSession}
+				setIsSignInOpen={setIsSignInOpen}
 			/>
 		)
 	}
