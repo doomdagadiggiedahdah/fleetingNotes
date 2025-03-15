@@ -12,10 +12,12 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { Settings } from "lucide-react"
 import { useEffect, useState } from "react"
-import { ConfigForm } from "./config-form"
+import { ConfigForm } from "../../shared/config-form"
 import { ToolsPanelSkeleton } from "./skeleton"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
+import { useAuth } from "@/context/auth-context"
+import { getSavedConfig } from "@/lib/actions/save-configuration"
 
 interface ToolsPanelProps {
 	server: FetchedServer
@@ -45,6 +47,7 @@ export function ToolsPanel({
 		listTools,
 		tools: contextTools,
 	} = useMCP()
+	const { currentSession, setIsSignInOpen } = useAuth()
 	const [isLoadingTools, setIsLoadingTools] = useState(false)
 	// const [error, setError] = useState<string | null>(null)
 	const [searchQuery, setSearchQuery] = useState("")
@@ -63,6 +66,8 @@ export function ToolsPanel({
 	const [toolInputs, setToolInputs] = useState<
 		Record<string, Record<string, unknown>>
 	>({})
+	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
+	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 
 	// Prefer context tools if available, fallback to prop tools
 	const tools = contextTools.length > 0 ? contextTools : propTools
@@ -76,6 +81,25 @@ export function ToolsPanel({
 			})
 		}
 	}, [status, listTools])
+
+	// Add effect to load saved configuration
+	useEffect(() => {
+		async function loadSavedConfig() {
+			if (!currentSession || !server.id) return
+
+			setIsLoadingSavedConfig(true)
+			try {
+				const config = await getSavedConfig(server.id)
+				if (config.ok) setSavedConfig(config.value)
+			} catch (error) {
+				console.error("Failed to load saved configuration:", error)
+			} finally {
+				setIsLoadingSavedConfig(false)
+			}
+		}
+
+		loadSavedConfig()
+	}, [server.id, currentSession])
 
 	const filteredTools = tools.filter(
 		(tool) =>
@@ -131,7 +155,7 @@ export function ToolsPanel({
 		}))
 	}
 
-	if (isLoadingTools) {
+	if (isLoadingTools || isLoadingSavedConfig) {
 		return <ToolsPanelSkeleton />
 	}
 
@@ -242,6 +266,10 @@ export function ToolsPanel({
 										onConfigSuccess?.()
 									}}
 									serverId={server.id}
+									isConnected={status === "connected"}
+									savedConfig={savedConfig}
+									currentSession={currentSession}
+									setIsSignInOpen={setIsSignInOpen}
 								/>
 							</div>
 						) : isExpanded ? (

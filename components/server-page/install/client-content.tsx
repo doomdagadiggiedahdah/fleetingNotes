@@ -1,9 +1,11 @@
-import { ClientConfig } from "./client-config"
 import { ClientInstallContent } from "./install-tab-content"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
+import { ConfigForm } from "../shared/config-form"
+import { LoginBlur } from "./login-blur"
+import type { Session } from "@supabase/supabase-js"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -14,6 +16,9 @@ interface ClientContentProps {
 	hasConfigProperties: boolean
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
+	savedConfig?: JSONSchema | null
+	currentSession?: Session | null
+	setIsSignInOpen?: (isOpen: boolean) => void
 }
 
 export function ClientContent({
@@ -25,6 +30,9 @@ export function ClientContent({
 	hasConfigProperties,
 	configValues,
 	onClientConfig,
+	savedConfig,
+	currentSession,
+	setIsSignInOpen,
 }: ClientContentProps) {
 	if (isLoadingSchema) {
 		return (
@@ -37,13 +45,33 @@ export function ClientContent({
 	}
 
 	if (!isClientConfigured && hasConfigProperties) {
-		return (
-			<ClientConfig
+		const configFormComponent = (
+			<ConfigForm
 				schema={configSchema}
 				onSubmit={async (values) => await onClientConfig(values)}
+				onCancel={() => {}}
 				onSuccess={() => {}}
+				serverId={server.id}
+				initialConfig={configValues}
+				savedConfig={savedConfig}
+				currentSession={currentSession}
+				setIsSignInOpen={setIsSignInOpen}
 			/>
 		)
+
+		// If user is not logged in, show blurred content with login prompt
+		if (!currentSession) {
+			return (
+				<LoginBlur
+					setIsSignInOpen={setIsSignInOpen}
+					promptText="Login to configure client"
+				>
+					{configFormComponent}
+				</LoginBlur>
+			)
+		}
+
+		return configFormComponent
 	}
 
 	if (configSchema) {
