@@ -2,7 +2,6 @@
 
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
 import { useAuth } from "@/context/auth-context"
-import { useMCP } from "@/context/mcp-context"
 import {
 	getSavedConfig,
 	saveConfiguration,
@@ -28,6 +27,7 @@ interface ConfigFormProps {
 	onSuccess?: () => void
 	serverId: string
 	savedConfig?: JSONSchema
+	isConnected?: boolean
 }
 
 export function ConfigForm(props: ConfigFormProps) {
@@ -64,9 +64,8 @@ export function ConfigFormInner({
 	onSuccess,
 	serverId,
 	savedConfig,
+	isConnected = false,
 }: ConfigFormProps) {
-	const { status } = useMCP()
-	const isConnected = status === "connected"
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)

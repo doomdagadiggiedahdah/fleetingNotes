@@ -12,7 +12,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { Settings } from "lucide-react"
 import { useEffect, useState } from "react"
-import { ConfigForm } from "./config-form"
+import { ConfigForm } from "../../shared/config-form"
 import { ToolsPanelSkeleton } from "./skeleton"
 import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
@@ -242,6 +242,7 @@ export function ToolsPanel({
 										onConfigSuccess?.()
 									}}
 									serverId={server.id}
+									isConnected={status === "connected"}
 								/>
 							</div>
 						) : isExpanded ? (

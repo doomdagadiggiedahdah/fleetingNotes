@@ -1,9 +1,9 @@
-import { ClientConfig } from "./client-config"
 import { ClientInstallContent } from "./install-tab-content"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
+import { ConfigForm } from "../shared/config-form"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -38,10 +38,13 @@ export function ClientContent({
 
 	if (!isClientConfigured && hasConfigProperties) {
 		return (
-			<ClientConfig
+			<ConfigForm
 				schema={configSchema}
 				onSubmit={async (values) => await onClientConfig(values)}
+				onCancel={() => {}}
 				onSuccess={() => {}}
+				serverId={server.id}
+				initialConfig={configValues}
 			/>
 		)
 	}
