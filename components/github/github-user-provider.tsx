@@ -14,7 +14,6 @@ interface GithubUserContext {
 	user: GithubUser | null
 	// Re-fetches the Github user
 	fetchGhUser: () => Promise<void>
-
 	signIn: () => Promise<void>
 }
 export const GithubUserContext = createContext<GithubUserContext>({
@@ -67,11 +66,7 @@ export function GithubAuthProvider({ children }: Props) {
 	}, [])
 
 	if (isLoading || !ghUser) {
-		return (
-			<GithubUserContext.Provider value={{ user: ghUser, fetchGhUser, signIn }}>
-				<GithubAuthButton isLoading={isLoading} />
-			</GithubUserContext.Provider>
-		)
+		return <GithubAuthButton isLoading={isLoading} />
 	}
 	return (
 		<GithubUserContext.Provider value={{ user: ghUser, fetchGhUser, signIn }}>
