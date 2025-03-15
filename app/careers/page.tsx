@@ -30,16 +30,16 @@ export default function CareersPage() {
 					<CardHeader>
 						<CardTitle className="text-2xl">Founding Engineer</CardTitle>
 						<CardDescription>
-							San Francisco, CA and Singapore (flexible, travel required)
+							San Francisco or Singapore (flexible, travel required)
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<div>
 							<h3 className="text-lg font-semibold mb-2">The Role</h3>
 							<p className="text-muted-foreground mb-4">
-								As a Founding Engineer, you'll shape our platform as the first 5
-								engineers on the team, building the infrastructure that powers
-								the next generation of agentic services.
+								As a Founding Engineer, you&apos;ll shape our platform as the
+								first 5 engineers on the team, building the infrastructure that
+								powers the next generation of agentic services.
 							</p>
 
 							<ul className="list-disc pl-6 space-y-2 text-muted-foreground">
@@ -66,7 +66,7 @@ export default function CareersPage() {
 								<li>Familiarity with LLM technologies and tool integration</li>
 								<li>API design and protocol development background</li>
 								<li>
-									Willingness to travel between San Francisco and Singapore
+									Willingness to travel to San Francisco 4 weeks per year.
 								</li>
 							</ul>
 						</div>

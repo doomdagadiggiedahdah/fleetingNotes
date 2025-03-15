@@ -22,8 +22,8 @@ const UMAP_N_COMPONENTS = 20
 const UMAP_N_NEIGHBORS = 15
 const UMAP_MIN_DIST = 0.1
 const UMAP_EPOCHS = 500
-const MIN_CLUSTER_SIZE = 10
-const MIN_SAMPLES = 10
+const MIN_CLUSTER_SIZE = 20
+const MIN_SAMPLES = 20
 const ALPHA = 1.0
 const LEAF_SIZE = 40
 
