@@ -1,9 +1,7 @@
 "use client"
 
 import { SchemaForm } from "@/components/server-page/shared/schema-form"
-import {
-	saveConfiguration,
-} from "@/lib/actions/save-configuration"
+import { saveConfiguration } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { useState } from "react"
@@ -45,7 +43,7 @@ export function ConfigForm({
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	
+
 	// Use savedConfig if available, otherwise use initialConfig
 	const configToUse = savedConfig || initialConfig
 	const [values, setValues] = useState<JsonObject>(configToUse || {})

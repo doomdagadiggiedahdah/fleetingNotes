@@ -86,7 +86,7 @@ export function ToolsPanel({
 	useEffect(() => {
 		async function loadSavedConfig() {
 			if (!currentSession || !server.id) return
-			
+
 			setIsLoadingSavedConfig(true)
 			try {
 				const config = await getSavedConfig(server.id)

@@ -9,9 +9,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
-import {
-	getSavedConfig,
-} from "@/lib/actions/save-configuration"
+import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
@@ -205,7 +203,7 @@ export function InstallationTabs({
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
-	
+
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
 	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
@@ -219,23 +217,23 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function loadSavedConfig() {
-			if (!server.id) return;
-			
-			setIsLoadingSavedConfig(true);
+			if (!server.id) return
+
+			setIsLoadingSavedConfig(true)
 			try {
-				const config = await getSavedConfig(server.id);
-				if (config.ok) setSavedConfig(config.value);
+				const config = await getSavedConfig(server.id)
+				if (config.ok) setSavedConfig(config.value)
 			} catch (error) {
-				console.error("Failed to load saved configuration:", error);
+				console.error("Failed to load saved configuration:", error)
 			} finally {
-				setIsLoadingSavedConfig(false);
+				setIsLoadingSavedConfig(false)
 			}
 		}
 
 		if (currentSession) {
-			loadSavedConfig();
+			loadSavedConfig()
 		}
-	}, [server.id, currentSession]);
+	}, [server.id, currentSession])
 
 	useEffect(() => {
 		async function getConfig() {
