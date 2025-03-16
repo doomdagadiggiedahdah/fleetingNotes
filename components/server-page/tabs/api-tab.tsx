@@ -1,9 +1,11 @@
 "use client"
 
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
+import { SiPython, SiTypescript } from "@icons-pack/react-simple-icons"
 import { ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
@@ -70,7 +72,7 @@ export function ApiPanel({ server }: ApiPanelProps) {
 	}
 
 	// Generate transport code based on available connections
-	const transportCode = server.deploymentUrl
+	const typescriptTransportCode = server.deploymentUrl
 		? `\
 import { createTransport } from "@smithery/sdk/transport.js"
 
@@ -79,9 +81,9 @@ const transport = createTransport("${server.deploymentUrl}"${wsConfig})`
 
 const transport = new StdioClientTransport(${stdioConfig})`
 
-	// Generate full SDK example code
-	const fullExample = `
-${transportCode}
+	// Generate full SDK example code for TypeScript
+	const typescriptExample = `
+${typescriptTransportCode}
 
 // Create MCP client
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
@@ -100,56 +102,161 @@ console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
 // const result = await client.callTool("tool_name", { param1: "value1" })
 `
 
+	// Generate full SDK example code for Python
+	const pythonExample = server.deploymentUrl
+		? `\
+import smithery
+import mcp
+from mcp.client.websocket import websocket_client
+
+# Create Smithery URL with server endpoint
+url = smithery.create_smithery_url("${server.deploymentUrl.replace("https://", "wss://")}/ws"${wsConfig})
+
+async def main():
+    # Connect to the server using websocket client
+    async with websocket_client(url) as streams:
+        async with mcp.ClientSession(*streams) as session:
+            # List available tools
+            tools_result = await session.list_tools()
+            print(f"Available tools: {', '.join([t.name for t in tools_result])}")
+            
+            # Example: Call a tool
+            # result = await session.call_tool("tool_name", {"param1": "value1"})
+`
+		: `\
+import mcp
+from mcp.client.stdio import stdio_client
+
+# Create server parameters for stdio connection
+server_params = mcp.StdioServerParameters(
+    command="${stdioConnection?.exampleConfig?.command || "python"}",  # Executable
+    args=["${stdioConnection?.exampleConfig?.args?.[0] || "your_server.py"}"]  # Arguments
+)
+
+async def main():
+    # Connect to the server using stdio client
+    async with stdio_client(server_params) as (read, write):
+        async with mcp.ClientSession(read, write) as session:
+            # List available tools
+            tools = await session.list_tools()
+            print(f"Available tools: {', '.join([t.name for t in tools])}")
+            
+            # Example: Call a tool
+            # result = await session.call_tool("tool-name", arguments={"param1": "value1"})
+`
+
 	return (
 		<div>
 			<div className="mb-6">
 				<h2 className="text-xl font-bold mb-4">API Integration</h2>
 				<p className="mb-4">
-					Integrate this MCP server into your applications using the TypeScript
-					SDK.
+					Integrate this MCP server into your applications using our SDKs.
 				</p>
 
 				{isServerAvailable ? (
 					<>
-						<h3 className="font-semibold mb-2 text-primary">Installation</h3>
-						<p className="mb-4">Install the Smithery and MCP SDKs using npm:</p>
-						<SimpleCodeBlock
-							code="npm install @smithery/sdk @modelcontextprotocol/sdk"
-							language="bash"
-							onCopy={() => {
-								posthog.capture("Code Copied", {
-									serverQualifiedName: server.qualifiedName,
-									eventTag: "install_npm",
-								})
-							}}
-						/>
+						<Tabs defaultValue="typescript" className="w-full">
+							<TabsList className="mb-4">
+								<TabsTrigger value="typescript">
+									<SiTypescript className="w-4 h-4 mr-2" /> TypeScript
+								</TabsTrigger>
+								<TabsTrigger value="python">
+									<SiPython className="w-4 h-4 mr-2" /> Python
+								</TabsTrigger>
+							</TabsList>
 
-						<h3 className="font-semibold mb-2 mt-6 text-primary">
-							TypeScript SDK
-						</h3>
-						<p className="mb-2">
-							Use{" "}
-							<a
-								href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
-								target="_blank"
-								className="hover:text-primary underline inline-flex items-center"
-							>
-								Smithery&apos;s TypeScript SDK
-								<ExternalLink className="w-4 h-4 ml-1 inline" />
-							</a>{" "}
-							to connect to this MCP server:
-						</p>
-						<SimpleCodeBlock
-							code={fullExample}
-							language="typescript"
-							showHeader={true}
-							onCopy={() => {
-								posthog.capture("Code Copied", {
-									serverQualifiedName: server.qualifiedName,
-									eventTag: "typescript_api",
-								})
-							}}
-						/>
+							<TabsContent value="typescript" className="mt-0">
+								<h3 className="font-semibold mb-2 text-primary">
+									Installation
+								</h3>
+								<p className="mb-4">
+									Install the Smithery and MCP SDKs using npm:
+								</p>
+								<SimpleCodeBlock
+									code="npm install @smithery/sdk @modelcontextprotocol/sdk"
+									language="bash"
+									onCopy={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "install_npm",
+										})
+									}}
+								/>
+
+								<h3 className="font-semibold mb-2 mt-6 text-primary">
+									TypeScript SDK
+								</h3>
+								<p className="mb-2">
+									Use{" "}
+									<a
+										href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
+										target="_blank"
+										className="hover:text-primary underline inline-flex items-center"
+									>
+										Smithery&apos;s TypeScript SDK
+										<ExternalLink className="w-4 h-4 ml-1 inline" />
+									</a>{" "}
+									to connect to this MCP server:
+								</p>
+								<SimpleCodeBlock
+									code={typescriptExample}
+									language="typescript"
+									showHeader={true}
+									onCopy={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "typescript_api",
+										})
+									}}
+								/>
+							</TabsContent>
+
+							<TabsContent value="python" className="mt-0">
+								<h3 className="font-semibold mb-2 text-primary">
+									Installation
+								</h3>
+								<p className="mb-4">
+									Install the Smithery and MCP SDKs using pip:
+								</p>
+								<SimpleCodeBlock
+									code="pip install smithery mcp"
+									language="bash"
+									onCopy={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "install_pip",
+										})
+									}}
+								/>
+
+								<h3 className="font-semibold mb-2 mt-6 text-primary">
+									Python SDK
+								</h3>
+								<p className="mb-2">
+									Use{" "}
+									<a
+										href="https://github.com/smithery-ai/python-sdk#quickstart"
+										target="_blank"
+										className="hover:text-primary underline inline-flex items-center"
+									>
+										Smithery&apos;s Python SDK
+										<ExternalLink className="w-4 h-4 ml-1 inline" />
+									</a>{" "}
+									to connect to this MCP server:
+								</p>
+								<SimpleCodeBlock
+									code={pythonExample}
+									language="python"
+									showHeader={true}
+									onCopy={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "python_api",
+										})
+									}}
+								/>
+							</TabsContent>
+						</Tabs>
 					</>
 				) : (
 					<div className="p-4 bg-muted/30 rounded-md text-center">
