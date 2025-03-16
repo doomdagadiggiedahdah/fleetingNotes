@@ -1,18 +1,18 @@
 import { db } from "@/db"
 import { serverCategories, servers } from "@/db/schema"
-import { wrapOpenAI } from "braintrust"
 import { isNotNull } from "drizzle-orm"
 import { HDBSCAN } from "hdbscan-ts"
-import { OpenAI } from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { UMAP } from "umap-js"
 import { z } from "zod"
+import { dotProduct } from "../utils"
 
 // Type definition for server data
 type ServerWithEmbedding = {
 	id: string
 	name: string | null
 	description: string | null
+	tools: unknown
 	embedding: number[] | null
 }
 
@@ -97,6 +97,7 @@ export async function generateCategoriesFromServerEmbeddings() {
 			id: servers.id,
 			name: servers.displayName,
 			description: servers.description,
+			tools: servers.tools,
 			embedding: servers.embedding,
 		})
 		.from(servers)
@@ -121,11 +122,13 @@ export async function generateCategoriesFromServerEmbeddings() {
 		)
 
 		// Generate categories in parallel
-		const categoryResults = await Promise.all(
-			validClusters.map((clusterServers) =>
-				generateCategoryForCluster(clusterServers),
-			),
-		)
+		const categoryResults = (
+			await Promise.all(
+				validClusters.map((clusterServers) =>
+					generateCategoryForCluster(clusterServers),
+				),
+			)
+		).filter((c) => c !== null)
 
 		console.log(`Generated ${categoryResults.length} categories from clusters`)
 
@@ -170,7 +173,7 @@ const CategorySchema = z.object({
 	query: z
 		.string()
 		.describe(
-			"Search prompt that defines this category. This prompt will be used for semantic vector search and succinctly capture the essense of the category. Do not include examples of specific servers in your prompt. Write 1 sentence, well capitalized. Don't mention 'Server' or 'MCP' or 'Service' since those are redundant.",
+			"Search prompt that defines this category. This prompt will be used for semantic vector search and capture the essence of the category. Do not include examples of specific servers in your prompt. Write 1 descriptive sentence. It should be well capitalized. Don't mention 'Server' or 'MCP' or 'Service' since those are redundant.",
 		),
 	title: z
 		.string()
@@ -179,27 +182,41 @@ const CategorySchema = z.object({
 		),
 })
 
+// Similarity between the generated query and the servers required for the cluster to form
+const MIN_VERIFY_SIMILARITY = 0.4
+const SERVERS_TO_CATEGORIZE = 5
+
 /**
  * Generate a descriptive category for a cluster of servers using OpenAI
  */
 async function generateCategoryForCluster(servers: ServerWithEmbedding[]) {
-	// Create example servers content for the prompt (use at most 10)
+	const serversToCategorize = Math.min(servers.length, SERVERS_TO_CATEGORIZE)
+	// Create example servers content for the prompt (use the top 10)
 	const serversContent = servers
-		.slice(0, Math.min(servers.length, 10))
-		.map((s) => `- ${s.name}: ${s.description}`)
+		.slice(0, serversToCategorize)
+		.map(
+			(s) =>
+				`<server>
+<name>${s.name}</name>
+<description>${s.description}</description>
+<tools>
+${JSON.stringify(s.tools)}
+</tools>
+</server>`,
+		)
 		.join("\n")
-
-	// Initialize OpenAI
-	const llm = wrapOpenAI(new OpenAI())
 
 	// Call OpenAI to generate a descriptive category
 	const completion = await llm.beta.chat.completions.parse({
 		model: "gpt-4o",
-		temperature: 0.7,
+		temperature: 1,
 		messages: [
 			{
 				role: "developer",
-				content: `You are an AI assistant that helps categorize servers based on their functionality. Your task is to analyze a group of related servers and create a meaningful category for them. All servers are Model Context Protocol (MCP) servers, so you do not need to mention anything about MCP or the fact that it's a server, since that's redundant. Avoid categorizations that overly focus on specific products or services. Write a concise title, search query, and description that best represents this group of servers.`,
+				content: `\
+You are an AI assistant that helps categorize servers based on their functionality. Your task is to analyze a group of related servers and create a meaningful category for them. All servers are Model Context Protocol (MCP) servers, so you do not need to mention anything about MCP or the fact that it's a server, since that's redundant. Avoid categorizations that overly focus on specific products or services. For example, if there are "Perplexity" servers, you should categorize it as "Semantic Search" and not mention "Perplexity".
+
+Write a concise title and search query that best represents this group of servers. The search query is a detailed prompt that users would've typed if they wanted to surface these servers. The query will be displayed as a suggested search prompt in the UI. Do not mention examples of specific servers in the query or title.`,
 			},
 			{
 				role: "user",
@@ -207,12 +224,43 @@ async function generateCategoryForCluster(servers: ServerWithEmbedding[]) {
 			},
 		],
 		response_format: zodResponseFormat(CategorySchema, "category"),
+		n: 3,
 	})
 
-	return completion.choices[0].message.parsed
+	let bestParsed = null
+	let mostSimilarity = MIN_VERIFY_SIMILARITY
+
+	for (const choice of completion.choices) {
+		const parsed = choice.message.parsed
+		if (!parsed) continue
+
+		// Embed it
+		const queryEmbedding = await llm.embeddings.create({
+			input: parsed.query,
+			model: "text-embedding-3-small",
+		})
+
+		// Check if query and the average server embeddings are sufficiently close in dot product
+		const sim =
+			servers
+				.slice(0, serversToCategorize)
+				.map((s) => s.embedding)
+				.filter((embedding): embedding is number[] => embedding !== null)
+				.map((embedding) =>
+					dotProduct(embedding, queryEmbedding.data[0].embedding),
+				)
+				.reduce((a, b) => a + b, 0) / serversToCategorize
+
+		if (sim > mostSimilarity) {
+			bestParsed = parsed
+			mostSimilarity = sim
+		}
+	}
+	return bestParsed
 }
 
 // CLI manual trigger
+import { llm } from "./braintrust"
 import dotenv from "dotenv"
 if (require.main === module) {
 	// Load environment variables from .env.local.development

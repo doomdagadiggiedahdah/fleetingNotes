@@ -30,3 +30,17 @@ export async function withTimeout<T>(
 	})
 	return Promise.race([promise, timeout])
 }
+
+/**
+ * Calculates the dot product of two vectors
+ * @param a First vector
+ * @param b Second vector
+ * @returns The dot product of the two vectors
+ */
+export function dotProduct(a: number[], b: number[]): number {
+	if (a.length !== b.length) {
+		throw new Error("Vectors must have the same length")
+	}
+
+	return a.reduce((sum, value, index) => sum + value * b[index], 0)
+}
