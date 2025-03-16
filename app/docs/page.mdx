@@ -1,4 +1,8 @@
 import { Team } from "@/components/docs/team"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Code, Server } from "lucide-react"
 
 export const metadata = {
   title: 'Introduction | Smithery Documentation',
@@ -14,6 +18,47 @@ Smithery addresses this challenge by providing:
 - Hosting and distribution for MCP servers
 - Standardized interfaces for tool integration and configs
 
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+  <Card className="flex flex-col">
+    <CardHeader>
+      <div className="flex items-center mb-2">
+        <div className="mr-2 p-1 rounded-md bg-primary/10">
+          <Code className="w-5 h-5 text-primary" />
+        </div>
+        <CardTitle>Using MCP Servers</CardTitle>
+      </div>
+      <CardDescription>Learn how to integrate MCP servers into your applications and AI systems</CardDescription>
+    </CardHeader>
+    <CardContent className="flex-grow">
+      <p className="text-sm text-muted-foreground">Connect to tools and data sources through a standardized protocol.</p>
+    </CardContent>
+    <CardFooter>
+      <Button asChild className="w-full">
+        <Link href="/docs/registry">Get Started</Link>
+      </Button>
+    </CardFooter>
+  </Card>
+  
+  <Card className="flex flex-col">
+    <CardHeader>
+      <div className="flex items-center mb-2">
+        <div className="mr-2 p-1 rounded-md bg-primary/10">
+          <Server className="w-5 h-5 text-primary" />
+        </div>
+        <CardTitle>Building MCP Servers</CardTitle>
+      </div>
+      <CardDescription>Create and deploy your own MCP servers to Smithery</CardDescription>
+    </CardHeader>
+    <CardContent className="flex-grow">
+      <p className="text-sm text-muted-foreground">Build MCP servers that can be discovered and used by thousands of AI applications.</p>
+    </CardContent>
+    <CardFooter>
+      <Button asChild className="w-full">
+        <Link href="/docs/deployments">Build & Deploy</Link>
+      </Button>
+    </CardFooter>
+  </Card>
+</div>
 
 ## Model Context Protocol
 

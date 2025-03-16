@@ -5,18 +5,22 @@ export const navigation = [
 		title: "Getting Started",
 		links: [
 			{ title: "Introduction", href: "/docs" },
-			{ title: "Registry", href: "/docs/registry" },
-			{ title: "Deployments", href: "/docs/deployments" },
-			{ title: "Configuration", href: "/docs/config" },
-			// { title: "Profiles", href: "/docs/profiles" },
-			{ title: "Git Integration", href: "/docs/git" },
-			{ title: "Smithery CLI", href: "/docs/smithery-cli" },
-			{ title: "Data Policy", href: "/docs/data-policy" },
 			{
-				title: "FAQ",
+				title: "Use MCPs",
 				links: [
-					{ title: "Users", href: "/docs/faq/users" },
-					{ title: "Developers", href: "/docs/faq/developers" },
+					{ title: "Registry API", href: "/docs/registry" },
+					{ title: "Smithery CLI", href: "/docs/smithery-cli" },
+					{ title: "Data Policy", href: "/docs/data-policy" },
+					{ title: "Client FAQ", href: "/docs/faq/users" },
+				],
+			},
+			{
+				title: "Build MCPs",
+				links: [
+					{ title: "Deployments", href: "/docs/deployments" },
+					{ title: "Configuration", href: "/docs/config" },
+					{ title: "Git Integration", href: "/docs/git" },
+					{ title: "Server FAQ", href: "/docs/faq/developers" },
 				],
 			},
 		],
@@ -49,7 +53,7 @@ export default function DocsSidebar() {
 											</div>
 										)}
 										{link.links && (
-											<div className="ml-4 mt-2">
+											<div className="ml-4">
 												{link.links.map((subLink) => (
 													<NavLink key={subLink.href} href={subLink.href}>
 														{subLink.title}
