@@ -1,4 +1,4 @@
-import { ClientInstallContent } from "./install-tab-content"
+import { InstallTabContent } from "./install-tab-content"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
@@ -6,14 +6,15 @@ import type { JsonObject } from "@/lib/types/json"
 import { ConfigForm } from "../shared/config-form"
 import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
+import type { ClientType } from "@/lib/utils/generate-command"
+import { CloudOff } from "lucide-react"
 
 interface ClientContentProps {
 	server: FetchedServer
-	client: "cursor" | "goose" | "spinai"
+	client: ClientType
 	configSchema: JSONSchema | null
-	isLoadingSchema: boolean
+	isLoading: boolean
 	isClientConfigured: boolean
-	hasConfigProperties: boolean
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
 	savedConfig?: JSONSchema | null
@@ -25,16 +26,15 @@ export function ClientContent({
 	server,
 	client,
 	configSchema,
-	isLoadingSchema,
+	isLoading,
 	isClientConfigured,
-	hasConfigProperties,
 	configValues,
 	onClientConfig,
 	savedConfig,
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	if (isLoadingSchema) {
+	if (isLoading) {
 		return (
 			<div className="space-y-2">
 				<Skeleton className="h-4 w-1/4" />
@@ -44,7 +44,7 @@ export function ClientContent({
 		)
 	}
 
-	if (!isClientConfigured && hasConfigProperties) {
+	if (!isClientConfigured && configSchema) {
 		const configFormComponent = (
 			<ConfigForm
 				schema={configSchema}
@@ -76,7 +76,7 @@ export function ClientContent({
 
 	if (configSchema) {
 		return (
-			<ClientInstallContent
+			<InstallTabContent
 				server={server}
 				client={client}
 				config={configValues}
@@ -85,8 +85,9 @@ export function ClientContent({
 	}
 
 	return (
-		<p className="text-center text-muted-foreground">
-			No configuration schema available for this server.
-		</p>
+		<div className="flex items-center justify-center gap-3 text-muted-foreground">
+			<CloudOff className="h-5 w-5" />
+			<p>Sorry! We couldn't fetch the configuration for this server.</p>
+		</div>
 	)
 }

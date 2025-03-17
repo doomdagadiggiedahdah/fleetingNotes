@@ -19,29 +19,21 @@ import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
 import { ServerFavicon } from "../server-favicon"
-import { ClientInstallContent } from "./install-tab-content"
 import { OverflowMenu } from "./overflow-menu"
 import { ClientContent } from "./client-content"
+import type { ClientType } from "@/lib/utils/generate-command"
 
-export type InstallTabStates =
-	| "claude"
-	| "cline"
-	| "cursor"
-	| "windsurf"
-	| "witsy"
-	| "enconvo"
-	| "goose"
-	| "spinai"
+export type InstallTabStates = ClientType
 
 type InstallationTabsProps = {
 	server: FetchedServer
-	initTab?: InstallTabStates
+	initTab?: ClientType
 	className?: string
-	onTabChange?: (tab: InstallTabStates) => void
+	onTabChange?: (tab: ClientType) => void
 }
 
 type TabOption = {
-	value: InstallTabStates
+	value: ClientType
 	label: string
 	icon: React.ReactNode
 }
@@ -53,11 +45,11 @@ function InstallTabOptions({
 	onTabChange,
 	onOverflowSelect,
 }: {
-	activeTab: InstallTabStates
-	tabOrder: InstallTabStates[]
+	activeTab: ClientType
+	tabOrder: ClientType[]
 	visibleCount: number
-	onTabChange: (tab: InstallTabStates) => void
-	onOverflowSelect: (tab: InstallTabStates) => void
+	onTabChange: (tab: ClientType) => void
+	onOverflowSelect: (tab: ClientType) => void
 }) {
 	const tabOptions: TabOption[] = [
 		{
@@ -126,7 +118,7 @@ function InstallTabOptions({
 	const mainTabs = tabOrder.slice(0, visibleCount)
 	const overflowTabs = tabOrder.slice(visibleCount)
 
-	const getTabOption = (value: InstallTabStates) =>
+	const getTabOption = (value: ClientType) =>
 		tabOptions.find((tab) => tab.value === value)!
 
 	return (
@@ -134,7 +126,7 @@ function InstallTabOptions({
 			<div className="lg:hidden">
 				<Select
 					value={activeTab}
-					onValueChange={(value) => onTabChange(value as InstallTabStates)}
+					onValueChange={(value) => onTabChange(value as ClientType)}
 				>
 					<SelectTrigger className="w-[150px]">
 						<SelectValue>
@@ -188,8 +180,8 @@ export function InstallationTabs({
 	onTabChange,
 }: InstallationTabsProps) {
 	const [visibleCount] = useState(4)
-	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
-	const [tabOrder, setTabOrder] = useState<InstallTabStates[]>([
+	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
+	const [tabOrder, setTabOrder] = useState<ClientType[]>([
 		"claude",
 		"cursor",
 		"windsurf",
@@ -201,15 +193,12 @@ export function InstallationTabs({
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
-	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
+	const [isLoadingSchema, setIsLoadingSchema] = useState(true)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
 	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
-
-	const hasConfigProperties =
-		configSchema && Object.keys(configSchema?.properties || {}).length > 0
 
 	const isAnyConnectionPublished = server.connections.some(
 		(conn) => "published" in conn && conn.published,
@@ -241,40 +230,37 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function loadConfigSchema() {
-			// Get schema config if not already loaded
-			if (!configSchema && !isLoadingSchema) {
-				setIsLoadingSchema(true)
-				let schemaResult: Result<JSONSchema> = err()
+			// Remove the condition since we always want to load on mount
+			let schemaResult: Result<JSONSchema> = err()
 
-				if (server.deploymentUrl) {
-					schemaResult = await fetchConfigSchema(server.deploymentUrl)
-				} else {
-					// Get schema from stdio connection if available
-					const stdioConnection = server.connections.find(
-						(conn) => conn.type === "stdio",
-					)
-					if (stdioConnection) {
-						schemaResult = ok(stdioConnection.configSchema)
-					}
+			if (server.deploymentUrl) {
+				schemaResult = await fetchConfigSchema(server.deploymentUrl)
+			} else {
+				// Get schema from stdio connection if available
+				const stdioConnection = server.connections.find(
+					(conn) => conn.type === "stdio",
+				)
+				if (stdioConnection) {
+					schemaResult = ok(stdioConnection.configSchema)
 				}
+			}
 
-				if (schemaResult.ok) {
-					setConfigSchema(schemaResult.value)
+			if (schemaResult.ok) {
+				setConfigSchema(schemaResult.value)
 
-					// Auto-configure if schema is empty
-					if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
-						setConfigValues({})
-						setIsClientConfigured(true)
-					}
-				} else {
-					// Set a default empty schema when no config is available
-					setConfigSchema({ properties: {} })
+				// Auto-configure if schema is empty
+				if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
 					setConfigValues({})
 					setIsClientConfigured(true)
 				}
-
-				setIsLoadingSchema(false)
+			} else {
+				// Set a default empty schema when no config is available
+				setConfigSchema({ properties: {} })
+				setConfigValues({})
+				setIsClientConfigured(true)
 			}
+
+			setIsLoadingSchema(false)
 		}
 
 		loadConfigSchema()
@@ -300,7 +286,7 @@ export function InstallationTabs({
 		return Promise.resolve()
 	}
 
-	const handleOverflowSelect = (selected: InstallTabStates) => {
+	const handleOverflowSelect = (selected: ClientType) => {
 		const newOrder = [...tabOrder]
 		const selectedIndex = newOrder.indexOf(selected)
 		const temp = newOrder[visibleCount - 1]
@@ -320,8 +306,8 @@ export function InstallationTabs({
 			value={activeTab}
 			className={className}
 			onValueChange={(tab) => {
-				setActiveTab(tab as InstallTabStates)
-				onTabChange?.(tab as InstallTabStates)
+				setActiveTab(tab as ClientType)
+				onTabChange?.(tab as ClientType)
 			}}
 		>
 			<InstallTabOptions
@@ -332,16 +318,26 @@ export function InstallationTabs({
 				onOverflowSelect={handleOverflowSelect}
 			/>
 			<TabsContent value="claude">
-				<ClientInstallContent server={server} client="claude" />
+				<ClientContent
+					server={server}
+					client="claude"
+					configSchema={configSchema}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+				/>
 			</TabsContent>
 			<TabsContent value="cursor">
 				<ClientContent
 					server={server}
 					client="cursor"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
-					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
 					savedConfig={savedConfig}
@@ -350,25 +346,68 @@ export function InstallationTabs({
 				/>
 			</TabsContent>
 			<TabsContent value="windsurf">
-				<ClientInstallContent server={server} client="windsurf" />
+				<ClientContent
+					server={server}
+					client="windsurf"
+					configSchema={configSchema}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+				/>
 			</TabsContent>
 			<TabsContent value="cline">
-				<ClientInstallContent server={server} client="cline" />
+				<ClientContent
+					server={server}
+					client="cline"
+					configSchema={configSchema}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+				/>
 			</TabsContent>
 			<TabsContent value="witsy">
-				<ClientInstallContent server={server} client="witsy" />
+				<ClientContent
+					server={server}
+					client="witsy"
+					configSchema={configSchema}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+				/>
 			</TabsContent>
 			<TabsContent value="enconvo">
-				<ClientInstallContent server={server} client="enconvo" />
+				<ClientContent
+					server={server}
+					client="enconvo"
+					configSchema={configSchema}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+				/>
 			</TabsContent>
 			<TabsContent value="goose">
 				<ClientContent
 					server={server}
 					client="goose"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
-					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
 					savedConfig={savedConfig}
@@ -381,9 +420,8 @@ export function InstallationTabs({
 					server={server}
 					client="spinai"
 					configSchema={configSchema}
-					isLoadingSchema={isLoadingSchema || isLoadingSavedConfig}
+					isLoading={isLoadingSchema || isLoadingSavedConfig}
 					isClientConfigured={isClientConfigured}
-					hasConfigProperties={hasConfigProperties}
 					configValues={configValues}
 					onClientConfig={handleClientConfig}
 					savedConfig={savedConfig}

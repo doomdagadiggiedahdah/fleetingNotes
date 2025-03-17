@@ -1,12 +1,12 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import {
-	AlertCircle,
 	Bug,
 	ExternalLink,
 	FileText,
 	Terminal,
 	Braces,
+	CloudOff,
 } from "lucide-react"
 import posthog from "posthog-js"
 import type { JsonObject } from "@/lib/types/json"
@@ -16,8 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 import { JsonConfigBlock } from "./json-block"
+import { CursorBlock } from "./cursor-block"
 
-export const ClientInstallContent = ({
+export const InstallTabContent = ({
 	server,
 	client,
 	config,
@@ -33,7 +34,6 @@ export const ClientInstallContent = ({
 		| "goose"
 		| "spinai"
 	config?: JsonObject
-	// isConfigured?: boolean
 }) => {
 	const cleanedConfig = cleanConfig(config)
 
@@ -63,9 +63,9 @@ export const ClientInstallContent = ({
 				</span>
 			</h4>
 			<p className="my-2">
-				Use this server with{" "}
 				{client === "claude" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://claude.ai/download"
 							target="_blank"
@@ -77,6 +77,7 @@ export const ClientInstallContent = ({
 					</>
 				) : client === "cline" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://github.com/cline/cline"
 							target="_blank"
@@ -88,6 +89,7 @@ export const ClientInstallContent = ({
 					</>
 				) : client === "windsurf" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://codeium.com"
 							target="_blank"
@@ -99,26 +101,20 @@ export const ClientInstallContent = ({
 					</>
 				) : client === "cursor" ? (
 					<>
-						<a
-							href="https://cursor.sh"
-							target="_blank"
-							className="hover:text-primary"
-						>
-							Cursor
-						</a>{" "}
-						by copying the following into Cursor&apos;s MCP command. For more
-						info, see the{" "}
-						<a
-							href="https://docs.cursor.com/context/model-context-protocol"
-							target="_blank"
-							className="hover:text-primary inline-flex items-center"
-						>
-							docs <ExternalLink className="w-4 h-4 ml-1" />
-						</a>
-						.
+						<p className="my-2">
+							Use the following command to install for{" "}
+							<a
+								href="https://cursor.sh"
+								target="_blank"
+								className="hover:text-primary"
+							>
+								Cursor.
+							</a>
+						</p>
 					</>
 				) : client === "witsy" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://witsyai.com"
 							target="_blank"
@@ -130,6 +126,7 @@ export const ClientInstallContent = ({
 					</>
 				) : client === "enconvo" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://www.enconvo.com"
 							target="_blank"
@@ -141,6 +138,7 @@ export const ClientInstallContent = ({
 					</>
 				) : client === "goose" ? (
 					<>
+						Install for{" "}
 						<a
 							href="https://block.github.io/goose/"
 							target="_blank"
@@ -148,19 +146,15 @@ export const ClientInstallContent = ({
 						>
 							Goose
 						</a>{" "}
-						by copying the following into Goose&apos;s extension command. For
-						more info, see the{" "}
-						<a
-							href="https://block.github.io/goose/docs/getting-started/using-extensions"
-							target="_blank"
-							className="hover:text-primary inline-flex items-center"
-						>
-							docs <ExternalLink className="w-4 h-4 ml-1" />
-						</a>
+						by pasting the following into{" "}
+						<code className="bg-muted px-1.5 py-0.5 rounded text-sm">
+							Settings → Extensions → Add custome extensions
+						</code>
 						.
 					</>
 				) : client === "spinai" ? (
 					<>
+						Run the following command to install for{" "}
 						<a
 							href="https://www.spinai.dev"
 							target="_blank"
@@ -202,7 +196,14 @@ export const ClientInstallContent = ({
 					</TabsList>
 
 					<TabsContent value="standard">
-						{client === "cursor" || client === "goose" ? (
+						{client === "cursor" ? (
+							<CursorBlock
+								unixCommand={unixCommand}
+								windowsCmdCommand={windowsCmdCommand}
+								windowsCmdFullCommand={windowsCmdFullCommand}
+								serverQualifiedName={server.qualifiedName}
+							/>
+						) : client === "goose" ? (
 							<>
 								<div className="mb-4">
 									<div className="flex items-center gap-2 mb-2 text-sm font-medium">
@@ -303,11 +304,14 @@ export const ClientInstallContent = ({
 					)}
 				</Tabs>
 			) : (
-				<Alert>
-					<AlertCircle className="h-4 w-4" />
-					<AlertDescription>
-						This server has no valid connection configuration available.
-					</AlertDescription>
+				<Alert variant="destructive" className="bg-muted/50">
+					<div className="flex items-center gap-3">
+						<CloudOff className="h-5 w-5 text-muted-foreground" />
+						<AlertDescription className="text-sm">
+							Sorry! We couldn't fetch the configuration for this server. Please
+							try again later.
+						</AlertDescription>
+					</div>
 				</Alert>
 			)}
 
