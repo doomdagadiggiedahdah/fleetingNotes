@@ -148,7 +148,7 @@ export const InstallTabContent = ({
 						</a>{" "}
 						by pasting the following into{" "}
 						<code className="bg-muted px-1.5 py-0.5 rounded text-sm">
-							Settings → Extensions → Add custome extensions
+							Settings → Extensions → Add custom extensions
 						</code>
 						.
 					</>
@@ -308,7 +308,7 @@ export const InstallTabContent = ({
 					<div className="flex items-center gap-3">
 						<CloudOff className="h-5 w-5 text-muted-foreground" />
 						<AlertDescription className="text-sm">
-							Sorry! We couldn't fetch the configuration for this server. Please
+							Sorry! We couldn&apos;t fetch the configuration for this server. Please
 							try again later.
 						</AlertDescription>
 					</div>

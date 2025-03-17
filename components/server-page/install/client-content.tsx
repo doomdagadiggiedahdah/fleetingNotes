@@ -87,7 +87,7 @@ export function ClientContent({
 	return (
 		<div className="flex items-center justify-center gap-3 text-muted-foreground">
 			<CloudOff className="h-5 w-5" />
-			<p>Sorry! We couldn't fetch the configuration for this server.</p>
+			<p>Sorry! We couldn&apos;t fetch the configuration for this server.</p>
 		</div>
 	)
 }
