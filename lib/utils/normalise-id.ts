@@ -7,3 +7,11 @@ export function normalizeId(serverId: string): string {
 	}
 	return serverId
 }
+
+export function getServerName(serverId: string): string {
+	if (serverId.startsWith("@") && serverId.includes("/")) {
+		const slashIndex = serverId.indexOf("/");
+		return serverId.substring(slashIndex + 1);
+	}
+	return serverId;
+}
