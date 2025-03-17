@@ -178,7 +178,7 @@ export const InstallTabContent = ({
 							/>
 							npm
 						</TabsTrigger>
-						{server.remote && server.deploymentUrl && client !== "spinai" && (
+						{server.remote && server.deploymentUrl && client !== "spinai" && client !== "cursor" && (
 							<TabsTrigger value="scoop" className="flex items-center gap-2">
 								<ServerFavicon
 									homepage="https://scoop.sh"
