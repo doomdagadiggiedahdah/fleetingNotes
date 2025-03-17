@@ -138,9 +138,9 @@ async def main():
     async with stdio_client(server_params) as (read, write):
         async with mcp.ClientSession(read, write) as session:
             # List available tools
-            tools = await session.list_tools()
-            print(f"Available tools: {', '.join([t.name for t in tools])}")
-            
+            tools_list = await session.list_tools()
+            print(f"Available tools: {', '.join([t.name for t in tools_list.tools])}")
+
             # Example: Call a tool
             # result = await session.call_tool("tool-name", arguments={"param1": "value1"})
 `
