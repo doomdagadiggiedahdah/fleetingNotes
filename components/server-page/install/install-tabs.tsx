@@ -193,7 +193,7 @@ export function InstallationTabs({
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
-	const [isLoadingSchema, setIsLoadingSchema] = useState(true)
+	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 
 	const { currentSession, setIsSignInOpen } = useAuth()
@@ -230,39 +230,42 @@ export function InstallationTabs({
 
 	useEffect(() => {
 		async function loadConfigSchema() {
-			// Remove the condition since we always want to load on mount
-			let schemaResult: Result<JSONSchema> = err()
-
-			if (server.deploymentUrl) {
-				schemaResult = await fetchConfigSchema(server.deploymentUrl)
-			} else {
-				// Get schema from stdio connection if available
-				const stdioConnection = server.connections.find(
-					(conn) => conn.type === "stdio",
-				)
-				if (stdioConnection) {
-					schemaResult = ok(stdioConnection.configSchema)
+			// Get schema config if not already loaded
+			if (!configSchema && !isLoadingSchema) {
+				setIsLoadingSchema(true)
+				let schemaResult: Result<JSONSchema> = err()
+	
+				if (server.deploymentUrl) {
+					schemaResult = await fetchConfigSchema(server.deploymentUrl)
+				} else {
+					// Get schema from stdio connection if available
+					const stdioConnection = server.connections.find(
+						(conn) => conn.type === "stdio",
+					)
+					if (stdioConnection) {
+						schemaResult = ok(stdioConnection.configSchema)
+					}
 				}
-			}
-
-			if (schemaResult.ok) {
-				setConfigSchema(schemaResult.value)
-
-				// Auto-configure if schema is empty
-				if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
+	
+				if (schemaResult.ok) {
+					setConfigSchema(schemaResult.value)
+	
+					// Auto-configure if schema is empty
+					if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
+						setConfigValues({})
+						setIsClientConfigured(true)
+					}
+				} else {
+					// Set a default empty schema when no config is available
+					setConfigSchema({ properties: {} })
 					setConfigValues({})
 					setIsClientConfigured(true)
 				}
-			} else {
-				// Set a default empty schema when no config is available
-				setConfigSchema({ properties: {} })
-				setConfigValues({})
-				setIsClientConfigured(true)
+	
+				setIsLoadingSchema(false)
 			}
-
-			setIsLoadingSchema(false)
 		}
-
+	
 		loadConfigSchema()
 	}, [])
 
