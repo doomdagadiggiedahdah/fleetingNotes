@@ -6,13 +6,15 @@ import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiPython, SiTypescript } from "@icons-pack/react-simple-icons"
-import { ExternalLink } from "lucide-react"
+import { Code, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
 
 interface ApiPanelProps {
 	server: FetchedServer
 }
+
+// No complex UI components needed for developer-focused schema display
 
 export function ApiPanel({ server }: ApiPanelProps) {
 	const stdioConnection = server.connections.find(
@@ -61,6 +63,8 @@ export function ApiPanel({ server }: ApiPanelProps) {
 				} catch (error) {
 					console.error("Failed to fetch config schema:", error)
 				}
+			} else if (stdioConnection) {
+				setConfigSchema(stdioConnection.configSchema)
 			}
 		}
 
@@ -263,6 +267,38 @@ async def main():
 						<p className="text-muted-foreground">
 							API access is not available until this server is deployed.
 						</p>
+					</div>
+				)}
+
+				{/* Configuration Schema Documentation */}
+				{configSchema && (
+					<div className="mt-8">
+						<h3 className="text-lg font-bold mb-4 flex items-center">
+							<Code className="w-5 h-5 mr-2 text-primary" /> Configuration
+							Schema
+						</h3>
+						<p className="mb-4">
+							Full{" "}
+							<a
+								href="https://json-schema.org/specification"
+								target="_blank"
+								className="hover:text-primary underline inline-flex items-center"
+							>
+								JSON Schema
+							</a>{" "}
+							for server configuration:
+						</p>
+						<SimpleCodeBlock
+							code={JSON.stringify(configSchema, null, 2)}
+							language="json"
+							showHeader={true}
+							onCopy={() => {
+								posthog.capture("Code Copied", {
+									serverQualifiedName: server.qualifiedName,
+									eventTag: "schema_json",
+								})
+							}}
+						/>
 					</div>
 				)}
 			</div>
