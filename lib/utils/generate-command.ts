@@ -2,7 +2,7 @@ import type { JsonObject } from "@/lib/types/json"
 import type { FetchedServer } from "@/lib/utils/get-server"
 
 /* Supported clients */
-type ClientType =
+export type ClientType =
 	| "claude"
 	| "cline"
 	| "cursor"
@@ -22,7 +22,7 @@ interface ClientConfig {
 const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
 	claude: { usesRunCommand: false, usesCustomInstall: false },
 	cline: { usesRunCommand: false, usesCustomInstall: false },
-	cursor: { usesRunCommand: true, usesCustomInstall: false },
+	cursor: { usesRunCommand: false, usesCustomInstall: false },
 	windsurf: { usesRunCommand: false, usesCustomInstall: false },
 	witsy: { usesRunCommand: false, usesCustomInstall: false },
 	enconvo: { usesRunCommand: false, usesCustomInstall: false },
@@ -49,8 +49,14 @@ const NPX_SMITHERY_PREFIX = `npx -y @smithery/cli@latest`
 const NPX_SPINAI_PREFIX = `npx spinai-mcp`
 
 const COMMAND_TEMPLATES = {
-	STANDARD_INSTALL: (serverName: string, clientName: string) =>
-		`${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`,
+	STANDARD_INSTALL: (
+		serverName: string,
+		clientName: string,
+		config?: string,
+	) =>
+		config
+			? `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --config ${config}`
+			: `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`,
 	STANDARD_RUN: (serverName: string, config: string) =>
 		`${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`,
 	SPINAI_INSTALL: (serverName: string, config?: string) =>
@@ -85,10 +91,19 @@ export const generateUnixCommand = (baseCommand: string): string =>
 export const generateInstallCommand = (
 	server: FetchedServer,
 	client: ClientType,
+	config?: JsonObject,
 ): string => {
+	const cleanedConfig = config
+		? JSON.stringify(JSON.stringify(cleanConfig(config)))
+		: undefined
+
 	return isCustomInstallClient(client)
-		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName)
-		: COMMAND_TEMPLATES.STANDARD_INSTALL(server.qualifiedName, client)
+		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
+		: COMMAND_TEMPLATES.STANDARD_INSTALL(
+				server.qualifiedName,
+				client,
+				cleanedConfig,
+			)
 }
 
 /* Run command */
@@ -119,12 +134,11 @@ export const generateCommand = ({
 	platform?: Platform
 	windowsMethod?: WindowsExecMethod
 }): string => {
-	// Determine command type based on client
+	// Keep run vs install distinction, but both now support config
 	const baseCommand = isRunCommandClient(client)
 		? generateRunCommand(server, client, config)
-		: generateInstallCommand(server, client)
+		: generateInstallCommand(server, client, config)
 
-	// Apply platform-specific formatting
 	return platform === "windows"
 		? generateWindowsCommand(windowsMethod, baseCommand)
 		: generateUnixCommand(baseCommand)
