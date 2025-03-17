@@ -234,7 +234,7 @@ export function InstallationTabs({
 			if (!configSchema && !isLoadingSchema) {
 				setIsLoadingSchema(true)
 				let schemaResult: Result<JSONSchema> = err()
-	
+
 				if (server.deploymentUrl) {
 					schemaResult = await fetchConfigSchema(server.deploymentUrl)
 				} else {
@@ -246,10 +246,10 @@ export function InstallationTabs({
 						schemaResult = ok(stdioConnection.configSchema)
 					}
 				}
-	
+
 				if (schemaResult.ok) {
 					setConfigSchema(schemaResult.value)
-	
+
 					// Auto-configure if schema is empty
 					if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
 						setConfigValues({})
@@ -261,11 +261,11 @@ export function InstallationTabs({
 					setConfigValues({})
 					setIsClientConfigured(true)
 				}
-	
+
 				setIsLoadingSchema(false)
 			}
 		}
-	
+
 		loadConfigSchema()
 	}, [])
 

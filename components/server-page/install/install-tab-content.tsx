@@ -176,15 +176,18 @@ export const InstallTabContent = ({
 							/>
 							npm
 						</TabsTrigger>
-						{server.remote && server.deploymentUrl && client !== "spinai" && client !== "cursor" && (
-							<TabsTrigger value="scoop" className="flex items-center gap-2">
-								<ServerFavicon
-									homepage="https://scoop.sh"
-									displayName="Scoop"
-								/>
-								Scoop
-							</TabsTrigger>
-						)}
+						{server.remote &&
+							server.deploymentUrl &&
+							client !== "spinai" &&
+							client !== "cursor" && (
+								<TabsTrigger value="scoop" className="flex items-center gap-2">
+									<ServerFavicon
+										homepage="https://scoop.sh"
+										displayName="Scoop"
+									/>
+									Scoop
+								</TabsTrigger>
+							)}
 						{client === "cursor" && (
 							<TabsTrigger value="json" className="flex items-center gap-2">
 								<Braces className="w-4 h-4" />
@@ -306,8 +309,8 @@ export const InstallTabContent = ({
 					<div className="flex items-center gap-3">
 						<CloudOff className="h-5 w-5 text-muted-foreground" />
 						<AlertDescription className="text-sm">
-							Sorry! We couldn&apos;t fetch the configuration for this server. Please
-							try again later.
+							Sorry! We couldn&apos;t fetch the configuration for this server.
+							Please try again later.
 						</AlertDescription>
 					</div>
 				</Alert>

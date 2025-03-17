@@ -1,4 +1,4 @@
-import { normalizeId } from "@/lib/utils/normalise-id"
+import { getServerName } from "@/lib/utils/normalise-id"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JsonObject } from "@/lib/types/json"
 
@@ -41,7 +41,7 @@ export function generateMcpJsonConfig(
 
 	const mcpConfig = {
 		mcpServers: {
-			[normalizeId(server.qualifiedName)]: commandConfig,
+			[getServerName(server.qualifiedName)]: commandConfig,
 		},
 	}
 
