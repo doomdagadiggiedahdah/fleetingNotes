@@ -101,16 +101,14 @@ export const InstallTabContent = ({
 					</>
 				) : client === "cursor" ? (
 					<>
-						<p className="my-2">
-							Use the following command to install for{" "}
-							<a
-								href="https://cursor.sh"
-								target="_blank"
-								className="hover:text-primary"
-							>
-								Cursor.
-							</a>
-						</p>
+						Use the following command to install for{" "}
+						<a
+							href="https://cursor.sh"
+							target="_blank"
+							className="hover:text-primary"
+						>
+							Cursor.
+						</a>
 					</>
 				) : client === "witsy" ? (
 					<>
