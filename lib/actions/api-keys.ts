@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
 
+const MAX_API_KEYS = 20
+
 /**
  * Fetches API keys for the currently authenticated user
  * @returns List of masked API keys for the current user
@@ -42,13 +44,27 @@ export async function getMyApiKeys() {
 
 /**
  * Creates a new API key for the authenticated user
- * @returns The full API key (only shown once)
+ * @returns The full API key (only shown once) or an error if limit is reached
  */
 export async function createApiKey() {
 	const me = await getMe()
 	if (!me) return err("Authentication required")
 
 	try {
+		// Check if user has already reached the API key limit
+		const result = await db
+			.select()
+			.from(apiKeys)
+			.where(eq(apiKeys.owner, me.id))
+
+		const existingKeysCount = result.length
+
+		if (existingKeysCount >= MAX_API_KEYS) {
+			return err(
+				"API key limit reached. Please contact support for assistance.",
+			)
+		}
+
 		// Insert and get the randomly generated key and ID from the database
 		const [newApiKey] = await db
 			.insert(apiKeys)
