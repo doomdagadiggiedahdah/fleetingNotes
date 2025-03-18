@@ -133,7 +133,7 @@ export async function getAllServers(
 		.from(servers)
 		.orderBy((t) => [
 			// There exists a valid installation strategy
-			sql`CASE WHEN ${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb) THEN 0 ELSE 1 END`,
+			sql`CASE WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.tools} IS NOT NULL) THEN 0 ELSE 1 END`,
 			...(similarity
 				? [desc(similarity)]
 				: // Prioritize the new servers
