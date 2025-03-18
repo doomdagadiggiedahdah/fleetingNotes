@@ -6,9 +6,11 @@ import { ArrowRight, Wrench } from "lucide-react"
 import Link from "next/link"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { CodeBlock } from "@/components/docs/code-block"
+import type { JSONSchema } from "@/lib/types/server"
 
 interface ReadingPanelProps {
 	server: FetchedServer
+	configSchema?: JSONSchema | null
 }
 
 const ToolPreview = ({ tool }: { tool: Tool }) => {
@@ -105,7 +107,7 @@ const ToolsPreview = ({
 	)
 }
 
-export function AboutPanel({ server }: ReadingPanelProps) {
+export function AboutPanel({ server, configSchema }: ReadingPanelProps) {
 	const tools = (server.tools as Tool[]) ?? []
 
 	return (
@@ -125,7 +127,10 @@ export function AboutPanel({ server }: ReadingPanelProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstallation server={server} />
+					<ServerInstallation 
+						server={server} 
+						configSchema={configSchema}
+					/>
 					<ServerStats server={server} serverId={server.qualifiedName} />
 				</div>
 			</div>
