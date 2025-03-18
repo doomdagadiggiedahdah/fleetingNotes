@@ -24,7 +24,10 @@ export function ServerFavicon({
 						e.currentTarget.src = `https://icons.duckduckgo.com/ip3/${hostname}.ico`
 						e.currentTarget.onerror = () => {
 							e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`
-							e.currentTarget.onerror = null
+							e.currentTarget.onerror = () => {
+								// If all favicon sources fail, hide the image completely
+								e.currentTarget.style.display = "none"
+							}
 						}
 					}
 				}}

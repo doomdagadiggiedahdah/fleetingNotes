@@ -9,13 +9,19 @@ import { SettingsPanel } from "./settings/settings-tab"
 import { ServerTabsNav } from "./tabs-nav"
 import { ToolsPanelSkeleton } from "./tools-tab/skeleton"
 import { ToolPanelContainer } from "./tools-tab/tool-container"
+import type { JSONSchema } from "@/lib/types/server"
 
 interface ServerTabsProps {
 	server: FetchedServer
 	activeTab: string
+	configSchema?: JSONSchema | null
 }
 
-export function ServerTabs({ server, activeTab }: ServerTabsProps) {
+export function ServerTabs({
+	server,
+	activeTab,
+	configSchema,
+}: ServerTabsProps) {
 	return (
 		<div className="space-y-4">
 			<Tabs value={activeTab}>
@@ -24,7 +30,9 @@ export function ServerTabs({ server, activeTab }: ServerTabsProps) {
 
 				{/* Content Grid */}
 				<TabsContent value="about">
-					{activeTab === "about" && <AboutPanel server={server} />}
+					{activeTab === "about" && (
+						<AboutPanel server={server} configSchema={configSchema} />
+					)}
 				</TabsContent>
 
 				<TabsContent value="tools">
