@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { AuthCommandBlock } from "./auth-command-block"
+import { Sparkles } from "lucide-react"
 
 interface CursorBlockProps {
 	unixCommand: string
@@ -21,7 +22,8 @@ export const CursorBlock = ({
 				<TabsTrigger value="old">
 					Cursor <code>≤0.46.x</code>
 				</TabsTrigger>
-				<TabsTrigger value="new">
+				<TabsTrigger value="new" className="flex items-center gap-1">
+					<Sparkles className="h-4 w-4 text-primary/70" />
 					Cursor <code>≥0.47.x</code>
 				</TabsTrigger>
 			</TabsList>
