@@ -1,7 +1,5 @@
 "use client"
 
-import React from 'react'
-
 interface ServerFaviconProps {
 	homepage: string | null
 	displayName: string
@@ -13,17 +11,11 @@ export function ServerFavicon({
 	displayName,
 	className = "w-4 h-4",
 }: ServerFaviconProps) {
-	// Move the useState hook to the top level, before any conditionals
-	const [imgFailed, setImgFailed] = React.useState(false);
-	
 	if (!homepage) return null
 
 	try {
 		const hostname = new URL(homepage).hostname
-		
-		// Don't render img at all if failed
-		if (imgFailed) return null;
-		
+
 		return (
 			<img
 				src={`https://api.faviconkit.com/${hostname}/`}
@@ -33,8 +25,8 @@ export function ServerFavicon({
 						e.currentTarget.onerror = () => {
 							e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`
 							e.currentTarget.onerror = () => {
-								// If all favicon sources fail, don't show image at all
-								setImgFailed(true);
+								// If all favicon sources fail, hide the image completely
+								e.currentTarget.style.display = 'none'
 							}
 						}
 					}
