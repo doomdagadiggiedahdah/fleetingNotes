@@ -21,7 +21,7 @@ export default function CareersPage() {
 			<div className="space-y-4">
 				<h1 className="text-4xl font-bold tracking-tight">Careers</h1>
 				<p className="text-xl text-muted-foreground">
-					Join us in building the operating system layer for AI.
+					Join us in building the operating layer for AI.
 				</p>
 			</div>
 

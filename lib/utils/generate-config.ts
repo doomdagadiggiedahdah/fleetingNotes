@@ -41,10 +41,8 @@ export function createDummyConfig(
 	const result: Record<string, unknown> = {}
 
 	for (const [key, value] of Object.entries(properties as object)) {
-		if (value.type === "string") {
-			result[key] = useDescription
-				? (value.description ?? typeDefaults.string)
-				: typeDefaults.string
+		if ("default" in value) {
+			result[key] = value.default
 		} else if (value.type === "object") {
 			result[key] = createDummyConfig(value)
 		} else {
