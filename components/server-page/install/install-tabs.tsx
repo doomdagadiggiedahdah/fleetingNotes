@@ -207,18 +207,6 @@ export function InstallationTabs({
 	)
 
 	useEffect(() => {
-		if (prefetchedSchema && !configSchema) {
-			setConfigSchema(prefetchedSchema);
-			
-			// Auto-configure if schema is empty
-			if (Object.keys(prefetchedSchema?.properties || {}).length === 0) {
-				setConfigValues({});
-				setIsClientConfigured(true);
-			}
-		}
-	}, [prefetchedSchema]);
-	
-	useEffect(() => {
 		const fetchSavedConfig = async () => {
 			if (currentSession) {
 				setIsLoadingSavedConfig(true);

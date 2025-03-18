@@ -36,35 +36,80 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	const [configSchema, setConfigSchema] = useState(initialConfigSchema)
+	console.log('Initial configSchema from props:', initialConfigSchema);
+	
+	const [configSchema, setConfigSchema] = useState<JSONSchema | null | undefined>(initialConfigSchema)
 	const [isFetching, setIsFetching] = useState(false)
+
+	// Auto-configure if schema is empty
+	useEffect(() => {
+		if (configSchema && !isClientConfigured) {
+			const isEmptySchema = !configSchema.properties || 
+				Object.keys(configSchema.properties).length === 0;
+			
+			if (isEmptySchema) {
+				// Auto-configure without showing form
+				onClientConfig({}).catch(console.error);
+			}
+		}
+	}, [configSchema, isClientConfigured, onClientConfig]);
 
 	useEffect(() => {
 		async function fetchSchema() {
-			if (!configSchema && server.deploymentUrl) {
+			if ((configSchema === null || configSchema === undefined) && server.deploymentUrl) {
 				setIsFetching(true)
-				const schemaResult = await fetchConfigSchema(server.deploymentUrl)
-				if (schemaResult.ok) {
-					setConfigSchema(schemaResult.value)
+				
+				try {
+					const schemaResult = await fetchConfigSchema(server.deploymentUrl);
+					
+					if (schemaResult.ok) {
+						console.log('Config schema fetched successfully:', schemaResult.value);
+						setConfigSchema(schemaResult.value);
+					} else {
+						console.error('Failed to fetch config schema:', schemaResult.error);
+						setConfigSchema(null);
+					}
+				} catch (error) {
+					console.error('Error fetching config schema:', error);
+					setConfigSchema(null);
+				} finally {
+					setIsFetching(false);
 				}
-				setIsFetching(false)
 			}
 		}
 		fetchSchema()
 	}, [configSchema, server.deploymentUrl])
 
-	if (isLoading || isFetching) {
+	// You can also log the current configSchema state here
+	useEffect(() => {
+		console.log('Current configSchema state:', configSchema);
+	}, [configSchema]);
+
+	// Show loading message with spinner on the right side
+	if (isFetching) {
 		return (
-			<div className="space-y-2">
-				<Skeleton className="h-4 w-1/4" />
-				<Skeleton className="h-4 w-1/2" />
-				<Skeleton className="h-10 w-full" />
+			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
+				<p>Loading configuration</p>
+				<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
 			</div>
 		)
 	}
 
-	if (!isClientConfigured && configSchema) {
-		const configFormComponent = (
+	// If no schema available, show error message
+	if (!configSchema && !isFetching) {
+		return (
+			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
+				<CloudOff className="h-8 w-8" />
+				<p>Sorry, something is off...<br/> Please try again later!</p>
+			</div>
+		)
+	}
+
+	// Prepare content based on configuration state
+	let content;
+	
+	if (!isClientConfigured) {
+		content = (
 			<ConfigForm
 				schema={configSchema}
 				onSubmit={async (values) => await onClientConfig(values)}
@@ -76,37 +121,29 @@ export function ClientContent({
 				currentSession={currentSession}
 				setIsSignInOpen={setIsSignInOpen}
 			/>
-		)
-
-		// If user is not logged in, show blurred content with login prompt
-		if (!currentSession) {
-			return (
-				<LoginBlur
-					setIsSignInOpen={setIsSignInOpen}
-					promptText="Login to configure client"
-				>
-					{configFormComponent}
-				</LoginBlur>
-			)
-		}
-
-		return configFormComponent
-	}
-
-	if (configSchema) {
-		return (
+		);
+	} else {
+		content = (
 			<InstallTabContent
 				server={server}
 				client={client}
 				config={configValues}
 			/>
-		)
+		);
 	}
 
-	return (
-		<div className="flex items-center justify-center gap-3 text-muted-foreground">
-			<CloudOff className="h-5 w-5" />
-			<p>Sorry! We couldn&apos;t fetch the configuration for this server.</p>
-		</div>
-	)
+	// If user is not logged in, wrap content in login blur
+	if (!currentSession) {
+		return (
+			<LoginBlur
+				setIsSignInOpen={setIsSignInOpen}
+				promptText="Login to configure client"
+			>
+				{content}
+			</LoginBlur>
+		);
+	}
+
+	// Otherwise, return the content directly
+	return content;
 }

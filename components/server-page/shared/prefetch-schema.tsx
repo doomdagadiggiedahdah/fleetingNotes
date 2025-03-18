@@ -21,10 +21,8 @@ export async function prefetchServerConfig(server: FetchedServer) {
     }
   }
   
-  // If no schema found, set a default empty schema
-  if (!configSchema) {
-    configSchema = { properties: {} };
-  }
+  // No longer setting a default empty schema
+  // Let configSchema remain null if no schema was found
   
   return {
     configSchema
