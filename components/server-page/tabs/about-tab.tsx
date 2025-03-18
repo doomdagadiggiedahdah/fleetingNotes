@@ -127,10 +127,7 @@ export function AboutPanel({ server, configSchema }: ReadingPanelProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstallation 
-						server={server} 
-						configSchema={configSchema}
-					/>
+					<ServerInstallation server={server} configSchema={configSchema} />
 					<ServerStats server={server} serverId={server.qualifiedName} />
 				</div>
 			</div>

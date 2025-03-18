@@ -194,7 +194,9 @@ export function InstallationTabs({
 		"spinai",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(prefetchedSchema)
+	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(
+		prefetchedSchema,
+	)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 
@@ -209,22 +211,22 @@ export function InstallationTabs({
 	useEffect(() => {
 		const fetchSavedConfig = async () => {
 			if (currentSession) {
-				setIsLoadingSavedConfig(true);
+				setIsLoadingSavedConfig(true)
 				try {
-					const configResult = await getSavedConfig(server.id);
+					const configResult = await getSavedConfig(server.id)
 					if (configResult.ok) {
-						setSavedConfig(configResult.value);
+						setSavedConfig(configResult.value)
 					}
 				} catch (error) {
-					console.error("Failed to fetch saved configuration:", error);
+					console.error("Failed to fetch saved configuration:", error)
 				} finally {
-					setIsLoadingSavedConfig(false);
+					setIsLoadingSavedConfig(false)
 				}
 			}
-		};
-		
-		fetchSavedConfig();
-	}, [currentSession, server.id]);
+		}
+
+		fetchSavedConfig()
+	}, [currentSession, server.id])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order

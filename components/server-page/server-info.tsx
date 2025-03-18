@@ -16,7 +16,7 @@ interface Props {
 
 export async function ServerPage({ server, activeTab }: Props) {
 	// Prefetch the server configuration
-	const { configSchema } = await prefetchServerConfig(server);
+	const { configSchema } = await prefetchServerConfig(server)
 
 	return (
 		<>
@@ -77,9 +77,9 @@ export async function ServerPage({ server, activeTab }: Props) {
 					</div>
 				</div>
 
-				<ServerTabs 
-					server={server} 
-					activeTab={activeTab} 
+				<ServerTabs
+					server={server}
+					activeTab={activeTab}
 					configSchema={configSchema}
 				/>
 			</Container>

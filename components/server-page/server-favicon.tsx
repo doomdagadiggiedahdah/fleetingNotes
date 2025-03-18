@@ -26,7 +26,7 @@ export function ServerFavicon({
 							e.currentTarget.src = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`
 							e.currentTarget.onerror = () => {
 								// If all favicon sources fail, hide the image completely
-								e.currentTarget.style.display = 'none'
+								e.currentTarget.style.display = "none"
 							}
 						}
 					}

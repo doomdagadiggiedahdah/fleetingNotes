@@ -17,7 +17,11 @@ interface ServerTabsProps {
 	configSchema?: JSONSchema | null
 }
 
-export function ServerTabs({ server, activeTab, configSchema }: ServerTabsProps) {
+export function ServerTabs({
+	server,
+	activeTab,
+	configSchema,
+}: ServerTabsProps) {
 	return (
 		<div className="space-y-4">
 			<Tabs value={activeTab}>
@@ -26,7 +30,9 @@ export function ServerTabs({ server, activeTab, configSchema }: ServerTabsProps)
 
 				{/* Content Grid */}
 				<TabsContent value="about">
-					{activeTab === "about" && <AboutPanel server={server} configSchema={configSchema}/>}
+					{activeTab === "about" && (
+						<AboutPanel server={server} configSchema={configSchema} />
+					)}
 				</TabsContent>
 
 				<TabsContent value="tools">

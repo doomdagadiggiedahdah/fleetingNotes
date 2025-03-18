@@ -36,40 +36,46 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	const [configSchema, setConfigSchema] = useState<JSONSchema | null | undefined>(initialConfigSchema)
+	const [configSchema, setConfigSchema] = useState<
+		JSONSchema | null | undefined
+	>(initialConfigSchema)
 	const [isFetching, setIsFetching] = useState(false)
 
 	// Auto-configure if schema is empty
 	useEffect(() => {
 		if (configSchema && !isClientConfigured) {
-			const isEmptySchema = !configSchema.properties || 
-				Object.keys(configSchema.properties).length === 0;
-			
+			const isEmptySchema =
+				!configSchema.properties ||
+				Object.keys(configSchema.properties).length === 0
+
 			if (isEmptySchema) {
 				// Auto-configure without showing form
-				onClientConfig({}).catch(console.error);
+				onClientConfig({}).catch(console.error)
 			}
 		}
-	}, [configSchema, isClientConfigured, onClientConfig]);
+	}, [configSchema, isClientConfigured, onClientConfig])
 
 	useEffect(() => {
 		async function fetchSchema() {
-			if ((configSchema === null || configSchema === undefined) && server.deploymentUrl) {
+			if (
+				(configSchema === null || configSchema === undefined) &&
+				server.deploymentUrl
+			) {
 				setIsFetching(true)
-				
+
 				try {
-					const schemaResult = await fetchConfigSchema(server.deploymentUrl);
-					
+					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
+
 					if (schemaResult.ok) {
-						setConfigSchema(schemaResult.value);
+						setConfigSchema(schemaResult.value)
 					} else {
-						setConfigSchema(null);
+						setConfigSchema(null)
 					}
 				} catch (error) {
-					console.error('Error fetching config schema:', error);
-					setConfigSchema(null);
+					console.error("Error fetching config schema:", error)
+					setConfigSchema(null)
 				} finally {
-					setIsFetching(false);
+					setIsFetching(false)
 				}
 			}
 		}
@@ -81,7 +87,7 @@ export function ClientContent({
 		return (
 			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
 				<p>Loading configuration</p>
-				<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+				<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
 			</div>
 		)
 	}
@@ -91,14 +97,17 @@ export function ClientContent({
 		return (
 			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
 				<CloudOff className="h-8 w-8" />
-				<p>Sorry, something is off...<br/> Please try again later!</p>
+				<p>
+					Sorry, something is off...
+					<br /> Please try again later!
+				</p>
 			</div>
 		)
 	}
 
 	// Prepare content based on configuration state
-	let content;
-	
+	let content: React.ReactNode
+
 	if (!isClientConfigured) {
 		content = (
 			<ConfigForm
@@ -112,7 +121,7 @@ export function ClientContent({
 				currentSession={currentSession}
 				setIsSignInOpen={setIsSignInOpen}
 			/>
-		);
+		)
 	} else {
 		content = (
 			<InstallTabContent
@@ -120,7 +129,7 @@ export function ClientContent({
 				client={client}
 				config={configValues}
 			/>
-		);
+		)
 	}
 
 	// If user is not logged in, wrap content in login blur
@@ -132,9 +141,9 @@ export function ClientContent({
 			>
 				{content}
 			</LoginBlur>
-		);
+		)
 	}
 
 	// Otherwise, return the content directly
-	return content;
+	return content
 }
