@@ -1,7 +1,9 @@
-"use cache"
 import { DEFAULT_PAGE_SIZE, getAllServers } from "@/lib/utils/search-servers"
 import { PaginatedServerList } from "./paginated-server-list"
 
+/**
+ * Server list component during a search.
+ */
 export default async function ServerList({
 	query,
 	page = 1,
@@ -9,10 +11,14 @@ export default async function ServerList({
 	query?: string
 	page?: number
 }) {
-	const { servers, pagination } = await getAllServers(query, {
-		page,
-		pageSize: DEFAULT_PAGE_SIZE,
-	})
+	const { servers, pagination } = await getAllServers(
+		query,
+		{
+			page,
+			pageSize: DEFAULT_PAGE_SIZE,
+		},
+		false,
+	)
 
 	return (
 		<div className="mt-4">

@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm"
 import searchQueryParser from "search-query-parser"
 import OpenAI from "openai"
+import { getMe } from "@/lib/supabase/server"
 
 export const DEFAULT_PAGE_SIZE = 20
 
@@ -40,12 +41,21 @@ const openAI = new OpenAI()
 /**
  * @param query A string to search for. If null, we won't search
  * @param pagination Pagination parameters
+ * @param skipAuth If true, auth check will be skipped and we won't know which user called getAllServers.
  * @returns A paginated list of servers with total count
  */
 export async function getAllServers(
 	query?: string,
 	pagination?: PaginationParams,
+	skipAuth = true,
 ) {
+	// Get current user ID if not in API context and auth is needed
+	let currentUserId = null
+	if (!skipAuth) {
+		const currentUser = await getMe()
+		currentUserId = currentUser?.id || null
+	}
+
 	// Handle special filters like owner:repo
 	const parsedQueryObj = (() => {
 		const parsed = searchQueryParser.parse(query || "", {
@@ -83,7 +93,9 @@ export async function getAllServers(
 			? and(isNotNull(similarity), gt(similarity, MIN_SIMILARITY))
 			: undefined,
 		parsedQueryObj?.owner
-			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoOwner}) = LOWER(${parsedQueryObj.owner}))`
+			? parsedQueryObj.owner === "me" && currentUserId
+				? eq(servers.owner, currentUserId)
+				: sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoOwner}) = LOWER(${parsedQueryObj.owner}))`
 			: undefined,
 		parsedQueryObj?.repo
 			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoName}) = LOWER(${parsedQueryObj.repo}))`

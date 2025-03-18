@@ -8,16 +8,16 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/lib/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
 import {
 	Key,
 	LogOut,
-	User as UserIcon,
 	Server as ServerIcon,
+	User as UserIcon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/lib/hooks/use-toast"
 
 interface UserAvatarDropdownProps {
 	user: User
@@ -47,10 +47,7 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 		console.log("GitHub identity:", githubIdentity)
 
 		if (githubIdentity?.identity_data) {
-			const encodedUsername = encodeURIComponent(
-				githubIdentity.identity_data.user_name,
-			)
-			router.push(`/?q=owner:${encodedUsername}`)
+			router.push(`/?q=owner:me`)
 		} else {
 			toast({
 				title: "Error",
