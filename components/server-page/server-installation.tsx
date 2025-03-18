@@ -1,16 +1,19 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { InstallationTabs, type InstallTabStates } from "./install/install-tabs"
+import type { JSONSchema } from "@/lib/types/server"
 
 type Props = {
 	server: FetchedServer
 	initTab?: InstallTabStates
 	onTabChange?: (tab: InstallTabStates) => void
+	configSchema?: JSONSchema | null
 }
 
 export function ServerInstallation({
 	server,
 	initTab = "claude",
 	onTabChange,
+	configSchema,
 }: Props) {
 	return (
 		<div>
@@ -20,6 +23,7 @@ export function ServerInstallation({
 					server={server}
 					initTab={initTab}
 					onTabChange={onTabChange}
+					configSchema={configSchema}
 				/>
 			</div>
 		</div>
