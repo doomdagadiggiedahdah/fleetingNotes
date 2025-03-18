@@ -13,13 +13,13 @@ export function ServerFavicon({
 	displayName,
 	className = "w-4 h-4",
 }: ServerFaviconProps) {
+	// Move the useState hook to the top level, before any conditionals
+	const [imgFailed, setImgFailed] = React.useState(false);
+	
 	if (!homepage) return null
 
 	try {
 		const hostname = new URL(homepage).hostname
-		
-		// Add state to track if image failed to load
-		const [imgFailed, setImgFailed] = React.useState(false);
 		
 		// Don't render img at all if failed
 		if (imgFailed) return null;
