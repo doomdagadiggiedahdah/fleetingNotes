@@ -8,8 +8,7 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
-import { useEffect, useState } from "react"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
+import { useEffect } from "react"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -27,7 +26,7 @@ interface ClientContentProps {
 export function ClientContent({
 	server,
 	client,
-	configSchema: initialConfigSchema,
+	configSchema,
 	isLoading,
 	isClientConfigured,
 	configValues,
@@ -36,54 +35,8 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	const [configSchema, setConfigSchema] = useState<
-		JSONSchema | null | undefined
-	>(initialConfigSchema)
-	const [isFetching, setIsFetching] = useState(false)
-
-	// Auto-configure if schema is empty
-	useEffect(() => {
-		if (configSchema && !isClientConfigured) {
-			const isEmptySchema =
-				!configSchema.properties ||
-				Object.keys(configSchema.properties).length === 0
-
-			if (isEmptySchema) {
-				// Auto-configure without showing form
-				onClientConfig({}).catch(console.error)
-			}
-		}
-	}, [configSchema, isClientConfigured, onClientConfig])
-
-	useEffect(() => {
-		async function fetchSchema() {
-			if (
-				(configSchema === null || configSchema === undefined) &&
-				server.deploymentUrl
-			) {
-				setIsFetching(true)
-
-				try {
-					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
-
-					if (schemaResult.ok) {
-						setConfigSchema(schemaResult.value)
-					} else {
-						setConfigSchema(null)
-					}
-				} catch (error) {
-					console.error("Error fetching config schema:", error)
-					setConfigSchema(null)
-				} finally {
-					setIsFetching(false)
-				}
-			}
-		}
-		fetchSchema()
-	}, [configSchema, server.deploymentUrl])
-
-	// Show loading message with spinner on the right side
-	if (isFetching) {
+	// Show loading message with spinner
+	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
 				<p>Loading configuration</p>
@@ -93,7 +46,7 @@ export function ClientContent({
 	}
 
 	// If no schema available, show error message
-	if (!configSchema && !isFetching) {
+	if (!configSchema) {
 		return (
 			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
 				<CloudOff className="h-8 w-8" />
@@ -104,6 +57,20 @@ export function ClientContent({
 			</div>
 		)
 	}
+
+	// Auto-configure if schema is empty
+	useEffect(() => {
+		if (!isClientConfigured) {
+			const isEmptySchema =
+				!configSchema.properties ||
+				Object.keys(configSchema.properties).length === 0
+
+			if (isEmptySchema) {
+				// Auto-configure without showing form
+				onClientConfig({}).catch(console.error)
+			}
+		}
+	}, [configSchema, isClientConfigured, onClientConfig])
 
 	// Prepare content based on configuration state
 	let content: React.ReactNode

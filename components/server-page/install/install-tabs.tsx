@@ -12,9 +12,8 @@ import { useAuth } from "@/context/auth-context"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
-// import { fetchConfigSchema } from "@/lib/utils/fetch-config"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
-// import { err, ok, type Result } from "@/lib/utils/result"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
@@ -198,18 +197,39 @@ export function InstallationTabs({
 		prefetchedSchema,
 	)
 	const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
+	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
+	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
 
 	const { currentSession, setIsSignInOpen } = useAuth()
-	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
-	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
-
 	const isAnyConnectionPublished = server.connections.some(
 		(conn) => "published" in conn && conn.published,
 	)
 
+	// Fetch config schema only if not prefetched
 	useEffect(() => {
-		const fetchSavedConfig = async () => {
+		async function fetchSchema() {
+			if (!prefetchedSchema && server.deploymentUrl) {
+				setIsLoadingSchema(true)
+				try {
+					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
+					if (schemaResult.ok) {
+						setConfigSchema(schemaResult.value)
+					}
+				} catch (error) {
+					console.error("Failed to fetch config schema:", error)
+				} finally {
+					setIsLoadingSchema(false)
+				}
+			}
+		}
+
+		fetchSchema()
+	}, [server.deploymentUrl, prefetchedSchema])
+
+	// Fetch saved config when user is logged in
+	useEffect(() => {
+		async function fetchSavedConfig() {
 			if (currentSession) {
 				setIsLoadingSavedConfig(true)
 				try {
