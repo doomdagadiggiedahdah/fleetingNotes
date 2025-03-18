@@ -1,5 +1,5 @@
 import { InstallTabContent } from "./install-tab-content"
-import { Skeleton } from "@/components/ui/skeleton"
+// import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -36,8 +36,6 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	console.log('Initial configSchema from props:', initialConfigSchema);
-	
 	const [configSchema, setConfigSchema] = useState<JSONSchema | null | undefined>(initialConfigSchema)
 	const [isFetching, setIsFetching] = useState(false)
 
@@ -63,10 +61,8 @@ export function ClientContent({
 					const schemaResult = await fetchConfigSchema(server.deploymentUrl);
 					
 					if (schemaResult.ok) {
-						console.log('Config schema fetched successfully:', schemaResult.value);
 						setConfigSchema(schemaResult.value);
 					} else {
-						console.error('Failed to fetch config schema:', schemaResult.error);
 						setConfigSchema(null);
 					}
 				} catch (error) {
@@ -79,11 +75,6 @@ export function ClientContent({
 		}
 		fetchSchema()
 	}, [configSchema, server.deploymentUrl])
-
-	// You can also log the current configSchema state here
-	useEffect(() => {
-		console.log('Current configSchema state:', configSchema);
-	}, [configSchema]);
 
 	// Show loading message with spinner on the right side
 	if (isFetching) {
