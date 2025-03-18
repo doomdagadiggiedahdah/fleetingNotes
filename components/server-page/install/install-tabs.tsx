@@ -12,9 +12,9 @@ import { useAuth } from "@/context/auth-context"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
+// import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { err, ok, type Result } from "@/lib/utils/result"
+// import { err, ok, type Result } from "@/lib/utils/result"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
@@ -30,6 +30,7 @@ type InstallationTabsProps = {
 	initTab?: ClientType
 	className?: string
 	onTabChange?: (tab: ClientType) => void
+	configSchema?: JSONSchema | null
 }
 
 type TabOption = {
@@ -178,6 +179,7 @@ export function InstallationTabs({
 	initTab = "claude",
 	className,
 	onTabChange,
+	configSchema: prefetchedSchema = null,
 }: InstallationTabsProps) {
 	const [visibleCount] = useState(4)
 	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
@@ -192,8 +194,8 @@ export function InstallationTabs({
 		"spinai",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(null)
-	const [isLoadingSchema, setIsLoadingSchema] = useState(false)
+	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(prefetchedSchema)
+	const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 
 	const { currentSession, setIsSignInOpen } = useAuth()
@@ -205,69 +207,36 @@ export function InstallationTabs({
 	)
 
 	useEffect(() => {
-		async function loadSavedConfig() {
-			// Load saved config if user is logged in
-			if (
-				currentSession &&
-				server.id &&
-				!savedConfig &&
-				!isLoadingSavedConfig
-			) {
-				setIsLoadingSavedConfig(true)
-				try {
-					const config = await getSavedConfig(server.id)
-					if (config.ok) setSavedConfig(config.value)
-				} catch (error) {
-					console.error("Failed to load saved configuration:", error)
-				} finally {
-					setIsLoadingSavedConfig(false)
-				}
+		if (prefetchedSchema && !configSchema) {
+			setConfigSchema(prefetchedSchema);
+			
+			// Auto-configure if schema is empty
+			if (Object.keys(prefetchedSchema?.properties || {}).length === 0) {
+				setConfigValues({});
+				setIsClientConfigured(true);
 			}
 		}
-
-		loadSavedConfig()
-	}, [currentSession])
-
+	}, [prefetchedSchema]);
+	
 	useEffect(() => {
-		async function loadConfigSchema() {
-			// Get schema config if not already loaded
-			if (!configSchema && !isLoadingSchema) {
-				setIsLoadingSchema(true)
-				let schemaResult: Result<JSONSchema> = err()
-
-				if (server.deploymentUrl) {
-					schemaResult = await fetchConfigSchema(server.deploymentUrl)
-				} else {
-					// Get schema from stdio connection if available
-					const stdioConnection = server.connections.find(
-						(conn) => conn.type === "stdio",
-					)
-					if (stdioConnection) {
-						schemaResult = ok(stdioConnection.configSchema)
+		const fetchSavedConfig = async () => {
+			if (currentSession) {
+				setIsLoadingSavedConfig(true);
+				try {
+					const configResult = await getSavedConfig(server.id);
+					if (configResult.ok) {
+						setSavedConfig(configResult.value);
 					}
+				} catch (error) {
+					console.error("Failed to fetch saved configuration:", error);
+				} finally {
+					setIsLoadingSavedConfig(false);
 				}
-
-				if (schemaResult.ok) {
-					setConfigSchema(schemaResult.value)
-
-					// Auto-configure if schema is empty
-					if (Object.keys(schemaResult.value?.properties || {}).length === 0) {
-						setConfigValues({})
-						setIsClientConfigured(true)
-					}
-				} else {
-					// Set a default empty schema when no config is available
-					setConfigSchema({ properties: {} })
-					setConfigValues({})
-					setIsClientConfigured(true)
-				}
-
-				setIsLoadingSchema(false)
 			}
-		}
-
-		loadConfigSchema()
-	}, [])
+		};
+		
+		fetchSavedConfig();
+	}, [currentSession, server.id]);
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
