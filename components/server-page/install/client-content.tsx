@@ -35,6 +35,20 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
+	// Move useEffect to the top of the component
+	useEffect(() => {
+		if (!isClientConfigured && configSchema) {
+			const isEmptySchema =
+				!configSchema.properties ||
+				Object.keys(configSchema.properties).length === 0
+
+			if (isEmptySchema) {
+				// Auto-configure without showing form
+				onClientConfig({}).catch(console.error)
+			}
+		}
+	}, [configSchema, isClientConfigured, onClientConfig])
+
 	// Show loading message with spinner
 	if (isLoading) {
 		return (
@@ -57,20 +71,6 @@ export function ClientContent({
 			</div>
 		)
 	}
-
-	// Auto-configure if schema is empty
-	useEffect(() => {
-		if (!isClientConfigured) {
-			const isEmptySchema =
-				!configSchema.properties ||
-				Object.keys(configSchema.properties).length === 0
-
-			if (isEmptySchema) {
-				// Auto-configure without showing form
-				onClientConfig({}).catch(console.error)
-			}
-		}
-	}, [configSchema, isClientConfigured, onClientConfig])
 
 	// Prepare content based on configuration state
 	let content: React.ReactNode
