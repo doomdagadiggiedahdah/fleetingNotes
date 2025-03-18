@@ -8,6 +8,8 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
+import { useEffect, useState } from "react"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -25,7 +27,7 @@ interface ClientContentProps {
 export function ClientContent({
 	server,
 	client,
-	configSchema,
+	configSchema: initialConfigSchema,
 	isLoading,
 	isClientConfigured,
 	configValues,
@@ -34,7 +36,24 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	if (isLoading) {
+	const [configSchema, setConfigSchema] = useState(initialConfigSchema)
+	const [isFetching, setIsFetching] = useState(false)
+
+	useEffect(() => {
+		async function fetchSchema() {
+			if (!configSchema && server.deploymentUrl) {
+				setIsFetching(true)
+				const schemaResult = await fetchConfigSchema(server.deploymentUrl)
+				if (schemaResult.ok) {
+					setConfigSchema(schemaResult.value)
+				}
+				setIsFetching(false)
+			}
+		}
+		fetchSchema()
+	}, [configSchema, server.deploymentUrl])
+
+	if (isLoading || isFetching) {
 		return (
 			<div className="space-y-2">
 				<Skeleton className="h-4 w-1/4" />
