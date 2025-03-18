@@ -31,9 +31,9 @@ export function ServerListItem({ server }: ToolCardProps) {
 								<ServerFavicon
 									homepage={server.homepage}
 									displayName={server.displayName}
-									className="w-6 h-6"
+									className="w-6 h-6 flex-shrink-0"
 								/>
-								{server.displayName}
+								<span className="truncate">{server.displayName}</span>
 							</h3>
 							{server.verified && (
 								<BadgeCheck className="w-4 h-4 text-primary " />
