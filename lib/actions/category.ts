@@ -18,7 +18,7 @@ export async function getRandomCategories(limit = 6) {
 			query: serverCategories.query,
 		})
 		.from(serverCategories)
-		.orderBy(sql`RANDOM()`)
+		.orderBy(serverCategories.priority, sql`RANDOM()`)
 		.limit(limit)
 
 	// Return categories' queries for search suggestions

@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { serverCategories, servers } from "@/db/schema"
-import { isNotNull } from "drizzle-orm"
+import { eq, isNotNull } from "drizzle-orm"
 import { HDBSCAN } from "hdbscan-ts"
 import { zodResponseFormat } from "openai/helpers/zod"
 import { UMAP } from "umap-js"
@@ -134,9 +134,9 @@ export async function generateCategoriesFromServerEmbeddings() {
 
 		// Begin database transaction to update categories
 		await db.transaction(async (tx) => {
-			// Empty the category table first
-			console.log("Emptying the category table...")
-			await tx.delete(serverCategories)
+			await tx
+				.delete(serverCategories)
+				.where(eq(serverCategories.manual, false))
 
 			// Add all new categories
 			console.log(`Adding ${categoryResults.length} new categories...`)
@@ -149,7 +149,6 @@ export async function generateCategoriesFromServerEmbeddings() {
 				await tx.insert(serverCategories).values({
 					title: category.title,
 					query: category.query,
-					description: category.query,
 				})
 			}
 		})

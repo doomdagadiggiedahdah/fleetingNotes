@@ -1,4 +1,11 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+	boolean,
+	integer,
+	pgTable,
+	text,
+	timestamp,
+	uuid,
+} from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
 
@@ -13,8 +20,11 @@ export const serverCategories = pgTable("server_categories", {
 	// Search query that defines this category
 	query: text("query").notNull(),
 
-	// Optional description of what this category is about
-	description: text("description").notNull(),
+	// If true, it means this was manually created.
+	manual: boolean("manual").notNull().default(false),
+
+	// A number that determines the order of the category when displayed
+	priority: integer("priority").notNull().default(100),
 
 	// When this category was created
 	createdAt: timestamp("created_at").notNull().defaultNow(),
