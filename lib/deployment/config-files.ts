@@ -24,7 +24,7 @@ primary_region = 'iad'
   [http_service.concurrency]
     type = "connections"
     soft_limit = 50
-    hard_limit = 100
+    hard_limit = 80
   
 [[vm]]
   memory = '1gb'
