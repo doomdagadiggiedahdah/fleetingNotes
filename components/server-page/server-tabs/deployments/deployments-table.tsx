@@ -1,6 +1,6 @@
 "use client"
 
-import { DeployButton } from "@/components/server-page/tabs/deployments/deploy-button"
+import { DeployButton } from "@/components/server-page/server-tabs/deployments/deploy-button"
 import { CardDescription, CardTitle } from "@/components/ui/card"
 import {
 	Table,

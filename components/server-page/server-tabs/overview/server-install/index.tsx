@@ -1,6 +1,6 @@
 import { Suspense } from "react"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { InstallationTabs, type InstallTabStates } from "./install/install-tabs"
+import { Installtabs, type InstallTabStates } from "./install-tabs"
 // import { prefetchServerConfig } from "./shared/prefetch-schema"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,7 +11,7 @@ type Props = {
 	onTabChange?: (tab: InstallTabStates) => void
 }
 
-function InstallationTabsSkeleton() {
+function InstallTabsSkeleton() {
 	return (
 		<div>
 			{/* Mobile Select Skeleton */}
@@ -23,14 +23,16 @@ function InstallationTabsSkeleton() {
 			<div className="hidden lg:block border-b border-border mb-3">
 				<TabsList>
 					{/* Show 4 tab skeletons to match visibleCount */}
-					{['skeleton-1', 'skeleton-2', 'skeleton-3', 'skeleton-4'].map((id) => (
-						<TabsTrigger key={id} value={`tab-${id}`} disabled>
-							<div className="flex items-center gap-2">
-								<Skeleton className="h-4 w-4 rounded-full" /> {/* Icon */}
-								<Skeleton className="h-4 w-16" /> {/* Label */}
-							</div>
-						</TabsTrigger>
-					))}
+					{["skeleton-1", "skeleton-2", "skeleton-3", "skeleton-4"].map(
+						(id) => (
+							<TabsTrigger key={id} value={`tab-${id}`} disabled>
+								<div className="flex items-center gap-2">
+									<Skeleton className="h-4 w-4 rounded-full" /> {/* Icon */}
+									<Skeleton className="h-4 w-16" /> {/* Label */}
+								</div>
+							</TabsTrigger>
+						),
+					)}
 				</TabsList>
 			</div>
 
@@ -48,7 +50,7 @@ function InstallationTabsSkeleton() {
 	)
 }
 
-export function ServerInstallation({
+export function ServerInstall({
 	server,
 	initTab = "claude",
 	onTabChange,
@@ -57,8 +59,8 @@ export function ServerInstallation({
 		<div>
 			<h2 className="text-2xl font-bold mb-4">Installation</h2>
 			<div className="bg-background p-3 rounded-lg border border-border">
-				<Suspense fallback={<InstallationTabsSkeleton />}>
-					<InstallationTabs
+				<Suspense fallback={<InstallTabsSkeleton />}>
+					<Installtabs
 						server={server}
 						initTab={initTab}
 						onTabChange={onTabChange}

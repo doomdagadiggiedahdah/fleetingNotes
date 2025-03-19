@@ -7,9 +7,8 @@ export interface GithubRepository {
 	owner: string
 }
 
-export type GithubAccount =
-	| components["schemas"]["simple-user"]
-	// | components["schemas"]["organization"]
+export type GithubAccount = components["schemas"]["simple-user"]
+// | components["schemas"]["organization"]
 // TODO: Support enterprise?
 
 export interface GithubUser {

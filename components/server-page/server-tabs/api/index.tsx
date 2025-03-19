@@ -10,13 +10,13 @@ import { Code, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
 
-interface ApiPanelProps {
+interface ApiTabProps {
 	server: FetchedServer
 }
 
 // No complex UI components needed for developer-focused schema display
 
-export function ApiPanel({ server }: ApiPanelProps) {
+export function ApiTab({ server }: ApiTabProps) {
 	const stdioConnection = server.connections.find(
 		(conn) => conn.type === "stdio",
 	)

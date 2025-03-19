@@ -17,14 +17,14 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
-import { ServerFavicon } from "../server-favicon"
-import { OverflowMenu } from "./overflow-menu"
+import { ServerFavicon } from "../../../../server-favicon"
+import { OverflowMenu } from "../overflow-menu"
 import { ClientContent } from "./client-content"
 import type { ClientType } from "@/lib/utils/generate-command"
 
 export type InstallTabStates = ClientType
 
-type InstallationTabsProps = {
+type InstallTabsProps = {
 	server: FetchedServer
 	initTab?: ClientType
 	className?: string
@@ -173,13 +173,13 @@ function InstallTabOptions({
 	)
 }
 
-export function InstallationTabs({
+export function Installtabs({
 	server,
 	initTab = "claude",
 	className,
 	onTabChange,
 	configSchema: prefetchedSchema = null,
-}: InstallationTabsProps) {
+}: InstallTabsProps) {
 	const [visibleCount] = useState(4)
 	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
 	const [tabOrder, setTabOrder] = useState<ClientType[]>([

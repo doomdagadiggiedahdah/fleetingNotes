@@ -1,5 +1,5 @@
 import ErrorMessage from "@/components/error-message"
-import { ServerPage } from "@/components/server-page/server-info"
+import { ServerPage } from "@/components/server-page"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/get-server"

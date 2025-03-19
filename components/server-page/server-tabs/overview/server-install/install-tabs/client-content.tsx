@@ -1,9 +1,9 @@
-import { InstallTabContent } from "./install-tab-content"
+import { CommandBlock } from "./blocks/command-block"
 // import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
-import { ConfigForm } from "../shared/config-form"
+import { ConfigForm } from "../../../configure/config-form"
 import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
@@ -77,11 +77,7 @@ export function ClientContent({
 		)
 	} else {
 		content = (
-			<InstallTabContent
-				server={server}
-				client={client}
-				config={configValues}
-			/>
+			<CommandBlock server={server} client={client} config={configValues} />
 		)
 	}
 

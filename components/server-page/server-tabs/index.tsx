@@ -2,13 +2,13 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { Suspense } from "react"
-import { AboutPanel } from "./about-tab"
-import { ApiPanel } from "./api-tab"
-import { DeploymentsPanel } from "./deployments/deployments-tab"
-import { SettingsPanel } from "./settings/settings-tab"
+import { OverviewTab } from "./overview"
+import { ApiTab } from "./api"
+import { DeploymentsTab } from "./deployments"
+import { SettingsTab } from "./settings"
 import { ServerTabsNav } from "./tabs-nav"
-import { ToolsPanelSkeleton } from "./tools-tab/skeleton"
-import { ToolPanelContainer } from "./tools-tab/tool-container"
+import { ToolsPanelSkeleton } from "./tools/skeleton"
+import { ToolPanelContainer } from "./tools/tool-container"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -29,7 +29,7 @@ export function ServerTabs({
 
 				{/* Content Grid */}
 				<TabsContent value="about">
-					{activeTab === "about" && <AboutPanel server={server} />}
+					{activeTab === "about" && <OverviewTab server={server} />}
 				</TabsContent>
 
 				<TabsContent value="tools">
@@ -41,14 +41,14 @@ export function ServerTabs({
 				</TabsContent>
 
 				<TabsContent value="api">
-					{activeTab === "api" && <ApiPanel server={server} />}
+					{activeTab === "api" && <ApiTab server={server} />}
 				</TabsContent>
 
 				<TabsContent value="deployments">
-					{activeTab === "deployments" && <DeploymentsPanel server={server} />}
+					{activeTab === "deployments" && <DeploymentsTab server={server} />}
 				</TabsContent>
 				<TabsContent value="settings">
-					{activeTab === "settings" && <SettingsPanel server={server} />}
+					{activeTab === "settings" && <SettingsTab server={server} />}
 				</TabsContent>
 			</Tabs>
 		</div>

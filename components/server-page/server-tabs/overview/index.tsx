@@ -1,6 +1,6 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { ServerInstallation } from "../server-installation"
-import { ServerStats } from "../server-stats"
+import { ServerInstall } from "./server-install"
+import { ServerStats } from "./server-stats"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Wrench } from "lucide-react"
 import Link from "next/link"
@@ -8,7 +8,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { CodeBlock } from "@/components/docs/code-block"
 import type { JSONSchema } from "@/lib/types/server"
 
-interface ReadingPanelProps {
+interface OverviewTabProps {
 	server: FetchedServer
 	configSchema?: JSONSchema | null
 }
@@ -107,7 +107,7 @@ const ToolsPreview = ({
 	)
 }
 
-export function AboutPanel({ server }: ReadingPanelProps) {
+export function OverviewTab({ server }: OverviewTabProps) {
 	const tools = (server.tools as Tool[]) ?? []
 
 	return (
@@ -127,7 +127,7 @@ export function AboutPanel({ server }: ReadingPanelProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstallation server={server} />
+					<ServerInstall server={server} />
 					<ServerStats server={server} serverId={server.qualifiedName} />
 				</div>
 			</div>

@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
-import { AuthCommandBlock } from "./auth-command-block"
+import { AuthBlock } from "./auth-block"
 import { Sparkles } from "lucide-react"
 
 interface CursorBlockProps {
@@ -44,7 +44,7 @@ export const CursorBlock = ({
 							/>
 							Mac/Linux
 						</div>
-						<AuthCommandBlock
+						<AuthBlock
 							command={unixCommand.replace("install", "run")}
 							serverQualifiedName={serverQualifiedName}
 						/>
@@ -60,14 +60,14 @@ export const CursorBlock = ({
 						<div className="text-xs mb-3 text-muted-foreground">
 							We&apos;re actively working on improving Windows support!
 						</div>
-						<AuthCommandBlock
+						<AuthBlock
 							command={windowsCmdCommand.replace("install", "run")}
 							serverQualifiedName={serverQualifiedName}
 						/>
 						<div className="text-xs mt-2 mb-3 text-muted-foreground">
 							If the above doesn&apos;t work, try this alternative:
 						</div>
-						<AuthCommandBlock
+						<AuthBlock
 							command={windowsCmdFullCommand.replace("install", "run")}
 							serverQualifiedName={serverQualifiedName}
 						/>
@@ -76,7 +76,7 @@ export const CursorBlock = ({
 			</TabsContent>
 			<TabsContent value="new">
 				<div className="text-md mb-2">Run this in your terminal:</div>
-				<AuthCommandBlock
+				<AuthBlock
 					command={unixCommand}
 					serverQualifiedName={serverQualifiedName}
 				/>

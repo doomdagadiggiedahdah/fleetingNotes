@@ -6,7 +6,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JsonObject } from "@/lib/types/json"
 import posthog from "posthog-js"
 
-export const JsonConfigBlock = ({
+export const JsonBlock = ({
 	server,
 	cleanedConfig,
 }: {

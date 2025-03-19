@@ -5,7 +5,7 @@ import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
-import { ServerTabs } from "./tabs"
+import { ServerTabs } from "./server-tabs"
 import ServerSearch from "../server-search"
 
 interface Props {

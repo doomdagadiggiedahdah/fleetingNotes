@@ -8,15 +8,12 @@ import { useEffect, useState } from "react"
 // Hardcoded feature flag key
 const AUTH_COMMAND_FEATURE_FLAG = "auth-install-command"
 
-interface AuthCommandBlockProps {
+interface AuthBlock {
 	command: string
 	serverQualifiedName: string
 }
 
-export function AuthCommandBlock({
-	command,
-	serverQualifiedName,
-}: AuthCommandBlockProps) {
+export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [isFeatureEnabled, setIsFeatureEnabled] = useState(false)
 	const isLoggedIn = !!currentSession

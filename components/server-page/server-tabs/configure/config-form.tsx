@@ -1,6 +1,6 @@
 "use client"
 
-import { SchemaForm } from "@/components/server-page/shared/schema-form"
+import { SchemaForm } from "@/components/server-page/server-tabs/configure/schema-form"
 import { saveConfiguration } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"

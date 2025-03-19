@@ -6,7 +6,7 @@ interface Props {
 	server: FetchedServer
 }
 
-export function DeploymentsPanel({ server }: Props) {
+export function DeploymentsTab({ server }: Props) {
 	return (
 		<div>
 			<div className="flex justify-between items-center">

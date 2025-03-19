@@ -10,15 +10,15 @@ import {
 } from "lucide-react"
 import posthog from "posthog-js"
 import type { JsonObject } from "@/lib/types/json"
-import { AuthCommandBlock } from "./auth-command-block"
+import { AuthBlock } from "./auth-block"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
-import { JsonConfigBlock } from "./json-block"
+import { JsonBlock } from "./json-block"
 import { CursorBlock } from "./cursor-block"
 
-export const InstallTabContent = ({
+export const CommandBlock = ({
 	server,
 	client,
 	config,
@@ -214,7 +214,7 @@ export const InstallTabContent = ({
 										/>
 										Mac/Linux
 									</div>
-									<AuthCommandBlock
+									<AuthBlock
 										command={unixCommand}
 										serverQualifiedName={server.qualifiedName}
 									/>
@@ -230,21 +230,21 @@ export const InstallTabContent = ({
 									<p className="text-xs mb-3 text-muted-foreground">
 										We&apos;re actively working on improving Windows support!
 									</p>
-									<AuthCommandBlock
+									<AuthBlock
 										command={windowsCmdCommand}
 										serverQualifiedName={server.qualifiedName}
 									/>
 									<p className="text-xs mt-2 mb-3 text-muted-foreground">
 										If the above doesn&apos;t work, try this alternative:
 									</p>
-									<AuthCommandBlock
+									<AuthBlock
 										command={windowsCmdFullCommand}
 										serverQualifiedName={server.qualifiedName}
 									/>
 								</div>
 							</>
 						) : (
-							<AuthCommandBlock
+							<AuthBlock
 								command={unixCommand}
 								serverQualifiedName={server.qualifiedName}
 							/>
@@ -291,7 +291,7 @@ export const InstallTabContent = ({
 								}}
 							/>
 							<p className="text-sm mb-2">Then directly use:</p>
-							<AuthCommandBlock
+							<AuthBlock
 								command={windowsScoopCommand}
 								serverQualifiedName={server.qualifiedName}
 							/>
@@ -300,7 +300,7 @@ export const InstallTabContent = ({
 
 					{client === "cursor" && (
 						<TabsContent value="json">
-							<JsonConfigBlock server={server} cleanedConfig={cleanedConfig} />
+							<JsonBlock server={server} cleanedConfig={cleanedConfig} />
 						</TabsContent>
 					)}
 				</Tabs>

@@ -31,7 +31,7 @@ interface SettingsPanelProps {
 	server: FetchedServer
 }
 
-export function SettingsPanel({ server }: SettingsPanelProps) {
+export function SettingsTab({ server }: SettingsPanelProps) {
 	const router = useRouter()
 	const [isLoading, setIsLoading] = useState(false)
 	const form = useForm<UpdateServer>({
