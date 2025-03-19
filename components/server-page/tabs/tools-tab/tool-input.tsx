@@ -112,6 +112,22 @@ function renderInput(
 					placeholder={value.description}
 				/>
 			)
+		case "number":
+			return (
+				<Input
+					type="number"
+					id={key}
+					placeholder={value.description}
+					value={currentValue === undefined ? "" : String(currentValue)}
+					onChange={(e) => {
+						const rawValue = e.target.value
+						const numberValue = Number(rawValue)
+						const val = rawValue === "" ? undefined : numberValue
+						onChange(val)
+					}}
+					onWheel={(e) => e.target instanceof HTMLElement && e.target.blur()}
+				/>
+			)
 		default:
 			return (
 				<Input
