@@ -107,7 +107,7 @@ const ToolsPreview = ({
 	)
 }
 
-export function AboutPanel({ server, configSchema }: ReadingPanelProps) {
+export function AboutPanel({ server }: ReadingPanelProps) {
 	const tools = (server.tools as Tool[]) ?? []
 
 	return (
@@ -127,7 +127,7 @@ export function AboutPanel({ server, configSchema }: ReadingPanelProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstallation server={server} configSchema={configSchema} />
+					<ServerInstallation server={server} />
 					<ServerStats server={server} serverId={server.qualifiedName} />
 				</div>
 			</div>

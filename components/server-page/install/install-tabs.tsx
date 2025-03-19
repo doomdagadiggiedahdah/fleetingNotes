@@ -206,47 +206,50 @@ export function InstallationTabs({
 		(conn) => "published" in conn && conn.published,
 	)
 
-	// Fetch config schema only if not prefetched
+	// Combine the fetching logic into a single effect
 	useEffect(() => {
-		async function fetchSchema() {
-			if (!prefetchedSchema && server.deploymentUrl) {
-				setIsLoadingSchema(true)
-				try {
-					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
-					if (schemaResult.ok) {
-						setConfigSchema(schemaResult.value)
-					}
-				} catch (error) {
-					console.error("Failed to fetch config schema:", error)
-				} finally {
-					setIsLoadingSchema(false)
+		async function fetchData() {
+			setIsLoadingSchema(true)
+			setIsLoadingSavedConfig(true)
+
+			try {
+				const [schemaResult, configResult] = await Promise.all([
+					!prefetchedSchema && server.deploymentUrl
+						? fetchConfigSchema(server.deploymentUrl)
+						: Promise.resolve({ ok: true, value: prefetchedSchema }),
+					currentSession
+						? getSavedConfig(server.id)
+						: Promise.resolve({ ok: true, value: null }),
+				])
+
+				if (schemaResult.ok) {
+					setConfigSchema(schemaResult.value)
 				}
+				if (configResult.ok) {
+					setSavedConfig(configResult.value)
+				}
+			} catch (error) {
+				console.error("Failed to fetch data:", error)
+			} finally {
+				setIsLoadingSchema(false)
+				setIsLoadingSavedConfig(false)
 			}
 		}
 
-		fetchSchema()
-	}, [server.deploymentUrl, prefetchedSchema])
+		fetchData()
+	}, [currentSession])
 
-	// Fetch saved config when user is logged in
+	// The auto-configure effect can stay as is since it depends on the final schema
 	useEffect(() => {
-		async function fetchSavedConfig() {
-			if (currentSession) {
-				setIsLoadingSavedConfig(true)
-				try {
-					const configResult = await getSavedConfig(server.id)
-					if (configResult.ok) {
-						setSavedConfig(configResult.value)
-					}
-				} catch (error) {
-					console.error("Failed to fetch saved configuration:", error)
-				} finally {
-					setIsLoadingSavedConfig(false)
-				}
+		if (!isClientConfigured && configSchema) {
+			const isEmptySchema =
+				!configSchema.properties ||
+				Object.keys(configSchema.properties).length === 0
+			if (isEmptySchema) {
+				handleClientConfig({}).catch(console.error)
 			}
 		}
-
-		fetchSavedConfig()
-	}, [currentSession, server.id])
+	}, [configSchema, isClientConfigured])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order

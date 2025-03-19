@@ -8,7 +8,7 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
-import { useEffect } from "react"
+import { ClimbingBoxLoader } from "react-spinners"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -35,26 +35,12 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	// Move useEffect to the top of the component
-	useEffect(() => {
-		if (!isClientConfigured && configSchema) {
-			const isEmptySchema =
-				!configSchema.properties ||
-				Object.keys(configSchema.properties).length === 0
-
-			if (isEmptySchema) {
-				// Auto-configure without showing form
-				onClientConfig({}).catch(console.error)
-			}
-		}
-	}, [configSchema, isClientConfigured, onClientConfig])
-
 	// Show loading message with spinner
 	if (isLoading) {
 		return (
-			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
-				<p>Loading configuration</p>
-				<div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+			<div className="flex flex-col items-center justify-center gap-3 py-6 text-muted-foreground">
+				<ClimbingBoxLoader color="currentColor" size={15} />
+				<p className="mt-4 text-md">Loading configuration...</p>
 			</div>
 		)
 	}

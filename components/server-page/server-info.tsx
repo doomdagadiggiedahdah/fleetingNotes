@@ -7,7 +7,6 @@ import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
 import { ServerTabs } from "./tabs"
 import ServerSearch from "../server-search"
-import { prefetchServerConfig } from "./shared/prefetch-schema"
 
 interface Props {
 	server: FetchedServer
@@ -15,9 +14,6 @@ interface Props {
 }
 
 export async function ServerPage({ server, activeTab }: Props) {
-	// Prefetch the server configuration
-	const { configSchema } = await prefetchServerConfig(server)
-
 	return (
 		<>
 			<Container className="mt-4">
@@ -77,11 +73,7 @@ export async function ServerPage({ server, activeTab }: Props) {
 					</div>
 				</div>
 
-				<ServerTabs
-					server={server}
-					activeTab={activeTab}
-					configSchema={configSchema}
-				/>
+				<ServerTabs server={server} activeTab={activeTab} />
 			</Container>
 		</>
 	)

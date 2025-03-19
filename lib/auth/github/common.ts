@@ -9,7 +9,7 @@ export interface GithubRepository {
 
 export type GithubAccount =
 	| components["schemas"]["simple-user"]
-	| components["schemas"]["organization"]
+	// | components["schemas"]["organization"]
 // TODO: Support enterprise?
 
 export interface GithubUser {
