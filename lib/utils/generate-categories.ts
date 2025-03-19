@@ -16,6 +16,7 @@ type ServerWithEmbedding = {
 	embedding: number[] | null
 }
 
+type Category = { id: string; title: string; query: string }
 // Clustering parameters
 const MIN_SERVERS_FOR_CLUSTERING = 30
 const UMAP_N_COMPONENTS = 20
@@ -26,6 +27,8 @@ const MIN_CLUSTER_SIZE = 20
 const MIN_SAMPLES = 20
 const ALPHA = 1.0
 const LEAF_SIZE = 40
+
+const MAX_MANUAL_SIMILARITY = 0.8
 
 /**
  * Cluster embeddings using UMAP for dimensionality reduction and HDBSCAN for clustering
@@ -85,6 +88,69 @@ function clusterEmbeddings(
 }
 
 /**
+ * Excludes servers that are similar to manually created categories
+ * to prevent generating duplicate categories
+ * @param allServers All servers with embeddings
+ * @param manualCategories Manually created categories
+ * @param similarServersPerCategory Number of servers to exclude per manual category
+ * @returns Filtered list of servers for clustering
+ */
+async function excludeServersMatchingManualCategories(
+	allServers: ServerWithEmbedding[],
+	curManualCategories: Category[],
+	manualCategoryEmbeddings: {
+		categoryId: string
+		categoryTitle: string
+		embedding: number[]
+	}[],
+	similarServersPerCategory = 10,
+): Promise<ServerWithEmbedding[]> {
+	// Ignore featured category
+	const manualCategories = curManualCategories.filter(
+		(c) => c.title !== "Featured",
+	)
+
+	// If no manual categories, return all servers
+	if (manualCategories.length === 0) {
+		return [...allServers]
+	}
+
+	// Find servers to exclude (most similar to each manual category)
+	const serversToExclude = new Set<string>()
+
+	for (const categoryEmbedding of manualCategoryEmbeddings) {
+		// Calculate similarity scores between category and all servers
+		const serverSimilarities = allServers
+			.filter((server) => server.embedding !== null)
+			.map((server) => ({
+				serverId: server.id,
+				similarity: dotProduct(
+					server.embedding as number[],
+					categoryEmbedding.embedding,
+				),
+			}))
+			.sort((a, b) => b.similarity - a.similarity)
+			.slice(0, similarServersPerCategory)
+
+		// Add top similar servers to exclusion set
+		serverSimilarities.forEach((s) => serversToExclude.add(s.serverId))
+		console.log(
+			`Found ${serverSimilarities.length} servers similar to category "${categoryEmbedding.categoryTitle}"`,
+		)
+	}
+
+	// Filter out servers to exclude
+	const filteredServers = allServers.filter(
+		(server) => !serversToExclude.has(server.id),
+	)
+	console.log(
+		`Excluded ${allServers.length - filteredServers.length} servers similar to manual categories`,
+	)
+
+	return filteredServers
+}
+
+/**
  * Generate categories from server embeddings using UMAP and HDBSCAN clustering
  */
 export async function generateCategoriesFromServerEmbeddings() {
@@ -105,17 +171,54 @@ export async function generateCategoriesFromServerEmbeddings() {
 
 	console.log(`Found ${allServers.length} servers with embeddings`)
 
+	// Fetch manual categories
+	console.log("Fetching manual categories...")
+	const manualCategories = await db
+		.select({
+			id: serverCategories.id,
+			title: serverCategories.title,
+			query: serverCategories.query,
+		})
+		.from(serverCategories)
+		.where(eq(serverCategories.manual, true))
+
+	// Embed all manual category queries
+	const manualCategoryEmbeddings = await Promise.all(
+		manualCategories.map(async (category) => {
+			const embedding = await llm.embeddings.create({
+				input: category.query,
+				model: "text-embedding-3-small",
+			})
+			return {
+				categoryId: category.id,
+				categoryTitle: category.title,
+				embedding: embedding.data[0].embedding,
+			}
+		}),
+	)
+
+	console.log(`Found ${manualCategories.length} manual categories`)
+
 	// If we don't have enough servers, don't generate categories
 	if (allServers.length < MIN_SERVERS_FOR_CLUSTERING) {
 		console.log("Not enough servers for clustering")
 		return { success: false, error: "Not enough servers" }
 	}
 
+	// Filter out servers that are similar to manual categories
+	const serversForClustering = await excludeServersMatchingManualCategories(
+		allServers,
+		manualCategories,
+		manualCategoryEmbeddings,
+	)
+
 	try {
-		console.log(`Using ${allServers.length} valid embeddings for clustering`)
+		console.log(
+			`Using ${serversForClustering.length} valid embeddings for clustering`,
+		)
 
 		// Perform clustering on embeddings
-		const validClusters = clusterEmbeddings(allServers)
+		const validClusters = clusterEmbeddings(serversForClustering)
 
 		console.log(
 			`Processing ${validClusters.length} valid clusters for category generation`,
@@ -128,7 +231,16 @@ export async function generateCategoriesFromServerEmbeddings() {
 					generateCategoryForCluster(clusterServers),
 				),
 			)
-		).filter((c) => c !== null)
+		)
+			.filter((c) => c !== null)
+			// Exclude servers too similar to manual categories
+			.filter((c) =>
+				manualCategoryEmbeddings.every(
+					(category) =>
+						dotProduct(c.queryEmbedding, category.embedding) <
+						MAX_MANUAL_SIMILARITY,
+				),
+			)
 
 		console.log(`Generated ${categoryResults.length} categories from clusters`)
 
@@ -147,8 +259,8 @@ export async function generateCategoriesFromServerEmbeddings() {
 
 				// Insert new category
 				await tx.insert(serverCategories).values({
-					title: category.title,
-					query: category.query,
+					title: category.parsed.title,
+					query: category.parsed.query,
 				})
 			}
 		})
@@ -157,6 +269,8 @@ export async function generateCategoriesFromServerEmbeddings() {
 		return {
 			success: true,
 			categoriesGenerated: categoryResults.length,
+			manualCategories: manualCategories.length,
+			total: categoryResults.length + manualCategories.length,
 		}
 	} catch (error) {
 		console.error("Error generating categories:", error)
@@ -172,7 +286,7 @@ const CategorySchema = z.object({
 	query: z
 		.string()
 		.describe(
-			"Search prompt that defines this category. This prompt will be used for semantic vector search and capture the essence of the category. Do not include examples of specific servers in your prompt. Write 1 descriptive sentence. It should be well capitalized. Don't mention 'Server' or 'MCP' or 'Service' since those are redundant.",
+			"A descriptive search query that defines and captures the essence of the category. Do not include examples of specific servers in your prompt. Don't mention 'Server' or 'MCP' or 'Service' since those are redundant.",
 		),
 	title: z
 		.string()
@@ -226,8 +340,7 @@ Write a concise title and search query that best represents this group of server
 		n: 3,
 	})
 
-	let bestParsed = null
-	let mostSimilarity = MIN_VERIFY_SIMILARITY
+	let best = null
 
 	for (const choice of completion.choices) {
 		const parsed = choice.message.parsed
@@ -250,17 +363,14 @@ Write a concise title and search query that best represents this group of server
 				)
 				.reduce((a, b) => a + b, 0) / serversToCategorize
 
-		if (sim > mostSimilarity) {
-			bestParsed = parsed
-			mostSimilarity = sim
+		if (sim > (best?.sim ?? MIN_VERIFY_SIMILARITY)) {
+			best = { parsed, sim, queryEmbedding: queryEmbedding.data[0].embedding }
 		}
 	}
-	return bestParsed
+	return best
 }
-
-// CLI manual trigger
-import { llm } from "./braintrust"
 import dotenv from "dotenv"
+import { llm } from "./braintrust"
 if (require.main === module) {
 	// Load environment variables from .env.local.development
 	dotenv.config({ path: ".env.local.development" })
@@ -268,7 +378,7 @@ if (require.main === module) {
 		.then((result) => {
 			if (result.success) {
 				console.log(
-					`Successfully generated ${result.categoriesGenerated} categories.`,
+					`Successfully generated ${result.categoriesGenerated} auto categories while preserving ${result.manualCategories} manual categories. Total: ${result.total} categories.`,
 				)
 			} else {
 				console.error(`Failed to generate categories: ${result.error}`)

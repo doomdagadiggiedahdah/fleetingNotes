@@ -11,12 +11,6 @@ export default async function SwimlaneShowcase() {
 	// Get categories from the database
 	const categories = await getRandomCategories()
 
-	categories.splice(0, 0, {
-		id: "featured",
-		title: "Featured",
-		query: "is:deployed",
-	})
-
 	return (
 		<div>
 			{categories.map((category) => (

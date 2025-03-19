@@ -2,7 +2,7 @@
 
 import { db } from "@/db"
 import { serverCategories } from "@/db/schema"
-import { sql } from "drizzle-orm"
+import { desc, sql } from "drizzle-orm"
 
 /**
  * Fetches random categories from the database to be used as search suggestions
@@ -18,7 +18,7 @@ export async function getRandomCategories(limit = 6) {
 			query: serverCategories.query,
 		})
 		.from(serverCategories)
-		.orderBy(serverCategories.priority, sql`RANDOM()`)
+		.orderBy(desc(serverCategories.priority), sql`RANDOM()`)
 		.limit(limit)
 
 	// Return categories' queries for search suggestions
