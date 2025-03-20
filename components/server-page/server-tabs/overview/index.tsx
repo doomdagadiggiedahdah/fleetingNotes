@@ -7,6 +7,8 @@ import Link from "next/link"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { CodeBlock } from "@/components/docs/code-block"
 import type { JSONSchema } from "@/lib/types/server"
+import { Suspense } from "react"
+import { InstallTabsSkeleton } from "./server-install/skeleton"
 
 interface OverviewTabProps {
 	server: FetchedServer
@@ -127,7 +129,9 @@ export function OverviewTab({ server }: OverviewTabProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstall server={server} />
+					<Suspense fallback={<InstallTabsSkeleton />}>
+						<ServerInstall server={server} />
+					</Suspense>
 					<ServerStats server={server} serverId={server.qualifiedName} />
 				</div>
 			</div>

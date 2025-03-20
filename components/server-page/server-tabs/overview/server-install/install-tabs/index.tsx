@@ -12,7 +12,6 @@ import { useAuth } from "@/context/auth-context"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
@@ -176,91 +175,38 @@ export function Installtabs({
 		(conn) => "published" in conn && conn.published,
 	)
 
-	// Effect for fetching config schema
 	useEffect(() => {
-		async function fetchSchema() {
-			setIsLoadingSchema(true)
-
-			try {
-				// Define a proper return type based on the fetchConfigSchema function
-				let schemaResult:
-					| { ok: boolean; value: JSONSchema | null }
-					| { ok: false; error: string }
-
-				// If no deployment URL but has a published stdio connection, use its schema
-				if (!server.deploymentUrl) {
-					const publishedStdioConnection = server.connections.find(
-						(conn) =>
-							conn.type === "stdio" && "published" in conn && conn.published,
-					)
-
-					if (
-						publishedStdioConnection &&
-						"configSchema" in publishedStdioConnection
-					) {
-						schemaResult = {
-							ok: true,
-							value: publishedStdioConnection.configSchema,
-						}
-					} else {
-						schemaResult = { ok: true, value: prefetchedSchema }
+		async function fetchAndConfigureClient() {
+			// Handle saved config fetching
+			if (currentSession) {
+				setIsLoadingSavedConfig(true)
+				try {
+					const configResult = await getSavedConfig(server.id)
+					if (configResult.ok) {
+						setSavedConfig(configResult.value)
 					}
-				} else {
-					// Otherwise use normal flow - fetch from deployment URL or use prefetched
-					schemaResult = await (prefetchedSchema
-						? Promise.resolve({ ok: true, value: prefetchedSchema })
-						: fetchConfigSchema(server.deploymentUrl))
+				} catch (error) {
+					console.error("Failed to fetch saved config:", error)
+				} finally {
+					setIsLoadingSavedConfig(false)
 				}
-
-				if (schemaResult.ok) {
-					setConfigSchema(schemaResult.value)
-				}
-			} catch (error) {
-				console.error("Failed to fetch schema:", error)
-			} finally {
-				setIsLoadingSchema(false)
-			}
-		}
-
-		fetchSchema()
-	}, [server, prefetchedSchema])
-
-	// Effect for fetching saved configuration
-	useEffect(() => {
-		async function fetchSavedConfig() {
-			if (!currentSession) {
+			} else {
 				setSavedConfig(null)
-				return
 			}
 
-			setIsLoadingSavedConfig(true)
-			try {
-				const configResult = await getSavedConfig(server.id)
-
-				if (configResult.ok) {
-					setSavedConfig(configResult.value)
+			// If empty config, then configure
+			if (!isClientConfigured && configSchema) {
+				const isEmptySchema =
+					!configSchema.properties ||
+					Object.keys(configSchema.properties).length === 0
+				if (isEmptySchema) {
+					await handleClientConfig({})
 				}
-			} catch (error) {
-				console.error("Failed to fetch saved config:", error)
-			} finally {
-				setIsLoadingSavedConfig(false)
 			}
 		}
 
-		fetchSavedConfig()
-	}, [currentSession, server.id])
-
-	// The auto-configure effect can stay as is since it depends on the final schema
-	useEffect(() => {
-		if (!isClientConfigured && configSchema) {
-			const isEmptySchema =
-				!configSchema.properties ||
-				Object.keys(configSchema.properties).length === 0
-			if (isEmptySchema) {
-				handleClientConfig({}).catch(console.error)
-			}
-		}
-	}, [configSchema, isClientConfigured])
+		fetchAndConfigureClient()
+	}, [currentSession, configSchema, isClientConfigured])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
