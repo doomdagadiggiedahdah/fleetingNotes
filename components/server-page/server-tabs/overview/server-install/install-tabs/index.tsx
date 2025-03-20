@@ -51,69 +51,39 @@ function InstallTabOptions({
 	onTabChange: (tab: ClientType) => void
 	onOverflowSelect: (tab: ClientType) => void
 }) {
-	const tabOptions: TabOption[] = [
-		{
-			value: "claude",
-			label: "Claude",
-			icon: <SiAnthropic className="w-4 h-4" />,
+	// Client configuration data
+	const clientsConfig: Record<
+		ClientType,
+		{ label: string; homepage?: string }
+	> = {
+		claude: { label: "Claude" },
+		cursor: { label: "Cursor", homepage: "https://cursor.sh" },
+		windsurf: { label: "Windsurf", homepage: "https://codeium.com" },
+		cline: { label: "Cline", homepage: "http://cline.bot" },
+		witsy: { label: "Witsy", homepage: "https://witsyai.com" },
+		enconvo: { label: "Enconvo", homepage: "https://www.enconvo.com" },
+		goose: { label: "Goose", homepage: "https://block.github.io/goose/" },
+		spinai: { label: "SpinAI", homepage: "https://docs.spinai.dev/" },
+	}
+
+	const tabOptions: TabOption[] = Object.entries(clientsConfig).map(
+		([value, config]) => {
+			const clientType = value as ClientType
+			return {
+				value: clientType,
+				label: config.label,
+				icon:
+					clientType === "claude" ? (
+						<SiAnthropic className="w-4 h-4" />
+					) : (
+						<ServerFavicon
+							homepage={config.homepage || ""}
+							displayName={config.label}
+						/>
+					),
+			}
 		},
-		{
-			value: "cursor",
-			label: "Cursor",
-			icon: <ServerFavicon homepage="https://cursor.sh" displayName="Cursor" />,
-		},
-		{
-			value: "windsurf",
-			label: "Windsurf",
-			icon: (
-				<ServerFavicon homepage="https://codeium.com" displayName="Windsurf" />
-			),
-		},
-		{
-			value: "cline",
-			label: "Cline",
-			icon: (
-				<ServerFavicon homepage="http://cline.bot" displayName="Windsurf" />
-			),
-		},
-		{
-			value: "witsy",
-			label: "Witsy",
-			icon: (
-				<ServerFavicon homepage="https://witsyai.com" displayName="Windsurf" />
-			),
-		},
-		{
-			value: "enconvo",
-			label: "Enconvo",
-			icon: (
-				<ServerFavicon
-					homepage="https://www.enconvo.com"
-					displayName="Enconvo"
-				/>
-			),
-		},
-		{
-			value: "goose",
-			label: "Goose",
-			icon: (
-				<ServerFavicon
-					homepage="https://block.github.io/goose/"
-					displayName="Goose"
-				/>
-			),
-		},
-		{
-			value: "spinai",
-			label: "SpinAI",
-			icon: (
-				<ServerFavicon
-					homepage="https://docs.spinai.dev/"
-					displayName="SpinAI"
-				/>
-			),
-		},
-	]
+	)
 
 	const mainTabs = tabOrder.slice(0, visibleCount)
 	const overflowTabs = tabOrder.slice(visibleCount)
@@ -206,38 +176,79 @@ export function Installtabs({
 		(conn) => "published" in conn && conn.published,
 	)
 
-	// Combine the fetching logic into a single effect
+	// Effect for fetching config schema
 	useEffect(() => {
-		async function fetchData() {
+		async function fetchSchema() {
 			setIsLoadingSchema(true)
-			setIsLoadingSavedConfig(true)
 
 			try {
-				const [schemaResult, configResult] = await Promise.all([
-					!prefetchedSchema && server.deploymentUrl
-						? fetchConfigSchema(server.deploymentUrl)
-						: Promise.resolve({ ok: true, value: prefetchedSchema }),
-					currentSession
-						? getSavedConfig(server.id)
-						: Promise.resolve({ ok: true, value: null }),
-				])
+				// Define a proper return type based on the fetchConfigSchema function
+				let schemaResult:
+					| { ok: boolean; value: JSONSchema | null }
+					| { ok: false; error: string }
+
+				// If no deployment URL but has a published stdio connection, use its schema
+				if (!server.deploymentUrl) {
+					const publishedStdioConnection = server.connections.find(
+						(conn) =>
+							conn.type === "stdio" && "published" in conn && conn.published,
+					)
+
+					if (
+						publishedStdioConnection &&
+						"configSchema" in publishedStdioConnection
+					) {
+						schemaResult = {
+							ok: true,
+							value: publishedStdioConnection.configSchema,
+						}
+					} else {
+						schemaResult = { ok: true, value: prefetchedSchema }
+					}
+				} else {
+					// Otherwise use normal flow - fetch from deployment URL or use prefetched
+					schemaResult = await (prefetchedSchema
+						? Promise.resolve({ ok: true, value: prefetchedSchema })
+						: fetchConfigSchema(server.deploymentUrl))
+				}
 
 				if (schemaResult.ok) {
 					setConfigSchema(schemaResult.value)
 				}
+			} catch (error) {
+				console.error("Failed to fetch schema:", error)
+			} finally {
+				setIsLoadingSchema(false)
+			}
+		}
+
+		fetchSchema()
+	}, [server, prefetchedSchema])
+
+	// Effect for fetching saved configuration
+	useEffect(() => {
+		async function fetchSavedConfig() {
+			if (!currentSession) {
+				setSavedConfig(null)
+				return
+			}
+
+			setIsLoadingSavedConfig(true)
+			try {
+				const configResult = await getSavedConfig(server.id)
+
 				if (configResult.ok) {
 					setSavedConfig(configResult.value)
 				}
 			} catch (error) {
-				console.error("Failed to fetch data:", error)
+				console.error("Failed to fetch saved config:", error)
 			} finally {
-				setIsLoadingSchema(false)
 				setIsLoadingSavedConfig(false)
 			}
 		}
 
-		fetchData()
-	}, [currentSession])
+		fetchSavedConfig()
+	}, [currentSession, server.id])
 
 	// The auto-configure effect can stay as is since it depends on the final schema
 	useEffect(() => {
@@ -302,118 +313,22 @@ export function Installtabs({
 				onTabChange={setActiveTab}
 				onOverflowSelect={handleOverflowSelect}
 			/>
-			<TabsContent value="claude">
-				<ClientContent
-					server={server}
-					client="claude"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="cursor">
-				<ClientContent
-					server={server}
-					client="cursor"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="windsurf">
-				<ClientContent
-					server={server}
-					client="windsurf"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="cline">
-				<ClientContent
-					server={server}
-					client="cline"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="witsy">
-				<ClientContent
-					server={server}
-					client="witsy"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="enconvo">
-				<ClientContent
-					server={server}
-					client="enconvo"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="goose">
-				<ClientContent
-					server={server}
-					client="goose"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
-			<TabsContent value="spinai">
-				<ClientContent
-					server={server}
-					client="spinai"
-					configSchema={configSchema}
-					isLoading={isLoadingSchema || isLoadingSavedConfig}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-				/>
-			</TabsContent>
+			{tabOrder.map((clientType) => (
+				<TabsContent key={clientType} value={clientType}>
+					<ClientContent
+						server={server}
+						client={clientType}
+						configSchema={configSchema}
+						isLoading={isLoadingSchema || isLoadingSavedConfig}
+						isClientConfigured={isClientConfigured}
+						configValues={configValues}
+						onClientConfig={handleClientConfig}
+						savedConfig={savedConfig}
+						currentSession={currentSession}
+						setIsSignInOpen={setIsSignInOpen}
+					/>
+				</TabsContent>
+			))}
 		</Tabs>
 	)
 }
