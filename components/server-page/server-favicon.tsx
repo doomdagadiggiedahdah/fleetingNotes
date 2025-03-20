@@ -1,5 +1,4 @@
 "use client"
-import { useState, useEffect } from "react"
 
 interface ServerFaviconProps {
 	homepage: string | null
@@ -12,49 +11,24 @@ export function ServerFavicon({
 	displayName,
 	className = "w-4 h-4",
 }: ServerFaviconProps) {
-	const [imgSrc, setImgSrc] = useState<string | null>(null)
-	const [isLoaded, setIsLoaded] = useState(false)
+	if (!homepage) return null
 
-	useEffect(() => {
-		if (!homepage) return
+	try {
+		const url = new URL(homepage)
+		// Use DuckDuckGo directly for the favicon
+		const faviconUrl = `https://icons.duckduckgo.com/ip3/${url.hostname}.ico`
 
-		try {
-			const hostname = new URL(homepage).hostname
-			setImgSrc(`https://api.faviconkit.com/${hostname}/`)
-		} catch (e) {
-			console.error("Invalid URL:", homepage)
-		}
-	}, [homepage])
-
-	if (!homepage || !imgSrc) return null
-
-	const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-		try {
-			const hostname = new URL(homepage).hostname
-
-			if (e.currentTarget.src.includes("faviconkit")) {
-				setImgSrc(`https://icons.duckduckgo.com/ip3/${hostname}.ico`)
-			} else if (e.currentTarget.src.includes("duckduckgo")) {
-				setImgSrc(`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`)
-			} else {
-				// Hide after all attempts failed
-				setImgSrc(null)
-			}
-		} catch (e) {
-			setImgSrc(null)
-		}
+		return (
+			<img
+				src={faviconUrl}
+				alt={displayName}
+				className={`${className} rounded-sm bg-background/50 backdrop-blur-sm p-[1px]`}
+				style={{
+					filter: "contrast(1.1) brightness(1.1)",
+				}}
+			/>
+		)
+	} catch (e) {
+		return null
 	}
-
-	return imgSrc ? (
-		<img
-			src={imgSrc}
-			onError={handleError}
-			onLoad={() => setIsLoaded(true)}
-			alt={displayName}
-			className={`${className} rounded-sm bg-background/50 backdrop-blur-sm p-[1px] ${!isLoaded ? "invisible" : "visible"}`}
-			style={{
-				filter: "contrast(1.1) brightness(1.1)",
-			}}
-		/>
-	) : null
 }
