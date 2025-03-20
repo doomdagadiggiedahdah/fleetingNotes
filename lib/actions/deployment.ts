@@ -42,6 +42,7 @@ import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
 import { fetchServerTools } from "../utils/get-tools"
 import type { ZodError } from "zod"
+import { fetchConfigSchema } from "../utils/fetch-config"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -398,46 +399,59 @@ export async function createDeploymentForServer(
 						])
 
 						const backgroundUpdate = async () => {
-							// Populate `tools` in server based on call to server
-							// If there's a valid deployment URL, fetch the tools
-							const toolResult = await fetchServerTools(deploymentUrl)
+							// Populate `configSchema` and `tools` in server based on call to server
 
-							if (toolResult.ok && toolResult.value.tools.length > 0) {
-								// Format the tools as a JSON string for the embedding
-								await db
-									.update(servers)
-									.set({
-										tools: toolResult.value.tools,
-									})
-									.where(eq(servers.id, server.id))
+							// Run both API calls in parallel
+							const [configSchemaResult, toolResult] = await Promise.all([
+								fetchConfigSchema(deploymentUrl),
+								fetchServerTools(deploymentUrl),
+							])
+
+							// Prepare update data based on results
+							const updateData: Partial<typeof servers.$inferInsert> = {}
+
+							if (configSchemaResult.ok) {
+								updateData.configSchema = configSchemaResult.value
 							}
 
-							try {
-								const paths = [`/`, `/server/${server.qualifiedName}`]
+							if (toolResult.ok && toolResult.value.tools.length > 0) {
+								updateData.tools = toolResult.value.tools
+							}
 
-								// For Vercel deployments, use VERCEL_URL environment variable
-								// This code always runs server-side
-								const baseUrl =
-									process.env.NEXT_PUBLIC_BASE_URL ||
-									(process.env.VERCEL_URL
-										? `https://${process.env.VERCEL_URL}`
-										: "http://localhost:3000")
+							// Perform a single update if we have data to update
+							if (Object.keys(updateData).length > 0) {
+								await db
+									.update(servers)
+									.set(updateData)
+									.where(eq(servers.id, server.id))
 
-								// Trigger revalidation for each path
-								await Promise.all(
-									paths.map(async (path) => {
-										await fetch(`${baseUrl}/api/revalidate`, {
-											method: "POST",
-											body: JSON.stringify({ path }),
-											headers: {
-												"Content-Type": "application/json",
-												Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
-											},
-										})
-									}),
-								)
-							} catch (e) {
-								console.error("Failed to trigger revalidation:", e)
+								try {
+									const paths = [`/`, `/server/${server.qualifiedName}`]
+
+									// For Vercel deployments, use VERCEL_URL environment variable
+									// This code always runs server-side
+									const baseUrl =
+										process.env.NEXT_PUBLIC_BASE_URL ||
+										(process.env.VERCEL_PROJECT_PRODUCTION_URL
+											? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+											: "http://localhost:3000")
+
+									// Trigger revalidation for each path
+									await Promise.all(
+										paths.map(async (path) => {
+											await fetch(`${baseUrl}/api/revalidate`, {
+												method: "POST",
+												body: JSON.stringify({ path }),
+												headers: {
+													"Content-Type": "application/json",
+													Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
+												},
+											})
+										}),
+									)
+								} catch (e) {
+									console.error("Failed to trigger revalidation:", e)
+								}
 							}
 						}
 						waitUntil(backgroundUpdate())

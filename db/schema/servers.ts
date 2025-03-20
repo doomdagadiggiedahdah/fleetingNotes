@@ -48,6 +48,8 @@ export const servers = pgTable(
 
 		// List of tools available for this server. Derived from MCP call data and populated upon deployment.
 		tools: jsonb("tools"),
+		// Configuration schema for this server. Derived from MCP call data and populated upon deployment.
+		configSchema: jsonb("config_schema"),
 
 		// Search embedding
 		embedding: vector("embedding", { dimensions: 1536 }),
