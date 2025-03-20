@@ -11,13 +11,11 @@ export function InstallWarning() {
 				"p-4 space-y-2",
 			)}
 		>
-			<div className="flex items-center gap-3">
-				<AlertTriangle className="h-6 w-6 text-yellow-500" />
-				<AlertDescription>
-					The author hasn&apos;t published this server yet. Once published, it
-					will be available for installation.
-				</AlertDescription>
-			</div>
+			<AlertTriangle className="h-6 w-6 text-yellow-500" />
+			<AlertDescription>
+				The author hasn&apos;t published this server yet. Once published, it
+				will be available for installation.
+			</AlertDescription>
 		</Alert>
 	)
 }

@@ -18,7 +18,7 @@ export async function ServerInstall({
 	onTabChange,
 }: Props) {
 	// Prefetch config schema
-	const { configSchema } = await prefetchServerConfig(server);
+	const { configSchema } = await prefetchServerConfig(server)
 
 	return (
 		<div>

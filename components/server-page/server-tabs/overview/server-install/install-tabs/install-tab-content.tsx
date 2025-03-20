@@ -1,5 +1,5 @@
 import { CommandBlock } from "./blocks/command-block"
-// import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -8,7 +8,7 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
-import { ClimbingBoxLoader } from "react-spinners"
+// import { ClimbingBoxLoader } from "react-spinners"
 
 interface ClientContentProps {
 	server: FetchedServer
@@ -35,25 +35,21 @@ export function ClientContent({
 	currentSession,
 	setIsSignInOpen,
 }: ClientContentProps) {
-	// Show loading message with spinner
-	if (isLoading) {
-		return (
-			<div className="flex flex-col items-center justify-center gap-3 py-6 text-muted-foreground">
-				<ClimbingBoxLoader color="currentColor" size={15} />
-				<p className="mt-4 text-md">Loading configuration...</p>
-			</div>
-		)
-	}
-
-	// If no schema available, show error message
+	// Show error message first if no schema available
 	if (!configSchema) {
 		return (
-			<div className="flex items-center justify-center gap-3 py-6 text-muted-foreground">
+			<div className="flex flex-col items-center justify-center gap-3 py-6 text-muted-foreground">
 				<CloudOff className="h-8 w-8" />
-				<p>
-					Sorry, something is off...
-					<br /> Please try again later!
-				</p>
+				<div className="text-center">
+					<h3 className="text-xl font-semibold mb-2">Uh oh!</h3>
+					<p>There was an error in loading the configuration.</p>
+					<button
+						onClick={() => window.location.reload()}
+						className="text-blue-500 hover:underline mt-2"
+					>
+						Reload this page
+					</button>
+				</div>
 			</div>
 		)
 	}
@@ -81,7 +77,12 @@ export function ClientContent({
 		)
 	}
 
-	// If user is not logged in, wrap content in login blur
+	// Show loading state before checking session
+	if (isLoading) {
+		return <Skeleton className="h-28 w-full rounded-md" />
+	}
+
+	// Only check session after loading is complete
 	if (!currentSession) {
 		return (
 			<LoginBlur
@@ -93,6 +94,5 @@ export function ClientContent({
 		)
 	}
 
-	// Otherwise, return the content directly
 	return content
 }

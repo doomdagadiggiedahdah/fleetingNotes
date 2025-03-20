@@ -1,25 +1,16 @@
 "use client"
 
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "../install-warning"
-import { ServerFavicon } from "../../../../server-favicon"
-import { OverflowMenu } from "../overflow-menu"
-import { ClientContent } from "./client-content"
+import { ClientContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/utils/generate-command"
+import { InstallTabOptions } from "./install-tab-options"
 
 export type InstallTabStates = ClientType
 
@@ -29,117 +20,6 @@ type InstallTabsProps = {
 	className?: string
 	onTabChange?: (tab: ClientType) => void
 	configSchema?: JSONSchema | null
-}
-
-type TabOption = {
-	value: ClientType
-	label: string
-	icon: React.ReactNode
-}
-
-function InstallTabOptions({
-	activeTab,
-	tabOrder,
-	visibleCount,
-	onTabChange,
-	onOverflowSelect,
-}: {
-	activeTab: ClientType
-	tabOrder: ClientType[]
-	visibleCount: number
-	onTabChange: (tab: ClientType) => void
-	onOverflowSelect: (tab: ClientType) => void
-}) {
-	// Client configuration data
-	const clientsConfig: Record<
-		ClientType,
-		{ label: string; homepage?: string }
-	> = {
-		claude: { label: "Claude" },
-		cursor: { label: "Cursor", homepage: "https://cursor.sh" },
-		windsurf: { label: "Windsurf", homepage: "https://codeium.com" },
-		cline: { label: "Cline", homepage: "http://cline.bot" },
-		witsy: { label: "Witsy", homepage: "https://witsyai.com" },
-		enconvo: { label: "Enconvo", homepage: "https://www.enconvo.com" },
-		goose: { label: "Goose", homepage: "https://block.github.io/goose/" },
-		spinai: { label: "SpinAI", homepage: "https://docs.spinai.dev/" },
-	}
-
-	const tabOptions: TabOption[] = Object.entries(clientsConfig).map(
-		([value, config]) => {
-			const clientType = value as ClientType
-			return {
-				value: clientType,
-				label: config.label,
-				icon:
-					clientType === "claude" ? (
-						<SiAnthropic className="w-4 h-4" />
-					) : (
-						<ServerFavicon
-							homepage={config.homepage || ""}
-							displayName={config.label}
-						/>
-					),
-			}
-		},
-	)
-
-	const mainTabs = tabOrder.slice(0, visibleCount)
-	const overflowTabs = tabOrder.slice(visibleCount)
-
-	const getTabOption = (value: ClientType) =>
-		tabOptions.find((tab) => tab.value === value)!
-
-	return (
-		<div className="border-b border-border mb-3">
-			<div className="lg:hidden">
-				<Select
-					value={activeTab}
-					onValueChange={(value) => onTabChange(value as ClientType)}
-				>
-					<SelectTrigger className="w-[150px]">
-						<SelectValue>
-							<span className="flex items-center gap-2">
-								{tabOptions.find((tab) => tab.value === activeTab)?.icon}
-								{tabOptions.find((tab) => tab.value === activeTab)?.label}
-							</span>
-						</SelectValue>
-					</SelectTrigger>
-					<SelectContent>
-						{tabOptions.map((tab) => (
-							<SelectItem key={tab.value} value={tab.value}>
-								<span className="flex items-center gap-2">
-									{tab.icon}
-									{tab.label}
-								</span>
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-			<div className="hidden lg:flex w-full justify-start items-center">
-				<TabsList>
-					{mainTabs.map((tabValue) => {
-						const tab = getTabOption(tabValue)
-						return (
-							<TabsTrigger
-								key={tab.value}
-								value={tab.value}
-								className="flex items-center gap-2"
-							>
-								{tab.icon}
-								{tab.label}
-							</TabsTrigger>
-						)
-					})}
-				</TabsList>
-				<OverflowMenu
-					tabs={overflowTabs.map(getTabOption)}
-					onSelect={onOverflowSelect}
-				/>
-			</div>
-		</div>
-	)
 }
 
 export function Installtabs({
@@ -162,10 +42,6 @@ export function Installtabs({
 		"spinai",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [configSchema, setConfigSchema] = useState<JSONSchema | null>(
-		prefetchedSchema,
-	)
-	const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
@@ -174,10 +50,31 @@ export function Installtabs({
 	const isAnyConnectionPublished = server.connections.some(
 		(conn) => "published" in conn && conn.published,
 	)
+	// const [configSchema, setConfigSchema] = useState<JSONSchema | null>(
+	// 	prefetchedSchema,
+	// )
+	// const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 
+	const handleClientConfig = async (values: JsonObject) => {
+		// Get defaults while preserving schema property order
+		const finalValues = Object.entries(
+			prefetchedSchema?.properties || {},
+		).reduce((acc, [key, field]: [string, JSONSchema]) => {
+			// Use user value if provided and non-empty, otherwise use default
+			const userValue = values[key]
+			acc[key] =
+				userValue !== "" && userValue !== undefined ? userValue : field.default
+			return acc
+		}, {} as JsonObject)
+
+		setConfigValues(finalValues)
+		setIsClientConfigured(true)
+		return Promise.resolve()
+	}
+
+	// Effect for handling saved config
 	useEffect(() => {
-		async function fetchAndConfigureClient() {
-			// Handle saved config fetching
+		async function fetchSavedConfig() {
 			if (currentSession) {
 				setIsLoadingSavedConfig(true)
 				try {
@@ -193,40 +90,26 @@ export function Installtabs({
 			} else {
 				setSavedConfig(null)
 			}
+		}
 
-			// If empty config, then configure
-			if (!isClientConfigured && configSchema) {
+		fetchSavedConfig()
+	}, [currentSession])
+
+	// Effect for handling empty schema configuration
+	useEffect(() => {
+		async function configureEmptySchema() {
+			if (!isClientConfigured && prefetchedSchema) {
 				const isEmptySchema =
-					!configSchema.properties ||
-					Object.keys(configSchema.properties).length === 0
+					!prefetchedSchema.properties ||
+					Object.keys(prefetchedSchema.properties).length === 0
 				if (isEmptySchema) {
 					await handleClientConfig({})
 				}
 			}
 		}
 
-		fetchAndConfigureClient()
-	}, [currentSession, configSchema, isClientConfigured])
-
-	const handleClientConfig = async (values: JsonObject) => {
-		// Get defaults while preserving schema property order
-		const finalValues = Object.entries(configSchema?.properties || {}).reduce(
-			(acc, [key, field]: [string, JSONSchema]) => {
-				// Use user value if provided and non-empty, otherwise use default
-				const userValue = values[key]
-				acc[key] =
-					userValue !== "" && userValue !== undefined
-						? userValue
-						: field.default
-				return acc
-			},
-			{} as JsonObject,
-		)
-
-		setConfigValues(finalValues)
-		setIsClientConfigured(true)
-		return Promise.resolve()
-	}
+		configureEmptySchema()
+	}, [prefetchedSchema, isClientConfigured])
 
 	const handleOverflowSelect = (selected: ClientType) => {
 		const newOrder = [...tabOrder]
@@ -264,8 +147,8 @@ export function Installtabs({
 					<ClientContent
 						server={server}
 						client={clientType}
-						configSchema={configSchema}
-						isLoading={isLoadingSchema || isLoadingSavedConfig}
+						configSchema={prefetchedSchema}
+						isLoading={isLoadingSavedConfig}
 						isClientConfigured={isClientConfigured}
 						configValues={configValues}
 						onClientConfig={handleClientConfig}
