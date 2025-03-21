@@ -6,7 +6,7 @@ import { getSavedConfig } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { InstallWarning } from "../install-warning"
 import { ClientContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/utils/generate-command"
@@ -55,6 +55,9 @@ export function Installtabs({
 	// )
 	// const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 
+	// Add a ref to track if we've already fetched config for this session
+	const hasFetchedConfig = useRef(false)
+
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
 		const finalValues = Object.entries(
@@ -75,7 +78,8 @@ export function Installtabs({
 	// Effect for handling saved config
 	useEffect(() => {
 		async function fetchSavedConfig() {
-			if (currentSession) {
+			// Only fetch if we have a session and haven't already fetched
+			if (currentSession && !hasFetchedConfig.current && !savedConfig) {
 				setIsLoadingSavedConfig(true)
 				try {
 					const configResult = await getSavedConfig(server.id)
@@ -86,14 +90,18 @@ export function Installtabs({
 					console.error("Failed to fetch saved config:", error)
 				} finally {
 					setIsLoadingSavedConfig(false)
+					// Mark as fetched so we don't do it again
+					hasFetchedConfig.current = true
 				}
-			} else {
+			} else if (!currentSession) {
+				// Reset these when logged out
 				setSavedConfig(null)
+				hasFetchedConfig.current = false
 			}
 		}
 
 		fetchSavedConfig()
-	}, [currentSession])
+	}, [currentSession, server.id, savedConfig])
 
 	// Effect for handling empty schema configuration
 	useEffect(() => {
