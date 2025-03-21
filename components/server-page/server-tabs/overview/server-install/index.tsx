@@ -1,10 +1,6 @@
-/**
- * This component is rendered server side
- * with a suspense boundary in its parent
- */
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { Installtabs, type InstallTabStates } from "./install-tabs"
-import { prefetchServerConfig } from "@/components/server-page/server-tabs/configure/prefetch-schema"
+import { getServerConfigSchema } from "@/components/server-page/server-tabs/configure/prefetch-schema"
 
 type Props = {
 	server: FetchedServer
@@ -12,13 +8,13 @@ type Props = {
 	onTabChange?: (tab: InstallTabStates) => void
 }
 
-export async function ServerInstall({
+export function ServerInstall({
 	server,
 	initTab = "claude",
 	onTabChange,
 }: Props) {
 	// Prefetch config schema
-	const { configSchema } = await prefetchServerConfig(server)
+	const configSchema = getServerConfigSchema(server)
 
 	return (
 		<div>

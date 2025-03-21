@@ -3,6 +3,7 @@ import { deployments, serverRepos, servers } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
 import { and, eq, isNotNull, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
+import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 
 // Private endpoint to redeploy all servers
 export async function POST(request: Request) {
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
 			.select({
 				server: servers,
 				serverRepo: serverRepos,
-				url: sql`(
+				url: sql<string>`(
 					SELECT ${deployments.deploymentUrl}
 					FROM ${deployments}
 					WHERE ${deployments.serverId} = "servers"."id"
@@ -49,18 +50,12 @@ export async function POST(request: Request) {
 
 		for (const { server, serverRepo, url } of serversToDeploy) {
 			if (url && onlyFailing) {
-				// Check if the deployment is still running. If it is, we skip.
+				// Check if the deployment is active. If it is, we skip.
 				console.log("Checking...", url)
 				try {
-					const response = await fetch(`${url}/.well-known/mcp/smithery.json`, {
-						method: "GET",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						signal: AbortSignal.timeout(10000),
-					})
-					if (response.status === 200) {
-						console.log("Deployment is still running, skipping")
+					const configSchemaResult = await fetchConfigSchema(url)
+					if (configSchemaResult.ok) {
+						console.log("Deployment is active, skipping")
 						continue
 					}
 				} catch (e) {

@@ -1,4 +1,4 @@
-import { ConnectionSchema } from "@/lib/types/server"
+import { ConnectionSchema, JSONSchemaSchema } from "@/lib/types/server"
 import { sql } from "drizzle-orm"
 import {
 	boolean,
@@ -73,6 +73,8 @@ export const insertServerSchema = createInsertSchema(servers).extend({
 
 export const selectServerSchema = createSelectSchema(servers).extend({
 	connections: z.array(ConnectionSchema),
+	configSchema: JSONSchemaSchema.nullable(),
+	tools: z.array(z.any()).nullable(),
 })
 
 export type Server = z.infer<typeof selectServerSchema>

@@ -14,13 +14,13 @@ import { eq, and, desc } from "drizzle-orm"
 
 export async function GET(
 	request: NextRequest,
-	props: { params: Promise<{ id: string[] }> }
+	props: { params: Promise<{ id: string[] }> },
 ) {
-	const params = await props.params;
+	const params = await props.params
 	const serverName = params.id
 		.map((segment) => segment.trim())
 		.filter(Boolean)
-		.join("/");
+		.join("/")
 
 	if (!serverName) {
 		return NextResponse.json({ error: "Invalid server name" }, { status: 400 })

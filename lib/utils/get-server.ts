@@ -31,6 +31,7 @@ const selectFetchedServerSchema = selectServerSchema
 		published: true,
 		owner: true,
 		tools: true,
+		configSchema: true,
 	})
 	.extend({
 		useCount: z.number(),
@@ -69,6 +70,7 @@ export async function getServer(qualifiedName: string) {
 			published: servers.published,
 			owner: servers.owner,
 			tools: servers.tools,
+			configSchema: servers.configSchema,
 			deploymentUrl: sql<string | null>`(
 				SELECT
 				CASE 

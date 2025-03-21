@@ -1,13 +1,11 @@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Suspense } from "react"
 import { OverviewTab } from "./overview"
 import { ApiTab } from "./api"
 import { DeploymentsTab } from "./deployments"
 import { SettingsTab } from "./settings"
 import { ServerTabsNav } from "./tabs-nav"
-import { ToolsPanelSkeleton } from "./tools/skeleton"
 import { ToolPanelContainer } from "./tools/tool-container"
 
 interface ServerTabsProps {
@@ -33,11 +31,7 @@ export function ServerTabs({
 				</TabsContent>
 
 				<TabsContent value="tools">
-					{activeTab === "tools" && (
-						<Suspense fallback={<ToolsPanelSkeleton />}>
-							<ToolPanelContainer server={server} />
-						</Suspense>
-					)}
+					{activeTab === "tools" && <ToolPanelContainer server={server} />}
 				</TabsContent>
 
 				<TabsContent value="api">

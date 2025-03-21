@@ -2,13 +2,11 @@
 
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiPython, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Code, ExternalLink } from "lucide-react"
 import posthog from "posthog-js"
-import { useEffect, useState } from "react"
 
 interface ApiTabProps {
 	server: FetchedServer
@@ -48,28 +46,8 @@ export function ApiTab({ server }: ApiTabProps) {
 	let wsConfig = ""
 
 	// State to store config schema
-	const [configSchema, setConfigSchema] = useState(null)
-
-	// Fetch config schema when component mounts or server changes
-	useEffect(() => {
-		const getConfigSchema = async () => {
-			if (server.deploymentUrl) {
-				try {
-					const schemaResult = await fetchConfigSchema(server.deploymentUrl)
-
-					if (schemaResult.ok) {
-						setConfigSchema(schemaResult.value)
-					}
-				} catch (error) {
-					console.error("Failed to fetch config schema:", error)
-				}
-			} else if (stdioConnection) {
-				setConfigSchema(stdioConnection.configSchema)
-			}
-		}
-
-		getConfigSchema()
-	}, [server.deploymentUrl])
+	const configSchema =
+		server.configSchema ?? stdioConnection?.configSchema ?? null
 
 	if (configSchema) {
 		wsConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`

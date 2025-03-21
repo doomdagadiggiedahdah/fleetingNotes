@@ -4,14 +4,10 @@ import { deployments } from "@/db/schema/deployments"
 import { events } from "@/db/schema/events"
 import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { posthog } from "@/lib/posthog_server"
-import {
-	ConnectionSchema,
-	type JSONSchema,
-	RegistryServerSchema,
-} from "@/lib/types/server"
+import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
+import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
 import { waitUntil } from "@vercel/functions/wait-until"
-import { chooseConnection } from "@/lib/utils/choose-connection"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -39,6 +35,7 @@ export async function GET(
 				displayName: servers.displayName,
 				connections: servers.connections,
 				remote: servers.remote,
+				configSchema: servers.configSchema,
 				deploymentUrl: sql<string>`(
 					SELECT
 					CASE
@@ -65,25 +62,13 @@ export async function GET(
 		// Prepare the connections array with the deployment URL if available
 		const connections = [
 			...RegistryServerSchema.shape.connections.parse(server.connections),
-			...(server.deploymentUrl
+			...(server.deploymentUrl && server.configSchema
 				? [
-						await (async () => {
-							let configSchema: JSONSchema = {}
-							try {
-								const data = await fetch(
-									`${server.deploymentUrl}/.well-known/mcp/smithery.json`,
-								)
-								const smitheryConfig = await data.json()
-								configSchema = smitheryConfig.configSchema ?? {}
-							} catch (e) {
-								console.error("[MCP] Failed to fetch schema:", e)
-							}
-							return {
-								type: "ws",
-								deploymentUrl: server.deploymentUrl,
-								configSchema,
-							}
-						})(),
+						{
+							type: "ws",
+							deploymentUrl: server.deploymentUrl,
+							configSchema: server.configSchema,
+						},
 					]
 				: []),
 		]

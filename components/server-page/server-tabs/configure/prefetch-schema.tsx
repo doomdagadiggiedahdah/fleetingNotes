@@ -1,16 +1,17 @@
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
-import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
+import type { FetchedServer } from "@/lib/utils/get-server"
 
-export async function prefetchServerConfig(server: FetchedServer) {
+/**
+ * Gets the server config schema if deployed, otherwise falling back to stdio connection config schema
+ * @param server
+ * @returns
+ */
+export function getServerConfigSchema(server: FetchedServer) {
 	// Fetch server config schema
 	let configSchema: JSONSchema | null = null
 
 	if (server.deploymentUrl) {
-		const schemaResult = await fetchConfigSchema(server.deploymentUrl)
-		if (schemaResult.ok) {
-			configSchema = schemaResult.value
-		}
+		configSchema = server.configSchema
 	} else {
 		// Get schema from stdio connection if available
 		const stdioConnection = server.connections.find(
@@ -20,11 +21,5 @@ export async function prefetchServerConfig(server: FetchedServer) {
 			configSchema = stdioConnection.configSchema
 		}
 	}
-
-	// No longer setting a default empty schema
-	// Let configSchema remain null if no schema was found
-
-	return {
-		configSchema,
-	}
+	return configSchema
 }
