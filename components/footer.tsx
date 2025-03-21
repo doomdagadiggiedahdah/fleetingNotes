@@ -16,7 +16,7 @@ export function Footer() {
 							</span>
 						</Link>
 						<p className="mt-2 text-sm text-muted-foreground">
-							Building the operating layer for AI
+							Building the operating system for AI
 						</p>
 					</div>
 
