@@ -24,17 +24,44 @@ function renderInput(
 	currentValue: unknown,
 	onChange: (newValue: unknown) => void,
 ) {
+	// Common input handlers
+	const handleTextChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+	) => {
+		const val = e.target.value === "" ? undefined : e.target.value
+		onChange(val)
+	}
+
+	const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const rawValue = e.target.value
+		if (rawValue === "") {
+			onChange(undefined)
+		} else {
+			const numberValue = Number(rawValue)
+			if (!Number.isNaN(numberValue)) {
+				onChange(
+					value.type === "integer" ? Math.round(numberValue) : numberValue,
+				)
+			}
+		}
+	}
+
+	// Handle wheel event for number inputs
+	const handleWheel = (e: React.WheelEvent) =>
+		e.target instanceof HTMLElement && e.target.blur()
+
 	switch (value.type) {
 		case "string":
 			return (
 				<Textarea
 					id={key}
 					placeholder={value.description}
-					value={String(currentValue || "")}
-					onChange={(e) => onChange(e.target.value)}
+					value={currentValue === undefined ? "" : String(currentValue)}
+					onChange={handleTextChange}
 					className="min-h-[40px] resize-none hover:resize-y"
 				/>
 			)
+
 		case "object":
 			return (
 				<Textarea
@@ -43,37 +70,39 @@ function renderInput(
 					value={
 						typeof currentValue === "object"
 							? JSON.stringify(currentValue, null, 2)
-							: String(currentValue || "")
+							: currentValue === undefined
+								? ""
+								: String(currentValue)
 					}
 					onChange={(e) => {
-						try {
-							onChange(JSON.parse(e.target.value))
-						} catch {
-							onChange(e.target.value)
+						if (e.target.value === "") {
+							onChange(undefined)
+						} else {
+							try {
+								onChange(JSON.parse(e.target.value))
+							} catch {
+								onChange(e.target.value)
+							}
 						}
 					}}
 					className="min-h-[40px] resize-none hover:resize-y font-mono text-sm"
 				/>
 			)
+
 		case "integer":
+		case "number":
 			return (
 				<Input
 					type="number"
 					id={key}
-					step="1"
-					min={1}
 					placeholder={value.description}
 					value={currentValue === undefined ? "" : String(currentValue)}
-					onChange={(e) => {
-						const rawValue = e.target.value
-						const numberValue = Number(rawValue)
-						const roundedValue = Math.round(numberValue)
-						const val = rawValue === "" ? undefined : roundedValue
-						onChange(val)
-					}}
-					onWheel={(e) => e.target instanceof HTMLElement && e.target.blur()}
+					onChange={handleNumberChange}
+					onWheel={handleWheel}
+					{...(value.type === "integer" ? { step: "1", min: "1" } : {})}
 				/>
 			)
+
 		case "boolean":
 			return (
 				<div className="inline-flex rounded-lg border border-border/40 p-0.5">
@@ -103,6 +132,7 @@ function renderInput(
 					</Button>
 				</div>
 			)
+
 		case "array":
 			return (
 				<ArrayInput
@@ -112,30 +142,15 @@ function renderInput(
 					placeholder={value.description}
 				/>
 			)
-		case "number":
-			return (
-				<Input
-					type="number"
-					id={key}
-					placeholder={value.description}
-					value={currentValue === undefined ? "" : String(currentValue)}
-					onChange={(e) => {
-						const rawValue = e.target.value
-						const numberValue = Number(rawValue)
-						const val = rawValue === "" ? undefined : numberValue
-						onChange(val)
-					}}
-					onWheel={(e) => e.target instanceof HTMLElement && e.target.blur()}
-				/>
-			)
+
 		default:
 			return (
 				<Input
 					type="text"
 					id={key}
 					placeholder={value.description}
-					value={String(currentValue || "")}
-					onChange={(e) => onChange(e.target.value)}
+					value={currentValue === undefined ? "" : String(currentValue)}
+					onChange={handleTextChange}
 					className="h-9"
 				/>
 			)
@@ -211,10 +226,11 @@ function ArrayInput({
 				// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
 				<div key={index} className="flex gap-2">
 					<Input
-						value={String(item)}
+						value={item === undefined ? "" : String(item)}
 						onChange={(e) => {
 							const newArray = [...value]
-							newArray[index] = e.target.value
+							newArray[index] =
+								e.target.value === "" ? undefined : e.target.value
 							onChange(newArray)
 						}}
 						placeholder={placeholder}

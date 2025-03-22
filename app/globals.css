@@ -68,3 +68,33 @@ body {
     background: hsl(var(--accent-foreground));
   }
 }
+
+/* Sleek code block scrollbar styling */
+@layer utilities {
+  .code-scrollbar::-webkit-scrollbar {
+    height: 4px;  /* Thinner for horizontal scrollbar */
+    width: 4px;   /* Thinner for vertical scrollbar */
+  }
+  
+  .code-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .code-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  .code-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Hide scrollbar until hover for a cleaner look */
+  .code-scrollbar.hide-until-hover::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  
+  .code-scrollbar.hide-until-hover:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}

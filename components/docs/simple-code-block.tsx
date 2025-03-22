@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { CheckIcon, Copy, TerminalIcon, Braces } from "lucide-react"
+import { TerminalIcon, Braces } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CopyButton } from "./copy-button"
 
 interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
 	code: string
@@ -21,15 +22,8 @@ export function CodeBlock({
 	headerLabel,
 	...props
 }: CodeBlockProps) {
-	const [copied, setCopied] = React.useState(false)
 	const [isHovering, setIsHovering] = React.useState(false)
 	const contentRef = React.useRef<HTMLDivElement>(null)
-
-	const copyToClipboard = React.useCallback(() => {
-		navigator.clipboard.writeText(code)
-		setCopied(true)
-		setTimeout(() => setCopied(false), 2000)
-	}, [code])
 
 	// Determine if code is multiline
 	const isMultiline = code.includes("\n")
@@ -54,27 +48,6 @@ export function CodeBlock({
 		}
 	}, [isHovering, code, disableAutoScroll, isMultiline])
 
-	// Consistent copy button rendering
-	const renderCopyButton = (className?: string) => (
-		<button
-			onClick={copyToClipboard}
-			className={cn("flex items-center gap-1 transition-colors", className)}
-			aria-label={copied ? "Copied" : "Copy code"}
-		>
-			{copied ? (
-				<>
-					<CheckIcon className="h-3.5 w-3.5 text-green-400" />
-					<span className="text-xs text-green-400">Copied</span>
-				</>
-			) : (
-				<>
-					<Copy className="h-3.5 w-3.5 text-gray-400" />
-					<span className="text-xs text-gray-400">Copy</span>
-				</>
-			)}
-		</button>
-	)
-
 	if (showHeader) {
 		return (
 			<div className={cn("rounded-md overflow-hidden", className)}>
@@ -97,13 +70,13 @@ export function CodeBlock({
 							</>
 						)}
 					</div>
-					{renderCopyButton("hover:text-gray-200")}
+					<CopyButton code={code} className="hover:text-gray-200" />
 				</div>
 
 				{/* Code content */}
 				{/* biome-ignore lint/nursery/noStaticElementInteractions: <explanation> */}
 				<div
-					className="bg-[#282828] text-white py-2 px-3 overflow-auto max-h-[400px]"
+					className="bg-[#282828] text-white py-2 px-3 overflow-auto max-h-[400px] code-scrollbar hide-until-hover"
 					onMouseEnter={() => setIsHovering(true)}
 					onMouseLeave={() => setIsHovering(false)}
 					{...props}
@@ -123,14 +96,11 @@ export function CodeBlock({
 
 	// Original implementation without header (for single-line commands)
 	return (
-		// biome-ignore lint/nursery/noStaticElementInteractions: <explanation>
 		<div
 			className={cn(
-				"relative rounded-md bg-[#282828] text-white py-2 px-3 overflow-hidden flex items-center h-9",
+				"relative rounded-md bg-[#282828] text-white py-2 px-3 overflow-x-auto overflow-y-hidden flex items-center h-9 code-scrollbar hide-until-hover",
 				className,
 			)}
-			onMouseEnter={() => setIsHovering(true)}
-			onMouseLeave={() => setIsHovering(false)}
 			{...props}
 		>
 			{/* Terminal icon with fixed width */}
@@ -139,7 +109,7 @@ export function CodeBlock({
 			</div>
 
 			{/* Code content with right padding for copy button */}
-			<div className="flex-grow overflow-hidden">
+			<div className="flex-grow">
 				<div
 					ref={contentRef}
 					className="whitespace-nowrap pr-8 font-mono text-xs"
@@ -149,8 +119,11 @@ export function CodeBlock({
 			</div>
 
 			{/* Copy button in fixed position */}
-			<div className="flex-shrink-0 ml-1">
-				{renderCopyButton("px-2 py-1 rounded-md hover:bg-gray-800")}
+			<div className="flex-shrink-0 ml-1 sticky right-0 bg-[#282828]">
+				<CopyButton
+					code={code}
+					className="px-2 py-1 rounded-md hover:bg-gray-800"
+				/>
 			</div>
 		</div>
 	)

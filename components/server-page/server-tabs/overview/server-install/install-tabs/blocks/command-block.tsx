@@ -283,6 +283,8 @@ export const CommandBlock = ({
 								language="bash"
 								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
 								disableAutoScroll={true}
+								showHeader={true}
+								headerLabel="terminal"
 								onMouseDown={() => {
 									posthog.capture("Code Copied", {
 										serverQualifiedName: server.qualifiedName,

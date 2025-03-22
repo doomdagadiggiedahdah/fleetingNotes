@@ -30,6 +30,9 @@ export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
 			code={command}
 			className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors"
 			disableAutoScroll={true}
+			showHeader={true}
+			headerLabel="terminal"
+			language="bash"
 			onMouseDown={() => {
 				posthog.capture("Code Copied", {
 					serverQualifiedName,

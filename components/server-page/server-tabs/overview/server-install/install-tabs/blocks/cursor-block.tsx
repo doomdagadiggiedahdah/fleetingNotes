@@ -17,14 +17,14 @@ export const CursorBlock = ({
 	serverQualifiedName,
 }: CursorBlockProps) => {
 	return (
-		<Tabs defaultValue="old" className="w-full mb-4">
+		<Tabs defaultValue="new" className="w-full mb-4">
 			<TabsList className="mb-2">
-				<TabsTrigger value="old">
-					Cursor <code>≤0.46.x</code>
-				</TabsTrigger>
 				<TabsTrigger value="new" className="flex items-center gap-1">
 					<Sparkles className="h-4 w-4 text-primary/70" />
 					Cursor <code>≥0.47.x</code>
+				</TabsTrigger>
+				<TabsTrigger value="old">
+					Cursor <code>≤0.46.x</code>
 				</TabsTrigger>
 			</TabsList>
 			<TabsContent value="old">
