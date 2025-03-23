@@ -10,7 +10,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/db"
 import { apiKeys, savedConfigs, servers } from "@/db/schema"
-import { eq, and, desc } from "drizzle-orm"
+import { deployments } from "@/db/schema/deployments"
+import { eq, and, desc, sql } from "drizzle-orm"
+import { RegistryServerSchema } from "@/lib/types/server"
 
 export async function GET(
 	request: NextRequest,
@@ -35,24 +37,11 @@ export async function GET(
 	}
 
 	try {
-		// Get both server and API key info in parallel
-		const [server, keyRecord] = await Promise.all([
-			db.query.servers.findFirst({
-				where: eq(servers.qualifiedName, serverName),
-				columns: { id: true }, // Select only needed fields
-			}),
-			db.query.apiKeys.findFirst({
-				where: eq(apiKeys.key, apiKey),
-				columns: { owner: true }, // Select only needed fields
-			}),
-		])
-
-		if (!server) {
-			return NextResponse.json(
-				{ error: `Server "${serverName}" not found` },
-				{ status: 404 },
-			)
-		}
+		// Get API key info first to validate the key and get the owner
+		const keyRecord = await db.query.apiKeys.findFirst({
+			where: eq(apiKeys.key, apiKey),
+			columns: { owner: true },
+		})
 
 		if (!keyRecord) {
 			return NextResponse.json(
@@ -61,29 +50,76 @@ export async function GET(
 			)
 		}
 
-		// Get the configuration for this server and owner
-		const config = await db.query.savedConfigs.findFirst({
-			where: and(
-				eq(savedConfigs.serverId, server.id),
-				eq(savedConfigs.owner, keyRecord.owner),
-			),
-			columns: {
-				configData: true,
-				updatedAt: true,
-			},
-			orderBy: [desc(savedConfigs.updatedAt)],
-		})
+		// Get server details and saved config in a single query
+		const result = await db
+			.select({
+				// Server details
+				serverId: servers.id,
+				qualifiedName: servers.qualifiedName,
+				displayName: servers.displayName,
+				connections: servers.connections,
+				remote: servers.remote,
+				configSchema: servers.configSchema,
+				deploymentUrl: sql<string>`(
+					SELECT
+					CASE
+						WHEN ${deployments.deploymentUrl} LIKE '%.fly.dev'
+						THEN CONCAT('https://server.smithery.ai/', ${servers.qualifiedName})
+						ELSE NULL
+					END
+					FROM ${deployments} as deployments
+					WHERE deployments.server_id = servers.id
+					AND ${deployments.status} = 'SUCCESS'
+					ORDER BY ${deployments.createdAt} DESC
+					LIMIT 1
+				)`,
+				// Config data - will be null if no config exists
+				configData: savedConfigs.configData,
+				updatedAt: savedConfigs.updatedAt,
+			})
+			.from(servers)
+			.leftJoin(
+				savedConfigs,
+				and(
+					eq(savedConfigs.serverId, servers.id),
+					eq(savedConfigs.owner, keyRecord.owner),
+				),
+			)
+			.where(eq(servers.qualifiedName, serverName))
+			.orderBy(desc(savedConfigs.updatedAt))
+			.limit(1)
+			.then((rows) => rows[0])
 
-		if (!config) {
+		if (!result) {
 			return NextResponse.json(
-				{ error: `Configuration for "${serverName}" not found` },
+				{ error: `Server "${serverName}" not found` },
 				{ status: 404 },
 			)
 		}
 
+		// Prepare connections array with deployment URL if available
+		const connections = [
+			...RegistryServerSchema.shape.connections.parse(result.connections),
+			...(result.deploymentUrl && result.configSchema
+				? [
+						{
+							type: "ws",
+							deploymentUrl: result.deploymentUrl,
+							configSchema: result.configSchema,
+						},
+					]
+				: []),
+		]
+
 		const response = NextResponse.json({
 			success: true,
-			config: config.configData,
+			config: result.configData || {}, // Use empty object if no config found
+			server: {
+				qualifiedName: result.qualifiedName,
+				displayName: result.displayName,
+				connections: connections,
+				remote: result.remote,
+			},
 		})
 
 		return response
