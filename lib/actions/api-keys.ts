@@ -110,3 +110,43 @@ export async function deleteApiKey(apiKeyId: string) {
 		return err("Failed to delete API key")
 	}
 }
+
+/**
+ * Gets the first API key for a user, or creates one if none exist
+ * @returns The full API key or an error
+ */
+export async function getOrCreateApiKey() {
+	const me = await getMe()
+	if (!me) return err("Authentication required")
+
+	try {
+		// First try to get existing keys
+		const existingKeys = await db
+			.select({
+				id: apiKeys.id,
+				key: apiKeys.key,
+			})
+			.from(apiKeys)
+			.where(eq(apiKeys.owner, me.id))
+			.limit(1)
+
+		// If we have at least one key, return it
+		if (existingKeys.length > 0) {
+			return ok({
+				key: existingKeys[0].key,
+				id: existingKeys[0].id,
+			})
+		}
+
+		// Otherwise create a new key
+		const createResult = await createApiKey()
+		if (!createResult.ok) {
+			return createResult // Pass through the error
+		}
+
+		return createResult // Return the newly created key
+	} catch (error) {
+		console.error("Get or create API key error:", error)
+		return err("Failed to get or create API key")
+	}
+}

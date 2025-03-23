@@ -9,9 +9,13 @@ import posthog from "posthog-js"
 export const JsonBlock = ({
 	server,
 	cleanedConfig,
+	apiKey,
+	usingSavedConfig,
 }: {
 	server: FetchedServer
 	cleanedConfig?: JsonObject
+	apiKey?: string
+	usingSavedConfig?: boolean
 }) => {
 	return (
 		<>
@@ -39,7 +43,13 @@ export const JsonBlock = ({
 
 				<TabsContent value="mac-linux">
 					<SimpleCodeBlock
-						code={generateMcpJsonConfig(server, cleanedConfig, false)}
+						code={generateMcpJsonConfig(
+							server,
+							cleanedConfig,
+							false,
+							apiKey,
+							usingSavedConfig,
+						)}
 						language="json"
 						className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
 						disableAutoScroll={true}
@@ -56,7 +66,13 @@ export const JsonBlock = ({
 
 				<TabsContent value="windows">
 					<SimpleCodeBlock
-						code={generateMcpJsonConfig(server, cleanedConfig, true)}
+						code={generateMcpJsonConfig(
+							server,
+							cleanedConfig,
+							true,
+							apiKey,
+							usingSavedConfig,
+						)}
 						language="json"
 						className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
 						disableAutoScroll={true}

@@ -7,21 +7,22 @@ export function generateMcpJsonConfig(
 	server: FetchedServer,
 	cleanedConfig?: JsonObject,
 	isWindows = false,
+	apiKey?: string,
+	usingSavedConfig?: boolean,
 ): string {
-	// Use simple stringification for config
-	const encodedConfig = cleanedConfig
-		? JSON.stringify(cleanedConfig)
-		: "<your-config-here>"
-
 	// Base arguments for npx command
-	const npxArgs = [
-		"-y",
-		"@smithery/cli@latest",
-		"run",
-		server.qualifiedName,
-		"--config",
-		encodedConfig,
-	]
+	const npxArgs = ["-y", "@smithery/cli@latest", "run", server.qualifiedName]
+
+	// Use --key flag with API key if using saved config, otherwise use --config with encoded config
+	if (usingSavedConfig && apiKey) {
+		npxArgs.push("--key", apiKey)
+	} else {
+		// Use simple stringification for config
+		const encodedConfig = cleanedConfig
+			? JSON.stringify(cleanedConfig)
+			: "<your-config-here>"
+		npxArgs.push("--config", encodedConfig)
+	}
 
 	let commandConfig: { command: string; args: string[] }
 

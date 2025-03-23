@@ -22,6 +22,8 @@ export const CommandBlock = ({
 	server,
 	client,
 	config,
+	apiKey,
+	usingSavedConfig,
 }: {
 	server: FetchedServer
 	client:
@@ -34,6 +36,8 @@ export const CommandBlock = ({
 		| "goose"
 		| "spinai"
 	config?: JsonObject
+	apiKey?: string
+	usingSavedConfig?: boolean
 }) => {
 	const cleanedConfig = cleanConfig(config)
 
@@ -46,6 +50,8 @@ export const CommandBlock = ({
 		server,
 		client,
 		config,
+		apiKey,
+		usingSavedConfig,
 	})
 
 	const hasValidConnection =
@@ -302,7 +308,12 @@ export const CommandBlock = ({
 
 					{client === "cursor" && (
 						<TabsContent value="json">
-							<JsonBlock server={server} cleanedConfig={cleanedConfig} />
+							<JsonBlock
+								server={server}
+								cleanedConfig={cleanedConfig}
+								apiKey={apiKey}
+								usingSavedConfig={usingSavedConfig}
+							/>
 						</TabsContent>
 					)}
 				</Tabs>

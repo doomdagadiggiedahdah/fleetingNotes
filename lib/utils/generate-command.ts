@@ -53,12 +53,31 @@ const COMMAND_TEMPLATES = {
 		serverName: string,
 		clientName: string,
 		config?: string,
-	) =>
-		config
+		apiKey?: string,
+		usingSavedConfig?: boolean,
+	) => {
+		// For saved config with API key, use --key instead of --config
+		if (usingSavedConfig && apiKey) {
+			return `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --key ${apiKey}`
+		}
+
+		// Otherwise use config if provided
+		return config
 			? `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --config ${config}`
-			: `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`,
-	STANDARD_RUN: (serverName: string, config: string) =>
-		`${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`,
+			: `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`
+	},
+	STANDARD_RUN: (
+		serverName: string,
+		config: string,
+		apiKey?: string,
+		usingSavedConfig?: boolean,
+	) => {
+		// For saved config with API key, use --key instead of --config
+		if (usingSavedConfig && apiKey) {
+			return `${NPX_SMITHERY_PREFIX} run ${serverName} --key ${apiKey}`
+		}
+		return `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`
+	},
 	SPINAI_INSTALL: (serverName: string, config?: string) =>
 		config
 			? `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery --config ${config}`
@@ -92,6 +111,8 @@ export const generateInstallCommand = (
 	server: FetchedServer,
 	client: ClientType,
 	config?: JsonObject,
+	apiKey?: string,
+	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = config
 		? JSON.stringify(JSON.stringify(cleanConfig(config)))
@@ -103,6 +124,8 @@ export const generateInstallCommand = (
 				server.qualifiedName,
 				client,
 				cleanedConfig,
+				apiKey,
+				usingSavedConfig,
 			)
 }
 
@@ -111,11 +134,18 @@ export const generateRunCommand = (
 	server: FetchedServer,
 	client: ClientType,
 	config?: JsonObject,
+	apiKey?: string,
+	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = JSON.stringify(JSON.stringify(cleanConfig(config)))
 	return isCustomInstallClient(client)
 		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
-		: COMMAND_TEMPLATES.STANDARD_RUN(server.qualifiedName, cleanedConfig)
+		: COMMAND_TEMPLATES.STANDARD_RUN(
+				server.qualifiedName,
+				cleanedConfig,
+				apiKey,
+				usingSavedConfig,
+			)
 }
 
 type Platform = "unix" | "windows"
@@ -125,19 +155,23 @@ export const generateCommand = ({
 	server,
 	client,
 	config,
+	apiKey,
+	usingSavedConfig,
 	platform = "unix",
 	windowsMethod = WindowsExecMethod.SCOOP,
 }: {
 	server: FetchedServer
 	client: ClientType
 	config?: JsonObject
+	apiKey?: string
+	usingSavedConfig?: boolean
 	platform?: Platform
 	windowsMethod?: WindowsExecMethod
 }): string => {
 	// Keep run vs install distinction, but both now support config
 	const baseCommand = isRunCommandClient(client)
-		? generateRunCommand(server, client, config)
-		: generateInstallCommand(server, client, config)
+		? generateRunCommand(server, client, config, apiKey, usingSavedConfig)
+		: generateInstallCommand(server, client, config, apiKey, usingSavedConfig)
 
 	return platform === "windows"
 		? generateWindowsCommand(windowsMethod, baseCommand)
@@ -156,22 +190,30 @@ export const generateCommandSet = ({
 	server,
 	client,
 	config,
+	apiKey,
+	usingSavedConfig,
 }: {
 	server: FetchedServer
 	client: ClientType
 	config?: JsonObject
+	apiKey?: string
+	usingSavedConfig?: boolean
 }): CommandSet => {
 	return {
 		unixCommand: generateCommand({
 			server,
 			client,
 			config,
+			apiKey,
+			usingSavedConfig,
 			platform: "unix",
 		}),
 		windowsScoopCommand: generateCommand({
 			server,
 			client,
 			config,
+			apiKey,
+			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.SCOOP,
 		}),
@@ -179,6 +221,8 @@ export const generateCommandSet = ({
 			server,
 			client,
 			config,
+			apiKey,
+			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.CMD,
 		}),
@@ -186,6 +230,8 @@ export const generateCommandSet = ({
 			server,
 			client,
 			config,
+			apiKey,
+			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.CMD_FULL,
 		}),

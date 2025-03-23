@@ -21,6 +21,9 @@ interface ClientContentProps {
 	savedConfig?: JSONSchema | null
 	currentSession?: Session | null
 	setIsSignInOpen?: (isOpen: boolean) => void
+	apiKey?: string
+	usingSavedConfig?: boolean
+	setUsingSaved?: (value: boolean) => void
 }
 
 export function ClientContent({
@@ -34,7 +37,15 @@ export function ClientContent({
 	savedConfig,
 	currentSession,
 	setIsSignInOpen,
+	apiKey,
+	usingSavedConfig = !!savedConfig,
+	setUsingSaved,
 }: ClientContentProps) {
+	// Remove local state and use the prop instead
+	// const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(
+	//	!!savedConfig,
+	// )
+
 	// Show error message first if no schema available
 	if (!configSchema) {
 		return (
@@ -69,11 +80,18 @@ export function ClientContent({
 				savedConfig={savedConfig}
 				currentSession={currentSession}
 				setIsSignInOpen={setIsSignInOpen}
+				onUsingSavedConfig={setUsingSaved}
 			/>
 		)
 	} else {
 		content = (
-			<CommandBlock server={server} client={client} config={configValues} />
+			<CommandBlock
+				server={server}
+				client={client}
+				config={configValues}
+				apiKey={apiKey}
+				usingSavedConfig={usingSavedConfig}
+			/>
 		)
 	}
 

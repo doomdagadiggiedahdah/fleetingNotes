@@ -4,7 +4,7 @@ import { SchemaForm } from "@/components/server-page/server-tabs/configure/schem
 import { saveConfiguration } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import type { Session } from "@supabase/supabase-js"
 
 // Loading fallback UI shown while configuration is being loaded
@@ -14,6 +14,27 @@ export function ConfigFormLoading() {
 			Loading configuration...
 		</div>
 	)
+}
+
+// Helper function to compare objects
+const areObjectsEqual = (obj1: JsonObject, obj2: JsonObject): boolean => {
+	const keys1 = Object.keys(obj1)
+	const keys2 = Object.keys(obj2)
+
+	if (keys1.length !== keys2.length) return false
+
+	return keys1.every((key) => {
+		const val1 = obj1[key]
+		const val2 = obj2[key]
+		// Check for empty strings vs undefined - treat them as equal
+		if (
+			(val1 === "" && (val2 === undefined || val2 === "")) ||
+			(val2 === "" && (val1 === undefined || val1 === ""))
+		) {
+			return true
+		}
+		return val1 === val2
+	})
 }
 
 interface ConfigFormProps {
@@ -27,6 +48,7 @@ interface ConfigFormProps {
 	isConnected?: boolean
 	currentSession?: Session | null
 	setIsSignInOpen?: (isOpen: boolean) => void
+	onUsingSavedConfig?: (isUsing: boolean) => void
 }
 
 export function ConfigForm({
@@ -40,6 +62,7 @@ export function ConfigForm({
 	isConnected = false,
 	currentSession,
 	setIsSignInOpen,
+	onUsingSavedConfig,
 }: ConfigFormProps) {
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
@@ -48,6 +71,19 @@ export function ConfigForm({
 	// Use savedConfig if available, otherwise use initialConfig
 	const configToUse = savedConfig || initialConfig
 	const [values, setValues] = useState<JsonObject>(configToUse || {})
+
+	// Track if values have changed from saved config
+	const hasChanges = useMemo(() => {
+		if (!savedConfig) return Object.keys(values).length > 0
+		return !areObjectsEqual(values, savedConfig)
+	}, [values, savedConfig])
+
+	// Use effect to notify parent about saved config usage changes
+	useEffect(() => {
+		if (onUsingSavedConfig) {
+			onUsingSavedConfig(!hasChanges) // Using saved config only when !hasChanges
+		}
+	}, [hasChanges, onUsingSavedConfig])
 
 	// Ensure all schema fields are included in the submission
 	const getCompleteValues = () => {
@@ -92,6 +128,12 @@ export function ConfigForm({
 			} else {
 				const completeValues = getCompleteValues()
 
+				// Set usingSavedConfig to true immediately as we start saving
+				// This way the UI reflects the change earlier
+				if (onUsingSavedConfig) {
+					onUsingSavedConfig(true)
+				}
+
 				// Connect first
 				await onSubmit(completeValues)
 
@@ -108,6 +150,11 @@ export function ConfigForm({
 				onSuccess?.()
 			}
 		} catch (err) {
+			// Reset usingSavedConfig to original state if there's an error
+			if (onUsingSavedConfig) {
+				onUsingSavedConfig(!hasChanges)
+			}
+
 			setError(
 				err instanceof Error
 					? err.message
@@ -130,7 +177,7 @@ export function ConfigForm({
 				Object.keys(schema?.properties || {}).length > 0 ? "end" : "start"
 			}
 			error={error}
-			onSaveAndConnect={handleSaveAndConnect}
+			onSaveAndConnect={hasChanges ? handleSaveAndConnect : undefined}
 			isSaving={isSaving}
 			isConnected={isConnected}
 		/>

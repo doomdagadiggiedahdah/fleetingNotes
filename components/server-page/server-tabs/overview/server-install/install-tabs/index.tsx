@@ -3,6 +3,7 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
+import { getOrCreateApiKey } from "@/lib/actions/api-keys"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
@@ -45,6 +46,8 @@ export function Installtabs({
 	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
+	const [apiKey, setApiKey] = useState<string | null>(null)
+	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(false)
 
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const isAnyConnectionPublished = server.connections.some(
@@ -57,6 +60,32 @@ export function Installtabs({
 
 	// Add a ref to track if we've already fetched config for this session
 	const hasFetchedConfig = useRef(false)
+	const hasFetchedApiKey = useRef(false)
+
+	// Effect for fetching API key
+	useEffect(() => {
+		async function fetchApiKey() {
+			if (currentSession && !hasFetchedApiKey.current) {
+				try {
+					const result = await getOrCreateApiKey()
+					if (result.ok) {
+						setApiKey(result.value.key)
+					} else {
+						console.error("Failed to get API key:", result.error)
+					}
+				} catch (error) {
+					console.error("Error fetching API key:", error)
+				} finally {
+					hasFetchedApiKey.current = true
+				}
+			} else if (!currentSession) {
+				setApiKey(null)
+				hasFetchedApiKey.current = false
+			}
+		}
+
+		fetchApiKey()
+	}, [currentSession])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
@@ -85,6 +114,7 @@ export function Installtabs({
 					const configResult = await getSavedConfig(server.id)
 					if (configResult.ok) {
 						setSavedConfig(configResult.value)
+						setUsingSavedConfig(!!configResult.value)
 					}
 				} catch (error) {
 					console.error("Failed to fetch saved config:", error)
@@ -96,6 +126,7 @@ export function Installtabs({
 			} else if (!currentSession) {
 				// Reset these when logged out
 				setSavedConfig(null)
+				setUsingSavedConfig(false)
 				hasFetchedConfig.current = false
 			}
 		}
@@ -128,6 +159,11 @@ export function Installtabs({
 		setTabOrder(newOrder)
 		setActiveTab(selected)
 		onTabChange?.(selected)
+	}
+
+	// Handler for toggling the usingSavedConfig state
+	const handleToggleUsingSavedConfig = (value: boolean) => {
+		setUsingSavedConfig(value)
 	}
 
 	if (!server.isDeployed && !isAnyConnectionPublished) {
@@ -163,6 +199,9 @@ export function Installtabs({
 						savedConfig={savedConfig}
 						currentSession={currentSession}
 						setIsSignInOpen={setIsSignInOpen}
+						apiKey={apiKey || undefined}
+						usingSavedConfig={usingSavedConfig}
+						setUsingSaved={handleToggleUsingSavedConfig}
 					/>
 				</TabsContent>
 			))}

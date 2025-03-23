@@ -81,6 +81,13 @@ export function SchemaForm({
 		}
 	}
 
+	// Add a new handler for Save and Connect that includes validation
+	const handleSaveAndConnect = (e: React.MouseEvent) => {
+		if (validateForm()) {
+			onSaveAndConnect?.(e)
+		}
+	}
+
 	const isFieldInvalid = (key: string) => {
 		return showValidation && validationErrors[key]
 	}
@@ -252,7 +259,7 @@ export function SchemaForm({
 						<Button
 							type="button"
 							variant="secondary"
-							onClick={onSaveAndConnect}
+							onClick={handleSaveAndConnect}
 							disabled={isLoading || isSaving}
 						>
 							{isSaving ? "Saving & Connecting..." : "Save and Connect"}
