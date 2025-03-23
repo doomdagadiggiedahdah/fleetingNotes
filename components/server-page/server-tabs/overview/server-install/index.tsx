@@ -21,6 +21,7 @@ export function ServerInstall({
 			<h2 className="text-2xl font-bold mb-4">Installation</h2>
 			<div className="bg-background p-3 rounded-lg border border-border">
 				<Installtabs
+					key={`install-tabs-${Date.now()}`}
 					server={server}
 					initTab={initTab}
 					onTabChange={onTabChange}
