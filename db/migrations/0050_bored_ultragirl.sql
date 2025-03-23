@@ -1,0 +1,2 @@
+ALTER TABLE "servers" drop column "fts_content";--> statement-breakpoint
+ALTER TABLE "servers" ADD COLUMN "fts_content" text GENERATED ALWAYS AS ("servers"."display_name" || ' ' || "servers"."qualified_name" || ' ' || "servers"."description" || ' ' || (CASE WHEN "servers"."tools" IS NOT NULL THEN "servers"."tools"::text ELSE '' END) || (CASE WHEN "servers"."config_schema" IS NOT NULL THEN "servers"."config_schema"::text ELSE '' END)) STORED;

@@ -1,0 +1,1 @@
+CREATE INDEX "ftsIndex" ON "servers" USING gin (to_tsvector('english', "display_name" || ' ' || "description" || ' ' || "qualified_name" || ' ' || "tools"));

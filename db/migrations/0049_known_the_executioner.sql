@@ -1,0 +1,3 @@
+DROP INDEX "ftsIndex";--> statement-breakpoint
+ALTER TABLE "servers" ADD COLUMN "fts_content" text GENERATED ALWAYS AS (to_tsvector('english', "servers"."display_name" || ' ' || "servers"."qualified_name" || ' ' || "servers"."description" || ' ' || (CASE WHEN "servers"."tools" IS NOT NULL THEN "servers"."tools"::text ELSE '' END) || (CASE WHEN "servers"."config_schema" IS NOT NULL THEN "servers"."config_schema"::text ELSE '' END))) STORED;--> statement-breakpoint
+CREATE INDEX "ftsIndex" ON "servers" USING gin (to_tsvector('english', "fts_content"));

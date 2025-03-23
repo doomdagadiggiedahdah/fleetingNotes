@@ -1,5 +1,5 @@
 import { ConnectionSchema, JSONSchemaSchema } from "@/lib/types/server"
-import { sql } from "drizzle-orm"
+import { type SQL, sql } from "drizzle-orm"
 import {
 	boolean,
 	index,
@@ -53,6 +53,12 @@ export const servers = pgTable(
 
 		// Search embedding
 		embedding: vector("embedding", { dimensions: 1536 }),
+
+		// Text content used for full text search
+		ftsContent: text("fts_content").generatedAlwaysAs(
+			(): SQL =>
+				sql`${servers.displayName} || ' ' || ${servers.qualifiedName} || ' ' || ${servers.description}`,
+		),
 	},
 	(table) => [
 		pgPolicy("Users can read their servers", {
@@ -62,6 +68,10 @@ export const servers = pgTable(
 			using: sql`(select auth.uid()) = owner`,
 		}),
 		index("embeddingIndex").using("hnsw", table.embedding.op("vector_ip_ops")),
+		index("ftsIndex").using(
+			"gin",
+			sql`to_tsvector('english', ${table.ftsContent})`,
+		),
 	],
 ).enableRLS()
 

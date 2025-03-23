@@ -33,8 +33,11 @@ export interface PaginatedResult<T> {
 }
 
 // Multiplies the similarity by this number and truncates it
-const SIMILARITY_MULTIPLIER = 25
-const MIN_SIMILARITY = 0.3 * SIMILARITY_MULTIPLIER
+const SEMANTIC_SIMILARITY_MULTIPLIER = 25
+// Full text search score multiplier before rounding. Rounding is used so servers within the same relevance bucket can be also sorted by popularity.
+const FTS_PRE_MULTIPLIER = 50
+const FTS_POST_MULTIPLIER = 1
+const MIN_SEMANTIC_SIMILARITY = 0.4 * SEMANTIC_SIMILARITY_MULTIPLIER
 
 const openAI = new OpenAI()
 
@@ -64,7 +67,8 @@ export async function getAllServers(
 		return typeof parsed === "string" ? null : parsed
 	})()
 
-	const semanticQuery = parsedQueryObj
+	// Query with special filters removed
+	const cleanedQuery = parsedQueryObj
 		? Array.isArray(parsedQueryObj?.text)
 			? parsedQueryObj.text.join(" ").trim()
 			: parsedQueryObj?.text
@@ -72,26 +76,42 @@ export async function getAllServers(
 				: undefined
 		: query?.trim()
 
-	const similarity = await (async () => {
-		if (!semanticQuery) return null
+	const semanticSimilarity = await (async () => {
+		if (!cleanedQuery) return null
 		try {
 			const queryEmbedding = await openAI.embeddings.create({
-				input: semanticQuery,
+				input: cleanedQuery,
 				model: "text-embedding-3-small",
 			})
 			// Quantize distances so things that are very similar get sorted by other factors
-			return sql<number>`floor(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * ${SIMILARITY_MULTIPLIER})`
+			return sql<
+				number | null
+			>`ROUND(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * ${SEMANTIC_SIMILARITY_MULTIPLIER})`
 		} catch (e) {
 			console.error(e)
 			return null
 		}
 	})()
 
+	const matchSimilarity = cleanedQuery
+		? sql<number>`ts_rank(to_tsvector('english', ${servers.ftsContent}), websearch_to_tsquery('english', ${cleanedQuery}))`
+		: null
+
 	// Base conditions for both count and data queries
 	const whereClause = and(
-		similarity
-			? and(isNotNull(similarity), gt(similarity, MIN_SIMILARITY))
-			: undefined,
+		or(
+			// Semantic match
+			semanticSimilarity
+				? and(
+						isNotNull(semanticSimilarity),
+						gt(semanticSimilarity, MIN_SEMANTIC_SIMILARITY),
+					)
+				: undefined,
+			// Exact match
+			cleanedQuery
+				? sql`to_tsvector('english', ${servers.ftsContent}) @@ websearch_to_tsquery('english', ${cleanedQuery})`
+				: undefined,
+		),
 		parsedQueryObj?.owner
 			? parsedQueryObj.owner === "me" && currentUserId
 				? eq(servers.owner, currentUserId)
@@ -144,12 +164,18 @@ export async function getAllServers(
 		})
 		.from(servers)
 		.orderBy((t) => [
-			// There exists a valid installation strategy
+			// Prioritize MCPs that have a valid installation strategy
 			sql`CASE WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.tools} IS NOT NULL) THEN 0 ELSE 1 END`,
-			...(similarity
-				? [desc(similarity)]
-				: // Prioritize the new servers
-					[desc(t.isNew)]),
+			// Prioritize by relevance
+			...(semanticSimilarity && matchSimilarity
+				? [
+						desc(
+							sql`${semanticSimilarity} + ROUND(${matchSimilarity} * ${FTS_PRE_MULTIPLIER}) * ${FTS_POST_MULTIPLIER}`,
+						),
+					]
+				: matchSimilarity
+					? [desc(matchSimilarity)]
+					: [desc(t.isNew)]),
 			// Apply a 2x boost to useCount for verified servers
 			desc(
 				sql`CASE WHEN ${servers.verified} THEN ${t.useCount} * 2 ELSE ${t.useCount} END`,
