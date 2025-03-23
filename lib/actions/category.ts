@@ -8,7 +8,7 @@ import { desc, sql } from "drizzle-orm"
  * Fetches random categories from the database to be used as search suggestions
  * @returns Array of categories with id, text (title), and query properties
  */
-export async function getRandomCategories(limit = 6) {
+export async function getRandomCategories(limit = 8) {
 	"use cache"
 
 	const categories = await db

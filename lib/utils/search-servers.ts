@@ -32,12 +32,11 @@ export interface PaginatedResult<T> {
 	}
 }
 
-// Multiplies the similarity by this number and truncates it
-const SEMANTIC_SIMILARITY_MULTIPLIER = 25
-// Full text search score multiplier before rounding. Rounding is used so servers within the same relevance bucket can be also sorted by popularity.
-const FTS_PRE_MULTIPLIER = 50
-const FTS_POST_MULTIPLIER = 1
-const MIN_SEMANTIC_SIMILARITY = 0.4 * SEMANTIC_SIMILARITY_MULTIPLIER
+const MIN_SEMANTIC_SIMILARITY = 0.4
+// Relative importance of full text search compared to embedding similarity
+const FTS_MULTIPLIER = 2
+// Relative importance of popularity in ranking
+const POPULARITY_WEIGHT = 0.1
 
 const openAI = new OpenAI()
 
@@ -86,16 +85,12 @@ export async function getAllServers(
 			// Quantize distances so things that are very similar get sorted by other factors
 			return sql<
 				number | null
-			>`ROUND(-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)} ) * ${SEMANTIC_SIMILARITY_MULTIPLIER})`
+			>`-(${innerProduct(servers.embedding, queryEmbedding.data[0].embedding)})`
 		} catch (e) {
 			console.error(e)
 			return null
 		}
 	})()
-
-	const matchSimilarity = cleanedQuery
-		? sql<number>`ts_rank(to_tsvector('english', ${servers.ftsContent}), websearch_to_tsquery('english', ${cleanedQuery}))`
-		: null
 
 	// Base conditions for both count and data queries
 	const whereClause = and(
@@ -107,7 +102,7 @@ export async function getAllServers(
 						gt(semanticSimilarity, MIN_SEMANTIC_SIMILARITY),
 					)
 				: undefined,
-			// Exact match
+			// Exact match filter
 			cleanedQuery
 				? sql`to_tsvector('english', ${servers.ftsContent}) @@ websearch_to_tsquery('english', ${cleanedQuery})`
 				: undefined,
@@ -141,6 +136,15 @@ export async function getAllServers(
 	const offset = (page - 1) * pageSize
 	const totalPages = Math.ceil(totalCount / pageSize)
 
+	const matchSimilarity = cleanedQuery
+		? sql<number>`ts_rank_cd(to_tsvector('english', ${servers.ftsContent}), websearch_to_tsquery('english', ${cleanedQuery}))`
+		: null
+
+	const relevanceScore =
+		semanticSimilarity && matchSimilarity
+			? sql<number>`${semanticSimilarity} + ${matchSimilarity} * ${FTS_MULTIPLIER}`
+			: sql<number>`0`
+
 	const data = await db
 		.select({
 			id: servers.id,
@@ -166,26 +170,15 @@ export async function getAllServers(
 		.orderBy((t) => [
 			// Prioritize MCPs that have a valid installation strategy
 			sql`CASE WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.tools} IS NOT NULL) THEN 0 ELSE 1 END`,
-			// Prioritize by relevance
-			...(semanticSimilarity && matchSimilarity
-				? [
-						desc(
-							sql`${semanticSimilarity} + ROUND(${matchSimilarity} * ${FTS_PRE_MULTIPLIER}) * ${FTS_POST_MULTIPLIER}`,
-						),
-					]
-				: matchSimilarity
-					? [desc(matchSimilarity)]
-					: [desc(t.isNew)]),
+			t.isNew,
 			// Apply a 2x boost to useCount for verified servers
 			desc(
-				sql`CASE WHEN ${servers.verified} THEN ${t.useCount} * 2 ELSE ${t.useCount} END`,
+				sql<number>`${relevanceScore} + LN(CASE WHEN ${servers.verified} THEN ${t.useCount} * 2 ELSE ${t.useCount} END + 1) * ${POPULARITY_WEIGHT}`,
 			),
-			sql`RANDOM()`,
 		])
 		.where(whereClause)
 		.limit(pageSize)
 		.offset(offset)
-
 	return {
 		servers: data,
 		pagination: {
