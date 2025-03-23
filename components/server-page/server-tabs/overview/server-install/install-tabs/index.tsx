@@ -79,7 +79,7 @@ export function Installtabs({
 	useEffect(() => {
 		async function fetchSavedConfig() {
 			// Only fetch if we have a session and haven't already fetched
-			if (currentSession && !hasFetchedConfig.current && !savedConfig) {
+			if (currentSession && !hasFetchedConfig.current) {
 				setIsLoadingSavedConfig(true)
 				try {
 					const configResult = await getSavedConfig(server.id)
@@ -101,7 +101,7 @@ export function Installtabs({
 		}
 
 		fetchSavedConfig()
-	}, [currentSession, server.id, savedConfig])
+	}, [currentSession, server.id])
 
 	// Effect for handling empty schema configuration
 	useEffect(() => {
