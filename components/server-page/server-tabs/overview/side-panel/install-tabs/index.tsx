@@ -2,14 +2,12 @@
 
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
-import { getSavedConfig } from "@/lib/actions/save-configuration"
-import { getOrCreateApiKey } from "@/lib/actions/api-keys"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import { InstallWarning } from "./install-warning"
-import { ClientContent } from "./install-tab-content"
+import { InstallTabContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { InstallTabOptions } from "./install-tab-options"
 
@@ -20,6 +18,8 @@ type InstallTabsProps = {
 	initTab?: ClientType
 	className?: string
 	onTabChange?: (tab: ClientType) => void
+	apiKey?: string
+	savedConfig?: JSONSchema | null
 }
 
 export function Installtabs({
@@ -27,6 +27,8 @@ export function Installtabs({
 	initTab = "claude",
 	className,
 	onTabChange,
+	apiKey: passedApiKey,
+	savedConfig: passedSavedConfig,
 }: InstallTabsProps) {
 	const [visibleCount] = useState(4)
 	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
@@ -41,20 +43,19 @@ export function Installtabs({
 		"spinai",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
-	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
-	const [apiKey, setApiKey] = useState<string | null>(null)
-	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(false)
+	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(
+		passedSavedConfig || null,
+	)
+	const [apiKey, setApiKey] = useState<string | null>(passedApiKey || null)
+	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(
+		!!passedSavedConfig,
+	)
 
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const isAnyConnectionPublished = server.connections.some(
 		(conn) => "published" in conn && conn.published,
 	)
-
-	// Add a ref to track if we've already fetched config for this session
-	const hasFetchedConfig = useRef(false)
-	const hasFetchedApiKey = useRef(false)
 
 	// Get schema directly from server instead of using utility function
 	const prefetchedSchema = server.deploymentUrl
@@ -62,30 +63,14 @@ export function Installtabs({
 		: server.connections.find((conn) => conn.type === "stdio")?.configSchema ||
 			null
 
-	// Effect for fetching API key
+	// Update apiKey state when passedApiKey or session changes
 	useEffect(() => {
-		async function fetchApiKey() {
-			if (currentSession && !hasFetchedApiKey.current) {
-				try {
-					const result = await getOrCreateApiKey()
-					if (result.ok) {
-						setApiKey(result.value.key)
-					} else {
-						console.error("Failed to get API key:", result.error)
-					}
-				} catch (error) {
-					console.error("Error fetching API key:", error)
-				} finally {
-					hasFetchedApiKey.current = true
-				}
-			} else if (!currentSession) {
-				setApiKey(null)
-				hasFetchedApiKey.current = false
-			}
+		if (passedApiKey) {
+			setApiKey(passedApiKey)
+		} else if (!currentSession) {
+			setApiKey(null)
 		}
-
-		fetchApiKey()
-	}, [currentSession])
+	}, [passedApiKey, currentSession])
 
 	const handleClientConfig = async (values: JsonObject) => {
 		// Get defaults while preserving schema property order
@@ -104,35 +89,16 @@ export function Installtabs({
 		return Promise.resolve()
 	}
 
-	// Effect for handling saved config
+	// Remove the existing saved config useEffect and replace with:
 	useEffect(() => {
-		async function fetchSavedConfig() {
-			// Only fetch if we have a session and haven't already fetched
-			if (currentSession && !hasFetchedConfig.current) {
-				setIsLoadingSavedConfig(true)
-				try {
-					const configResult = await getSavedConfig(server.id)
-					if (configResult.ok) {
-						setSavedConfig(configResult.value)
-						setUsingSavedConfig(!!configResult.value)
-					}
-				} catch (error) {
-					console.error("Failed to fetch saved config:", error)
-				} finally {
-					setIsLoadingSavedConfig(false)
-					// Mark as fetched so we don't do it again
-					hasFetchedConfig.current = true
-				}
-			} else if (!currentSession) {
-				// Reset these when logged out
-				setSavedConfig(null)
-				setUsingSavedConfig(false)
-				hasFetchedConfig.current = false
-			}
+		if (passedSavedConfig) {
+			setSavedConfig(passedSavedConfig)
+			setUsingSavedConfig(true)
+		} else if (!currentSession) {
+			setSavedConfig(null)
+			setUsingSavedConfig(false)
 		}
-
-		fetchSavedConfig()
-	}, [currentSession, server.id])
+	}, [passedSavedConfig, currentSession])
 
 	// Effect for handling empty schema configuration
 	useEffect(() => {
@@ -188,11 +154,10 @@ export function Installtabs({
 			/>
 			{tabOrder.map((clientType) => (
 				<TabsContent key={clientType} value={clientType}>
-					<ClientContent
+					<InstallTabContent
 						server={server}
 						client={clientType}
 						configSchema={prefetchedSchema}
-						isLoading={isLoadingSavedConfig}
 						isClientConfigured={isClientConfigured}
 						configValues={configValues}
 						onClientConfig={handleClientConfig}

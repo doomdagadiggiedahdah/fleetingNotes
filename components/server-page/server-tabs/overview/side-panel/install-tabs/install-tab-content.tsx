@@ -1,5 +1,4 @@
 import { CommandBlock } from "./blocks/command-block"
-import { Skeleton } from "@/components/ui/skeleton"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -9,11 +8,10 @@ import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
 
-interface ClientContentProps {
+interface InstallTabContentProps {
 	server: FetchedServer
 	client: ClientType
 	configSchema: JSONSchema | null
-	isLoading: boolean
 	isClientConfigured: boolean
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
@@ -25,11 +23,10 @@ interface ClientContentProps {
 	setUsingSaved?: (value: boolean) => void
 }
 
-export function ClientContent({
+export function InstallTabContent({
 	server,
 	client,
 	configSchema,
-	isLoading,
 	isClientConfigured,
 	configValues,
 	onClientConfig,
@@ -39,12 +36,7 @@ export function ClientContent({
 	apiKey,
 	usingSavedConfig = !!savedConfig,
 	setUsingSaved,
-}: ClientContentProps) {
-	// Remove local state and use the prop instead
-	// const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(
-	//	!!savedConfig,
-	// )
-
+}: InstallTabContentProps) {
 	// Show error message first if no schema available
 	if (!configSchema) {
 		return (
@@ -94,12 +86,7 @@ export function ClientContent({
 		)
 	}
 
-	// Show loading state before checking session
-	if (isLoading) {
-		return <Skeleton className="h-28 w-full rounded-md" />
-	}
-
-	// Only check session after loading is complete
+	// Check session status directly - no loading state needed anymore
 	if (!currentSession) {
 		return (
 			<LoginBlur
