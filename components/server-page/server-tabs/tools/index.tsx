@@ -1,287 +1,33 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { useMCP } from "@/context/mcp-context"
-import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import {
-	type CompatibilityCallToolResult,
-	CompatibilityCallToolResultSchema,
-	type Tool,
-} from "@modelcontextprotocol/sdk/types.js"
-import { Settings } from "lucide-react"
-import { useEffect, useState } from "react"
-import { ConfigForm } from "../configure/config-form"
+import type { Tool } from "@modelcontextprotocol/sdk/types.js"
+import { ToolsPanel } from "./tool-panel"
+import { fetchData } from "./fetch-data"
+import { Suspense } from "react"
 import { ToolsPanelSkeleton } from "./skeleton"
-import { ToolCard } from "./tool-card"
-import { ToolResults } from "./tool-results"
-import { useAuth } from "@/context/auth-context"
-import { getSavedConfig } from "@/lib/actions/save-configuration"
+import { MCPProvider } from "@/context/mcp-context"
 
-interface ToolsPanelProps {
+interface ServerTabsProps {
 	server: FetchedServer
-	tools: Tool[]
-	showConfigForm?: boolean
-	configSchema?: JSONSchema
-	onConfigSubmit?: (config: JSONSchema) => Promise<void>
-	onConfigCancel?: () => void
-	initialConfig?: JSONSchema
-	onConfigSuccess?: () => void
 }
 
-export function ToolsPanel({
-	server,
-	tools: propTools,
-	showConfigForm,
-	configSchema,
-	onConfigSubmit,
-	onConfigCancel,
-	initialConfig = {},
-	onConfigSuccess,
-}: ToolsPanelProps) {
-	const {
-		status,
-		makeRequestTo,
-		connect,
-		listTools,
-		tools: contextTools,
-	} = useMCP()
-	const { currentSession, setIsSignInOpen } = useAuth()
-	const [isLoadingTools, setIsLoadingTools] = useState(false)
-	// const [error, setError] = useState<string | null>(null)
-	const [searchQuery, setSearchQuery] = useState("")
-	const [isExpanded, setIsExpanded] = useState(false)
-	const [activeExecution, setActiveExecution] = useState<{
-		isExecuting: boolean
-		result: CompatibilityCallToolResult | null
-		error: string | null
-	}>({
-		isExecuting: false,
-		result: null,
-		error: null,
-	})
-	const [isEditingConfig, setIsEditingConfig] = useState(false)
-	const [activeToolName, setActiveToolName] = useState<string | null>(null)
-	const [toolInputs, setToolInputs] = useState<
-		Record<string, Record<string, unknown>>
-	>({})
-	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
-	const [isLoadingSavedConfig, setIsLoadingSavedConfig] = useState(false)
+export async function ToolPanelContainer({ server }: ServerTabsProps) {
+	const tools = (server.tools as Tool[]) ?? []
+	const configSchema = server.configSchema ?? undefined
 
-	// Prefer context tools if available, fallback to prop tools
-	const tools = contextTools.length > 0 ? contextTools : propTools
-
-	// Modified useEffect to handle loading state
-	useEffect(() => {
-		if (status === "connected") {
-			setIsLoadingTools(true)
-			listTools().finally(() => {
-				setIsLoadingTools(false)
-			})
-		}
-	}, [status, listTools])
-
-	// Add effect to load saved configuration
-	useEffect(() => {
-		async function loadSavedConfig() {
-			if (!currentSession || !server.id) return
-
-			setIsLoadingSavedConfig(true)
-			try {
-				const config = await getSavedConfig(server.id)
-				if (config.ok) setSavedConfig(config.value)
-			} catch (error) {
-				console.error("Failed to load saved configuration:", error)
-			} finally {
-				setIsLoadingSavedConfig(false)
-			}
-		}
-
-		loadSavedConfig()
-	}, [server.id, currentSession])
-
-	const filteredTools = tools.filter(
-		(tool) =>
-			tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			tool.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-	)
-
-	const executeTool = async (tool: Tool, inputs: Record<string, unknown>) => {
-		if (status !== "connected") {
-			throw new Error("Must be connected to execute tools")
-		}
-
-		try {
-			const result = await makeRequestTo(
-				{
-					method: "tools/call",
-					params: {
-						name: tool.name,
-						arguments: inputs,
-					},
-				},
-				CompatibilityCallToolResultSchema,
-			)
-			return result
-		} catch (err) {
-			console.error("Tool execution error:", {
-				tool: tool.name,
-				error: err,
-				errorType: typeof err,
-				errorString: JSON.stringify(err, Object.getOwnPropertyNames(err), 2),
-			})
-			throw err
-		}
-	}
-
-	const handleConfigSubmit = async (config: JSONSchema) => {
-		if (!server?.deploymentUrl) {
-			throw new Error("Server URL is required")
-		}
-		await connect(`${server.deploymentUrl}/ws`, { config })
-		if (onConfigSubmit) {
-			await onConfigSubmit(config)
-		}
-	}
-
-	const handleToolInputChange = (
-		toolName: string,
-		inputs: Record<string, unknown>,
-	) => {
-		setToolInputs((prev) => ({
-			...prev,
-			[toolName]: inputs,
-		}))
-	}
-
-	if (isLoadingTools || isLoadingSavedConfig) {
-		return <ToolsPanelSkeleton />
-	}
-
-	if (!server.deploymentUrl || !configSchema) {
-		return (
-			<div className="flex flex-col lg:flex-row gap-6">
-				<div className="w-full lg:w-1/2">
-					<Card className="p-6">
-						<div className="text-sm text-muted-foreground text-center">
-							Tool listing on web is only available for hosted servers with
-							successful deployments. <br /> To find out more, check out our{" "}
-							<a
-								href="https://smithery.ai/docs/deployments"
-								className="text-primary hover:underline"
-							>
-								documentation
-							</a>
-							.
-						</div>
-					</Card>
-				</div>
-			</div>
-		)
-	}
+	// Use the existing fetch-data function
+	const { savedConfig } = await fetchData(server.id)
 
 	return (
-		<div className="space-y-6">
-			<div className="flex justify-between items-center">
-				{status === "connected" && !isEditingConfig && tools.length > 0 && (
-					<Button variant="outline" onClick={() => setIsEditingConfig(true)}>
-						<Settings className="w-4 h-4 mr-2" />
-						Edit Configuration
-					</Button>
-				)}
-			</div>
-
-			<div className="flex flex-col lg:flex-row gap-6">
-				<div className="w-full lg:w-1/2">
-					{tools.length === 0 && server.deploymentUrl ? (
-						<Card className="p-6">
-							<div className="flex flex-col items-center gap-4">
-								<div className="text-sm text-muted-foreground text-center">
-									{status === "connected"
-										? "No tools provided. Loading available tools..."
-										: "Please configure the server to list available tools."}
-								</div>
-							</div>
-						</Card>
-					) : tools.length > 0 && filteredTools.length === 0 ? (
-						<Card className="p-6">
-							<div className="text-sm text-muted-foreground text-center">
-								No tools found matching your search
-							</div>
-						</Card>
-					) : (
-						<div className="space-y-4">
-							{filteredTools.map((tool) => (
-								<Card
-									className={`p-0 transition-all duration-200 hover:ring-2 hover:ring-primary/75 ${
-										activeToolName === tool.name ? "ring-2 ring-primary/75" : ""
-									}`}
-									key={tool.name}
-								>
-									<ToolCard
-										key={tool.name}
-										tool={tool}
-										onExecute={executeTool}
-										onExpandedChange={(expanded) => {
-											if (expanded) {
-												setIsExpanded(true)
-												setActiveToolName(tool.name)
-											} else if (activeToolName === tool.name) {
-												setIsExpanded(false)
-												setActiveToolName(null)
-											}
-										}}
-										isExpanded={activeToolName === tool.name}
-										onExecutionChange={setActiveExecution}
-										disabled={status !== "connected" || isEditingConfig}
-										toolInputs={toolInputs[tool.name] || {}}
-										onToolInputChange={(inputs) =>
-											handleToolInputChange(tool.name, inputs)
-										}
-									/>
-								</Card>
-							))}
-						</div>
-					)}
-				</div>
-
-				<div className="w-full lg:w-1/2">
-					<div className="lg:sticky lg:top-4">
-						{(showConfigForm &&
-							status !== "connected" &&
-							server.deploymentUrl) ||
-						isEditingConfig ? (
-							<div className="hidden lg:block mb-6">
-								<ConfigForm
-									schema={configSchema!}
-									onSubmit={handleConfigSubmit}
-									onCancel={() => {
-										setIsEditingConfig(false)
-										onConfigCancel?.()
-									}}
-									initialConfig={initialConfig}
-									onSuccess={() => {
-										setIsEditingConfig(false)
-										onConfigSuccess?.()
-									}}
-									serverId={server.id}
-									isConnected={status === "connected"}
-									savedConfig={savedConfig}
-									currentSession={currentSession}
-									setIsSignInOpen={setIsSignInOpen}
-								/>
-							</div>
-						) : isExpanded ? (
-							<Card className="p-6">
-								<ToolResults {...activeExecution} />
-							</Card>
-						) : (
-							<div className="h-full" />
-						)}
-					</div>
-				</div>
-			</div>
-		</div>
+		<Suspense fallback={<ToolsPanelSkeleton />}>
+			<MCPProvider>
+				<ToolsPanel
+					server={server}
+					tools={tools}
+					showConfigForm={true}
+					configSchema={configSchema}
+					savedConfig={savedConfig}
+				/>
+			</MCPProvider>
+		</Suspense>
 	)
 }

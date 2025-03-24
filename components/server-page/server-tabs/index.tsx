@@ -6,7 +6,7 @@ import { ApiTab } from "./api"
 import { DeploymentsTab } from "./deployments"
 import { SettingsTab } from "./settings"
 import { ServerTabsNav } from "./tabs-nav"
-import { ToolPanelContainer } from "./tools/tool-container"
+import { ToolPanelContainer } from "./tools"
 
 interface ServerTabsProps {
 	server: FetchedServer
