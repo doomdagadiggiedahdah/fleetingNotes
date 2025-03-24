@@ -61,8 +61,8 @@ const COMMAND_TEMPLATES = {
 			return `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --key ${apiKey}`
 		}
 
-		// Otherwise use config if provided
-		return config
+		// Only add the --config flag if config is provided and not empty
+		return config && config !== '"{}"'
 			? `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --config ${config}`
 			: `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`
 	},
@@ -76,10 +76,14 @@ const COMMAND_TEMPLATES = {
 		if (usingSavedConfig && apiKey) {
 			return `${NPX_SMITHERY_PREFIX} run ${serverName} --key ${apiKey}`
 		}
-		return `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`
+
+		// Only add the --config flag if config is not empty
+		return config !== '"{}"'
+			? `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`
+			: `${NPX_SMITHERY_PREFIX} run ${serverName}`
 	},
 	SPINAI_INSTALL: (serverName: string, config?: string) =>
-		config
+		config && config !== '"{}"'
 			? `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery --config ${config}`
 			: `${NPX_SPINAI_PREFIX} install ${serverName} --provider smithery`,
 } as const

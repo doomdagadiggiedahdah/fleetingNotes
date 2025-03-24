@@ -8,7 +8,6 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
-// import { ClimbingBoxLoader } from "react-spinners"
 
 interface ClientContentProps {
 	server: FetchedServer

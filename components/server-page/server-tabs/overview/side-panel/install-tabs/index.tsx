@@ -8,7 +8,7 @@ import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import React, { useEffect, useState, useRef } from "react"
-import { InstallWarning } from "../install-warning"
+import { InstallWarning } from "./install-warning"
 import { ClientContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { InstallTabOptions } from "./install-tab-options"
@@ -20,7 +20,6 @@ type InstallTabsProps = {
 	initTab?: ClientType
 	className?: string
 	onTabChange?: (tab: ClientType) => void
-	configSchema?: JSONSchema | null
 }
 
 export function Installtabs({
@@ -28,7 +27,6 @@ export function Installtabs({
 	initTab = "claude",
 	className,
 	onTabChange,
-	configSchema: prefetchedSchema = null,
 }: InstallTabsProps) {
 	const [visibleCount] = useState(4)
 	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
@@ -53,14 +51,16 @@ export function Installtabs({
 	const isAnyConnectionPublished = server.connections.some(
 		(conn) => "published" in conn && conn.published,
 	)
-	// const [configSchema, setConfigSchema] = useState<JSONSchema | null>(
-	// 	prefetchedSchema,
-	// )
-	// const [isLoadingSchema, setIsLoadingSchema] = useState(!prefetchedSchema)
 
 	// Add a ref to track if we've already fetched config for this session
 	const hasFetchedConfig = useRef(false)
 	const hasFetchedApiKey = useRef(false)
+
+	// Get schema directly from server instead of using utility function
+	const prefetchedSchema = server.deploymentUrl
+		? server.configSchema
+		: server.connections.find((conn) => conn.type === "stdio")?.configSchema ||
+			null
 
 	// Effect for fetching API key
 	useEffect(() => {

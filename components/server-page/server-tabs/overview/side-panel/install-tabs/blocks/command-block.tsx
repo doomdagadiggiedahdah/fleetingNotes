@@ -1,13 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import {
-	Bug,
-	ExternalLink,
-	FileText,
-	Terminal,
-	Braces,
-	CloudOff,
-} from "lucide-react"
+import { Bug, ExternalLink, FileText, Braces, CloudOff } from "lucide-react"
 import posthog from "posthog-js"
 import type { JsonObject } from "@/lib/types/json"
 import { AuthBlock } from "./auth-block"
@@ -62,12 +55,12 @@ export const CommandBlock = ({
 
 	return (
 		<>
-			<h4 className="font-semibold mb-2 text-primary">
+			{/* <h4 className="font-semibold mb-2 text-primary">
 				<span className="flex items-center gap-2">
 					<Terminal className="h-4 w-4" />
 					Install Command
 				</span>
-			</h4>
+			</h4> */}
 			<p className="my-2">
 				{client === "claude" ? (
 					<>

@@ -10,7 +10,7 @@ import {
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import { ServerFavicon } from "../../../../server-favicon"
-import { OverflowMenu } from "../overflow-menu"
+import { OverflowMenu } from "./overflow-menu"
 import type { ClientType } from "@/lib/utils/generate-command"
 
 type TabOption = {

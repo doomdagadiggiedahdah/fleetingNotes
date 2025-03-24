@@ -1,35 +1,16 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { ServerInstall } from "./server-install"
-import { ServerStats } from "./server-stats"
+import { SidePanel } from "./side-panel"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Wrench } from "lucide-react"
+import { Wrench } from "lucide-react"
 import Link from "next/link"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { CodeBlock } from "@/components/docs/code-block"
 import type { JSONSchema } from "@/lib/types/server"
+import { ToolPreview } from "./tool-preview"
 
 interface OverviewTabProps {
 	server: FetchedServer
 	configSchema?: JSONSchema | null
-}
-
-const ToolPreview = ({ tool }: { tool: Tool }) => {
-	return (
-		<div className="p-4 border rounded-md mb-3 hover:bg-muted/50 hover:border-primary transition-all cursor-pointer group">
-			<div className="flex items-center justify-between">
-				<h3 className="font-medium group-hover:text-primary transition-colors">
-					{tool.name}
-				</h3>
-				<ArrowRight
-					size={16}
-					className="text-muted-foreground group-hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
-				/>
-			</div>
-			<p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-				{tool.description}
-			</p>
-		</div>
-	)
 }
 
 interface ToolsPreviewProps {
@@ -66,9 +47,7 @@ const ToolsPreview = ({
 						hasTools ? (
 							<>
 								{previewTools.map((tool) => (
-									<Link key={tool.name} href={toolsPath}>
-										<ToolPreview tool={tool} />
-									</Link>
+									<ToolPreview key={tool.name} tool={tool} href={toolsPath} />
 								))}
 								{hasMoreTools && (
 									<Link href={toolsPath}>
@@ -127,8 +106,7 @@ export function OverviewTab({ server }: OverviewTabProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<ServerInstall server={server} />
-					<ServerStats server={server} serverId={server.qualifiedName} />
+					<SidePanel server={server} />
 				</div>
 			</div>
 		</div>

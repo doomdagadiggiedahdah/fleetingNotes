@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { TerminalIcon, Braces } from "lucide-react"
+import { SquareTerminal, TerminalIcon, Braces } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
 
@@ -63,7 +63,7 @@ export function CodeBlock({
 							</>
 						) : (
 							<>
-								<TerminalIcon className="h-4 w-4 text-[#cb4b16]" />
+								<SquareTerminal className="h-4 w-4 text-[#cb4b16]" />
 								<span className="text-xs font-mono text-[#cb4b16] font-medium">
 									{headerLabel || language}
 								</span>

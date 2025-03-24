@@ -6,7 +6,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover"
-import type { InstallTabStates } from "./install-tabs"
+import type { InstallTabStates } from "./index"
 
 type TabOption = {
 	value: InstallTabStates
