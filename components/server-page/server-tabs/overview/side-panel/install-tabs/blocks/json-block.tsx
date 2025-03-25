@@ -11,17 +11,25 @@ export const JsonBlock = ({
 	cleanedConfig,
 	apiKey,
 	usingSavedConfig,
+	client,
 }: {
 	server: FetchedServer
 	cleanedConfig?: JsonObject
 	apiKey?: string
 	usingSavedConfig?: boolean
+	client: string
 }) => {
 	return (
 		<>
 			<p className="text-sm mb-2">
-				Paste the following into your project&apos;s{" "}
-				<code>.cursor/mcp.json</code>:
+				{client === "cursor" ? (
+					<>
+						Paste the following into your project&apos;s{" "}
+						<code>.cursor/mcp.json</code>:
+					</>
+				) : (
+					<>Configuration in JSON format:</>
+				)}
 			</p>
 			<Tabs defaultValue="mac-linux" className="w-full">
 				<TabsList className="mb-2">

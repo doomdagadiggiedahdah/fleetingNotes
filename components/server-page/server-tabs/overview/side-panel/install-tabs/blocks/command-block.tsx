@@ -1,6 +1,13 @@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Bug, ExternalLink, FileText, Braces, CloudOff } from "lucide-react"
+import {
+	Bug,
+	ExternalLink,
+	FileText,
+	Braces,
+	CloudOff,
+	Sunset,
+} from "lucide-react"
 import posthog from "posthog-js"
 import type { JsonObject } from "@/lib/types/json"
 import { AuthBlock } from "./auth-block"
@@ -175,6 +182,10 @@ export const CommandBlock = ({
 							/>
 							npm
 						</TabsTrigger>
+						<TabsTrigger value="json" className="flex items-center gap-2">
+							<Braces className="w-4 h-4" />
+							JSON
+						</TabsTrigger>
 						{server.remote &&
 							server.deploymentUrl &&
 							client !== "spinai" &&
@@ -187,12 +198,6 @@ export const CommandBlock = ({
 									Scoop
 								</TabsTrigger>
 							)}
-						{client === "cursor" && (
-							<TabsTrigger value="json" className="flex items-center gap-2">
-								<Braces className="w-4 h-4" />
-								JSON
-							</TabsTrigger>
-						)}
 					</TabsList>
 
 					<TabsContent value="standard">
@@ -252,6 +257,13 @@ export const CommandBlock = ({
 
 					{server.remote && server.deploymentUrl && client !== "spinai" && (
 						<TabsContent value="scoop">
+							<div className="flex items-center gap-3 mb-4 py-2 px-3 rounded-md bg-amber-950/20">
+								<Sunset className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+								<span className="text-amber-300/90 text-xs">
+									The Scoop installation method will be deprecated soon. We
+									recommend using npm installation instead.
+								</span>
+							</div>
 							<div className="flex items-center gap-2 mb-2 text-sm font-medium">
 								<ServerFavicon
 									homepage="https://microsoft.com"
@@ -299,16 +311,15 @@ export const CommandBlock = ({
 						</TabsContent>
 					)}
 
-					{client === "cursor" && (
-						<TabsContent value="json">
-							<JsonBlock
-								server={server}
-								cleanedConfig={cleanedConfig}
-								apiKey={apiKey}
-								usingSavedConfig={usingSavedConfig}
-							/>
-						</TabsContent>
-					)}
+					<TabsContent value="json">
+						<JsonBlock
+							server={server}
+							cleanedConfig={cleanedConfig}
+							apiKey={apiKey}
+							usingSavedConfig={usingSavedConfig}
+							client={client}
+						/>
+					</TabsContent>
 				</Tabs>
 			) : (
 				<Alert variant="destructive" className="bg-muted/50">
