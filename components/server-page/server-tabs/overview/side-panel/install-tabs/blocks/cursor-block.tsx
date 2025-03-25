@@ -45,7 +45,9 @@ export const CursorBlock = ({
 							Mac/Linux
 						</div>
 						<AuthBlock
-							command={unixCommand.replace("install", "run")}
+							command={unixCommand
+								.replace("install", "run")
+								.replace("--client cursor ", "")}
 							serverQualifiedName={serverQualifiedName}
 						/>
 					</div>
@@ -77,7 +79,9 @@ export const CursorBlock = ({
 			<TabsContent value="new">
 				<div className="text-md mb-2">Run this in your terminal:</div>
 				<AuthBlock
-					command={unixCommand}
+					command={unixCommand
+						.replace("install", "run")
+						.replace("--client cursor ", "")}
 					serverQualifiedName={serverQualifiedName}
 				/>
 			</TabsContent>

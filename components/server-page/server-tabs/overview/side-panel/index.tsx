@@ -30,7 +30,7 @@ export async function SidePanel({
 			<Suspense fallback={<InstallTabsSkeleton />}>
 				<div className="bg-background p-3 rounded-lg border border-border">
 					<Installtabs
-						// key={`install-tabs-${Date.now()}`} // Intentional for forced mount, do not remove
+						// key={`install-tabs-${Date.now()}`}
 						server={server}
 						initTab={initTab}
 						onTabChange={onTabChange}
