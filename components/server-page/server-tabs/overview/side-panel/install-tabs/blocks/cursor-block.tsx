@@ -79,9 +79,7 @@ export const CursorBlock = ({
 			<TabsContent value="new">
 				<div className="text-md mb-2">Run this in your terminal:</div>
 				<AuthBlock
-					command={unixCommand
-						.replace("install", "run")
-						.replace("--client cursor ", "")}
+					command={unixCommand}
 					serverQualifiedName={serverQualifiedName}
 				/>
 			</TabsContent>
