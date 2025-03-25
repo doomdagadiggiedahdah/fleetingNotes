@@ -77,10 +77,19 @@ export async function getInstallationToken(
 	}
 
 	// Generate an installation token, then create an Octokit with it
-	const { token: installToken } = await auth({
-		type: "installation",
-		installationId: result.value.data.id,
-	})
+	const installTokenResult = await toResult(
+		auth({
+			type: "installation",
+			installationId: result.value.data.id,
+		}),
+	)
+
+	if (!installTokenResult.ok) {
+		console.error(installTokenResult.error)
+		return err("Failed to generate installation token for app")
+	}
+
+	const { token: installToken } = installTokenResult.value
 
 	return ok({ installationId: result.value.data.id, installToken, appToken })
 }
