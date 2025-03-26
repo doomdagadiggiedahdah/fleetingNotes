@@ -31,7 +31,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 								<ServerFavicon
 									homepage={server.homepage}
 									displayName={server.displayName}
-									className="w-4 h-4 flex-shrink-0"
+									className="w-6 h-6 flex-shrink-0"
 								/>
 								<span className="truncate">{server.displayName}</span>
 							</h3>
@@ -45,13 +45,17 @@ export function ServerListItem({ server }: ToolCardProps) {
 								</div>
 							)}
 						</div>
+					</div>
+					<div className="flex items-center justify-between">
+						<div className="min-w-0 flex-1 truncate">
+							<ServerQualifiedName server={server} />
+						</div>
 						{server.useCount > 0 && (
 							<div className="flex-shrink-0 ml-4">
 								<PopularityCounter count={server.useCount} />
 							</div>
 						)}
 					</div>
-					<ServerQualifiedName server={server} />
 					<p className="text-card-foreground mb-3 text-sm line-clamp-3">
 						{server.description}
 					</p>

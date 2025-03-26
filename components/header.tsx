@@ -14,8 +14,8 @@ export function Header() {
 							<Image
 								src="/logo.svg"
 								alt="Smithery Logo"
-								width={32}
-								height={32}
+								width={34}
+								height={34}
 							/>
 							<h1 className="text-2xl font-bold text-foreground">Smithery</h1>
 						</div>

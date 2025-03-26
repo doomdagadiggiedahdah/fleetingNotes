@@ -51,11 +51,9 @@ export function Installtabs({
 	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(
 		!!passedSavedConfig,
 	)
+	const [bypassWarning, setBypassWarning] = useState(false)
 
 	const { currentSession, setIsSignInOpen } = useAuth()
-	const isAnyConnectionPublished = server.connections.some(
-		(conn) => "published" in conn && conn.published,
-	)
 
 	// Get schema directly from server instead of using utility function
 	const prefetchedSchema = server.deploymentUrl
@@ -132,8 +130,30 @@ export function Installtabs({
 		setUsingSavedConfig(value)
 	}
 
+	// Check is any connection is published
+	const isAnyConnectionPublished = server.connections.some(
+		(conn) => "published" in conn && conn.published,
+	)
+
+	// Check for local connection
+	const hasPublishedStdioConnection = server.connections.some(
+		(conn) => conn.type === "stdio" && conn.published,
+	)
+
+	// Check for server without both deployment URL and any published connection
 	if (!server.isDeployed && !isAnyConnectionPublished) {
 		return <InstallWarning />
+	}
+
+	// CHeck for local server without a published local (STDIO) connection
+	if (!server.remote && !hasPublishedStdioConnection && !bypassWarning) {
+		return (
+			<InstallWarning
+				message="This server works best locally, but does not have a local installation option. 
+				Please check the source repositary for manual setup."
+				onContinue={() => setBypassWarning(true)}
+			/>
+		)
 	}
 
 	return (

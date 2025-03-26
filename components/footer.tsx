@@ -1,7 +1,7 @@
 import { SiDiscord, SiGithub, SiX } from "@icons-pack/react-simple-icons"
-import { Anvil } from "lucide-react"
 import Link from "next/link"
 import { Container } from "./layouts/container"
+import Image from "next/image"
 
 export function Footer() {
 	return (
@@ -10,7 +10,13 @@ export function Footer() {
 				<div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
 					<div className="col-span-2 md:col-span-1">
 						<Link href="/" className="flex items-center">
-							<Anvil className="w-5 h-5 text-primary mr-2" />
+							<Image
+								src="/logo.svg"
+								alt="Smithery Logo"
+								width={26}
+								height={26}
+								className="mr-2"
+							/>
 							<span className="text-base font-bold text-foreground">
 								Smithery
 							</span>

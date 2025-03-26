@@ -38,7 +38,7 @@ export function ServerQualifiedName({ server, copyable = false }: Props) {
 					<TooltipTrigger asChild>
 						<button
 							onClick={copyable ? copyToClipboard : undefined}
-							className="hover:text-foreground transition-colors cursor-pointer"
+							className="hover:text-foreground transition-colors cursor-pointer overflow-hidden text-ellipsis"
 							type="button"
 						>
 							{server.qualifiedName}
