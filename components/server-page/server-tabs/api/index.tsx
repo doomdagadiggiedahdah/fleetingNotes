@@ -6,6 +6,7 @@ import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiPython, SiTypescript } from "@icons-pack/react-simple-icons"
 import { Code, ExternalLink } from "lucide-react"
+import Link from "next/link"
 import posthog from "posthog-js"
 
 interface ApiTabProps {
@@ -58,7 +59,7 @@ export function ApiTab({ server }: ApiTabProps) {
 		? `\
 import { createTransport } from "@smithery/sdk/transport.js"
 
-const transport = createTransport("${server.deploymentUrl}"${wsConfig})`
+const transport = createTransport("${server.deploymentUrl}"${wsConfig}, "your-smithery-api-key")`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const transport = new StdioClientTransport(${stdioConfig})`
@@ -92,7 +93,7 @@ import mcp
 from mcp.client.websocket import websocket_client
 
 # Create Smithery URL with server endpoint
-url = smithery.create_smithery_url("${server.deploymentUrl.replace("https://", "wss://")}/ws"${wsConfig})
+url = smithery.create_smithery_url("${server.deploymentUrl.replace("https://", "wss://")}/ws"${wsConfig}) + "&api_key=your-smithery-api-key"
 
 async def main():
     # Connect to the server using websocket client
@@ -132,8 +133,24 @@ async def main():
 			<div className="mb-6">
 				<h2 className="text-xl font-bold mb-4">API Integration</h2>
 				<p className="mb-4">
-					Integrate this MCP server into your applications using our SDKs.
+					Integrate this MCP server into your applications.
 				</p>
+
+				<div className="mb-6 p-4 border rounded-lg bg-muted">
+					<h3 className="font-semibold mb-2 flex items-center">
+						Get your API Key
+					</h3>
+					<p className="mb-2">
+						You&apos;ll need to login and{" "}
+						<Link
+							href="/account/api-keys"
+							className="text-primary hover:text-primary/80 underline inline-flex items-center"
+						>
+							generate a Smithery API key
+						</Link>{" "}
+						to connect to this server.
+					</p>
+				</div>
 
 				{isServerAvailable ? (
 					<>
