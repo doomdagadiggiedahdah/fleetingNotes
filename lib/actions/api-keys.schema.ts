@@ -13,4 +13,6 @@ export type ReturnApiKeys = {
 	id: string
 	displayKey: string
 	timestamp: Date
+	name?: string
+	is_default?: boolean
 }

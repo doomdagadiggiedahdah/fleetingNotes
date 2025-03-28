@@ -23,6 +23,8 @@ export async function getMyApiKeys() {
 				id: apiKeys.id,
 				key: apiKeys.key,
 				timestamp: apiKeys.timestamp,
+				name: apiKeys.name,
+				is_default: apiKeys.is_default,
 			})
 			.from(apiKeys)
 			.where(eq(apiKeys.owner, me.id))
@@ -34,6 +36,8 @@ export async function getMyApiKeys() {
 				id: k.id,
 				displayKey: `••••••••${k.key.slice(-4)}`,
 				timestamp: k.timestamp,
+				name: k.name,
+				is_default: k.is_default,
 			})),
 		)
 	} catch (error) {
@@ -46,7 +50,7 @@ export async function getMyApiKeys() {
  * Creates a new API key for the authenticated user
  * @returns The full API key (only shown once) or an error if limit is reached
  */
-export async function createApiKey() {
+export async function createApiKey(name?: string, isDefault?: boolean) {
 	const me = await getMe()
 	if (!me) return err("Authentication required")
 
@@ -70,12 +74,23 @@ export async function createApiKey() {
 			.insert(apiKeys)
 			.values({
 				owner: me.id,
+				name: name || null,
+				is_default: false, // Always set to false initially
 				timestamp: new Date(),
 			})
 			.returning({
 				id: apiKeys.id,
 				key: apiKeys.key,
 			})
+
+		// If this key should be the default, use the existing transaction-based function
+		if (isDefault) {
+			const defaultResult = await setDefaultApiKey(newApiKey.id)
+			if (!defaultResult.ok) {
+				console.error("Failed to set new key as default:", defaultResult.error)
+				// We continue anyway since the key was created successfully
+			}
+		}
 
 		revalidatePath("/account/api-keys")
 		// Return the full key - this will only be displayed once
@@ -138,8 +153,8 @@ export async function getOrCreateApiKey() {
 			})
 		}
 
-		// Otherwise create a new key
-		const createResult = await createApiKey()
+		// Otherwise create a new key and set it as default since it's the first one
+		const createResult = await createApiKey(undefined, true)
 		if (!createResult.ok) {
 			return createResult // Pass through the error
 		}
@@ -147,6 +162,97 @@ export async function getOrCreateApiKey() {
 		return createResult // Return the newly created key
 	} catch (error) {
 		console.error("Get or create API key error:", error)
+		return err("Failed to get or create API key")
+	}
+}
+
+/**
+ * Sets an API key as the default for a user, unsets any previous default
+ * @param apiKeyId The UUID of the API key to set as default
+ */
+export async function setDefaultApiKey(apiKeyId: string) {
+	const me = await getMe()
+	if (!me) return err("Authentication required")
+
+	try {
+		// Start a transaction
+		await db.transaction(async (tx) => {
+			// First unset any existing default keys
+			await tx
+				.update(apiKeys)
+				.set({ is_default: false })
+				.where(eq(apiKeys.owner, me.id))
+
+			// Then set the new default key
+			await tx
+				.update(apiKeys)
+				.set({ is_default: true })
+				.where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.owner, me.id)))
+		})
+
+		revalidatePath("/account/api-keys")
+		return ok(true)
+	} catch (error) {
+		console.error("Set default API key error:", error)
+		return err("Failed to set default API key")
+	}
+}
+
+/**
+ * Updates the name of an API key
+ * @param apiKeyId The UUID of the API key to update
+ * @param name The new name for the API key
+ */
+export async function updateKeyName(apiKeyId: string, name: string) {
+	const me = await getMe()
+	if (!me) return err("Authentication required")
+
+	try {
+		// Only update if owned by current user
+		await db
+			.update(apiKeys)
+			.set({ name: name || null })
+			.where(and(eq(apiKeys.id, apiKeyId), eq(apiKeys.owner, me.id)))
+
+		revalidatePath("/account/api-keys")
+		return ok(true)
+	} catch (error) {
+		console.error("API key name update error:", error)
+		return err("Failed to update API key name")
+	}
+}
+
+/**
+ * Gets the default API key if it exists, otherwise gets an existing key or creates a new one
+ * @returns The full API key or an error
+ */
+export async function getDefaultOrCreateApiKey() {
+	const me = await getMe()
+	if (!me) return err("Authentication required")
+
+	try {
+		// First try to get the default key
+		const defaultKey = await db
+			.select({
+				id: apiKeys.id,
+				key: apiKeys.key,
+			})
+			.from(apiKeys)
+			.where(and(eq(apiKeys.owner, me.id), eq(apiKeys.is_default, true)))
+			.limit(1)
+
+		// If a default key exists, return it
+		if (defaultKey.length > 0) {
+			return ok({
+				key: defaultKey[0].key,
+				id: defaultKey[0].id,
+			})
+		}
+
+		// No default key, so fall back to get or create
+		return getOrCreateApiKey()
+	} catch (error) {
+		console.error("Get default or create API key error:", error)
 		return err("Failed to get or create API key")
 	}
 }

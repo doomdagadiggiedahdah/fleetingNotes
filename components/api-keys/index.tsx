@@ -33,5 +33,12 @@ export async function ApiKeysList() {
 	}
 
 	// Pass server data to client component for rendering with optimistic UI updates
-	return <ApiKeysListClient apiKeys={apiKeys} />
+	// Transform null values to undefined to match ReturnApiKeys type
+	const transformedKeys = apiKeys.map((key) => ({
+		...key,
+		name: key.name === null ? undefined : key.name,
+		is_default: key.is_default === null ? undefined : key.is_default,
+	}))
+
+	return <ApiKeysListClient apiKeys={transformedKeys} />
 }

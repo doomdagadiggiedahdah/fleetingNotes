@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { getMyApiKeys } from "@/lib/actions/api-keys"
-import { ApiKeysList } from "./api-keys-list"
-import { CreateApiKey } from "./api-keys-client"
+import { ApiKeysList } from "../../../components/api-keys"
+import { CreateApiKey } from "../../../components/api-keys/create-api-key"
 import type { Metadata } from "next"
 import Link from "next/link"
 
