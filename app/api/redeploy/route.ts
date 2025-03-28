@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 			.where((t) =>
 				and(serverId ? eq(servers.id, serverId) : undefined, isNotNull(t.url)),
 			)
-			.orderBy(desc(servers.createdAt))
+			.orderBy(desc(servers.id))
 
 		if (serversToDeploy.length === 0) {
 			return NextResponse.json(
@@ -45,39 +45,57 @@ export async function POST(request: Request) {
 			)
 		}
 
-		// Trigger new deployments for each server's latest deployment
+		// Deploy servers in batches
 		const results = []
-		console.log("Deploying", serversToDeploy.length, "servers")
-		let i = 0
-		for (const { server, serverRepo, url } of serversToDeploy) {
-			if (url && onlyFailing) {
-				// Check if the deployment is active. If it is, we skip.
-				console.log("Checking...", url)
-				try {
-					const configSchemaResult = await fetchConfigSchema(url)
-					if (configSchemaResult.ok) {
-						console.log("Deployment is active, skipping")
-						continue
+		const batchSize = 10
+		const totalServers = serversToDeploy.length
+		console.log(`Deploying ${totalServers} servers in batches of ${batchSize}`)
+
+		// Process each batch
+		for (let i = 0; i < totalServers; i += batchSize) {
+			const batch = serversToDeploy.slice(i, i + batchSize)
+			console.log(
+				`Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(totalServers / batchSize)}: ${batch.length} servers`,
+			)
+
+			// Process batch in parallel
+			const batchResults = await Promise.all(
+				batch.map(async ({ server, serverRepo, url }) => {
+					// Skip active servers if onlyFailing is true
+					if (url && onlyFailing) {
+						try {
+							const check = await fetchConfigSchema(url)
+							if (check.ok) return null
+						} catch {}
 					}
-				} catch (e) {
-					console.warn(e)
-				}
+
+					// Deploy the server
+					console.log(`Deploying ${server.id}...`)
+					const result = await createDeploymentForServer(
+						server,
+						serverRepo,
+						true,
+					)
+					return { serverId: server.id, result }
+				}),
+			)
+
+			// Add valid results
+			results.push(...batchResults.filter(Boolean))
+			console.log(`Completed ${results.length}/${totalServers} deployments`)
+
+			// Pause before next batch
+			if (i + batchSize < totalServers) {
+				await new Promise((resolve) => setTimeout(resolve, 2000))
 			}
-
-			console.log(`Deploying ${i + 1}/${serversToDeploy.length}...`, server.id)
-			const result = await createDeploymentForServer(server, serverRepo)
-			console.log("Deployed", server.id)
-			results.push({
-				serverId: server.id,
-				result,
-			})
-
-			i++
 		}
 
+		console.log("All deployments completed")
 		return NextResponse.json({
-			message: "Redeployment process initiated",
+			message: "Redeployment process completed",
 			results,
+			totalProcessed: results.length,
+			totalServers,
 		})
 	} catch (error) {
 		console.error("Error in redeploy-all:", error)

@@ -335,7 +335,7 @@ export const CommandBlock = ({
 
 			<div className="flex gap-4 mt-3 text-muted-foreground text-sm">
 				<a
-					href={`https://github.com/smithery-ai/typescript-sdk/issues/new?assignees=&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
+					href={`https://github.com/smithery-ai/cli/issues/new?assignees=arjunkmrm&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
 					target="_blank"
 					rel="noopener noreferrer"
 					className="flex items-center hover:text-primary"

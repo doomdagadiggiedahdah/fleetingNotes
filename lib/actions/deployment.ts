@@ -123,6 +123,8 @@ export async function createDeployment(serverId: string) {
 export async function createDeploymentForServer(
 	server: Pick<Server, "id" | "qualifiedName" | "displayName">,
 	serverRepo: ServerRepo,
+	// If true, will wait for the deployment to complete before returning
+	sync = false,
 ) {
 	// Get repo details
 	const { repoOwner, repoName } = serverRepo
@@ -192,285 +194,285 @@ export async function createDeploymentForServer(
 		return lastAppend
 	}
 
-	// Run in background
-	waitUntil(
-		(async () => {
-			try {
-				await withTimeout(
-					(async () => {
-						let buildFiles: BuildFiles | null = null
+	const execBuild = async () => {
+		try {
+			await withTimeout(
+				(async () => {
+					let buildFiles: BuildFiles | null = null
 
-						// Check cached build files and repo files concurrently
-						const [buildCacheRow, repoFiles] = await Promise.all([
-							db
-								.select()
-								.from(buildCache)
-								.where(eq(buildCache.serverId, server.id))
-								.then((rows) => rows[0]),
-							getRepoFiles(gitSandbox),
-						])
+					// Check cached build files and repo files concurrently
+					const [buildCacheRow, repoFiles] = await Promise.all([
+						db
+							.select()
+							.from(buildCache)
+							.where(eq(buildCache.serverId, server.id))
+							.then((rows) => rows[0]),
+						getRepoFiles(gitSandbox),
+					])
 
-						if (buildCacheRow) {
-							appendLog("Found cached build config files...")
-							buildFiles = buildCacheRow.files as BuildFiles
-							// User-defined files always overrides cache
-							if (repoFiles.smitheryConfig) {
-								appendLog("Using smithery.yaml from repository")
+					if (buildCacheRow) {
+						appendLog("Found cached build config files...")
+						buildFiles = buildCacheRow.files as BuildFiles
+						// User-defined files always overrides cache
+						if (repoFiles.smitheryConfig) {
+							appendLog("Using smithery.yaml from repository")
 
-								buildFiles.smitheryConfig = repoFiles.smitheryConfig
+							buildFiles.smitheryConfig = repoFiles.smitheryConfig
+						}
+						if (repoFiles.dockerfile) {
+							appendLog("Using Dockerfile from repository")
+							buildFiles.dockerfile = repoFiles.dockerfile
+						}
+					}
+
+					if (
+						!buildFiles?.smitheryConfig.content ||
+						!buildFiles?.dockerfile.content
+					) {
+						// Missing required files. Try to generate it.
+						const buildFilesResult = await generateBuildFiles(gitSandbox, {
+							onUpdate: appendLog,
+						})()
+
+						if (!buildFilesResult.ok) {
+							console.error(buildFilesResult.error)
+
+							const error = buildFilesResult.error as {
+								type: string
+								zodError: ZodError
 							}
-							if (repoFiles.dockerfile) {
-								appendLog("Using Dockerfile from repository")
-								buildFiles.dockerfile = repoFiles.dockerfile
-							}
-						}
-
-						if (
-							!buildFiles?.smitheryConfig.content ||
-							!buildFiles?.dockerfile.content
-						) {
-							// Missing required files. Try to generate it.
-							const buildFilesResult = await generateBuildFiles(gitSandbox, {
-								onUpdate: appendLog,
-							})()
-
-							if (!buildFilesResult.ok) {
-								console.error(buildFilesResult.error)
-
-								const error = buildFilesResult.error as {
-									type: string
-									zodError: ZodError
-								}
-								// Check if this is a smithery.yaml parse error
-								if (error.type === "configParseError") {
-									await appendLog(
-										`Smithery.yaml configuration error: ${error.zodError.format()}\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
-										"FAILURE",
-									)
-								} else if (error.type === "yamlParseError") {
-									await appendLog(
-										`Smithery.yaml file contains syntax errors.\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
-										"FAILURE",
-									)
-								} else {
-									await appendLog(
-										"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
-										"FAILURE",
-									)
-								}
-
-								return err({
-									type: "setupBuildFileError",
-									parent: error,
-								} as const)
-							}
-							buildFiles = buildFilesResult.value
-						}
-
-						appendLog(
-							"Successfully obtained required build config files. Preparing build...",
-						)
-						const smitheryConfig: ServerConfigGateway = {
-							...buildFiles.smitheryConfig.content,
-							serverId: server.id,
-						}
-
-						const prepareResult = await prepareBuild(
-							gitSandbox,
-							buildFiles.dockerfile.content,
-							smitheryConfig,
-						)
-
-						if (!prepareResult.ok) {
-							console.error(prepareResult.error)
-							await appendLog(
-								"Could not prepare the build. This is an internal error. Please contact support.",
-								"FAILURE",
-							)
-							return err({
-								type: "prepareBuildError",
-							} as const)
-						}
-
-						const flyAppId = getFlyAppId(server.id)
-						const buildResult = await buildAndDeploySandbox(
-							gitSandbox,
-							flyAppId,
-							smitheryConfig,
-							{ onUpdate: appendLog },
-						)
-
-						if (!buildResult.ok) {
-							console.error(JSON.stringify(buildResult.error))
-
-							if (buildResult.error.type === "dockerBuildError") {
+							// Check if this is a smithery.yaml parse error
+							if (error.type === "configParseError") {
 								await appendLog(
-									"Error while building Docker image. Please ensure your Docker image builds locally and try again.\n\nLearn more: https://smithery.ai/docs/deployments",
+									`Smithery.yaml configuration error: ${error.zodError.format()}\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
 									"FAILURE",
 								)
-							} else if (buildResult.error.type === "deployError") {
+							} else if (error.type === "yamlParseError") {
 								await appendLog(
-									"Error while deploying. This could be an internal error. Please reach out to support.",
+									`Smithery.yaml file contains syntax errors.\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
 									"FAILURE",
 								)
 							} else {
 								await appendLog(
-									"Error while building or deploying. Please review the logs above or reach out to support.",
+									"Could not pull or automatically generate required build config files. Please create the build config files manually in your repository and try again.\nLearn more: https://smithery.ai/docs/config",
 									"FAILURE",
 								)
 							}
+
 							return err({
-								type: "deployError",
+								type: "setupBuildFileError",
+								parent: error,
 							} as const)
 						}
+						buildFiles = buildFilesResult.value
+					}
 
-						appendLog("Deployment successful!")
+					appendLog(
+						"Successfully obtained required build config files. Preparing build...",
+					)
+					const smitheryConfig: ServerConfigGateway = {
+						...buildFiles.smitheryConfig.content,
+						serverId: server.id,
+					}
 
-						// Only create PR if files have changed from what's already in the repo
-						const dockerfileChanged =
-							buildFiles.dockerfile.content !== repoFiles.dockerfile?.content
-						const configChanged = !isEqual(
-							buildFiles.smitheryConfig.content,
-							repoFiles.smitheryConfig?.content,
+					const prepareResult = await prepareBuild(
+						gitSandbox,
+						buildFiles.dockerfile.content,
+						smitheryConfig,
+					)
+
+					if (!prepareResult.ok) {
+						console.error(prepareResult.error)
+						await appendLog(
+							"Could not prepare the build. This is an internal error. Please contact support.",
+							"FAILURE",
 						)
+						return err({
+							type: "prepareBuildError",
+						} as const)
+					}
 
-						if (dockerfileChanged || configChanged) {
-							try {
-								// Create PR with the changed files
-								const prResult = await createServerRepoPullRequestFromBuild(
-									server,
-									serverRepo,
-									gitSandbox,
-									{
-										dockerfile: {
-											content: buildFiles?.dockerfile?.content || null,
-											oldContent: repoFiles.dockerfile?.content || null,
-										},
-										smitheryConfig: {
-											content: buildFiles?.smitheryConfig?.content
-												? serializeSmitheryYaml(
-														buildFiles.smitheryConfig.content,
-													)
-												: null,
-											oldContent: repoFiles.smitheryConfig?.content
-												? serializeSmitheryYaml(
-														repoFiles.smitheryConfig.content,
-													)
-												: null,
-										},
-									},
-								)
+					const flyAppId = getFlyAppId(server.id)
+					const buildResult = await buildAndDeploySandbox(
+						gitSandbox,
+						flyAppId,
+						smitheryConfig,
+						{ onUpdate: appendLog },
+					)
 
-								if (prResult.ok) {
-									console.log(
-										`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
-									)
-									appendLog(
-										`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
-									)
-								}
-							} catch (e) {
-								console.error("Critical error applying PR: ", e)
-							}
+					if (!buildResult.ok) {
+						console.error(JSON.stringify(buildResult.error))
+
+						if (buildResult.error.type === "dockerBuildError") {
+							await appendLog(
+								"Error while building Docker image. Please ensure your Docker image builds locally and try again.\n\nLearn more: https://smithery.ai/docs/deployments",
+								"FAILURE",
+							)
+						} else if (buildResult.error.type === "deployError") {
+							await appendLog(
+								"Error while deploying. This could be an internal error. Please reach out to support.",
+								"FAILURE",
+							)
+						} else {
+							await appendLog(
+								"Error while building or deploying. Please review the logs above or reach out to support.",
+								"FAILURE",
+							)
 						}
+						return err({
+							type: "deployError",
+						} as const)
+					}
 
-						const deploymentUrl = getDeployedUrl(flyAppId)
-						// Must await this first to prevent race condition
-						await lastAppend
-						await Promise.all([
-							db
-								.update(deployments)
-								.set({
-									status: "SUCCESS",
-									updatedAt: sql`NOW()`,
-									deploymentUrl,
-								})
-								.where(eq(deployments.id, deploymentRow.id)),
-							db
-								.insert(buildCache)
-								.values({
-									serverId: server.id,
-									files: buildFiles,
-								})
-								.onConflictDoUpdate({
-									target: buildCache.serverId,
-									set: { files: buildFiles },
-								}),
+					appendLog("Deployment successful!")
+
+					// Only create PR if files have changed from what's already in the repo
+					const dockerfileChanged =
+						buildFiles.dockerfile.content !== repoFiles.dockerfile?.content
+					const configChanged = !isEqual(
+						buildFiles.smitheryConfig.content,
+						repoFiles.smitheryConfig?.content,
+					)
+
+					if (dockerfileChanged || configChanged) {
+						try {
+							// Create PR with the changed files
+							const prResult = await createServerRepoPullRequestFromBuild(
+								server,
+								serverRepo,
+								gitSandbox,
+								{
+									dockerfile: {
+										content: buildFiles?.dockerfile?.content || null,
+										oldContent: repoFiles.dockerfile?.content || null,
+									},
+									smitheryConfig: {
+										content: buildFiles?.smitheryConfig?.content
+											? serializeSmitheryYaml(buildFiles.smitheryConfig.content)
+											: null,
+										oldContent: repoFiles.smitheryConfig?.content
+											? serializeSmitheryYaml(repoFiles.smitheryConfig.content)
+											: null,
+									},
+								},
+							)
+
+							if (prResult.ok) {
+								console.log(
+									`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
+								)
+								appendLog(
+									`Created a pull-request with the build files we generated: ${prResult.value.prUrl}`,
+								)
+							}
+						} catch (e) {
+							console.error("Critical error applying PR: ", e)
+						}
+					}
+
+					const deploymentUrl = getDeployedUrl(flyAppId)
+					// Must await this first to prevent race condition
+					await lastAppend
+					await Promise.all([
+						db
+							.update(deployments)
+							.set({
+								status: "SUCCESS",
+								updatedAt: sql`NOW()`,
+								deploymentUrl,
+							})
+							.where(eq(deployments.id, deploymentRow.id)),
+						db
+							.insert(buildCache)
+							.values({
+								serverId: server.id,
+								files: buildFiles,
+							})
+							.onConflictDoUpdate({
+								target: buildCache.serverId,
+								set: { files: buildFiles },
+							}),
+					])
+
+					const backgroundUpdate = async () => {
+						// Populate `configSchema` and `tools` in server based on call to server
+
+						// Run both API calls in parallel
+						const [configSchemaResult, toolResult] = await Promise.all([
+							fetchConfigSchema(deploymentUrl),
+							fetchServerTools(deploymentUrl),
 						])
 
-						const backgroundUpdate = async () => {
-							// Populate `configSchema` and `tools` in server based on call to server
+						// Prepare update data based on results
+						const updateData: Partial<typeof servers.$inferInsert> = {}
 
-							// Run both API calls in parallel
-							const [configSchemaResult, toolResult] = await Promise.all([
-								fetchConfigSchema(deploymentUrl),
-								fetchServerTools(deploymentUrl),
-							])
+						if (configSchemaResult.ok) {
+							updateData.configSchema = configSchemaResult.value
+						}
 
-							// Prepare update data based on results
-							const updateData: Partial<typeof servers.$inferInsert> = {}
+						if (toolResult.ok && toolResult.value.tools.length > 0) {
+							updateData.tools = toolResult.value.tools
+						}
 
-							if (configSchemaResult.ok) {
-								updateData.configSchema = configSchemaResult.value
-							}
+						// Perform a single update if we have data to update
+						if (Object.keys(updateData).length > 0) {
+							await db
+								.update(servers)
+								.set(updateData)
+								.where(eq(servers.id, server.id))
 
-							if (toolResult.ok && toolResult.value.tools.length > 0) {
-								updateData.tools = toolResult.value.tools
-							}
+							try {
+								const paths = [`/`, `/server/${server.qualifiedName}`]
 
-							// Perform a single update if we have data to update
-							if (Object.keys(updateData).length > 0) {
-								await db
-									.update(servers)
-									.set(updateData)
-									.where(eq(servers.id, server.id))
+								// For Vercel deployments, use VERCEL_URL environment variable
+								// This code always runs server-side
+								const baseUrl =
+									process.env.NEXT_PUBLIC_BASE_URL ||
+									(process.env.VERCEL_PROJECT_PRODUCTION_URL
+										? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+										: "http://localhost:3000")
 
-								try {
-									const paths = [`/`, `/server/${server.qualifiedName}`]
-
-									// For Vercel deployments, use VERCEL_URL environment variable
-									// This code always runs server-side
-									const baseUrl =
-										process.env.NEXT_PUBLIC_BASE_URL ||
-										(process.env.VERCEL_PROJECT_PRODUCTION_URL
-											? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-											: "http://localhost:3000")
-
-									// Trigger revalidation for each path
-									await Promise.all(
-										paths.map(async (path) => {
-											await fetch(`${baseUrl}/api/revalidate`, {
-												method: "POST",
-												body: JSON.stringify({ path }),
-												headers: {
-													"Content-Type": "application/json",
-													Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
-												},
-											})
-										}),
-									)
-								} catch (e) {
-									console.error("Failed to trigger revalidation:", e)
-								}
+								// Trigger revalidation for each path
+								await Promise.all(
+									paths.map(async (path) => {
+										await fetch(`${baseUrl}/api/revalidate`, {
+											method: "POST",
+											body: JSON.stringify({ path }),
+											headers: {
+												"Content-Type": "application/json",
+												Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
+											},
+										})
+									}),
+								)
+							} catch (e) {
+								console.error("Failed to trigger revalidation:", e)
 							}
 						}
-						waitUntil(backgroundUpdate())
+					}
+					waitUntil(backgroundUpdate())
 
-						return ok()
-					})(),
-					600 * 1000,
-				)
-			} catch (e) {
-				console.error("Unexpected internal error or timeout", e)
-				await appendLog("Unexpected internal error or timeout.", "FAILURE")
-				return err({ type: "unexpected" })
-			} finally {
-				await gitSandbox.sandbox.kill()
-			}
-		})(),
-	)
+					return ok()
+				})(),
+				600 * 1000,
+			)
+			return ok()
+		} catch (e) {
+			console.error("Unexpected internal error or timeout", e)
+			await appendLog("Unexpected internal error or timeout.", "FAILURE")
+			return err({ type: "unexpected" })
+		} finally {
+			await gitSandbox.sandbox.kill()
+		}
+	}
 
-	return ok()
+	if (sync) {
+		return await execBuild()
+	} else {
+		// Run in background
+		waitUntil(execBuild())
+		return ok()
+	}
 }
 
 /**
