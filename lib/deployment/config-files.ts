@@ -16,7 +16,6 @@ primary_region = 'iad'
 
 [http_service]
   internal_port = 8080
-  force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
@@ -40,14 +39,14 @@ primary_region = 'iad'
 export function createDockerfile(baseDockerfile: string, config: ServerConfig) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM registry.fly.io/sidecar:deployment-01JKK3M7V2JJB2KEBCB7WPHZVE as gateway_image
+FROM registry.fly.io/sidecar:deployment-01JQD14TZZ8EXN3Q9KA8DEM99G as sidecar_image
 
 # User's Dockerfile
 ${baseDockerfile}
 # End user Dockerfile
 
-COPY --from=gateway_image /app/gateway-app-glibc /tmp/smithery-gateway-glibc
-COPY --from=gateway_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
+COPY --from=sidecar_image /app/gateway-app-glibc /tmp/smithery-gateway-glibc
+COPY --from=sidecar_image /app/gateway-app-musl  /tmp/smithery-gateway-musl
 
 USER root
 

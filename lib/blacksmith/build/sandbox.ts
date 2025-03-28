@@ -268,20 +268,21 @@ set -e
 	options.onUpdate?.("Starting deployment...")
 	const deployResult = await toCommandResult(
 		sandbox.commands.run(
-			`/home/runner/.fly/bin/fly deploy --image registry.fly.io/${flyAppId}:latest --remote-only --ha=false -a ${flyAppId}`,
+			`/home/runner/.fly/bin/fly deploy --image registry.fly.io/${flyAppId}:latest --remote-only --ha=false --flycast -a ${flyAppId}`,
 			{
 				cwd: workingDir,
 				envs: {
 					FLY_API_TOKEN: process.env.FLY_API_TOKEN!,
 					DEPOT_TOKEN: process.env.DEPOT_TOKEN!,
 				},
-				timeoutMs: 60_000,
+				timeoutMs: 3 * 60_000,
 			},
 		),
 	)
 
-	if (!deployResult.ok)
+	if (!deployResult.ok) {
 		return err({ type: "deployError", parent: deployResult.error })
+	}
 
 	return buildResult
 }

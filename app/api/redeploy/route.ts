@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import { deployments, serverRepos, servers } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
-import { and, eq, isNotNull, sql } from "drizzle-orm"
+import { and, eq, isNotNull, desc, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
 			.where((t) =>
 				and(serverId ? eq(servers.id, serverId) : undefined, isNotNull(t.url)),
 			)
+			.orderBy(desc(servers.createdAt))
 
 		if (serversToDeploy.length === 0) {
 			return NextResponse.json(
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
 		// Trigger new deployments for each server's latest deployment
 		const results = []
 		console.log("Deploying", serversToDeploy.length, "servers")
-
+		let i = 0
 		for (const { server, serverRepo, url } of serversToDeploy) {
 			if (url && onlyFailing) {
 				// Check if the deployment is active. If it is, we skip.
@@ -63,13 +64,15 @@ export async function POST(request: Request) {
 				}
 			}
 
-			console.log("Deploying", server.id)
+			console.log(`Deploying ${i + 1}/${serversToDeploy.length}...`, server.id)
 			const result = await createDeploymentForServer(server, serverRepo)
 			console.log("Deployed", server.id)
 			results.push({
 				serverId: server.id,
 				result,
 			})
+
+			i++
 		}
 
 		return NextResponse.json({
