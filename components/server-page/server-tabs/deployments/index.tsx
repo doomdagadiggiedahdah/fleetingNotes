@@ -36,7 +36,7 @@ export function DeploymentsTab({ server }: Props) {
 			</div>
 			<div className="my-4">
 				{/* Force remount component till a better fix is found - SMI 215 */}
-				<DeploymentsTable key={Date.now()} server={server} /> 
+				<DeploymentsTable key={Date.now()} server={server} />
 			</div>
 		</div>
 	)

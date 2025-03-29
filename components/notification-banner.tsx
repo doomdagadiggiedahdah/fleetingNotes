@@ -1,20 +1,32 @@
 "use client"
 
 import { Container } from "./layouts/container"
-import { type HTMLAttributes, useState } from "react"
+import { type HTMLAttributes, useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "./ui/button"
+import posthog from "posthog-js"
 
 // Either use a type alias instead of an empty interface
 type NotificationBannerProps = HTMLAttributes<HTMLDivElement>
+
+// Notification banner feature flag key
+const NOTIFICATION_BANNER_FEATURE_FLAG = "notification-banner"
 
 export function NotificationBanner({
 	className,
 	...props
 }: NotificationBannerProps) {
 	const [isVisible, setIsVisible] = useState(true)
+	const [isFeatureEnabled, setIsFeatureEnabled] = useState(false)
 
-	if (!isVisible) {
+	// Check feature flag on mount
+	useEffect(() => {
+		const enabled =
+			posthog.isFeatureEnabled(NOTIFICATION_BANNER_FEATURE_FLAG) ?? false
+		setIsFeatureEnabled(enabled)
+	}, [])
+
+	if (!isVisible || !isFeatureEnabled) {
 		return null
 	}
 
