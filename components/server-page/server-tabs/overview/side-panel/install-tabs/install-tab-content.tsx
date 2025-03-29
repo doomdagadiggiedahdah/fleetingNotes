@@ -7,6 +7,8 @@ import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { CloudOff } from "lucide-react"
+import { extractPrerequisites } from "@/lib/utils/extract-prerequisites"
+import { PrerequisitesDisplay } from "./prerequisites-display"
 
 interface InstallTabContentProps {
 	server: FetchedServer
@@ -56,33 +58,46 @@ export function InstallTabContent({
 		)
 	}
 
+	// Extract prerequisites information
+	const prerequisites = extractPrerequisites(server)
+
 	// Prepare content based on configuration state
 	let content: React.ReactNode
 
 	if (!isClientConfigured) {
 		content = (
-			<ConfigForm
-				schema={configSchema}
-				onSubmit={async (values) => await onClientConfig(values)}
-				onCancel={() => {}}
-				onSuccess={() => {}}
-				serverId={server.id}
-				initialConfig={configValues}
-				savedConfig={savedConfig}
-				currentSession={currentSession}
-				setIsSignInOpen={setIsSignInOpen}
-				onUsingSavedConfig={setUsingSaved}
-			/>
+			<>
+				{!server.remote && (
+					<PrerequisitesDisplay prerequisites={prerequisites} />
+				)}
+				<ConfigForm
+					schema={configSchema}
+					onSubmit={async (values) => await onClientConfig(values)}
+					onCancel={() => {}}
+					onSuccess={() => {}}
+					serverId={server.id}
+					initialConfig={configValues}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+					onUsingSavedConfig={setUsingSaved}
+				/>
+			</>
 		)
 	} else {
 		content = (
-			<CommandBlock
-				server={server}
-				client={client}
-				config={configValues}
-				apiKey={apiKey}
-				usingSavedConfig={usingSavedConfig}
-			/>
+			<>
+				{!server.remote && (
+					<PrerequisitesDisplay prerequisites={prerequisites} />
+				)}
+				<CommandBlock
+					server={server}
+					client={client}
+					config={configValues}
+					apiKey={apiKey}
+					usingSavedConfig={usingSavedConfig}
+				/>
+			</>
 		)
 	}
 

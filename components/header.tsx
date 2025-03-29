@@ -8,15 +8,15 @@ export function Header() {
 	return (
 		<>
 			<div className="bg-primary/10 border-b border-primary/20 px-4 text-primary-foreground">
-				<Container className="py-0.5">
+				<Container className="py-1">
 					<div className="flex items-center gap-1 text-md leading-tight">
-						<p className="line-clamp-1 py-1 m-0">
+						<p className="line-clamp-1 py-1.5 m-0 text-primary-foreground/70">
 							We&apos;re upgrading our servers to support the new MCP
 							&quot;Streamable HTTP&quot; transport. Please expect some
 							disruptions, sorry for the inconvenience.{" "}
 							<a
 								href="https://github.com/modelcontextprotocol/specification/pull/206"
-								className="underline font-medium hover:text-primary-foreground/80 whitespace-nowrap"
+								className="underline font-medium hover:text-primary-foreground/90 whitespace-nowrap"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
