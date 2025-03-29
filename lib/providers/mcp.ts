@@ -10,6 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
+import { getDefaultOrCreateApiKey } from "../actions/api-keys"
 
 export class MCPError extends Error {
 	constructor(
@@ -24,6 +25,7 @@ export class MCPError extends Error {
 interface MCPClientConfig {
 	wsUrl: string
 	config?: Record<string, unknown>
+	apiKey?: string
 	onNotification?: (notification: Notification) => void
 	onStdErrNotification?: (notification: Notification) => void
 	onPendingRequest?: (
@@ -58,10 +60,19 @@ export class MCPClient {
 				},
 			)
 
-			const connectionUrl = createSmitheryUrl(
-				this.config.wsUrl,
-				this.config.config || {},
-			)
+			// Get API key if needed
+			let apiKey = this.config.apiKey
+			if (!apiKey) {
+				const apiKeyResult = await getDefaultOrCreateApiKey()
+				if (apiKeyResult.ok) {
+					apiKey = apiKeyResult.value.key
+				}
+			}
+
+			const connectionUrl = createSmitheryUrl(this.config.wsUrl, {
+				...this.config.config,
+				apiKey,
+			})
 
 			const clientTransport = new WebSocketClientTransport(connectionUrl)
 
