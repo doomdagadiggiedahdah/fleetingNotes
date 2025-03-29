@@ -67,7 +67,7 @@ export function InstallTabContent({
 	if (!isClientConfigured) {
 		content = (
 			<>
-				{!server.remote && (
+				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
 				<ConfigForm
@@ -87,7 +87,7 @@ export function InstallTabContent({
 	} else {
 		content = (
 			<>
-				{!server.remote && (
+				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
 				<CommandBlock

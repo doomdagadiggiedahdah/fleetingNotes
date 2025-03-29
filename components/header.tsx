@@ -1,32 +1,19 @@
 import { Plus, BookOpen } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { Suspense } from "react"
 import { LoginButton } from "./auth/login-button"
 import { Container } from "./layouts/container"
+import { NotificationBanner } from "./notification-banner"
 
 export function Header() {
 	return (
 		<>
-			<div className="bg-primary/10 border-b border-primary/20 px-4 text-primary-foreground">
-				<Container className="py-1">
-					<div className="flex items-center gap-1 text-md leading-tight">
-						<p className="line-clamp-1 py-1.5 m-0 text-primary-foreground/70">
-							We&apos;re upgrading our servers to support the new MCP
-							&quot;Streamable HTTP&quot; transport. Please expect some
-							disruptions, sorry for the inconvenience.{" "}
-							<a
-								href="https://github.com/modelcontextprotocol/specification/pull/206"
-								className="underline font-medium hover:text-primary-foreground/90 whitespace-nowrap"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								Learn more
-							</a>
-						</p>
-					</div>
-				</Container>
-			</div>
-
+			{" "}
+			{/* Wrap in suspense because it uses state to let users close it */}
+			<Suspense fallback={null}>
+				<NotificationBanner className="hidden md:block" />
+			</Suspense>
 			<header className="bg-card border-b border-border">
 				<Container>
 					<div className="flex items-center justify-between">

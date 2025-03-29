@@ -11,7 +11,7 @@ export function extractPrerequisites(server: FetchedServer): string | null {
 	try {
 		// Find stdio connection with stdioFunction
 		const stdioConnection = server.connections?.find(
-			(conn) => conn.type === "stdio" && "stdioFunction" in conn
+			(conn) => conn.type === "stdio" && "stdioFunction" in conn,
 		)
 
 		if (!stdioConnection || !("stdioFunction" in stdioConnection)) return null

@@ -31,7 +31,7 @@ export function PrerequisitesDisplay({
 
 	return (
 		<div className="mb-4 flex items-center gap-1.5">
-			<span className="text-xs text-gray-400">Prerequisites</span>
+			<span className="text-xs text-gray-400">Requires</span>
 			<div className="flex gap-1">
 				{documentationUrl ? (
 					<a
