@@ -34,7 +34,21 @@ export function SchemaForm({
 	isConnected = false,
 }: SchemaFormProps) {
 	const hasConfigFields = Object.keys(schema?.properties || {}).length > 0
-	const [values, setValues] = useState<JsonObject>(initialValues)
+	const getInitialValues = () => {
+		const defaultValues: JsonObject = {}
+
+		Object.entries(schema?.properties || {}).forEach(
+			([key, field]: [string, JSONSchema]) => {
+				if (field.default !== undefined) {
+					defaultValues[key] = field.default as SchemaValueType
+				}
+			},
+		)
+
+		return { ...defaultValues, ...initialValues }
+	}
+
+	const [values, setValues] = useState<JsonObject>(getInitialValues())
 	const [validationErrors, setValidationErrors] = useState<
 		Record<string, boolean>
 	>({})
@@ -109,6 +123,15 @@ export function SchemaForm({
 		)
 	}
 
+	const getPlaceholder = (field: JSONSchema) => {
+		if (field.description) {
+			return field.default !== undefined
+				? `${field.description} (Default: ${field.default})`
+				: field.description
+		}
+		return field.default !== undefined ? `Default: ${field.default}` : ""
+	}
+
 	const renderInput = (key: string, field: JSONSchema) => {
 		const isSensitiveField = shouldMaskField(key)
 
@@ -155,7 +178,7 @@ export function SchemaForm({
 							required={
 								Array.isArray(schema.required) && schema.required.includes(key)
 							}
-							placeholder={field.description || ""}
+							placeholder={getPlaceholder(field)}
 							value={values[key] != null ? values[key].toString() : ""}
 							onChange={(e) =>
 								handleValueChange(
@@ -177,7 +200,7 @@ export function SchemaForm({
 							required={
 								Array.isArray(schema.required) && schema.required.includes(key)
 							}
-							placeholder={field.description || ""}
+							placeholder={getPlaceholder(field)}
 							value={values[key] != null ? values[key].toString() : ""}
 							onChange={(e) => handleValueChange(key, e.target.value)}
 						/>
@@ -214,8 +237,21 @@ export function SchemaForm({
 			<form onSubmit={handleSubmit} className="space-y-4">
 				{hasConfigFields ? (
 					<>
-						{Object.entries(schema?.properties || {}).map(
-							([key, field]: [string, JSONSchema]) => {
+						{Object.entries(schema?.properties || {})
+							// Sort entries to put required fields first
+							.sort(([keyA], [keyB]) => {
+								const isRequiredA =
+									Array.isArray(schema.required) &&
+									schema.required.includes(keyA)
+								const isRequiredB =
+									Array.isArray(schema.required) &&
+									schema.required.includes(keyB)
+
+								if (isRequiredA && !isRequiredB) return -1
+								if (!isRequiredA && isRequiredB) return 1
+								return 0 // Keep original order for fields with same required status
+							})
+							.map(([key, field]: [string, JSONSchema]) => {
 								const isRequired =
 									Array.isArray(schema.required) &&
 									schema.required.includes(key)
@@ -235,8 +271,7 @@ export function SchemaForm({
 										)}
 									</div>
 								)
-							},
-						)}
+							})}
 					</>
 				) : (
 					<p className="text-start text-muted-foreground mb-4">

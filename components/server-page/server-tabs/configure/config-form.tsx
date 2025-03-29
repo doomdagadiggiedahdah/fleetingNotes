@@ -85,15 +85,26 @@ export function ConfigForm({
 		}
 	}, [hasChanges, onUsingSavedConfig])
 
-	// Ensure all schema fields are included in the submission
+	// Ensure all schema fields are included in the submission and apply defaults for empty optional fields
 	const getCompleteValues = () => {
 		const completeValues = { ...values }
 
-		// Add all schema properties with empty values if they don't exist
+		// Add all schema properties with appropriate values
 		if (schema?.properties) {
-			Object.keys(schema.properties).forEach((key) => {
-				if (completeValues[key] === undefined) {
-					completeValues[key] = ""
+			Object.entries(schema.properties).forEach(([key, field]) => {
+				const currentValue = completeValues[key]
+				const isEmpty = currentValue === undefined || currentValue === ""
+
+				if (isEmpty) {
+					// Cast field to JSONSchema to access its properties safely
+					const schemaField = field as JSONSchema
+					// If field has a default and is empty, use the default
+					if (schemaField.default !== undefined) {
+						completeValues[key] = schemaField.default
+					} else {
+						// Otherwise use empty string to ensure all fields are present
+						completeValues[key] = ""
+					}
 				}
 			})
 		}
