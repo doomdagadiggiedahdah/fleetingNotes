@@ -10,7 +10,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { z } from "zod"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
-import { getDefaultOrCreateApiKey } from "../actions/api-keys"
+import { fetchDefaultOrCreateApiKey } from "../actions/api-keys"
 
 export class MCPError extends Error {
 	constructor(
@@ -63,7 +63,7 @@ export class MCPClient {
 			// Get API key if needed
 			let apiKey = this.config.apiKey
 			if (!apiKey) {
-				const apiKeyResult = await getDefaultOrCreateApiKey()
+				const apiKeyResult = await fetchDefaultOrCreateApiKey()
 				if (apiKeyResult.ok) {
 					apiKey = apiKeyResult.value.key
 				}

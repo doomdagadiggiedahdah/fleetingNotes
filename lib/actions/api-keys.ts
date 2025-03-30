@@ -2,7 +2,7 @@
 
 import { db } from "@/db"
 import { apiKeys } from "@/db/schema"
-import { and, eq } from "drizzle-orm"
+import { and, eq, desc } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { getMe } from "../supabase/server"
 import { err, ok } from "../utils/result"
@@ -223,36 +223,58 @@ export async function updateKeyName(apiKeyId: string, name: string) {
 }
 
 /**
- * Gets the default API key if it exists, otherwise gets an existing key or creates a new one
+ * Gets the default API key if it exists, otherwise gets an existing key or creates a new one.
+ * Safe to use during rendering as it never triggers revalidation.
  * @returns The full API key or an error
  */
-export async function getDefaultOrCreateApiKey() {
+export async function fetchDefaultOrCreateApiKey() {
 	const me = await getMe()
 	if (!me) return err("Authentication required")
 
 	try {
-		// First try to get the default key
-		const defaultKey = await db
+		// First query to check for any existing keys
+		// Priority: default key first, then any key
+		const existingKeys = await db
 			.select({
 				id: apiKeys.id,
 				key: apiKeys.key,
+				is_default: apiKeys.is_default,
 			})
 			.from(apiKeys)
-			.where(and(eq(apiKeys.owner, me.id), eq(apiKeys.is_default, true)))
-			.limit(1)
+			.where(eq(apiKeys.owner, me.id))
+			.orderBy(desc(apiKeys.is_default)) // Default keys first
+			.limit(10) // Get a few in case we need to check count
 
-		// If a default key exists, return it
-		if (defaultKey.length > 0) {
+		// If we found any keys
+		if (existingKeys.length > 0) {
+			// Return the first one (which will be a default key if any exists)
 			return ok({
-				key: defaultKey[0].key,
-				id: defaultKey[0].id,
+				key: existingKeys[0].key,
+				id: existingKeys[0].id,
 			})
 		}
 
-		// No default key, so fall back to get or create
-		return getOrCreateApiKey()
+		// Else create a new key
+		const [newApiKey] = await db
+			.insert(apiKeys)
+			.values({
+				owner: me.id,
+				name: null,
+				is_default: true, // Set as default since it's the first key
+				timestamp: new Date(),
+			})
+			.returning({
+				id: apiKeys.id,
+				key: apiKeys.key,
+			})
+
+		// Return the full key
+		return ok({
+			key: newApiKey.key,
+			id: newApiKey.id,
+		})
 	} catch (error) {
-		console.error("Get default or create API key error:", error)
+		console.error("Fetch default or create API key error:", error)
 		return err("Failed to get or create API key")
 	}
 }

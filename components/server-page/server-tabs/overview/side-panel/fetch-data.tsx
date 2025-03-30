@@ -1,5 +1,5 @@
 import type { JSONSchema } from "@/lib/types/server"
-import { getDefaultOrCreateApiKey } from "@/lib/actions/api-keys"
+import { fetchDefaultOrCreateApiKey } from "@/lib/actions/api-keys"
 import { getMe } from "@/lib/supabase/server"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
 
@@ -14,8 +14,8 @@ export async function fetchData(serverId: string): Promise<FetchedData> {
 	let savedConfig: JSONSchema | null = null
 
 	if (currentUser) {
-		// Fetch API key
-		const keyResult = await getDefaultOrCreateApiKey()
+		// Fetch API key using the render-safe function
+		const keyResult = await fetchDefaultOrCreateApiKey()
 		if (keyResult.ok) {
 			apiKey = keyResult.value.key
 		}
