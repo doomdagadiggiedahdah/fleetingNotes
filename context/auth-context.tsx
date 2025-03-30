@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase/client"
 import posthog from "posthog-js"
 import { createContext, useContext, useEffect, useState } from "react"
 
-import type { Session } from "@supabase/supabase-js"
+import type { Session, User } from "@supabase/supabase-js"
 
 interface AuthContextType {
 	isSignInOpen: boolean
@@ -23,17 +23,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [stateChangedOnce, setStateChangedOnce] = useState(false)
 	const [currentSession, setCurrentSession] = useState<Session | null>(null)
 	useEffect(() => {
+		const handleIdentify = (user: User | null) => {
+			if (user) {
+				const currentDistinctId = posthog.get_distinct_id()
+				if (currentDistinctId !== user.id) {
+					posthog.identify(user.id, {
+						...user.user_metadata,
+						name: user.user_metadata?.full_name || null,
+						email: user.email,
+					})
+				}
+			}
+		}
+
 		// Posthog events
 		supabase.auth.onAuthStateChange((event, session) => {
 			setStateChangedOnce(true)
 			setCurrentSession(session)
-			if (session) {
-				posthog.identify(session.user.id, {
-					...session.user.user_metadata,
-					email: session.user.email,
-				})
-			} else {
+			if (event === "SIGNED_OUT") {
 				posthog.reset()
+			} else {
+				handleIdentify(session?.user ?? null)
 			}
 		})
 	}, [])
