@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core"
 import { servers } from "./servers"
 
+// @deprecated
 export const events = pgTable("events", {
 	eventId: uuid("event_id").primaryKey().defaultRandom(),
 	eventName: text("event_name").notNull(),

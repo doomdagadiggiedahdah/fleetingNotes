@@ -1,13 +1,11 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
-import { events } from "@/db/schema/events"
 import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
-import { waitUntil } from "@vercel/functions/wait-until"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -156,17 +154,6 @@ export async function POST(
 				serverId,
 			},
 		})
-		waitUntil(
-			Promise.all([
-				db.insert(events).values({
-					eventName: "config",
-					payload: {
-						serverId,
-					},
-				}),
-				posthog.flush(),
-			]),
-		)
 		return NextResponse.json(finalResult)
 	} catch (error) {
 		console.error(`Error generating config for server ${serverId}:`, error)

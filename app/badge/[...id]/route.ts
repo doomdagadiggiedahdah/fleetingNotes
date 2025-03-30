@@ -1,10 +1,10 @@
 import { formatCount } from "@/components/popularity-count"
 import { db } from "@/db"
-import { servers } from "@/db/schema"
-import { events } from "@/db/schema/events"
+import { serverUsageCounts } from "@/db/schema/events"
+import { servers } from "@/db/schema/servers"
 import { posthog } from "@/lib/posthog_server"
 import { waitUntil } from "@vercel/functions"
-import { sql } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 
 // Always dynamically render page
 export const revalidate = 0
@@ -15,10 +15,6 @@ export async function GET(
 ) {
 	const params = await props.params
 	const qualifiedName = params.id.join("/")
-
-	// Parse URL to get query parameters
-	const url = new URL(request.url)
-	const metric = url.searchParams.get("metric")
 
 	// Only track views from external origins
 	const origin = request.headers.get("origin")
@@ -41,14 +37,20 @@ export async function GET(
 		},
 	})
 
-	const [row]: { count: number }[] = await db.execute(sql`
-		SELECT COUNT(*) FROM ${events}
-		WHERE
-			${events.eventName} = 'tool_call' AND
-			${events.payload}->>'serverId' = (SELECT ${servers.id} FROM ${servers} WHERE ${servers.qualifiedName} = ${qualifiedName})::text
-	`)
+	// Use a single query with a LEFT JOIN to get both server and usage data
+	const result = await db
+		.select({
+			serverId: servers.id,
+			useCount: serverUsageCounts.useCount,
+		})
+		.from(servers)
+		.leftJoin(serverUsageCounts, eq(servers.id, serverUsageCounts.serverId))
+		.where(eq(servers.qualifiedName, qualifiedName))
+		.limit(1)
+		.then((rows) => rows[0])
 
-	const count = row.count
+	// Default to 0 if no records found or if server exists but has no usage data
+	const count = result?.useCount || 0
 
 	const badgeUrl = `https://img.shields.io/badge/smithery.ai-▲%20${formatCount(count)}-%23ea580c`
 
