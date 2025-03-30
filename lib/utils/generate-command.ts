@@ -119,7 +119,7 @@ export const generateInstallCommand = (
 	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = config
-		? JSON.stringify(JSON.stringify(cleanConfig(config)))
+		? `'${JSON.stringify(JSON.stringify(cleanConfig(config)))}'`
 		: undefined
 
 	return isCustomInstallClient(client)

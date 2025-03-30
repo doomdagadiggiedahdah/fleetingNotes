@@ -29,6 +29,10 @@ export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
 	// Check if command contains a sensitive key
 	const containsSensitiveKey = command.includes("--key")
 
+	// Check for Windows-specific issues
+	const hasWindowsIssues =
+		/[A-Z]:[\\\/].*\s/.test(command) && command.includes("--config")
+
 	const codeBlockComponent = (
 		<>
 			<SimpleCodeBlock
@@ -51,6 +55,15 @@ export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
 					<span className="text-amber-300/90 text-xs">
 						Your smithery key is sensitive. Please don&apos;t share it with
 						anyone.
+					</span>
+				</div>
+			)}
+			{hasWindowsIssues && (
+				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
+					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+					<span className="text-amber-300/90 text-xs">
+						Windows path with spaces detected. Please either use a path without
+						spaces or the &quot;save and connect&quot; option instead.
 					</span>
 				</div>
 			)}
