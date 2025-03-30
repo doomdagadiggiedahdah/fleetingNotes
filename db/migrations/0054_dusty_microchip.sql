@@ -1,0 +1,1 @@
+ALTER TABLE "server_usage_counts" ENABLE ROW LEVEL SECURITY;

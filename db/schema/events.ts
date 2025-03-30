@@ -1,12 +1,12 @@
-import { and, eq, isNotNull, sql } from "drizzle-orm"
 import {
+	integer,
 	jsonb,
-	pgMaterializedView,
 	pgTable,
 	text,
 	timestamp,
 	uuid,
 } from "drizzle-orm/pg-core"
+import { servers } from "./servers"
 
 export const events = pgTable("events", {
 	eventId: uuid("event_id").primaryKey().defaultRandom(),
@@ -17,30 +17,12 @@ export const events = pgTable("events", {
 	payload: jsonb("payload"),
 }).enableRLS()
 
-// Materialized view for server usage counts in the last month
-// We have a cron task on Supabase to update this every 10 minutes
-export const serverUsageCounts = pgMaterializedView("server_usage_counts").as(
-	(qb) => {
-		return qb
-			.select({
-				serverId: sql`
-				CASE
-					WHEN ${events.payload}->>'serverId'
-						~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-					THEN CAST(${events.payload}->>'serverId' AS uuid)
-					ELSE NULL
-				END
-				`.as("serverId"),
-				useCount: sql<number>`COUNT(*)`.as("useCount"),
-			})
-			.from(events)
-			.where((t) =>
-				and(
-					isNotNull(t.serverId),
-					eq(events.eventName, "tool_call"),
-					sql`${events.timestamp} > NOW() - INTERVAL '1 month'`,
-				),
-			)
-			.groupBy((t) => t.serverId)
-	},
-)
+// Table for server usage counts, updated by a cron job
+// The data is sourced from PostHog analytics directly
+export const serverUsageCounts = pgTable("server_usage_counts", {
+	serverId: uuid("server_id")
+		.primaryKey()
+		.references(() => servers.id, { onDelete: "cascade" })
+		.notNull(),
+	useCount: integer("use_count").notNull().default(0),
+}).enableRLS()
