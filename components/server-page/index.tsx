@@ -7,6 +7,7 @@ import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
 import { ServerTabs } from "./server-tabs"
 import ServerSearch from "../server-search"
+import { ServerStatusChip } from "../server-type-chip"
 
 interface Props {
 	server: FetchedServer
@@ -41,6 +42,10 @@ export async function ServerPage({ server, activeTab }: Props) {
 							{server.verified && (
 								<BadgeCheck className="w-4 h-4 text-primary" />
 							)}
+							<ServerStatusChip
+								remote={server.remote}
+								isDeployed={server.deploymentUrl !== null}
+							/>
 						</div>
 						<Suspense>
 							<ClaimButton server={server} />

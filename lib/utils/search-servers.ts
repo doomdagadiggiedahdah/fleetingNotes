@@ -165,6 +165,7 @@ export async function getAllServers(
 				LIMIT 1
 			)`,
 			isNew: isNewQuery,
+			remote: servers.remote,
 		})
 		.from(servers)
 		.orderBy((t) => [

@@ -49,18 +49,6 @@ export function ServerQualifiedName({ server, copyable = false }: Props) {
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
-			{server.isDeployed && (
-				<TooltipProvider>
-					<Tooltip>
-						<TooltipTrigger>
-							<div className="w-2 h-2 rounded-full bg-green-500" />
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>Hosted on Smithery</p>
-						</TooltipContent>
-					</Tooltip>
-				</TooltipProvider>
-			)}
 		</div>
 	)
 }

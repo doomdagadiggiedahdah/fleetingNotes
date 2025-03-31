@@ -6,6 +6,8 @@ import { PopularityCounter } from "../popularity-count"
 import { ServerFavicon } from "../server-page/server-favicon"
 import { ServerQualifiedName } from "../server-page/server-qualified-name"
 import posthog from "posthog-js"
+import { ServerStatusChip } from "../server-type-chip"
+
 interface ToolCardProps {
 	server: FetchedServers[number]
 }
@@ -25,7 +27,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 		>
 			<div className="flex-1">
 				<div className="cursor-pointer">
-					<div className="flex items-baseline justify-between mb-1">
+					<div className="flex items-baseline mb-1">
 						<div className="flex items-center gap-2 min-w-0 flex-1">
 							<h3 className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 min-w-0 truncate">
 								<ServerFavicon
@@ -46,20 +48,20 @@ export function ServerListItem({ server }: ToolCardProps) {
 							)}
 						</div>
 					</div>
-					<div className="flex items-center justify-between">
-						<div className="min-w-0 flex-1 truncate">
-							<ServerQualifiedName server={server} />
-						</div>
-						{server.useCount > 0 && (
-							<div className="flex-shrink-0 ml-4">
-								<PopularityCounter count={server.useCount} />
-							</div>
-						)}
+					<div className="min-w-0 -mt-1 mb-1">
+						<ServerQualifiedName server={server} />
 					</div>
-					<p className="text-card-foreground mb-3 text-sm line-clamp-3">
+					<p className="text-card-foreground text-sm line-clamp-3">
 						{server.description}
 					</p>
 				</div>
+			</div>
+			<div className="mt-auto pt-3 flex items-center justify-between">
+				<ServerStatusChip
+					remote={server.remote}
+					isDeployed={server.isDeployed}
+				/>
+				{server.useCount > 0 && <PopularityCounter count={server.useCount} />}
 			</div>
 		</Link>
 	)
