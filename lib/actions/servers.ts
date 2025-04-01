@@ -285,3 +285,32 @@ export async function deleteServer(serverId: string) {
 		return err("Internal error.")
 	}
 }
+
+export async function updateServerRepo(
+	serverId: string,
+	repoOwner: string,
+	repoName: string,
+) {
+	// Check ownership first
+	const serverResult = await getMyServer(serverId)
+	if (!serverResult.ok) {
+		return serverResult
+	}
+
+	try {
+		await db
+			.update(serverRepos)
+			.set({
+				repoOwner,
+				repoName,
+				updatedAt: new Date(),
+			})
+			.where(eq(serverRepos.serverId, serverId))
+
+		revalidatePath(`/server/${serverResult.value.qualifiedName}`)
+		return { success: true }
+	} catch (error) {
+		console.error("Failed to update server repo:", error)
+		return { error: "Failed to update repository connection" }
+	}
+}
