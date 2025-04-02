@@ -2,6 +2,7 @@ import { db } from "@/db"
 import { apiKeys, servers } from "@/db/schema"
 import { posthog } from "@/lib/posthog_server"
 import { eq } from "drizzle-orm"
+import { omit } from "lodash"
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -75,11 +76,14 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Server not found" }, { status: 404 })
 	}
 
-	const payload = { ...data.payload, serverId: server.id }
+	const payload = {
+		...omit(data.payload, ["serverQualifiedName"]),
+		serverId: server.id,
+	}
 
 	posthog.capture({
-		event: "Event Tracked",
-		distinctId: userId ?? "event-tracked", // Use owner ID as distinct ID if available
+		event: "Tool Called",
+		distinctId: userId ?? "anonymous", // Use owner ID as distinct ID if available
 		properties: {
 			$process_person_profile: !!userId,
 			verified: false,

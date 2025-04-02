@@ -31,7 +31,7 @@ SELECT
     count(*) as useCount
 FROM events
 WHERE 
-    event = 'Event Tracked'
+    (event = 'Event Tracked' OR event = 'Tool Called')
 	AND serverId IS NOT NULL
 	AND timestamp >= now() - INTERVAL 1 MONTH
 GROUP BY serverId
