@@ -3,6 +3,10 @@ import type { JsonObject } from "@/lib/types/json"
 import posthog from "posthog-js"
 import { Sparkles, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { generateCommandSet } from "@/lib/utils/generate-command"
+import { AuthBlock } from "./auth-block"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ServerFavicon } from "@/components/server-page/server-favicon"
 
 interface VSCodeBlockProps {
 	server: FetchedServer
@@ -36,29 +40,68 @@ export const VSCodeBlock = ({
 	const vscodeConfig = encodeURIComponent(JSON.stringify(mcpConfig))
 	const vscodeUrl = `vscode:mcp/install?${vscodeConfig}`
 
+	// Generate standard install command as fallback
+	const { unixCommand } = generateCommandSet({
+		server,
+		client: "vscode",
+		config,
+		apiKey,
+		usingSavedConfig,
+	})
+
 	return (
 		<div className="flex flex-col items-start mb-4">
 			<h3 className="font-medium mb-2">Install for VS Code</h3>
-			<p className="text-sm text-muted-foreground mb-4">
-				Click the magic link below to automatically add to VS Code:
-			</p>
-			<Button
-				asChild
-				variant="outline"
-				className="w-full gap-2 bg-secondary hover:bg-secondary/80 border-primary text-secondary-foreground text-base"
-			>
-				<a
-					href={vscodeUrl}
-					onClick={() => {
-						posthog.capture("VS Code Install Link Clicked", {
-							serverQualifiedName: server.qualifiedName,
-						})
-					}}
-				>
-					<Sparkles className="h-5 w-5" />
-					Install
-				</a>
-			</Button>
+
+			<Tabs defaultValue="magic-link" className="w-full">
+				<TabsList className="mb-2">
+					<TabsTrigger value="magic-link" className="flex items-center gap-2">
+						<ServerFavicon
+							homepage="https://code.visualstudio.com"
+							displayName="VS Code"
+						/>
+						Magic Link
+					</TabsTrigger>
+					<TabsTrigger value="npm" className="flex items-center gap-2">
+						<ServerFavicon homepage="https://www.npmjs.com" displayName="npm" />
+						npm
+					</TabsTrigger>
+				</TabsList>
+
+				<TabsContent value="magic-link">
+					<p className="text-sm text-muted-foreground mb-4">
+						Click below to automatically add to VS Code:
+					</p>
+					<Button
+						asChild
+						variant="outline"
+						className="w-full gap-2 bg-secondary hover:bg-secondary/80 border-primary text-secondary-foreground text-base"
+					>
+						<a
+							href={vscodeUrl}
+							onClick={() => {
+								posthog.capture("VS Code Install Link Clicked", {
+									serverQualifiedName: server.qualifiedName,
+								})
+							}}
+						>
+							<Sparkles className="h-5 w-5" />
+							Install
+						</a>
+					</Button>
+				</TabsContent>
+
+				<TabsContent value="npm">
+					<p className="text-sm text-muted-foreground mb-4">
+						Install using npm with this command:
+					</p>
+					<AuthBlock
+						command={unixCommand}
+						serverQualifiedName={server.qualifiedName}
+					/>
+				</TabsContent>
+			</Tabs>
+
 			<div className="mt-4 py-2 px-3 rounded-md bg-amber-950/20">
 				<div className="text-amber-300/90 text-xs">
 					<p className="font-medium mb-1">
