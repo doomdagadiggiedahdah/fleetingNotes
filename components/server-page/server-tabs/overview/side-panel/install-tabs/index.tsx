@@ -36,6 +36,7 @@ export function Installtabs({
 		"claude",
 		"cursor",
 		"windsurf",
+		"vscode",
 		"cline",
 		"witsy",
 		"enconvo",

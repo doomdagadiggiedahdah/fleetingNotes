@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
+import { VscVscode } from "react-icons/vsc"
 import { ServerFavicon } from "../../../../server-favicon"
 import { OverflowMenu } from "./overflow-menu"
 import type { ClientType } from "@/lib/utils/generate-command"
@@ -47,6 +48,7 @@ export function InstallTabOptions({
 		enconvo: { label: "Enconvo", homepage: "https://www.enconvo.com" },
 		goose: { label: "Goose", homepage: "https://block.github.io/goose/" },
 		spinai: { label: "SpinAI", homepage: "https://docs.spinai.dev/" },
+		vscode: { label: "Vsc", homepage: "https://code.visualstudio.com" },
 	}
 
 	const tabOptions: TabOption[] = Object.entries(clientsConfig).map(
@@ -58,10 +60,13 @@ export function InstallTabOptions({
 				icon:
 					clientType === "claude" ? (
 						<SiAnthropic className="w-4 h-4" />
+					) : clientType === "vscode" ? (
+						<VscVscode className="w-4 h-4" />
 					) : (
 						<ServerFavicon
 							homepage={config.homepage || ""}
 							displayName={config.label}
+							className="w-4 h-4"
 						/>
 					),
 			}

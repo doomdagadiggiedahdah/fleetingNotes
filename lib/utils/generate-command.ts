@@ -11,6 +11,7 @@ export type ClientType =
 	| "enconvo"
 	| "goose"
 	| "spinai"
+	| "vscode"
 
 /* Client configuration */
 interface ClientConfig {
@@ -28,6 +29,7 @@ const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
 	enconvo: { usesRunCommand: false, usesCustomInstall: false },
 	goose: { usesRunCommand: true, usesCustomInstall: false },
 	spinai: { usesRunCommand: false, usesCustomInstall: true },
+	vscode: { usesRunCommand: false, usesCustomInstall: false },
 }
 
 const isRunCommandClient = (client: ClientType): boolean =>

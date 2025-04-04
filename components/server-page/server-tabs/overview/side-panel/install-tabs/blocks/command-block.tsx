@@ -17,6 +17,7 @@ import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-bloc
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 import { JsonBlock } from "./json-block"
 import { CursorBlock } from "./cursor-block"
+import { VSCodeBlock } from "./vscode-block"
 import { BugReportDialog } from "./bug-report-dialog"
 import { useState } from "react"
 
@@ -37,6 +38,7 @@ export const CommandBlock = ({
 		| "enconvo"
 		| "goose"
 		| "spinai"
+		| "vscode"
 	config?: JsonObject
 	apiKey?: string
 	usingSavedConfig?: boolean
@@ -175,155 +177,167 @@ export const CommandBlock = ({
 			</p>
 
 			{hasValidConnection ? (
-				/* Tab List */
-				<Tabs defaultValue="standard" className="w-full">
-					<TabsList className="mb-2">
-						<TabsTrigger value="standard" className="flex items-center gap-2">
-							<ServerFavicon
-								homepage="https://www.npmjs.com"
-								displayName="npm"
-							/>
-							npm
-						</TabsTrigger>
-						<TabsTrigger value="json" className="flex items-center gap-2">
-							<Braces className="w-4 h-4" />
-							JSON
-						</TabsTrigger>
-						{server.remote &&
-							server.deploymentUrl &&
-							client !== "spinai" &&
-							client !== "cursor" && (
-								<TabsTrigger value="scoop" className="flex items-center gap-2">
-									<ServerFavicon
-										homepage="https://scoop.sh"
-										displayName="Scoop"
-									/>
-									Scoop
-								</TabsTrigger>
-							)}
-					</TabsList>
-
-					<TabsContent value="standard">
-						{client === "cursor" ? (
-							<CursorBlock
-								unixCommand={unixCommand}
-								windowsCmdCommand={windowsCmdCommand}
-								windowsCmdFullCommand={windowsCmdFullCommand}
-								serverQualifiedName={server.qualifiedName}
-							/>
-						) : client === "goose" ? (
-							<>
-								<div className="mb-4">
-									<div className="flex items-center gap-2 mb-2 text-sm font-medium">
-										<ServerFavicon
-											homepage="https://www.apple.com"
-											displayName="Mac/Linux"
-										/>
-										Mac/Linux
-									</div>
-									<AuthBlock
-										command={unixCommand}
-										serverQualifiedName={server.qualifiedName}
-									/>
-								</div>
-								<div>
-									<div className="flex items-center gap-2 mb-2 text-sm font-medium">
-										<ServerFavicon
-											homepage="https://microsoft.com"
-											displayName="Windows"
-										/>
-										Windows
-									</div>
-									<p className="text-xs mb-3 text-muted-foreground">
-										We&apos;re actively working on improving Windows support!
-									</p>
-									<AuthBlock
-										command={windowsCmdCommand}
-										serverQualifiedName={server.qualifiedName}
-									/>
-									<p className="text-xs mt-2 mb-3 text-muted-foreground">
-										If the above doesn&apos;t work, try this alternative:
-									</p>
-									<AuthBlock
-										command={windowsCmdFullCommand}
-										serverQualifiedName={server.qualifiedName}
-									/>
-								</div>
-							</>
-						) : (
-							<AuthBlock
-								command={unixCommand}
-								serverQualifiedName={server.qualifiedName}
-							/>
-						)}
-					</TabsContent>
-
-					{server.remote && server.deploymentUrl && client !== "spinai" && (
-						<TabsContent value="scoop">
-							<div className="flex items-center gap-3 mb-4 py-2 px-3 rounded-md bg-amber-950/20">
-								<Sunset className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
-								<span className="text-amber-300/90 text-xs">
-									The Scoop installation method will be deprecated soon. We
-									recommend using npm installation instead.
-								</span>
-							</div>
-							<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+				client === "vscode" ? (
+					<VSCodeBlock
+						server={server}
+						config={config}
+						apiKey={apiKey}
+						usingSavedConfig={usingSavedConfig}
+					/>
+				) : (
+					<Tabs defaultValue="standard" className="w-full">
+						<TabsList className="mb-2">
+							<TabsTrigger value="standard" className="flex items-center gap-2">
 								<ServerFavicon
-									homepage="https://microsoft.com"
-									displayName="Windows"
+									homepage="https://www.npmjs.com"
+									displayName="npm"
 								/>
-								Windows
-							</div>
-							<p className="text-sm mb-2">
-								Install the native Smithery CLI via{" "}
-								<a
-									href="https://scoop.sh/"
-									target="_blank"
-									className="hover:text-primary"
-								>
-									Scoop
-								</a>
-								.
-								<a
-									href="/docs/smithery-cli"
-									target="_blank"
-									className="ml-1 hover:text-primary inline-flex items-center"
-								>
-									View detailed guide <ExternalLink className="w-4 h-4 ml-1" />
-								</a>
-							</p>
-							<SimpleCodeBlock
-								code="scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery"
-								language="bash"
-								className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
-								disableAutoScroll={true}
-								showHeader={true}
-								headerLabel="terminal"
-								onMouseDown={() => {
-									posthog.capture("Code Copied", {
-										serverQualifiedName: server.qualifiedName,
-										eventTag: "scoop_install",
-									})
-								}}
-							/>
-							<p className="text-sm mb-2">Then directly use:</p>
-							<AuthBlock
-								command={windowsScoopCommand}
-								serverQualifiedName={server.qualifiedName}
+								npm
+							</TabsTrigger>
+							<TabsTrigger value="json" className="flex items-center gap-2">
+								<Braces className="w-4 h-4" />
+								JSON
+							</TabsTrigger>
+							{server.remote &&
+								server.deploymentUrl &&
+								client !== "spinai" &&
+								client !== "cursor" && (
+									<TabsTrigger
+										value="scoop"
+										className="flex items-center gap-2"
+									>
+										<ServerFavicon
+											homepage="https://scoop.sh"
+											displayName="Scoop"
+										/>
+										Scoop
+									</TabsTrigger>
+								)}
+						</TabsList>
+
+						<TabsContent value="standard">
+							{client === "cursor" ? (
+								<CursorBlock
+									unixCommand={unixCommand}
+									windowsCmdCommand={windowsCmdCommand}
+									windowsCmdFullCommand={windowsCmdFullCommand}
+									serverQualifiedName={server.qualifiedName}
+								/>
+							) : client === "goose" ? (
+								<>
+									<div className="mb-4">
+										<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+											<ServerFavicon
+												homepage="https://www.apple.com"
+												displayName="Mac/Linux"
+											/>
+											Mac/Linux
+										</div>
+										<AuthBlock
+											command={unixCommand}
+											serverQualifiedName={server.qualifiedName}
+										/>
+									</div>
+									<div>
+										<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+											<ServerFavicon
+												homepage="https://microsoft.com"
+												displayName="Windows"
+											/>
+											Windows
+										</div>
+										<p className="text-xs mb-3 text-muted-foreground">
+											We&apos;re actively working on improving Windows support!
+										</p>
+										<AuthBlock
+											command={windowsCmdCommand}
+											serverQualifiedName={server.qualifiedName}
+										/>
+										<p className="text-xs mt-2 mb-3 text-muted-foreground">
+											If the above doesn&apos;t work, try this alternative:
+										</p>
+										<AuthBlock
+											command={windowsCmdFullCommand}
+											serverQualifiedName={server.qualifiedName}
+										/>
+									</div>
+								</>
+							) : (
+								<AuthBlock
+									command={unixCommand}
+									serverQualifiedName={server.qualifiedName}
+								/>
+							)}
+						</TabsContent>
+
+						{server.remote && server.deploymentUrl && client !== "spinai" && (
+							<TabsContent value="scoop">
+								<div className="flex items-center gap-3 mb-4 py-2 px-3 rounded-md bg-amber-950/20">
+									<Sunset className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+									<span className="text-amber-300/90 text-xs">
+										The Scoop installation method will be deprecated soon. We
+										recommend using npm installation instead.
+									</span>
+								</div>
+								<div className="flex items-center gap-2 mb-2 text-sm font-medium">
+									<ServerFavicon
+										homepage="https://microsoft.com"
+										displayName="Windows"
+									/>
+									Windows
+								</div>
+								<p className="text-sm mb-2">
+									Install the native Smithery CLI via{" "}
+									<a
+										href="https://scoop.sh/"
+										target="_blank"
+										className="hover:text-primary"
+									>
+										Scoop
+									</a>
+									.
+									<a
+										href="/docs/smithery-cli"
+										target="_blank"
+										className="ml-1 hover:text-primary inline-flex items-center"
+									>
+										View detailed guide{" "}
+										<ExternalLink className="w-4 h-4 ml-1" />
+									</a>
+								</p>
+								<SimpleCodeBlock
+									code="scoop bucket add smithery https://github.com/smithery-ai/scoop-smithery && scoop install smithery"
+									language="bash"
+									className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
+									disableAutoScroll={true}
+									showHeader={true}
+									headerLabel="terminal"
+									onMouseDown={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "scoop_install",
+										})
+									}}
+								/>
+								<p className="text-sm mb-2">Then directly use:</p>
+								<AuthBlock
+									command={windowsScoopCommand}
+									serverQualifiedName={server.qualifiedName}
+								/>
+							</TabsContent>
+						)}
+
+						<TabsContent value="json">
+							<JsonBlock
+								server={server}
+								cleanedConfig={cleanedConfig}
+								apiKey={apiKey}
+								usingSavedConfig={usingSavedConfig}
+								client={client}
 							/>
 						</TabsContent>
-					)}
-
-					<TabsContent value="json">
-						<JsonBlock
-							server={server}
-							cleanedConfig={cleanedConfig}
-							apiKey={apiKey}
-							usingSavedConfig={usingSavedConfig}
-							client={client}
-						/>
-					</TabsContent>
-				</Tabs>
+					</Tabs>
+				)
 			) : (
 				<Alert variant="destructive" className="bg-muted/50">
 					<div className="flex items-center gap-3">
