@@ -17,6 +17,8 @@ import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-bloc
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 import { JsonBlock } from "./json-block"
 import { CursorBlock } from "./cursor-block"
+import { BugReportDialog } from "./bug-report-dialog"
+import { useState } from "react"
 
 export const CommandBlock = ({
 	server,
@@ -39,6 +41,7 @@ export const CommandBlock = ({
 	apiKey?: string
 	usingSavedConfig?: boolean
 }) => {
+	const [isBugReportOpen, setIsBugReportOpen] = useState(false)
 	const cleanedConfig = cleanConfig(config)
 
 	const {
@@ -334,15 +337,13 @@ export const CommandBlock = ({
 			)}
 
 			<div className="flex gap-4 mt-3 text-muted-foreground text-sm">
-				<a
-					href={`https://github.com/smithery-ai/cli/issues/new?assignees=arjunkmrm&labels=bug&title=[MCP%20Bug]%20${server.qualifiedName}`}
-					target="_blank"
-					rel="noopener noreferrer"
+				<button
+					onClick={() => setIsBugReportOpen(true)}
 					className="flex items-center hover:text-primary"
 				>
 					<Bug className="w-3.5 h-3.5 mr-1" />
 					Report Bug
-				</a>
+				</button>
 				<a
 					href="/docs/faq/users"
 					target="_blank"
@@ -352,6 +353,15 @@ export const CommandBlock = ({
 					Troubleshoot
 				</a>
 			</div>
+
+			<BugReportDialog
+				open={isBugReportOpen}
+				onOpenChange={setIsBugReportOpen}
+				serverQualifiedName={server.qualifiedName}
+				client={client}
+				connectionType={server.remote ? "remote" : "local"}
+				serverRepo={server.serverRepo}
+			/>
 		</>
 	)
 }
