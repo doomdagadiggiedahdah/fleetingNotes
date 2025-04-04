@@ -1,9 +1,14 @@
 import { db } from "@/db"
-import { deployments, serverRepos, servers } from "@/db/schema"
+import {
+	deployments,
+	selectServerSchema,
+	serverRepos,
+	servers,
+} from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
-import { and, eq, isNotNull, desc, sql } from "drizzle-orm"
-import { NextResponse } from "next/server"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm"
+import { NextResponse } from "next/server"
 
 // Private endpoint to redeploy all servers
 export async function POST(request: Request) {
@@ -72,7 +77,7 @@ export async function POST(request: Request) {
 					// Deploy the server
 					console.log(`Deploying ${server.id}...`)
 					const result = await createDeploymentForServer(
-						server,
+						selectServerSchema.parse(server),
 						serverRepo,
 						true,
 					)

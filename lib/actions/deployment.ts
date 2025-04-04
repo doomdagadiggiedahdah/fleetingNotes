@@ -7,6 +7,7 @@ import {
 	type BuildFiles,
 	deployments,
 	type DeploymentStatus,
+	selectServerSchema,
 	type Server,
 	type ServerRepo,
 	serverRepos,
@@ -17,6 +18,7 @@ import { Octokit } from "@octokit/rest"
 import { waitUntil } from "@vercel/functions"
 import { and, eq, sql } from "drizzle-orm"
 import { isEqual } from "lodash"
+import type { ZodError } from "zod"
 import { checkGithubPermissions } from "../auth/github/check-github-permissions"
 import {
 	getInstallationOctokit,
@@ -36,13 +38,12 @@ import {
 import { serializeSmitheryYaml } from "../blacksmith/build/smithery-config"
 import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr"
 import { posthog } from "../posthog_server"
-import type { ServerConfigGateway } from "../types/server-config"
+import type { ServerConfig } from "../types/server-config"
 import { withTimeout } from "../utils"
+import { fetchConfigSchema } from "../utils/fetch-config"
+import { fetchServerTools } from "../utils/get-tools"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
-import { fetchServerTools } from "../utils/get-tools"
-import type { ZodError } from "zod"
-import { fetchConfigSchema } from "../utils/fetch-config"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -121,7 +122,7 @@ export async function createDeployment(serverId: string) {
  * @returns
  */
 export async function createDeploymentForServer(
-	server: Pick<Server, "id" | "qualifiedName" | "displayName">,
+	server: Pick<Server, "id" | "qualifiedName" | "displayName" | "env">,
 	serverRepo: ServerRepo,
 	// If true, will wait for the deployment to complete before returning
 	sync = false,
@@ -270,9 +271,16 @@ export async function createDeploymentForServer(
 					appendLog(
 						"Successfully obtained required build config files. Preparing build...",
 					)
-					const smitheryConfig: ServerConfigGateway = {
+
+					// Inject env secrets
+					const smitheryConfig: ServerConfig = {
 						...buildFiles.smitheryConfig.content,
-						serverId: server.id,
+						env: {
+							// Use base YAML env variables as default
+							...buildFiles.smitheryConfig.content.env,
+							// Secrets override static YAML
+							...(server.env as Record<string, string>),
+						},
 					}
 
 					const prepareResult = await prepareBuild(
@@ -527,7 +535,10 @@ async function getServerRepo(serverId: string, userId: string) {
 			),
 		)
 		.limit(1)
-	return row
+	return {
+		server: selectServerSchema.parse(row.server),
+		serverRepo: row.serverRepo,
+	}
 }
 
 /**

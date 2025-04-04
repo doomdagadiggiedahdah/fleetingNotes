@@ -50,6 +50,8 @@ export const servers = pgTable(
 		tools: jsonb("tools"),
 		// Configuration schema for this server. Derived from MCP call data and populated upon deployment.
 		configSchema: jsonb("config_schema"),
+		// Environmental variables
+		env: jsonb("env").default({}).notNull(),
 
 		// Search embedding
 		embedding: vector("embedding", { dimensions: 1536 }),
@@ -85,6 +87,7 @@ export const selectServerSchema = createSelectSchema(servers).extend({
 	connections: z.array(ConnectionSchema),
 	configSchema: JSONSchemaSchema.nullable(),
 	tools: z.array(z.any()).nullable(),
+	env: z.record(z.string(), z.string()),
 })
 
 export type Server = z.infer<typeof selectServerSchema>

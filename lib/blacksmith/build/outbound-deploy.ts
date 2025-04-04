@@ -3,6 +3,7 @@ import {
 	deployments,
 	pullRequests,
 	pullRequestsFailures,
+	selectServerSchema,
 	serverRepos,
 	servers,
 } from "@/db/schema"
@@ -71,7 +72,10 @@ export async function createOutboundDeployments(limit = 10) {
 	console.log(`Generating deployments for ${allServers.length} servers`)
 
 	for (const { servers: server, server_repos: serverRepo } of allServers) {
-		const result = await createDeploymentForServer(server, serverRepo)
+		const result = await createDeploymentForServer(
+			selectServerSchema.parse(server),
+			serverRepo,
+		)
 		if (result.ok) {
 			console.log(
 				`Deployment triggered: ${server.id} (${server.qualifiedName})`,

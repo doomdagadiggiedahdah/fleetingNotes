@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { serverRepos, servers } from "@/db/schema/servers"
+import { selectServerSchema, serverRepos, servers } from "@/db/schema/servers"
 import { and, eq } from "drizzle-orm"
 import { omit, pick } from "lodash"
 import { revalidatePath } from "next/cache"
@@ -192,7 +192,7 @@ export async function createServer(rawData: CreateServerInputs) {
 		if (!insertData.local) {
 			// This will ensure deploy is triggered before returning and rerouting the user
 			const deployResult = await createDeploymentForServer(
-				newRow.server,
+				selectServerSchema.parse(newRow.server),
 				newRow.serverRepo,
 			)
 

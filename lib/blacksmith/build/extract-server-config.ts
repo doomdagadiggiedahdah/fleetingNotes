@@ -38,19 +38,23 @@ The startCommand object will be used to MCP server locally. We will use the star
 `)
 
 // Smithery.yaml
-export const ExtractServerConfigSchema = ServerConfigSchema.extend({
-	build: z
-		.object({
-			dockerBuildPath: z
-				.string()
-				.describe(
-					"Relative path for Docker build context, relative to the base path of the MCP. Defaults to the current directory. If this is a monorepo, sometimes we need to include the entire repo into the Docker build context by referencing the parent directory to build properly (i.e., ../..)",
-				)
-				.default(".")
-				.optional(),
-		})
-		.optional(),
-	startCommand: StartCommandSchema,
-}).strict()
+export const ExtractServerConfigSchema = ServerConfigSchema.omit({
+	env: true,
+})
+	.extend({
+		build: z
+			.object({
+				dockerBuildPath: z
+					.string()
+					.describe(
+						"Relative path for Docker build context, relative to the base path of the MCP. Defaults to the current directory. If this is a monorepo, sometimes we need to include the entire repo into the Docker build context by referencing the parent directory to build properly (i.e., ../..)",
+					)
+					.default(".")
+					.optional(),
+			})
+			.optional(),
+		startCommand: StartCommandSchema,
+	})
+	.strict()
 
 export type ExtractServerConfig = z.infer<typeof ExtractServerConfigSchema>

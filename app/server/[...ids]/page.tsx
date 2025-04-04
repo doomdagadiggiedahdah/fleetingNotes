@@ -21,7 +21,7 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	const batchSize = 100
+	const batchSize = 1000
 	const paths: { ids: string[] }[] = []
 
 	let page = 0

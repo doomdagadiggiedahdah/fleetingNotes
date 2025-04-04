@@ -111,7 +111,8 @@ export function ServerGeneralSettings({ server }: ServerGeneralSettingsProps) {
 										</FormControl>
 										<FormDescription>
 											The URL where users can find more information about this
-											server
+											server. We use the favicon from this URL to display your
+											server icon.
 										</FormDescription>
 										<FormMessage />
 									</FormItem>

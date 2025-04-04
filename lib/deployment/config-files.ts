@@ -39,7 +39,7 @@ primary_region = 'iad'
 export function createDockerfile(baseDockerfile: string, config: ServerConfig) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM registry.fly.io/sidecar:deployment-01JQEV06DPW86K6408Y15CFANP as sidecar_image
+FROM registry.fly.io/sidecar:deployment-01JQZ4GJ1RN49TFQ5X8921CTMR as sidecar_image
 
 # User's Dockerfile
 ${baseDockerfile}

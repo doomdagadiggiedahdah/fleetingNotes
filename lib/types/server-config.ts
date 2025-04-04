@@ -39,11 +39,10 @@ export const ServerConfigSchema = z.object({
 		})
 		.optional(),
 	startCommand: StartCommandSchema,
+	env: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe("The environment to inject when spawning the process."),
 })
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>
-
-// The type used for the gateway, which includes serverId specification
-export type ServerConfigGateway = ServerConfig & {
-	serverId: string
-}
