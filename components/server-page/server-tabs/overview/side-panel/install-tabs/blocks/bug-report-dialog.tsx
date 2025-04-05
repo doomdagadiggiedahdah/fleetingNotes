@@ -128,37 +128,20 @@ ${form.additionalContext}
 }## Screenshots
 *Screenshots can be added by dragging and dropping them here.*`
 
-		// For server bugs, check if server's repo exists first
-		const openIssue = async () => {
-			let repoUrl = "https://github.com/smithery-ai/cli"
+		// Open in either server repo or CLI repo based on bug type
+		const repoUrl =
+			form.bugType === "server"
+				? `https://github.com/${serverRepo.owner}/${serverRepo.repo}`
+				: "https://github.com/smithery-ai/cli"
 
-			if (form.bugType === "server") {
-				const serverRepoUrl = `https://github.com/${serverRepo.owner}/${serverRepo.repo}`
-				try {
-					const response = await fetch(serverRepoUrl)
-					if (response.ok) {
-						repoUrl = serverRepoUrl
-					} else {
-						console.warn(
-							"Server repository not accessible, falling back to Smithery CLI repo",
-						)
-					}
-				} catch (error) {
-					console.warn(
-						"Failed to check server repository, falling back to Smithery CLI repo:",
-						error,
-					)
-				}
-			}
+		const assigneesParam =
+			form.bugType === "server" ? "" : "&assignees=arjunkmrm"
 
-			window.open(
-				`${repoUrl}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`,
-				"_blank",
-			)
-			onOpenChange(false)
-		}
-
-		openIssue()
+		window.open(
+			`${repoUrl}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}${assigneesParam}`,
+			"_blank",
+		)
+		onOpenChange(false)
 	}
 
 	return (
