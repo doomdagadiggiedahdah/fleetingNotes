@@ -61,7 +61,7 @@ export function InstallTabOptions({
 					clientType === "claude" ? (
 						<SiAnthropic className="w-4 h-4" />
 					) : clientType === "vscode" ? (
-						<VscVscode className="w-4 h-4" />
+						<VscVscode className="w-4 h-4 text-[#0098FF]" />
 					) : (
 						<ServerFavicon
 							homepage={config.homepage || ""}
