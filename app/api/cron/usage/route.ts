@@ -28,10 +28,11 @@ export async function GET(request: Request) {
 				query: `\
 SELECT 
     events.properties.serverId as serverId,
-    count(*) as useCount
+    countIf(event = 'Event Tracked' OR event = 'Tool Called') as useCount,
+    countIf(event = 'Bug Report') as bugReportCount
 FROM events
 WHERE 
-    (event = 'Event Tracked' OR event = 'Tool Called')
+    (event = 'Event Tracked' OR event = 'Tool Called' OR event = 'Bug Report')
 	AND serverId IS NOT NULL
 	AND timestamp >= now() - INTERVAL 1 MONTH
 GROUP BY serverId
@@ -81,7 +82,7 @@ LIMIT 10000`,
 				(result: unknown) =>
 					result &&
 					Array.isArray(result) &&
-					result.length >= 2 &&
+					result.length >= 3 &&
 					validIdSet.has(result[0]),
 			)
 
@@ -98,6 +99,7 @@ LIMIT 10000`,
 						validResults.map((result: unknown[]) => ({
 							serverId: result[0],
 							useCount: result[1],
+							bugReportCount: result[2],
 						})),
 					)
 				})

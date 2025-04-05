@@ -1,0 +1,1 @@
+ALTER TABLE "server_usage_counts" ADD COLUMN "bug_report_count" integer DEFAULT 0 NOT NULL;

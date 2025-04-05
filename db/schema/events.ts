@@ -9,4 +9,5 @@ export const serverUsageCounts = pgTable("server_usage_counts", {
 		.references(() => servers.id, { onDelete: "cascade" })
 		.notNull(),
 	useCount: integer("use_count").notNull().default(0),
+	bugReportCount: integer("bug_report_count").notNull().default(0),
 }).enableRLS()
