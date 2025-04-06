@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bug, ExternalLink, Plus, X } from "lucide-react"
+import { Bug, ExternalLink } from "lucide-react"
+import { FaWindows, FaApple, FaLinux } from "react-icons/fa"
 import {
 	Dialog,
 	DialogContent,
@@ -14,9 +15,16 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
 import posthog from "posthog-js"
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select"
+import type { ClientType } from "@/lib/utils/generate-command"
 
 interface BugReportDialogProps {
 	open: boolean
@@ -31,18 +39,33 @@ interface BugReportDialogProps {
 	}
 }
 
-type BugType = "server" | "installation"
+type BugType = "server" | "smithery"
 type ConnectionType = "local" | "remote"
+type OperatingSystem = "windows" | "mac" | "linux"
 
 interface BugReportForm {
 	bugType: BugType
 	description: string
-	stepsToReproduce: string[]
+	stepsToReproduce: string
 	connectionType: ConnectionType
 	hasSpecialChars: boolean
 	additionalContext: string
 	logs: string
+	os: OperatingSystem | undefined
+	client: ClientType | undefined
 }
+
+const CLIENTS: ClientType[] = [
+	"claude",
+	"cursor",
+	"windsurf",
+	"cline",
+	"witsy",
+	"enconvo",
+	"goose",
+	"spinai",
+	"vscode",
+]
 
 export function BugReportDialog({
 	open,
@@ -53,14 +76,24 @@ export function BugReportDialog({
 	connectionType,
 	serverRepo,
 }: BugReportDialogProps) {
+	const detectOS = (): OperatingSystem | undefined => {
+		const userAgent = navigator.userAgent.toLowerCase()
+		if (userAgent.includes("win")) return "windows"
+		if (userAgent.includes("mac")) return "mac"
+		if (userAgent.includes("linux")) return "linux"
+		return undefined
+	}
+
 	const [form, setForm] = useState<BugReportForm>({
-		bugType: "server",
+		bugType: "smithery",
 		description: "",
-		stepsToReproduce: ["", "", ""],
+		stepsToReproduce: "",
 		connectionType: connectionType,
 		hasSpecialChars: false,
 		additionalContext: "",
 		logs: "",
+		os: detectOS(),
+		client: client as ClientType,
 	})
 
 	// Track when dialog is opened
@@ -69,12 +102,20 @@ export function BugReportDialog({
 			posthog.capture("Bug Report", {
 				serverQualifiedName,
 				serverId,
+				bugType: form.bugType,
 				client,
 				connectionType: form.connectionType,
-				eventTag: "bug_report_click",
+				os: form.os,
 			})
 		}
-	}, [open, serverQualifiedName, serverId, client, form.connectionType])
+	}, [
+		open,
+		serverQualifiedName,
+		serverId,
+		client,
+		form.connectionType,
+		form.os,
+	])
 
 	const handleSubmit = () => {
 		// Track the bug report in PostHog
@@ -83,17 +124,18 @@ export function BugReportDialog({
 			serverId,
 			bugType: form.bugType,
 			connectionType: form.connectionType,
-			client,
-			eventTag: "bug_report_submit",
+			client: form.client || client,
+			os: form.os,
 		})
 
 		// Open GitHub issue with pre-filled information
-		const title = `[${form.bugType === "server" ? "Server" : "MCP Installation"} Bug] ${serverQualifiedName}`
+		const title = `[${form.bugType === "server" ? "Server" : "Smithery"} Bug] ${serverQualifiedName}`
 		const body = `## Overview
-**Client:** ${client}
-**Bug Type:** ${form.bugType === "server" ? "Server" : "Installation"} Bug
+**Client:** ${form.client || client}
+**Bug Type:** ${form.bugType === "server" ? "Server" : "Smithery"} Bug
 **Server:** ${serverQualifiedName}
-**Connection:** ${form.connectionType === "local" ? "Local" : "Remote"}${
+**Connection:** ${form.connectionType === "local" ? "Local" : "Remote"}
+**OS:** ${form.os ? form.os.charAt(0).toUpperCase() + form.os.slice(1) : ""}${
 			form.bugType === "server"
 				? `
 **Source:** Smithery`
@@ -104,12 +146,9 @@ export function BugReportDialog({
 ${form.description}
 
 ${
-	form.stepsToReproduce.filter((step) => step.trim()).length > 0
+	form.stepsToReproduce.trim()
 		? `## Steps to Reproduce
-${form.stepsToReproduce
-	.filter((step) => step.trim())
-	.map((step, i) => `${i + 1}. ${step}`)
-	.join("\n")}
+${form.stepsToReproduce}
 
 `
 		: ""
@@ -161,12 +200,9 @@ ${form.additionalContext}
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="space-y-4 py-2 flex-1 overflow-y-auto dark-scrollbar px-8">
+				<div className="space-y-4 py-2 flex-1 overflow-y-auto dark-scrollbar px-8 flex flex-col">
 					<div className="space-y-1">
-						<Label>
-							What type of bug are you reporting?{" "}
-							<span className="text-destructive">*</span>
-						</Label>
+						<Label>What type of bug are you reporting?</Label>
 						<RadioGroup
 							value={form.bugType}
 							onValueChange={(value: string) =>
@@ -183,8 +219,8 @@ ${form.additionalContext}
 								security concerns)
 							</p>
 							<div className="flex items-center space-x-2">
-								<RadioGroupItem value="installation" id="installation" />
-								<Label htmlFor="installation">Installation Bug</Label>
+								<RadioGroupItem value="smithery" id="smithery" />
+								<Label htmlFor="smithery">Smithery Bug</Label>
 							</div>
 							<p className="text-sm text-muted-foreground pl-6 -mt-0.5">
 								Smithery installation or connection has an issue (e.g.,
@@ -193,10 +229,66 @@ ${form.additionalContext}
 						</RadioGroup>
 					</div>
 
+					<div className="space-y-1">
+						<Label>Operating System</Label>
+						<RadioGroup
+							value={form.os}
+							onValueChange={(value: string) =>
+								setForm({ ...form, os: value as OperatingSystem })
+							}
+							className="grid gap-1"
+						>
+							<div className="flex items-center space-x-2">
+								<RadioGroupItem value="windows" id="windows" />
+								<Label htmlFor="windows" className="flex items-center gap-2">
+									<FaWindows className="w-4 h-4" />
+									Windows
+								</Label>
+							</div>
+							<div className="flex items-center space-x-2">
+								<RadioGroupItem value="mac" id="mac" />
+								<Label htmlFor="mac" className="flex items-center gap-2">
+									<FaApple className="w-4 h-4" />
+									macOS
+								</Label>
+							</div>
+							<div className="flex items-center space-x-2">
+								<RadioGroupItem value="linux" id="linux" />
+								<Label htmlFor="linux" className="flex items-center gap-2">
+									<FaLinux className="w-4 h-4" />
+									Linux
+								</Label>
+							</div>
+						</RadioGroup>
+					</div>
+
+					<div className="space-y-1">
+						<Label>Client</Label>
+						<Select
+							value={form.client}
+							onValueChange={(value) =>
+								setForm({ ...form, client: value as ClientType })
+							}
+						>
+							<SelectTrigger className="w-[200px]">
+								<SelectValue placeholder="Select a client" />
+							</SelectTrigger>
+							<SelectContent>
+								{CLIENTS.map((client) => (
+									<SelectItem
+										key={client}
+										value={client}
+										className="hover:bg-accent hover:text-accent-foreground cursor-pointer"
+									>
+										{client.charAt(0).toUpperCase() + client.slice(1)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
 					<div className="space-y-2">
-						<Label htmlFor="description">
-							Describe the bug <span className="text-destructive">*</span>
-						</Label>
+						<Label htmlFor="description">Describe the bug</Label>
 						<Textarea
 							id="description"
 							value={form.description}
@@ -204,61 +296,23 @@ ${form.additionalContext}
 								setForm({ ...form, description: e.target.value })
 							}
 							placeholder="What happened? What did you expect to happen?"
-							className="min-h-[80px] dark-scrollbar"
-							required
+							className="min-h-[120px] dark-scrollbar flex-1"
 						/>
 					</div>
 
 					<div className="space-y-2">
 						<Label>Steps to Reproduce</Label>
-						<div className="space-y-2">
-							{form.stepsToReproduce.map((step, index) => (
-								<div
-									key={`step-${index}-${step}`}
-									className="flex items-center gap-2"
-								>
-									<span className="text-sm text-muted-foreground min-w-[1.5rem]">
-										{index + 1}.
-									</span>
-									<Input
-										value={step}
-										onChange={(e) => {
-											const newSteps = [...form.stepsToReproduce]
-											newSteps[index] = e.target.value
-											setForm({ ...form, stepsToReproduce: newSteps })
-										}}
-										placeholder={`Step ${index + 1}`}
-									/>
-									{form.stepsToReproduce.length > 1 && (
-										<button
-											onClick={() => {
-												const newSteps = [...form.stepsToReproduce]
-												newSteps.splice(index, 1)
-												setForm({ ...form, stepsToReproduce: newSteps })
-											}}
-											className="text-muted-foreground hover:text-destructive transition-colors"
-										>
-											<X className="h-4 w-4" />
-										</button>
-									)}
-								</div>
-							))}
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="mt-2"
-								onClick={() =>
-									setForm({
-										...form,
-										stepsToReproduce: [...form.stepsToReproduce, ""],
-									})
-								}
-							>
-								<Plus className="h-4 w-4 mr-2" />
-								Add Step
-							</Button>
-						</div>
+						<Textarea
+							value={form.stepsToReproduce}
+							onChange={(e) =>
+								setForm({ ...form, stepsToReproduce: e.target.value })
+							}
+							placeholder={`1. Go to '...'
+2. Click on '...'
+3. Scroll down to '...'
+4. See error`}
+							className="min-h-[160px] dark-scrollbar flex-1"
+						/>
 					</div>
 
 					<div className="space-y-2">
@@ -277,7 +331,7 @@ ${form.additionalContext}
 							value={form.logs}
 							onChange={(e) => setForm({ ...form, logs: e.target.value })}
 							placeholder="Paste the inspect command output here"
-							className="min-h-[200px] font-mono text-sm dark-scrollbar"
+							className="min-h-[200px] font-mono text-sm dark-scrollbar flex-1"
 						/>
 					</div>
 
@@ -290,7 +344,7 @@ ${form.additionalContext}
 								setForm({ ...form, additionalContext: e.target.value })
 							}
 							placeholder="Any other relevant information"
-							className="min-h-[80px] dark-scrollbar"
+							className="min-h-[120px] dark-scrollbar flex-1"
 						/>
 					</div>
 
@@ -304,12 +358,8 @@ ${form.additionalContext}
 				</div>
 
 				<DialogFooter className="sticky bottom-0 bg-background border-t pt-4">
-					<Button
-						onClick={handleSubmit}
-						className="gap-2"
-						disabled={!form.description.trim() || !form.bugType}
-					>
-						Submit on GitHub
+					<Button onClick={handleSubmit} className="gap-2">
+						Submit to Github
 						<ExternalLink className="h-4 w-4" />
 					</Button>
 				</DialogFooter>

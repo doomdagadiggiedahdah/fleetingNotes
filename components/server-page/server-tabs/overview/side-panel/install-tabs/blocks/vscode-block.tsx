@@ -7,7 +7,12 @@ import { generateCommandSet } from "@/lib/utils/generate-command"
 import { AuthBlock } from "./auth-block"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion"
 
 interface VSCodeBlockProps {
 	server: FetchedServer
@@ -124,8 +129,10 @@ export const VSCodeBlock = ({
 									<ol className="list-decimal list-inside space-y-1">
 										<li>
 											Open VS Code Settings (
-											<code className="bg-amber-950/30 px-1 py-0.5 rounded">⌘,</code> on
-											Mac or{" "}
+											<code className="bg-amber-950/30 px-1 py-0.5 rounded">
+												⌘,
+											</code>{" "}
+											on Mac or{" "}
 											<code className="bg-amber-950/30 px-1 py-0.5 rounded">
 												Ctrl+,
 											</code>{" "}
@@ -140,7 +147,8 @@ export const VSCodeBlock = ({
 										rel="noopener noreferrer"
 										className="inline-flex items-center gap-1 mt-2 text-amber-300/90 hover:text-amber-300"
 									>
-										Learn more about agent mode <ExternalLink className="h-3 w-3" />
+										Learn more about agent mode{" "}
+										<ExternalLink className="h-3 w-3" />
 									</a>
 								</div>
 							</div>
