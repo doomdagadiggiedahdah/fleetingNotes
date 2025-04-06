@@ -39,6 +39,17 @@ export const useCountQuery = sql<number>`
 	)::int
 `
 
+export const bugReportCountQuery = sql<number>`
+	COALESCE(
+		(
+			SELECT ${serverUsageCounts.bugReportCount}
+			FROM ${serverUsageCounts}
+			WHERE ${serverUsageCounts.serverId} = ${servers.id}
+		),
+		0
+	)::int
+`
+
 export const isNewQuery = sql<boolean>`
 CASE
 	WHEN ${servers.createdAt} >= (

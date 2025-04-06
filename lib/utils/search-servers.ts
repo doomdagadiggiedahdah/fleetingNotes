@@ -1,6 +1,11 @@
 import { db } from "@/db"
 import { deployments, serverRepos, servers } from "@/db/schema"
-import { isDeployedQuery, isNewQuery, useCountQuery } from "@/db/schema/queries"
+import {
+	bugReportCountQuery,
+	isDeployedQuery,
+	isNewQuery,
+	useCountQuery,
+} from "@/db/schema/queries"
 import {
 	and,
 	desc,
@@ -37,6 +42,8 @@ const MIN_SEMANTIC_SIMILARITY = 0.4
 const FTS_MULTIPLIER = 2
 // Relative importance of popularity in ranking
 const POPULARITY_WEIGHT = 0.1
+const BUG_REPORT_WEIGHT = 0.2
+const MIN_USAGE_THRESHOLD = 1000
 
 const openAI = new OpenAI()
 
@@ -155,6 +162,7 @@ export async function getAllServers(
 			homepage: servers.homepage,
 			verified: servers.verified,
 			useCount: useCountQuery,
+			bugReportCount: bugReportCountQuery,
 			// Drizzle will confuse the table name with the alias, so we need to use the table name directly
 			isDeployed: sql<boolean>`EXISTS (
 				SELECT 1
@@ -174,7 +182,16 @@ export async function getAllServers(
 			t.isNew,
 			// Apply a 2x boost to useCount for verified servers
 			desc(
-				sql<number>`${relevanceScore} + LN(CASE WHEN ${servers.verified} THEN ${t.useCount} * 2 ELSE ${t.useCount} END + 1) * ${POPULARITY_WEIGHT}`,
+				sql<number>`${relevanceScore} + 
+				CASE WHEN ${t.useCount} > 0 THEN
+					-- Popularity score (boosted for verified servers)
+					LN(${t.useCount} * CASE WHEN ${servers.verified} THEN 2 ELSE 1 END + 1) * ${POPULARITY_WEIGHT} -
+					-- Bug report penalty (only for high-usage servers)
+					CASE WHEN ${t.useCount} >= ${MIN_USAGE_THRESHOLD} 
+						THEN (${t.bugReportCount}::float / ${t.useCount}::float * 1000) * ${BUG_REPORT_WEIGHT}
+						ELSE 0
+					END
+				ELSE 0 END`,
 			),
 		])
 		.where(whereClause)
