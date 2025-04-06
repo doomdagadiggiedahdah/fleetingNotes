@@ -372,6 +372,7 @@ export const CommandBlock = ({
 				open={isBugReportOpen}
 				onOpenChange={setIsBugReportOpen}
 				serverQualifiedName={server.qualifiedName}
+				serverId={server.id}
 				client={client}
 				connectionType={server.remote ? "remote" : "local"}
 				serverRepo={server.serverRepo}

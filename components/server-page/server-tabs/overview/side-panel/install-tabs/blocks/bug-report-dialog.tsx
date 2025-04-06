@@ -22,6 +22,7 @@ interface BugReportDialogProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	serverQualifiedName: string
+	serverId: string
 	client: string
 	connectionType: "local" | "remote"
 	serverRepo: {
@@ -47,6 +48,7 @@ export function BugReportDialog({
 	open,
 	onOpenChange,
 	serverQualifiedName,
+	serverId,
 	client,
 	connectionType,
 	serverRepo,
@@ -66,17 +68,19 @@ export function BugReportDialog({
 		if (open) {
 			posthog.capture("Bug Report", {
 				serverQualifiedName,
+				serverId,
 				client,
 				connectionType: form.connectionType,
 				eventTag: "bug_report_click",
 			})
 		}
-	}, [open, serverQualifiedName, client, form.connectionType])
+	}, [open, serverQualifiedName, serverId, client, form.connectionType])
 
 	const handleSubmit = () => {
 		// Track the bug report in PostHog
 		posthog.capture("Bug Report", {
 			serverQualifiedName,
+			serverId,
 			bugType: form.bugType,
 			connectionType: form.connectionType,
 			client,
