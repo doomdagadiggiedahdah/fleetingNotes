@@ -37,7 +37,10 @@ export async function POST(request: Request) {
 			.from(servers)
 			.innerJoin(serverRepos, eq(servers.id, serverRepos.serverId))
 			.where((t) =>
-				and(serverId ? eq(servers.id, serverId) : undefined, isNotNull(t.url)),
+				and(
+					serverId ? eq(servers.id, serverId) : undefined,
+					serverId ? undefined : isNotNull(t.url),
+				),
 			)
 			.orderBy(desc(servers.id))
 
