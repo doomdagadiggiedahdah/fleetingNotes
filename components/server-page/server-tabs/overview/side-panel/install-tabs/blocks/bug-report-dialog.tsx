@@ -78,7 +78,7 @@ export function BugReportDialog({
 
 	const handleSubmit = () => {
 		// Track the bug report in PostHog
-		posthog.capture("Bug Report", {
+		posthog.capture("Bug Report Submitted", {
 			serverQualifiedName,
 			serverId,
 			bugType: form.bugType,
