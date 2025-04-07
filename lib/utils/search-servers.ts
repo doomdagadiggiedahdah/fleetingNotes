@@ -42,7 +42,7 @@ const MIN_SEMANTIC_SIMILARITY = 0.4
 const FTS_MULTIPLIER = 2
 // Relative importance of popularity in ranking
 const POPULARITY_WEIGHT = 0.1
-const BUG_REPORT_WEIGHT = 0.2
+const BUG_REPORT_SCALE = 10 // Controls how much bug reports affect ranking
 const MIN_USAGE_THRESHOLD = 1000
 
 const openAI = new OpenAI()
@@ -177,21 +177,28 @@ export async function getAllServers(
 		})
 		.from(servers)
 		.orderBy((t) => [
-			// Prioritize MCPs that have a valid installation strategy
-			sql`CASE WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.tools} IS NOT NULL) THEN 0 ELSE 1 END`,
-			t.isNew,
-			// Apply a 2x boost to useCount for verified servers
+			sql`CASE 
+				-- Low quality servers: deployed local servers, without local connection
+				WHEN ${t.isDeployed} AND NOT ${servers.remote} AND NOT EXISTS (
+					SELECT 1 FROM jsonb_array_elements(${servers.connections}) AS conn
+					WHERE conn->>'type' = 'stdio' AND (conn->>'published')::boolean = true
+				) THEN 1
+				
+				-- High quality servers: deployed servers with tools / usage beyond threshold
+				WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.tools} IS NOT NULL) THEN 0
+				WHEN ${useCountQuery} >= ${MIN_USAGE_THRESHOLD} THEN 0
+				
+				-- Default case
+				ELSE 1 
+			END`,
 			desc(
-				sql<number>`${relevanceScore} + 
-				CASE WHEN ${t.useCount} > 0 THEN
-					-- Popularity score (boosted for verified servers)
-					LN(${t.useCount} * CASE WHEN ${servers.verified} THEN 2 ELSE 1 END + 1) * ${POPULARITY_WEIGHT} -
-					-- Bug report penalty (only for high-usage servers)
-					CASE WHEN ${t.useCount} >= ${MIN_USAGE_THRESHOLD} 
-						THEN (${t.bugReportCount}::float / ${t.useCount}::float * 1000) * ${BUG_REPORT_WEIGHT}
-						ELSE 0
-					END
-				ELSE 0 END`,
+				sql`${relevanceScore} + 
+				LN(${t.useCount} * CASE WHEN ${servers.verified} THEN 2 ELSE 1 END + 1) * ${POPULARITY_WEIGHT} -
+				-- Bug report penalty using exponential growth curve
+				CASE WHEN ${t.bugReportCount} > 0 AND ${t.useCount} >= ${MIN_USAGE_THRESHOLD}
+					THEN (exp((${t.bugReportCount}::float / ${t.useCount}::float * ${BUG_REPORT_SCALE})) - 1)
+					ELSE 0
+				END`,
 			),
 		])
 		.where(whereClause)
