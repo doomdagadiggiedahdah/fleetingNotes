@@ -33,6 +33,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 								<ServerFavicon
 									homepage={server.homepage}
 									displayName={server.displayName}
+									iconUrl={server.iconUrl}
 									className="w-6 h-6 flex-shrink-0"
 								/>
 								<span className="truncate">{server.displayName}</span>

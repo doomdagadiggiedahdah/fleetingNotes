@@ -43,6 +43,7 @@ export const servers = pgTable(
 		owner: uuid("owner").references(() => authUsers.id),
 
 		connections: jsonb("connections").notNull(),
+		iconUrl: text("icon_url"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 

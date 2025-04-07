@@ -12,6 +12,7 @@ export const updateServerSchema = z
 		description: z.string(),
 		homepage: z.string().url().optional(),
 		local: z.boolean(),
+		iconUrl: z.string().nullable(),
 	})
 	.strict()
 

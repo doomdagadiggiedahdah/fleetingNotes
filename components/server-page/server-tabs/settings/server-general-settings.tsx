@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { ButtonLoading } from "@/components/ui/loading-button"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { FileUpload } from "@/components/ui/file-upload"
 import { updateServerDetails } from "@/lib/actions/servers"
 import {
 	type UpdateServer,
@@ -32,6 +33,7 @@ interface ServerGeneralSettingsProps {
 export function ServerGeneralSettings({ server }: ServerGeneralSettingsProps) {
 	const router = useRouter()
 	const [isLoading, setIsLoading] = useState(false)
+	const [serverIcon, setServerIcon] = useState<File | null>(null)
 	const form = useForm<UpdateServer>({
 		resolver: zodResolver(updateServerSchema),
 		defaultValues: {
@@ -39,17 +41,21 @@ export function ServerGeneralSettings({ server }: ServerGeneralSettingsProps) {
 			description: server.description,
 			homepage: server.homepage ?? undefined,
 			local: !server.remote,
+			iconUrl: server.iconUrl,
 		},
 	})
 
 	const onSubmit = async (data: UpdateServer) => {
 		try {
 			setIsLoading(true)
-			const result = await updateServerDetails(server.id, data)
+			const result = await updateServerDetails(server.id, data, serverIcon)
 			if (!result.ok) {
 				form.setError("root", {
 					type: "manual",
-					message: result.error,
+					message:
+						typeof result.error === "string"
+							? result.error
+							: "Failed to update server",
 				})
 				return
 			}
@@ -111,8 +117,7 @@ export function ServerGeneralSettings({ server }: ServerGeneralSettingsProps) {
 										</FormControl>
 										<FormDescription>
 											The URL where users can find more information about this
-											server. We use the favicon from this URL to display your
-											server icon.
+											server.
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -137,6 +142,31 @@ export function ServerGeneralSettings({ server }: ServerGeneralSettingsProps) {
 												end-user file system access).
 											</FormDescription>
 										</div>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="iconUrl"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Server Icon</FormLabel>
+										<FormControl>
+											<FileUpload
+												onFileSelected={setServerIcon}
+												previewUrl={field.value}
+												onRemove={() => {
+													field.onChange(null)
+													setServerIcon(null)
+												}}
+											/>
+										</FormControl>
+										<FormDescription>
+											Upload a custom icon for your server. If no icon is
+											uploaded, we will use the favicon from your homepage URL.
+										</FormDescription>
+										<FormMessage />
 									</FormItem>
 								)}
 							/>

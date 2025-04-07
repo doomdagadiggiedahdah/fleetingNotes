@@ -174,6 +174,7 @@ export async function getAllServers(
 			)`,
 			isNew: isNewQuery,
 			remote: servers.remote,
+			iconUrl: servers.iconUrl,
 		})
 		.from(servers)
 		.orderBy((t) => [

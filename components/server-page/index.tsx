@@ -34,6 +34,7 @@ export async function ServerPage({ server, activeTab }: Props) {
 									<ServerFavicon
 										homepage={server.homepage}
 										displayName={server.displayName}
+										iconUrl={server.iconUrl}
 										className="w-6 h-6"
 									/>
 								)}

@@ -4,6 +4,7 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { getServer } from "@/lib/utils/get-server"
+import { getAllServers } from "@/lib/utils/search-servers"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
@@ -21,33 +22,22 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	const batchSize = 1000
-	const paths: { ids: string[] }[] = []
+	// Pre-build the top 1K most popular servers
+	const result = await getAllServers(
+		undefined,
+		{ page: 1, pageSize: 1000 },
+		true,
+	)
 
-	let page = 0
-
-	while (true) {
-		const batch = await db.query.servers.findMany({
-			columns: { qualifiedName: true },
-			limit: batchSize,
-			offset: page * batchSize,
-		})
-
-		if (batch.length === 0) break
-
-		paths.push(
-			...batch.flatMap((server) => {
-				const segments = server.qualifiedName.split("/")
-				return [
-					{ ids: segments },
-					{ ids: [...segments, "tools"] },
-					{ ids: [...segments, "api"] },
-				]
-			}),
-		)
-
-		page++
-	}
+	// Process the servers array from the result and map to path objects
+	const paths = result.servers.flatMap((server) => {
+		const segments = server.qualifiedName.split("/")
+		return [
+			{ ids: segments },
+			{ ids: [...segments, "tools"] },
+			{ ids: [...segments, "api"] },
+		]
+	})
 
 	return paths
 }

@@ -19,12 +19,14 @@ import type { GithubAccount } from "../auth/github/common"
 import { getSessionUserOctokit } from "../auth/github/server"
 import { extractServer } from "../blacksmith/extract-server"
 import { getMe } from "../supabase/server"
+import { deleteServerIcon, uploadServerIcon } from "../supabase/storage"
 import { err, ok } from "../utils/result"
 import { createDeploymentForServer } from "./deployment"
 
 export async function updateServerDetails(
 	serverId: string,
 	updates: UpdateServer,
+	iconFile?: File | null,
 ) {
 	const updatesParsed = updateServerSchema.parse(updates)
 
@@ -35,10 +37,25 @@ export async function updateServerDetails(
 	}
 
 	try {
+		if (iconFile) {
+			const uploadResult = await uploadServerIcon(serverId, iconFile)
+			if (!uploadResult.ok) {
+				return err(uploadResult.error)
+			}
+			updatesParsed.iconUrl = uploadResult.value
+		} else {
+			updatesParsed.iconUrl = null
+
+			const deleteResult = await deleteServerIcon(serverId)
+			if (!deleteResult.ok) {
+				console.error("Failed to delete icon:", deleteResult.error)
+			}
+		}
+
 		const rows = await db
 			.update(servers)
 			.set({
-				...omit(updatesParsed, "local"),
+				...omit(updatesParsed, ["local"]),
 				remote: !updatesParsed.local,
 				updatedAt: new Date(),
 			})

@@ -32,6 +32,7 @@ const selectFetchedServerSchema = selectServerSchema
 		owner: true,
 		tools: true,
 		configSchema: true,
+		iconUrl: true,
 	})
 	.extend({
 		useCount: z.number(),
@@ -71,6 +72,7 @@ export async function getServer(qualifiedName: string) {
 			owner: servers.owner,
 			tools: servers.tools,
 			configSchema: servers.configSchema,
+			iconUrl: servers.iconUrl,
 			deploymentUrl: sql<string | null>`(
 				SELECT
 				CASE 
@@ -96,7 +98,12 @@ export async function getServer(qualifiedName: string) {
 
 	const data = rows[0]
 	if (!data) return null
-	return selectFetchedServerSchema.parse(data)
+	try {
+		return selectFetchedServerSchema.parse(data)
+	} catch (e) {
+		console.log("Error parsing server:", data)
+		throw e
+	}
 }
 
 export type FetchedServer = NonNullable<Awaited<ReturnType<typeof getServer>>>
