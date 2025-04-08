@@ -1,8 +1,9 @@
 import type { FetchedServers } from "@/lib/utils/search-servers"
-import { BadgeCheck, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import Link from "next/link"
 
 import { PopularityCounter } from "../popularity-count"
+import { VerifiedBadge } from "../verified-badge"
 import { ServerFavicon } from "../server-page/server-favicon"
 import { ServerQualifiedName } from "../server-page/server-qualified-name"
 import posthog from "posthog-js"
@@ -38,9 +39,7 @@ export function ServerListItem({ server }: ToolCardProps) {
 								/>
 								<span className="truncate">{server.displayName}</span>
 							</h3>
-							{server.verified && (
-								<BadgeCheck className="w-4 h-4 text-primary " />
-							)}
+							{server.verified && <VerifiedBadge />}
 							{server.isNew && (
 								<div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2 py-0.5 text-xs font-medium">
 									<Sparkles className="w-3 h-3" />

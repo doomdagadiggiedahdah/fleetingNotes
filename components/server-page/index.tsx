@@ -1,6 +1,7 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { BadgeCheck, ExternalLink, Github } from "lucide-react"
+import { ExternalLink, Github } from "lucide-react"
 import { Suspense } from "react"
+import { VerifiedBadge } from "../verified-badge"
 import { Container } from "../layouts/container"
 import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
@@ -38,9 +39,7 @@ export async function ServerPage({ server, activeTab }: Props) {
 								/>
 								{server.displayName}
 							</h1>
-							{server.verified && (
-								<BadgeCheck className="w-4 h-4 text-primary" />
-							)}
+							{server.verified && <VerifiedBadge />}
 							<ServerStatusChip
 								remote={server.remote}
 								isDeployed={server.deploymentUrl !== null}
