@@ -42,8 +42,8 @@ const MIN_SEMANTIC_SIMILARITY = 0.4
 const FTS_MULTIPLIER = 2
 // Relative importance of popularity in ranking
 const POPULARITY_WEIGHT = 0.1
-const BUG_REPORT_SCALE = 10 // Controls how much bug reports affect ranking
 const MIN_USAGE_THRESHOLD = 1000
+const BUG_PENALTY_FACTOR = 200 // Controls how much bug reports reduce quality score
 
 const openAI = new OpenAI()
 
@@ -194,12 +194,12 @@ export async function getAllServers(
 			END`,
 			desc(
 				sql`${relevanceScore} + 
-				LN(${t.useCount} * CASE WHEN ${servers.verified} THEN 2 ELSE 1 END + 1) * ${POPULARITY_WEIGHT} -
-				-- Bug report penalty using exponential growth curve
-				CASE WHEN ${t.bugReportCount} > 0 AND ${t.useCount} >= ${MIN_USAGE_THRESHOLD}
-					THEN (exp((${t.bugReportCount}::float / ${t.useCount}::float * ${BUG_REPORT_SCALE})) - 1)
-					ELSE 0
-				END`,
+				-- apply 2x boost to use count for verified servers
+				LN(${t.useCount} * CASE WHEN ${servers.verified} THEN 2 ELSE 1 END * 
+				-- Scale down use count by server quality factor
+				GREATEST(0, 1 - (${t.bugReportCount}::float / GREATEST(${t.useCount}, 1) * ${BUG_PENALTY_FACTOR})) + 1) * 
+				-- multiply by popularity weight
+				${POPULARITY_WEIGHT}`,
 			),
 		])
 		.where(whereClause)
