@@ -9,6 +9,7 @@ export function generateMcpJsonConfig(
 	isWindows = false,
 	apiKey?: string,
 	usingSavedConfig?: boolean,
+	isWsl = false,
 ): string {
 	// Base arguments for npx command
 	const npxArgs = ["-y", "@smithery/cli@latest", "run", server.qualifiedName]
@@ -31,6 +32,11 @@ export function generateMcpJsonConfig(
 		commandConfig = {
 			command: "cmd",
 			args: ["/c", "npx", ...npxArgs],
+		}
+	} else if (isWsl) {
+		commandConfig = {
+			command: "wsl",
+			args: ["npx", ...npxArgs],
 		}
 	} else {
 		// Default for non-Windows platforms

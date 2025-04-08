@@ -333,7 +333,6 @@ export const CommandBlock = ({
 								cleanedConfig={cleanedConfig}
 								apiKey={apiKey}
 								usingSavedConfig={usingSavedConfig}
-								client={client}
 							/>
 						</TabsContent>
 					</Tabs>
