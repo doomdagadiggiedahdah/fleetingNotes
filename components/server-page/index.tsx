@@ -30,14 +30,12 @@ export async function ServerPage({ server, activeTab }: Props) {
 					<div className="flex items-baseline justify-between">
 						<div className="flex items-center gap-2">
 							<h1 className="text-2xl font-bold flex items-center gap-2">
-								{server.homepage && (
-									<ServerFavicon
-										homepage={server.homepage}
-										displayName={server.displayName}
-										iconUrl={server.iconUrl}
-										className="w-6 h-6"
-									/>
-								)}
+								<ServerFavicon
+									homepage={server.homepage}
+									displayName={server.displayName}
+									iconUrl={server.iconUrl}
+									className="w-6 h-6"
+								/>
 								{server.displayName}
 							</h1>
 							{server.verified && (
