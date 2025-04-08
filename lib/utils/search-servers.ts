@@ -43,7 +43,7 @@ const FTS_MULTIPLIER = 2
 // Relative importance of popularity in ranking
 const POPULARITY_WEIGHT = 0.1
 const MIN_USAGE_THRESHOLD = 1000
-const BUG_PENALTY_FACTOR = 200 // Controls how much bug reports reduce quality score
+const BUG_PENALTY_FACTOR = 20 // Controls how much bug reports reduce quality score
 
 const openAI = new OpenAI()
 
