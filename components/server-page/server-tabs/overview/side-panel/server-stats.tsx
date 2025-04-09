@@ -63,7 +63,7 @@ export function ServerStats({ serverId, server }: ServerStatsProps) {
 						Local
 					</h3>
 					<span className="flex items-center text-sm text-foreground font-medium">
-						{server.remote ? (
+						{server.remote && server.deploymentUrl ? (
 							<>
 								<Globe className="w-4 h-4 mr-1" />
 								No
