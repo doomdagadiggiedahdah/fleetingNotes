@@ -43,9 +43,7 @@ export async function updateServerDetails(
 				return err(uploadResult.error)
 			}
 			updatesParsed.iconUrl = uploadResult.value
-		} else {
-			updatesParsed.iconUrl = null
-
+		} else if (updatesParsed.iconUrl === null) {
 			const deleteResult = await deleteServerIcon(serverId)
 			if (!deleteResult.ok) {
 				console.error("Failed to delete icon:", deleteResult.error)
