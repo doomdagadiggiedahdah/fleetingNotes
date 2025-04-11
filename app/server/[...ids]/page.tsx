@@ -10,6 +10,9 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getMe } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
+import { ConfigTab } from "@/components/server-page/server-tabs/config"
+import { Container } from "@/components/layouts/container"
+import { fetchData } from "@/components/server-page/server-tabs/overview/side-panel/fetch-data"
 
 type Props = {
 	params: Promise<{ ids: string[] }>
@@ -70,6 +73,7 @@ function parsePathParams(ids: string[]) {
 		"api",
 		"deployments",
 		"settings",
+		"config",
 	])
 
 	// Decode the segments first
@@ -135,6 +139,25 @@ export default async function Page(props: Props) {
 	if (["settings", "deployments"].includes(activeTab) && !isOwner) {
 		redirect(`/server/${server.qualifiedName}`)
 	}
+
+	// Render full page or just config tab
+	if (activeTab === "config") {
+		// Fetch saved config needed for the config tab
+		const { savedConfig } = await fetchData(server.id)
+
+		return (
+			<main className="min-h-screen bg-background flex justify-center">
+				<Container className="w-full max-w-2xl py-24 px-4 sm:px-6 lg:px-8">
+					<ConfigTab
+						server={server}
+						configSchema={server.configSchema}
+						savedConfig={savedConfig}
+					/>
+				</Container>
+			</main>
+		)
+	}
+
 	return (
 		<main className="min-h-screen bg-background">
 			{error ? (

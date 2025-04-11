@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Button } from "@/components/ui/button"
 
 interface LoginBlurProps {
 	children: ReactNode
@@ -13,16 +14,16 @@ export function LoginBlur({
 }: LoginBlurProps) {
 	return (
 		<div className="relative">
-			{/* biome-ignore lint/nursery/noStaticElementInteractions: click handler for login prompt */}
-			<div
-				className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center cursor-pointer"
-				onClick={() => {
-					setIsSignInOpen?.(true)
-				}}
-			>
-				<div className="bg-card p-3 rounded-md shadow-md text-center">
-					<p className="font-medium">{promptText}</p>
-				</div>
+			<div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+				<Button
+					variant="secondary"
+					onClick={() => {
+						setIsSignInOpen?.(true)
+					}}
+					className="shadow-md"
+				>
+					{promptText}
+				</Button>
 			</div>
 			<div className="blur-sm pointer-events-none">{children}</div>
 		</div>

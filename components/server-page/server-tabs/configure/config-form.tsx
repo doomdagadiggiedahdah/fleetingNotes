@@ -49,6 +49,7 @@ interface ConfigFormProps {
 	currentSession?: Session | null
 	setIsSignInOpen?: (isOpen: boolean) => void
 	onUsingSavedConfig?: (isUsing: boolean) => void
+	onlySaveAndConnect?: boolean
 }
 
 export function ConfigForm({
@@ -63,6 +64,7 @@ export function ConfigForm({
 	currentSession,
 	setIsSignInOpen,
 	onUsingSavedConfig,
+	onlySaveAndConnect = false,
 }: ConfigFormProps) {
 	const [isConnecting, setIsConnecting] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
@@ -129,7 +131,7 @@ export function ConfigForm({
 		}
 	}
 
-	const handleSaveAndConnect = async (e: React.MouseEvent) => {
+	const handleSaveAndConnect = async (e: React.FormEvent) => {
 		e.preventDefault()
 		setIsSaving(true)
 		setError(null)
@@ -181,14 +183,20 @@ export function ConfigForm({
 			schema={schema}
 			initialValues={values}
 			onValueChange={(key, value) => setValues({ ...values, [key]: value })}
-			onSubmit={handleSubmit}
-			isLoading={isConnecting}
+			onSubmit={onlySaveAndConnect ? handleSaveAndConnect : handleSubmit}
+			isLoading={onlySaveAndConnect ? isSaving : isConnecting}
 			onCancel={isConnected ? onCancel : undefined}
 			buttonAlignment={
 				Object.keys(schema?.properties || {}).length > 0 ? "end" : "start"
 			}
 			error={error}
-			onSaveAndConnect={hasChanges ? handleSaveAndConnect : undefined}
+			onSaveAndConnect={
+				onlySaveAndConnect
+					? undefined
+					: hasChanges
+						? handleSaveAndConnect
+						: undefined
+			}
 			isSaving={isSaving}
 			isConnected={isConnected}
 		/>
