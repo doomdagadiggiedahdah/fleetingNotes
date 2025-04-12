@@ -89,8 +89,9 @@ git push origin HEAD
 }
 
 // Check Dockerfile from sandbox
-export async function getDockerfile(sbx: GitSandbox) {
-	return readFile(sbx, "Dockerfile")
+export async function getDockerfile(sbx: GitSandbox, customPath?: string) {
+	const dockerfilePath = customPath || "Dockerfile"
+	return readFile(sbx, dockerfilePath)
 }
 
 export async function getSmitheryConfig(sbx: GitSandbox) {
@@ -156,12 +157,17 @@ export async function prepareBuild(
 	// This ID won't matter since it'll be overwritten anyway
 	const flyAppId = `test-${sandbox.sandboxId}`
 
-	const dockerfileResult = dockerfile
-		? ok(dockerfile)
-		: await getDockerfile(sbx)
 	const smitheryConfigResult = smitheryConfig
 		? ok(smitheryConfig)
 		: await getSmitheryConfig(sbx)
+
+	const customDockerfilePath = smitheryConfigResult.ok
+		? smitheryConfigResult.value.build?.dockerfile
+		: undefined
+
+	const dockerfileResult = dockerfile
+		? ok(dockerfile)
+		: await getDockerfile(sbx, customDockerfilePath)
 
 	if (!dockerfileResult.ok) return dockerfileResult
 	if (!smitheryConfigResult.ok) return smitheryConfigResult

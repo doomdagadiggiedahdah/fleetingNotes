@@ -23,6 +23,7 @@ import {
 	testSandbox,
 	toCommandResult,
 	type GitSandbox,
+	getSmitheryConfig,
 } from "./sandbox"
 const MAX_TURNS = 9
 const MAX_BUILD_ATTEMPTS = 2
@@ -119,6 +120,13 @@ export const generateBuildFiles = (
 		let toolFatalErrored = false
 
 		const inRepoRoot = sandbox.workingDir === REPO_WORKING_DIR
+
+		// First read smithery.yaml to get custom Dockerfile path
+		const smitheryConfigResult = await getSmitheryConfig(sandbox)
+		const customDockerfilePath = smitheryConfigResult.ok
+			? smitheryConfigResult.value.build?.dockerfile
+			: undefined
+
 		// List of commands to always execute
 		const autoCommands = [
 			...(!inRepoRoot ? [`cat ${REPO_WORKING_DIR}/README.md`] : []),
@@ -126,7 +134,8 @@ export const generateBuildFiles = (
 			`cat smithery.yaml`,
 			`cat package.json`,
 			`cat pyproject.toml`,
-			`cat Dockerfile`,
+			// Use custom path if specified, otherwise default to Dockerfile
+			`cat ${customDockerfilePath || "Dockerfile"}`,
 			// This helps the model be aware of the current working directory
 			`pwd`,
 			`ls`,
@@ -146,11 +155,17 @@ export const generateBuildFiles = (
 
 		const existingDockerfile =
 			autoCommandResults
-				.map((r) =>
-					r.command.includes("Dockerfile") && r.result.ok
-						? r.result.value.stdout
-						: null,
-				)
+				.map((r) => {
+					// Check if this is the Dockerfile command result
+					if (
+						r.command.includes("cat ") &&
+						(r.command.includes("Dockerfile") ||
+							r.command === `cat ${customDockerfilePath}`)
+					) {
+						return r.result.ok ? r.result.value.stdout : null
+					}
+					return null
+				})
 				.find((r) => r !== null) ?? null
 
 		const existingSmitheryConfigResult =

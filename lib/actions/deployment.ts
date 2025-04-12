@@ -549,10 +549,14 @@ async function getServerRepo(serverId: string, userId: string) {
  */
 
 async function getRepoFiles(gitSandbox: GitSandbox) {
-	const [smitheryConfigResult, dockerfileResult] = await Promise.all([
-		getSmitheryConfig(gitSandbox),
-		getDockerfile(gitSandbox),
-	])
+	const smitheryConfigResult = await getSmitheryConfig(gitSandbox)
+
+	const customDockerfilePath = smitheryConfigResult.ok
+		? smitheryConfigResult.value.build?.dockerfile
+		: undefined
+
+	const dockerfileResult = await getDockerfile(gitSandbox, customDockerfilePath)
+
 	return {
 		smitheryConfig: smitheryConfigResult.ok
 			? { content: smitheryConfigResult.value }
