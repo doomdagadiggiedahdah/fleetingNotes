@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Wrench } from "lucide-react"
 import Link from "next/link"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
-import { CodeBlock } from "@/components/docs/code-block"
 import type { JSONSchema } from "@/lib/types/server"
 import { ToolPreview } from "./tool-preview"
+import { CommandChip } from "@/components/docs/command-chip"
 
 interface OverviewTabProps {
 	server: FetchedServer
@@ -69,14 +69,14 @@ const ToolsPreview = ({
 							</div>
 						)
 					) : (
-						<div className="p-4 text-center text-muted-foreground bg-muted/30 rounded-md">
-							<div className="text-muted-foreground">
+						<div className="p-4 text-center text-muted-foreground rounded-md">
+							<div className="text-muted-foreground mb-3">
 								Inspect available tools by running:
 							</div>
 							<div className="max-w-[450px] mx-auto">
-								<CodeBlock className="language-bash">
-									{`npx -y @smithery/cli@latest inspect ${qualifiedName}`.trim()}
-								</CodeBlock>
+								<CommandChip
+									command={`npx -y @smithery/cli@latest inspect ${qualifiedName}`}
+								/>
 							</div>
 						</div>
 					)}
