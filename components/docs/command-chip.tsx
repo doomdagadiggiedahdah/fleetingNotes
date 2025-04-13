@@ -31,4 +31,4 @@ export function CommandChip({ command }: CommandChipProps) {
 			</button>
 		</div>
 	)
-} 
+}
