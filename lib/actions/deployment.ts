@@ -245,7 +245,7 @@ export async function createDeploymentForServer(
 							// Check if this is a smithery.yaml parse error
 							if (error.type === "configParseError") {
 								await appendLog(
-									`Smithery.yaml configuration error: ${error.zodError.format()}\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
+									`Smithery.yaml configuration error: ${JSON.stringify(error.zodError.format())}\n\nPlease fix your smithery.yaml file and try again.\nLearn more: https://smithery.ai/docs/config`,
 									"FAILURE",
 								)
 							} else if (error.type === "yamlParseError") {
