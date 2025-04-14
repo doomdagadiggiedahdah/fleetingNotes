@@ -47,6 +47,9 @@ export const servers = pgTable(
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 
+		// True if this server is featured in the registry
+		featured: boolean("featured").notNull().default(false),
+
 		// List of tools available for this server. Derived from MCP call data and populated upon deployment.
 		tools: jsonb("tools"),
 		// Configuration schema for this server. Derived from MCP call data and populated upon deployment.

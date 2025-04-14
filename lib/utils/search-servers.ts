@@ -192,6 +192,7 @@ export async function getAllServers(
 				-- Default case
 				ELSE 1 
 			END`,
+			...(semanticSimilarity === null ? [desc(servers.featured)] : []),
 			desc(
 				sql`${relevanceScore} + 
 				-- apply 2x boost to use count for verified servers
