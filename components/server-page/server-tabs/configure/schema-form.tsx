@@ -124,11 +124,7 @@ export function SchemaForm({
 	}
 
 	const getPlaceholder = (field: JSONSchema) => {
-		if (field.description) {
-			return field.default !== undefined
-				? `${field.description} (Default: ${field.default})`
-				: field.description
-		}
+		// With descriptions now under labels, the placeholder can be simpler
 		return field.default !== undefined ? `Default: ${field.default}` : ""
 	}
 
@@ -263,6 +259,11 @@ export function SchemaForm({
 												<span className="text-destructive ml-1">*</span>
 											)}
 										</Label>
+										{field.description && (
+											<p className="text-xs text-muted-foreground mt-1 mb-2">
+												{field.description}
+											</p>
+										)}
 										{renderInput(key, field)}
 										{isFieldInvalid(key) && (
 											<p className="text-xs text-destructive mt-1">
