@@ -321,7 +321,7 @@ ${JSON.stringify(s.tools)}
 
 	// Call OpenAI to generate a descriptive category
 	const completion = await llm.beta.chat.completions.parse({
-		model: "gpt-4o",
+		model: "gpt-4.1",
 		temperature: 1,
 		messages: [
 			{

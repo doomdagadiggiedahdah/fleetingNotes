@@ -90,7 +90,7 @@ export const extractServer = (octokit: Octokit) =>
 		const llm = wrapOpenAI(new OpenAI())
 
 		const completion = await llm.beta.chat.completions.parse({
-			model: "gpt-4o-mini",
+			model: "gpt-4.1-mini",
 			temperature: 0,
 			messages: [
 				{

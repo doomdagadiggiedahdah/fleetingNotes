@@ -73,7 +73,7 @@
 		"next": "^15.2.3",
 		"next-mdx-remote-client": "^2.0.1",
 		"nextjs-toploader": "^3.7.15",
-		"openai": "^4.77.0",
+		"openai": "^4.94.0",
 		"postgres": "^3.4.5",
 		"posthog-js": "^1.195.0",
 		"posthog-node": "^4.3.2",
