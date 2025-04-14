@@ -22,6 +22,7 @@ import { getMe } from "../supabase/server"
 import { deleteServerIcon, uploadServerIcon } from "../supabase/storage"
 import { err, ok } from "../utils/result"
 import { createDeploymentForServer } from "./deployment"
+import { isRepoPrivate } from "../utils/github"
 
 export async function updateServerDetails(
 	serverId: string,
@@ -148,6 +149,13 @@ export async function createServer(rawData: CreateServerInputs) {
 		return { error: "Unauthorized" }
 	}
 
+	// Check repository visibility
+	const isPrivate = await isRepoPrivate(
+		octokit,
+		insertData.repoOwner,
+		insertData.repoName,
+	)
+
 	const installResp = await octokit.request("GET /user/installations")
 	const installationId = installResp.data.installations.find(
 		(install) =>
@@ -187,6 +195,7 @@ export async function createServer(rawData: CreateServerInputs) {
 					repoOwner: insertData.repoOwner,
 					repoName: insertData.repoName,
 					baseDirectory: insertData.baseDirectory,
+					isPrivate,
 				})
 				.returning()
 
@@ -218,8 +227,36 @@ export async function createServer(rawData: CreateServerInputs) {
 
 		return { server: pick(newRow.server, ["qualifiedName"]) }
 	} catch (error) {
-		console.error(error)
-		return { error: "Server ID already taken." }
+		console.error("Error creating server:", error)
+
+		// Handle specific error types
+		if (error instanceof Error) {
+			// Database errors
+			if (error.message.includes("duplicate key")) {
+				return {
+					error:
+						"A server with this ID already exists. Please choose a different ID.",
+				}
+			}
+			// GitHub permission errors
+			if (
+				error.message.includes("Not Found") ||
+				error.message.includes("403")
+			) {
+				return {
+					error:
+						"Could not access the repository. Please ensure you have the necessary permissions.",
+				}
+			}
+			// Return the specific error message if it's a known error type
+			return { error: error.message }
+		}
+
+		// Fallback for unknown errors
+		return {
+			error:
+				"An unexpected error occurred while creating the server. Please try again later.",
+		}
 	}
 }
 

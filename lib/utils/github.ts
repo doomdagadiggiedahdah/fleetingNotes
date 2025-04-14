@@ -453,3 +453,30 @@ export async function getDefaultBranch(
 	})
 	return repoData.data.default_branch
 }
+
+/**
+ * Checks if a GitHub repository is private by querying the GitHub API.
+ * @param octokit - The Octokit instance to use for the request.
+ * @param repoOwner - The owner of the repository.
+ * @param repoName - The name of the repository.
+ * @returns A promise that resolves to true if the repository is private, false if it's public or if the check fails.
+ */
+export async function isRepoPrivate(
+	octokit: Octokit,
+	repoOwner: string,
+	repoName: string,
+) {
+	try {
+		const { data: repo } = await octokit.request("GET /repos/{owner}/{repo}", {
+			owner: repoOwner,
+			repo: repoName,
+		})
+		return repo.private
+	} catch (error) {
+		console.error(
+			`Failed to check if ${repoOwner}/${repoName} is private:`,
+			error,
+		)
+		return false
+	}
+}

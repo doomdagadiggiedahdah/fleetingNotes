@@ -41,6 +41,7 @@ const selectFetchedServerSchema = selectServerSchema
 		serverRepo: z.object({
 			owner: z.string(),
 			repo: z.string(),
+			isPrivate: z.boolean(),
 		}),
 		isDeployed: z.boolean(),
 	})
@@ -60,6 +61,7 @@ export async function getServer(qualifiedName: string) {
 			serverRepo: {
 				owner: serverRepos.repoOwner,
 				repo: serverRepos.repoName,
+				isPrivate: serverRepos.isPrivate,
 			},
 			license: servers.license,
 			homepage: servers.homepage,

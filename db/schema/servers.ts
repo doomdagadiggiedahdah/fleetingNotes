@@ -111,6 +111,8 @@ export const serverRepos = pgTable(
 		repoOwner: text("repo_owner").notNull(),
 		repoName: text("repo_name").notNull(),
 		baseDirectory: text("base_directory").notNull().default("."),
+		// Whether the repository is private on GitHub. Defaults to false (public).
+		isPrivate: boolean("is_private").notNull().default(false),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},

@@ -51,7 +51,7 @@ export async function ServerPage({ server, activeTab }: Props) {
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
 						<ServerQualifiedName server={server} copyable={true} />
-						{server.sourceUrl && (
+						{server.sourceUrl && !server.serverRepo.isPrivate && (
 							<a
 								href={server.sourceUrl}
 								target="_blank"
