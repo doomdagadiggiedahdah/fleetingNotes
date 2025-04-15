@@ -407,6 +407,20 @@
 			"when": 1744624994589,
 			"tag": "0059_fine_plazm",
 			"breakpoints": true
+		},
+		{
+			"idx": 60,
+			"version": "7",
+			"when": 1744737896707,
+			"tag": "0060_opposite_bulldozer",
+			"breakpoints": true
+		},
+		{
+			"idx": 61,
+			"version": "7",
+			"when": 1744738177974,
+			"tag": "0061_striped_scarlet_spider",
+			"breakpoints": true
 		}
 	]
 }
