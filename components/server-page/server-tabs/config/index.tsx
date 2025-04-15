@@ -12,6 +12,8 @@ import { ServerFavicon } from "../../server-favicon"
 import { SuccessState } from "./success-state"
 import { LoginBlur } from "../overview/side-panel/install-tabs/login-blur"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Activity, ExternalLink, Github, Lock, Anvil } from "lucide-react"
+import Link from "next/link"
 
 interface ConfigTabProps {
 	server: FetchedServer
@@ -100,7 +102,7 @@ export function ConfigTab({
 				promptText="Login to configure server"
 			>
 				<Card className="p-6">
-					<div className="flex items-center justify-center gap-3 mb-8">
+					<div className="flex items-center justify-center gap-3 mb-4">
 						<ServerFavicon
 							homepage={server.homepage}
 							displayName={server.displayName}
@@ -112,18 +114,75 @@ export function ConfigTab({
 						</h2>
 					</div>
 
-					<ConfigForm
-						schema={configSchema}
-						onSubmit={handleConfigSubmit}
-						onCancel={() => router.push(`/server/${server.qualifiedName}`)}
-						initialConfig={savedConfig || {}}
-						onSuccess={() => {}}
-						serverId={server.id}
-						savedConfig={savedConfig}
-						currentSession={currentSession}
-						setIsSignInOpen={setIsSignInOpen}
-						onlySaveAndConnect={true}
-					/>
+					{/* Server Details - Links */}
+					<div className="flex flex-wrap justify-center gap-3 items-center text-sm mb-4">
+						{server.homepage && (
+							<a
+								href={server.homepage}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+							>
+								<span>Homepage</span>
+								<ExternalLink className="h-4 w-4 text-primary group-hover:text-primary/80" />
+							</a>
+						)}
+
+						<Link
+							href={`/server/${server.qualifiedName}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+						>
+							<span>Smithery Page</span>
+							<Anvil className="h-4 w-4 text-primary group-hover:text-primary/80" />
+						</Link>
+
+						<div className="flex items-center">
+							{!server.serverRepo?.isPrivate && server.sourceUrl ? (
+								<a
+									href={server.sourceUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+								>
+									<span>Source</span>
+									<Github className="h-4 w-4 text-primary group-hover:text-primary/80" />
+								</a>
+							) : (
+								<div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground">
+									<span>Source</span>
+									<Lock className="h-4 w-4" />
+								</div>
+							)}
+						</div>
+					</div>
+
+					{/* Server Details - Monthly Calls */}
+					{server.useCount > 0 && (
+						<div className="flex justify-center items-center gap-3 text-base text-muted-foreground mb-6">
+							<span>Monthly calls</span>
+							<div className="flex items-center">
+								<Activity className="h-4 w-4 mr-1.5" />
+								<span>{server.useCount.toLocaleString()}</span>
+							</div>
+						</div>
+					)}
+
+					<div className="border-t border-border pt-4">
+						<ConfigForm
+							schema={configSchema}
+							onSubmit={handleConfigSubmit}
+							onCancel={() => router.push(`/server/${server.qualifiedName}`)}
+							initialConfig={savedConfig || {}}
+							onSuccess={() => {}}
+							serverId={server.id}
+							savedConfig={savedConfig}
+							currentSession={currentSession}
+							setIsSignInOpen={setIsSignInOpen}
+							onlySaveAndConnect={true}
+						/>
+					</div>
 				</Card>
 			</LoginBlur>
 		)
@@ -132,7 +191,7 @@ export function ConfigTab({
 	// If user is logged in, show the form directly
 	return (
 		<Card className="p-6">
-			<div className="flex items-center justify-center gap-3 mb-8">
+			<div className="flex items-center justify-center gap-3 mb-4">
 				<ServerFavicon
 					homepage={server.homepage}
 					displayName={server.displayName}
@@ -144,18 +203,75 @@ export function ConfigTab({
 				</h2>
 			</div>
 
-			<ConfigForm
-				schema={configSchema}
-				onSubmit={handleConfigSubmit}
-				onCancel={() => router.push(`/server/${server.qualifiedName}`)}
-				initialConfig={savedConfig || {}}
-				onSuccess={() => {}}
-				serverId={server.id}
-				savedConfig={savedConfig}
-				currentSession={currentSession}
-				setIsSignInOpen={setIsSignInOpen}
-				onlySaveAndConnect={true}
-			/>
+			{/* Server Details - Links */}
+			<div className="flex flex-wrap justify-center gap-3 items-center text-sm mb-4">
+				{server.homepage && (
+					<a
+						href={server.homepage}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+					>
+						<span>Homepage</span>
+						<ExternalLink className="h-3 w-3 text-primary group-hover:text-primary/80" />
+					</a>
+				)}
+
+				<Link
+					href={`/server/${server.qualifiedName}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+				>
+					<span>Smithery Page</span>
+					<Anvil className="h-3 w-3 text-primary group-hover:text-primary/80" />
+				</Link>
+
+				<div className="flex items-center">
+					{!server.serverRepo?.isPrivate && server.sourceUrl ? (
+						<a
+							href={server.sourceUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground hover:text-primary hover:bg-muted transition-colors group"
+						>
+							<span>Source</span>
+							<Github className="h-3 w-3 text-primary group-hover:text-primary/80" />
+						</a>
+					) : (
+						<div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground">
+							<span>Source</span>
+							<Lock className="h-3 w-3" />
+						</div>
+					)}
+				</div>
+			</div>
+
+			{/* Server Details - Monthly Calls */}
+			{server.useCount > 0 && (
+				<div className="flex justify-center items-center gap-3 text-base text-muted-foreground mb-6">
+					<span>Monthly calls</span>
+					<div className="flex items-center">
+						<Activity className="h-4 w-4 mr-1.5" />
+						<span>{server.useCount.toLocaleString()}</span>
+					</div>
+				</div>
+			)}
+
+			<div className="border-t border-border pt-4">
+				<ConfigForm
+					schema={configSchema}
+					onSubmit={handleConfigSubmit}
+					onCancel={() => router.push(`/server/${server.qualifiedName}`)}
+					initialConfig={savedConfig || {}}
+					onSuccess={() => {}}
+					serverId={server.id}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+					onlySaveAndConnect={true}
+				/>
+			</div>
 		</Card>
 	)
 }
