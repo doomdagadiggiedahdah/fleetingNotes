@@ -1,0 +1,1 @@
+ALTER TABLE "server_scans" ADD CONSTRAINT "server_scans_server_id_unique" UNIQUE("server_id");

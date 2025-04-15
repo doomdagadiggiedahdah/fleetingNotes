@@ -1,16 +1,29 @@
-import { pgTable, uuid, timestamp, boolean, jsonb } from "drizzle-orm/pg-core"
+import {
+	pgTable,
+	uuid,
+	timestamp,
+	boolean,
+	jsonb,
+	unique,
+} from "drizzle-orm/pg-core"
 import { servers } from "./servers"
 import { z } from "zod"
 
-export const serverScans = pgTable("server_scans", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	serverId: uuid("server_id")
-		.references(() => servers.id, { onDelete: "cascade" })
-		.notNull(),
-	scanAt: timestamp("scan_at").notNull().defaultNow(),
-	isSecure: boolean("is_secure"),
-	metadata: jsonb("metadata"),
-}).enableRLS()
+export const serverScans = pgTable(
+	"server_scans",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		serverId: uuid("server_id")
+			.notNull()
+			.references(() => servers.id, { onDelete: "cascade" }),
+		scanAt: timestamp("scan_at").notNull().defaultNow(),
+		isSecure: boolean("is_secure"),
+		metadata: jsonb("metadata"),
+	},
+	(table) => ({
+		serverIdUnique: unique().on(table.serverId),
+	}),
+).enableRLS()
 
 // Zod schema for tool verification scan results
 export const toolScanResultsSchema = z.object({

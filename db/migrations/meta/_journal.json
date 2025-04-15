@@ -421,6 +421,13 @@
 			"when": 1744738177974,
 			"tag": "0061_striped_scarlet_spider",
 			"breakpoints": true
+		},
+		{
+			"idx": 62,
+			"version": "7",
+			"when": 1744739688254,
+			"tag": "0062_loving_supernaut",
+			"breakpoints": true
 		}
 	]
 }
