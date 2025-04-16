@@ -33,22 +33,27 @@ function SecurityChip({
 			<span className="text-muted-foreground text-sm">{label}</span>
 			<span className="font-medium text-sm">{value}</span>
 			{showBranding && (
-				<>
-					<div className="h-4 w-px bg-border mx-1" />
-					<Link
-						href="https://invariantlabs.ai"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-					>
-						<ServerFavicon
-							homepage="https://invariantlabs.ai"
-							displayName="Invariant Labs"
-							className="w-3 h-3"
-						/>
-						<span>Invariant Guardrails</span>
-					</Link>
-				</>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Link
+								href="https://invariantlabs.ai"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="ml-2"
+							>
+								<ServerFavicon
+									homepage="https://invariantlabs.ai"
+									displayName="Invariant Labs"
+									className="w-3 h-3"
+								/>
+							</Link>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>Powered by Invariant Guardrails</p>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 			)}
 		</div>
 	)
