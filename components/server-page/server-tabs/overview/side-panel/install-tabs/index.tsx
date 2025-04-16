@@ -42,6 +42,7 @@ export function Installtabs({
 		"enconvo",
 		"goose",
 		"spinai",
+		"roocode",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})

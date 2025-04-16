@@ -1,7 +1,7 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JsonObject } from "@/lib/types/json"
 import posthog from "posthog-js"
-import { Sparkles, ExternalLink, Download } from "lucide-react"
+import { Zap, ExternalLink, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { generateCommandSet } from "@/lib/utils/generate-command"
 import { AuthBlock } from "./auth-block"
@@ -72,7 +72,7 @@ export const VSCodeBlock = ({
 			<Tabs defaultValue="magic-link" className="w-full">
 				<TabsList className="mb-2">
 					<TabsTrigger value="magic-link" className="flex items-center gap-2">
-						<Sparkles className="h-4 w-4 text-primary" />
+						<Zap className="h-4 w-4 text-primary" />
 						Magic Link
 					</TabsTrigger>
 					<TabsTrigger value="npm" className="flex items-center gap-2">
@@ -87,8 +87,8 @@ export const VSCodeBlock = ({
 					</p>
 					<Button
 						asChild
-						variant="outline"
-						className="w-full gap-2 bg-secondary hover:bg-secondary/80 border-primary text-secondary-foreground text-base"
+						variant="default"
+						className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-base rounded-lg"
 					>
 						<a
 							href={vscodeUrl}

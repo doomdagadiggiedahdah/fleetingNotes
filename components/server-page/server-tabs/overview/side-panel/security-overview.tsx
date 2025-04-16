@@ -40,12 +40,13 @@ function SecurityChip({
 								href="https://invariantlabs.ai"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="ml-2"
+								className="ml-2 border-l border-muted-foreground/20 pl-2"
 							>
 								<ServerFavicon
 									homepage="https://invariantlabs.ai"
 									displayName="Invariant Labs"
-									className="w-3 h-3"
+									className="w-4 h-4 my-auto mt-0.5"
+									iconUrl="/favicons/invariant.ico"
 								/>
 							</Link>
 						</TooltipTrigger>

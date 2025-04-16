@@ -49,6 +49,11 @@ export function InstallTabOptions({
 		goose: { label: "Goose", homepage: "https://block.github.io/goose/" },
 		spinai: { label: "SpinAI", homepage: "https://docs.spinai.dev/" },
 		vscode: { label: "Vsc", homepage: "https://code.visualstudio.com" },
+		"vscode-insiders": {
+			label: "Vsc Insiders",
+			homepage: "https://code.visualstudio.com",
+		},
+		roocode: { label: "Roo", homepage: "https://roocode.com" },
 	}
 
 	const tabOptions: TabOption[] = Object.entries(clientsConfig).map(
@@ -79,6 +84,10 @@ export function InstallTabOptions({
 	const getTabOption = (value: ClientType) =>
 		tabOptions.find((tab) => tab.value === value)!
 
+	const LONG_NAME_THRESHOLD = 8
+	const activeClientName = clientsConfig[activeTab].label
+	const isActiveClientLong = activeClientName.length > LONG_NAME_THRESHOLD
+
 	return (
 		<div className="border-b border-border mb-3">
 			<div className="lg:hidden">
@@ -97,9 +106,9 @@ export function InstallTabOptions({
 					<SelectContent>
 						{tabOptions.map((tab) => (
 							<SelectItem key={tab.value} value={tab.value}>
-								<span className="flex items-center gap-2">
+								<span className="flex items-center gap-2 max-w-[250px]">
 									{tab.icon}
-									{tab.label}
+									<span className="truncate">{tab.label}</span>
 								</span>
 							</SelectItem>
 						))}
@@ -114,10 +123,22 @@ export function InstallTabOptions({
 							<TabsTrigger
 								key={tab.value}
 								value={tab.value}
-								className="flex items-center gap-2"
+								className={`flex items-center gap-2 ${
+									isActiveClientLong && tab.value !== activeTab
+										? "px-2 group hover:px-3"
+										: "px-3"
+								}`}
 							>
 								{tab.icon}
-								{tab.label}
+								{!isActiveClientLong || tab.value === activeTab ? (
+									<span className={isActiveClientLong ? "truncate" : ""}>
+										{tab.label}
+									</span>
+								) : (
+									<span className="w-0 overflow-hidden group-hover:w-auto transition-all duration-200">
+										{tab.label}
+									</span>
+								)}
 							</TabsTrigger>
 						)
 					})}

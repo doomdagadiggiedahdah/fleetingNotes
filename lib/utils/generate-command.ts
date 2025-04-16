@@ -12,6 +12,8 @@ export type ClientType =
 	| "goose"
 	| "spinai"
 	| "vscode"
+	| "roocode"
+	| "vscode-insiders"
 
 /* Client configuration */
 interface ClientConfig {
@@ -30,6 +32,8 @@ const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
 	goose: { usesRunCommand: true, usesCustomInstall: false },
 	spinai: { usesRunCommand: false, usesCustomInstall: true },
 	vscode: { usesRunCommand: false, usesCustomInstall: false },
+	roocode: { usesRunCommand: false, usesCustomInstall: false },
+	"vscode-insiders": { usesRunCommand: false, usesCustomInstall: false },
 }
 
 const isRunCommandClient = (client: ClientType): boolean =>

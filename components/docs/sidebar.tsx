@@ -9,7 +9,7 @@ export const navigation = [
 				title: "Use MCPs",
 				links: [
 					{ title: "Registry API", href: "/docs/registry" },
-					{ title: "Smithery CLI", href: "/docs/smithery-cli" },
+					// { title: "Smithery CLI", href: "/docs/smithery-cli" }, @deprecated
 					{ title: "Data Policy", href: "/docs/data-policy" },
 					{ title: "Client FAQ", href: "/docs/faq/users" },
 				],
