@@ -5,6 +5,7 @@ import { Terminal } from "lucide-react"
 import { Suspense } from "react"
 import { InstallTabsSkeleton } from "./skeleton"
 import { fetchData } from "./fetch-data"
+import { SecurityOverview } from "./security-overview"
 
 type Props = {
 	server: FetchedServer
@@ -39,6 +40,10 @@ export async function SidePanel({
 					/>
 				</div>
 			</Suspense>
+
+			<div className="mt-6">
+				<SecurityOverview server={server} />
+			</div>
 
 			<ServerStats server={server} serverId={server.qualifiedName} />
 		</div>

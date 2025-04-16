@@ -14,6 +14,8 @@ import { LoginBlur } from "../overview/side-panel/install-tabs/login-blur"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Activity, ExternalLink, Github, Lock, Anvil } from "lucide-react"
 import Link from "next/link"
+import { SecurityOverview } from "../overview/side-panel/security-overview"
+import { ServerStatusChip } from "@/components/server-type-chip"
 
 interface ConfigTabProps {
 	server: FetchedServer
@@ -112,6 +114,10 @@ export function ConfigTab({
 						<h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">
 							Configure {server.displayName}
 						</h2>
+						<ServerStatusChip
+							remote={server.remote}
+							isDeployed={server.isDeployed}
+						/>
 					</div>
 
 					{/* Server Details - Links */}
@@ -183,6 +189,11 @@ export function ConfigTab({
 							onlySaveAndConnect={true}
 						/>
 					</div>
+
+					{/* Security Overview */}
+					<div className="mt-6">
+						<SecurityOverview server={server} />
+					</div>
 				</Card>
 			</LoginBlur>
 		)
@@ -201,6 +212,10 @@ export function ConfigTab({
 				<h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">
 					Configure {server.displayName}
 				</h2>
+				<ServerStatusChip
+					remote={server.remote}
+					isDeployed={server.isDeployed}
+				/>
 			</div>
 
 			{/* Server Details - Links */}
@@ -271,6 +286,11 @@ export function ConfigTab({
 					setIsSignInOpen={setIsSignInOpen}
 					onlySaveAndConnect={true}
 				/>
+			</div>
+
+			{/* Security Overview */}
+			<div className="mt-6">
+				<SecurityOverview server={server} />
 			</div>
 		</Card>
 	)

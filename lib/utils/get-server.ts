@@ -4,6 +4,7 @@ import {
 	selectServerSchema,
 	serverRepos,
 	servers,
+	serverScans,
 } from "@/db/schema"
 import {
 	isDeployedQuery,
@@ -44,6 +45,11 @@ const selectFetchedServerSchema = selectServerSchema
 			isPrivate: z.boolean(),
 		}),
 		isDeployed: z.boolean(),
+		securityScan: z
+			.object({
+				isSecure: z.boolean(),
+			})
+			.nullable(),
 	})
 
 /**
@@ -90,12 +96,16 @@ export async function getServer(qualifiedName: string) {
 			)`,
 			isDeployed: isDeployedQuery,
 			useCount: useCountQuery,
+			securityScan: {
+				isSecure: serverScans.isSecure,
+			},
 		})
 		.from(servers)
 		// TODO: Won't work if user has 2 repos connected
 		.leftJoin(serverRepos, eq(servers.id, serverRepos.serverId))
+		.leftJoin(serverScans, eq(servers.id, serverScans.serverId))
 		.where(sql`LOWER(${servers.qualifiedName}) = LOWER(${qualifiedName})`)
-		.groupBy(servers.id, serverRepos.id)
+		.groupBy(servers.id, serverRepos.id, serverScans.id)
 		.limit(1)
 
 	const data = rows[0]

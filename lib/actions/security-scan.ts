@@ -39,7 +39,6 @@ async function withRetry<T>(
 		} catch (error) {
 			retries++
 			if (retries === maxRetries) {
-				console.error(`${errorMessage} after ${maxRetries} retries:`, error)
 				return {
 					success: false,
 					error: error instanceof Error ? error.message : "Unknown error",
@@ -89,7 +88,10 @@ async function scanServerTools(server: Server): Promise<ScanResult> {
 			tools: server.tools.map((tool: Tool, index: number) => {
 				const toolErrors = verificationResults.errors
 					.filter((error: { key: string; args: string[] }) => {
-						const [toolIndex] = JSON.parse(error.key)
+						// Extract the first number from the tuple-like format (0, (7,))
+						const toolIndex = Number.parseInt(
+							error.key.match(/^\((\d+)/)?.[1] || "-1",
+						)
 						return toolIndex === index
 					})
 					.map((error: { key: string; args: string[] }) => error.args[0])
@@ -108,7 +110,6 @@ async function scanServerTools(server: Server): Promise<ScanResult> {
 			results,
 		}
 	} catch (error) {
-		console.error(`Scan error for server ${server.id}:`, error)
 		return {
 			serverId: server.id,
 			serverName: server.displayName,
@@ -122,17 +123,9 @@ async function processBatch(servers: Server[]): Promise<ScanResult[]> {
 }
 
 export async function runSecurityScan(serverIds?: string[]) {
-	console.log(
-		`[runSecurityScan] Starting scan for ${serverIds ? `${serverIds.length} servers` : "all servers"}`,
-	)
-
 	// Build the query conditions
 	const conditions: Parameters<typeof and>[0][] = []
 	if (serverIds && serverIds.length > 0) {
-		console.log(
-			`[runSecurityScan] Filtering for specific server IDs:`,
-			serverIds,
-		)
 		conditions.push(inArray(servers.id, serverIds))
 	}
 
@@ -149,10 +142,7 @@ export async function runSecurityScan(serverIds?: string[]) {
 		.where(and(...conditions))
 		.then((result) => result[0]?.count || 0)
 
-	console.log(`[runSecurityScan] Found ${totalCount} servers to scan`)
-
 	while (hasMore) {
-		console.log(`[runSecurityScan] Processing batch at offset ${offset}`)
 		// Get servers in batches with retry
 		const dbResult = await withRetry(
 			() =>
@@ -166,21 +156,17 @@ export async function runSecurityScan(serverIds?: string[]) {
 					.where(and(...conditions))
 					.limit(BATCH_SIZE)
 					.offset(offset)
-					.then((rows) => {
-						console.log(
-							`[runSecurityScan] Fetched ${rows.length} servers in current batch`,
-						)
-						return rows.map((row) => ({
+					.then((rows) =>
+						rows.map((row) => ({
 							id: row.id,
 							displayName: row.displayName,
 							tools: row.tools as Tool[] | undefined,
-						}))
-					}),
+						})),
+					),
 			`Failed to fetch servers batch at offset ${offset}`,
 		)
 
 		if (!dbResult.success) {
-			console.error(`[runSecurityScan] Failed to fetch batch:`, dbResult.error)
 			errors.push({
 				serverId: "Database",
 				error: dbResult.error || "Failed to fetch servers",
@@ -190,15 +176,11 @@ export async function runSecurityScan(serverIds?: string[]) {
 
 		const batchServers = dbResult.data || []
 		if (batchServers.length === 0) {
-			console.log(`[runSecurityScan] No more servers to process`)
 			hasMore = false
 			continue
 		}
 
 		// Process current batch in parallel
-		console.log(
-			`[runSecurityScan] Scanning ${batchServers.length} servers in parallel`,
-		)
 		const batchResults = await processBatch(batchServers)
 
 		// Store results in database
@@ -228,12 +210,6 @@ export async function runSecurityScan(serverIds?: string[]) {
 				if (updateResult.success) {
 					results.push({ serverId: result.serverId, isSecure: null })
 					totalProcessed++
-					if (totalProcessed % 100 === 0) {
-						const percentage = Math.round((totalProcessed / totalCount) * 100)
-						console.log(
-							`[runSecurityScan] Progress: ${percentage}% (${totalProcessed}/${totalCount})`,
-						)
-					}
 				} else {
 					errors.push({
 						serverId: result.serverId,
@@ -269,12 +245,6 @@ export async function runSecurityScan(serverIds?: string[]) {
 				if (updateResult.success) {
 					results.push({ serverId: result.serverId, isSecure })
 					totalProcessed++
-					if (totalProcessed % 100 === 0) {
-						const percentage = Math.round((totalProcessed / totalCount) * 100)
-						console.log(
-							`[runSecurityScan] Progress: ${percentage}% (${totalProcessed}/${totalCount})`,
-						)
-					}
 				} else {
 					errors.push({
 						serverId: result.serverId,
@@ -286,24 +256,12 @@ export async function runSecurityScan(serverIds?: string[]) {
 
 		// Add delay between batches to respect rate limits
 		if (batchServers.length === BATCH_SIZE) {
-			console.log(
-				`[runSecurityScan] Rate limiting - waiting ${RATE_LIMIT_DELAY}ms before next batch`,
-			)
 			await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY))
 		}
 
 		offset += BATCH_SIZE
 	}
 
-	console.log(
-		`[runSecurityScan] Completed: Scanned ${results.length} servers, ${errors.length} failed`,
-		{
-			totalServers: totalCount,
-			successfulScans: results.length,
-			failedScans: errors.length,
-			errors: errors.length > 0 ? errors : undefined,
-		},
-	)
 	return {
 		success: errors.length === 0,
 		message: `Scanned ${results.length} servers. ${errors.length} failed.`,

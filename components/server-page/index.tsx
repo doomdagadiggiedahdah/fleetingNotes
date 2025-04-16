@@ -9,6 +9,7 @@ import { ServerQualifiedName } from "./server-qualified-name"
 import { ServerTabs } from "./server-tabs"
 import ServerSearch from "../server-search"
 import { ServerStatusChip } from "../server-type-chip"
+import { SecurityStatusChip } from "../security-status-chip"
 
 interface Props {
 	server: FetchedServer
@@ -40,10 +41,6 @@ export async function ServerPage({ server, activeTab }: Props) {
 								{server.displayName}
 							</h1>
 							{server.verified && <VerifiedBadge />}
-							<ServerStatusChip
-								remote={server.remote}
-								isDeployed={server.deploymentUrl !== null}
-							/>
 						</div>
 						<Suspense>
 							<ClaimButton server={server} />
@@ -72,6 +69,15 @@ export async function ServerPage({ server, activeTab }: Props) {
 							>
 								<ExternalLink className="w-4 h-4" />
 							</a>
+						)}
+					</div>
+					<div className="flex items-center gap-2">
+						<ServerStatusChip
+							remote={server.remote}
+							isDeployed={server.deploymentUrl !== null}
+						/>
+						{server.securityScan && (
+							<SecurityStatusChip isSecure={server.securityScan.isSecure} />
 						)}
 					</div>
 				</div>
