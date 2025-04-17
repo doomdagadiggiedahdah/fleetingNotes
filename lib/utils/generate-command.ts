@@ -125,7 +125,7 @@ export const generateInstallCommand = (
 	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = config
-		? `'${JSON.stringify(JSON.stringify(cleanConfig(config)))}'`
+		? `'${JSON.stringify(JSON.stringify(config))}'`
 		: undefined
 
 	return isCustomInstallClient(client)
@@ -147,7 +147,7 @@ export const generateRunCommand = (
 	apiKey?: string,
 	usingSavedConfig?: boolean,
 ): string => {
-	const cleanedConfig = JSON.stringify(JSON.stringify(cleanConfig(config)))
+	const cleanedConfig = JSON.stringify(JSON.stringify(config))
 	return isCustomInstallClient(client)
 		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
 		: COMMAND_TEMPLATES.STANDARD_RUN(
@@ -248,14 +248,12 @@ export const generateCommandSet = ({
 	}
 }
 
-/* Replaces undefined values with empty string ! workaround - fix yet to be implemented */
+/* Omits undefined values instead of replacing them with empty strings */
 export const cleanConfig = (config?: JsonObject): JsonObject => {
 	if (!config) return {}
-
 	return Object.fromEntries(
-		Object.entries(config).map(([key, value]) => [
-			key,
-			value === undefined ? "" : value,
-		]),
+		Object.entries(config).filter(
+			([_, value]) => value !== undefined && value !== "",
+		),
 	)
 }

@@ -32,7 +32,7 @@ export const CommandBlock = ({
 		generateCommandSet({
 			server,
 			client,
-			config,
+			config: cleanedConfig,
 			apiKey,
 			usingSavedConfig,
 		})

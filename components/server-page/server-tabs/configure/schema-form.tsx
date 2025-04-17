@@ -125,7 +125,7 @@ export function SchemaForm({
 
 	const getPlaceholder = (field: JSONSchema) => {
 		// With descriptions now under labels, the placeholder can be simpler
-		return field.default !== undefined ? `Default: ${field.default}` : ""
+		return field.default !== undefined ? `default: ${field.default}` : ""
 	}
 
 	const renderInput = (key: string, field: JSONSchema) => {
@@ -176,6 +176,12 @@ export function SchemaForm({
 							}
 							placeholder={getPlaceholder(field)}
 							value={values[key] != null ? values[key].toString() : ""}
+							className={
+								field.default !== undefined &&
+								(values[key] === undefined || values[key] === "")
+									? "text-muted-foreground"
+									: ""
+							}
 							onChange={(e) =>
 								handleValueChange(
 									key,
@@ -198,6 +204,12 @@ export function SchemaForm({
 							}
 							placeholder={getPlaceholder(field)}
 							value={values[key] != null ? values[key].toString() : ""}
+							className={
+								field.default !== undefined &&
+								(values[key] === undefined || values[key] === "")
+									? "text-muted-foreground"
+									: ""
+							}
 							onChange={(e) => handleValueChange(key, e.target.value)}
 						/>
 						{(key.toLowerCase().includes("password") ||

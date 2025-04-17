@@ -6,6 +6,7 @@ import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
 import { useState, useMemo, useEffect } from "react"
 import type { Session } from "@supabase/supabase-js"
+import { processConfig } from "@/lib/utils/process-config"
 
 // Loading fallback UI shown while configuration is being loaded
 export function ConfigFormLoading() {
@@ -21,18 +22,19 @@ const areObjectsEqual = (obj1: JsonObject, obj2: JsonObject): boolean => {
 	const keys1 = Object.keys(obj1)
 	const keys2 = Object.keys(obj2)
 
-	if (keys1.length !== keys2.length) return false
+	const allKeys = new Set([...keys1, ...keys2])
 
-	return keys1.every((key) => {
+	return Array.from(allKeys).every((key) => {
 		const val1 = obj1[key]
 		const val2 = obj2[key]
-		// Check for empty strings vs undefined - treat them as equal
-		if (
-			(val1 === "" && (val2 === undefined || val2 === "")) ||
-			(val2 === "" && (val1 === undefined || val1 === ""))
-		) {
+
+		const isEmpty1 = val1 === undefined || val1 === ""
+		const isEmpty2 = val2 === undefined || val2 === ""
+
+		if (isEmpty1 && isEmpty2) {
 			return true
 		}
+
 		return val1 === val2
 	})
 }
@@ -89,29 +91,7 @@ export function ConfigForm({
 
 	// Ensure all schema fields are included in the submission and apply defaults for empty optional fields
 	const getCompleteValues = () => {
-		const completeValues = { ...values }
-
-		// Add all schema properties with appropriate values
-		if (schema?.properties) {
-			Object.entries(schema.properties).forEach(([key, field]) => {
-				const currentValue = completeValues[key]
-				const isEmpty = currentValue === undefined || currentValue === ""
-
-				if (isEmpty) {
-					// Cast field to JSONSchema to access its properties safely
-					const schemaField = field as JSONSchema
-					// If field has a default and is empty, use the default
-					if (schemaField.default !== undefined) {
-						completeValues[key] = schemaField.default
-					} else {
-						// Otherwise use empty string to ensure all fields are present
-						completeValues[key] = ""
-					}
-				}
-			})
-		}
-
-		return completeValues
+		return processConfig(values, schema)
 	}
 
 	const handleSubmit = async (e: React.FormEvent) => {

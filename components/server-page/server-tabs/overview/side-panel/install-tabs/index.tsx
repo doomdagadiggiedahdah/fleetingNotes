@@ -10,6 +10,7 @@ import { InstallWarning } from "./install-warning"
 import { InstallTabContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/utils/generate-command"
 import { InstallTabOptions } from "./install-tab-options"
+import { processConfig } from "@/lib/utils/process-config"
 
 export type InstallTabStates = ClientType
 
@@ -45,7 +46,7 @@ export function Installtabs({
 		"roocode",
 	])
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [configValues, setConfigValues] = useState<JsonObject>({})
+	const [configValues, setConfigValues] = useState<JsonObject>({}) // values are passed into install tab content
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(
 		passedSavedConfig || null,
 	)
@@ -73,16 +74,7 @@ export function Installtabs({
 	}, [passedApiKey, currentSession])
 
 	const handleClientConfig = async (values: JsonObject) => {
-		// Get defaults while preserving schema property order
-		const finalValues = Object.entries(
-			prefetchedSchema?.properties || {},
-		).reduce((acc, [key, field]: [string, JSONSchema]) => {
-			// Use user value if provided and non-empty, otherwise use default
-			const userValue = values[key]
-			acc[key] =
-				userValue !== "" && userValue !== undefined ? userValue : field.default
-			return acc
-		}, {} as JsonObject)
+		const finalValues = processConfig(values, prefetchedSchema)
 
 		setConfigValues(finalValues)
 		setIsClientConfigured(true)
@@ -182,6 +174,7 @@ export function Installtabs({
 						configSchema={prefetchedSchema}
 						isClientConfigured={isClientConfigured}
 						configValues={configValues}
+						// config values are stored in state once onClientConfig is triggered (from config form)
 						onClientConfig={handleClientConfig}
 						savedConfig={savedConfig}
 						currentSession={currentSession}
