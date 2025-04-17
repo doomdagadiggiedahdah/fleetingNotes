@@ -122,6 +122,7 @@ export async function getAllServers(
 		parsedQueryObj?.repo
 			? sql`exists (select 1 from ${serverRepos} where ${serverRepos.serverId} = ${servers.id} and LOWER(${serverRepos.repoName}) = LOWER(${parsedQueryObj.repo}))`
 			: undefined,
+		parsedQueryObj?.is === "local" ? eq(servers.remote, false) : undefined,
 		parsedQueryObj?.is === "deployed" ? eq(isDeployedQuery, true) : undefined,
 		parsedQueryObj?.is === "installable"
 			? or(

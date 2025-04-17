@@ -1,5 +1,5 @@
 // Destroy all test apps: fly apps list | grep test | awk '{print $1}' | xargs -I {} fly apps destroy -y {}
-// npx braintrust eval lib/blacksmith/pr/index.eval.ts --env-file .env.development.local --verbose
+// npx braintrust eval lib/blacksmith/build/index.eval.ts --env-file .env.development.local --verbose
 import { Eval, type EvalScorer, initDataset } from "braintrust"
 
 import "@/lib/utils/braintrust"
@@ -60,23 +60,12 @@ const buildEval: EvalScorer<PRInput, PROutput, null> = async ({ output }) => {
  */
 Eval<PRInput, PROutput, null>("Smithery", {
 	experimentName: "pull_request",
-	maxConcurrency: 5,
+	maxConcurrency: 10,
 	timeout: 60 * 15 * 1000,
 	data: async () => {
 		const dataset = initDataset("Smithery", { dataset: "pull_request" })
 		const data = await dataset.fetchedData()
-		return (
-			shuffle(data)
-				// Some failure cases
-				// .filter(
-				// 	(data) =>
-				// 		data.input.id === "12788870-23c6-45eb-bbb7-7c16db470230" ||
-				// 		data.input.id === "17cb9ac2-ddc1-47a1-94bf-f12a707a23bc" ||
-				// 		data.input.id === "27cd6607-83ac-4f1d-9aa1-47235ba5ed1b" ||
-				// 		data.input.id === "2da59f2e-8acf-4062-bbde-42bd907c965a",
-				// )
-				.slice(0, 10)
-		)
+		return shuffle(data).slice(0, 30)
 	},
 	task: async (row) => {
 		const { repoOwner, repoName, baseDirectory } = row

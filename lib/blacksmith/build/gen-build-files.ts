@@ -300,8 +300,7 @@ ${!inRepoRoot ? "*Note: This MCP server is in a subdirectory of a repository (i.
 						: buildsAttempted >= 1
 							? "medium"
 							: "low",
-				model: "o3-mini",
-				temperature: 1.0,
+				model: "o4-mini",
 				tools,
 				tool_choice: "required",
 			})

@@ -133,7 +133,7 @@ If you see any of the above cases, mark it as not an MCP server.
 			]
 
 			const completion = await llm.beta.chat.completions.parse({
-				model: "o3-mini",
+				model: "o4-mini",
 				reasoning_effort: "low",
 				messages,
 				response_format: zodResponseFormat(
