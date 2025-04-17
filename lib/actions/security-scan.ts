@@ -1,15 +1,14 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema/servers"
 import { serverScans } from "@/db/schema/server-scans"
-import { inArray, and, sql } from "drizzle-orm"
+import { inArray, and } from "drizzle-orm"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import type { ToolScanResults } from "@/db/schema/server-scans"
+import { verifyServerTools } from "@/lib/utils/invariant"
+import { withRetry } from "@/lib/utils/retry"
 
-const MCP_VERIFICATION_API = "https://mcp.invariantlabs.ai/api/v1/public/mcp"
 const BATCH_SIZE = 3 // Number of servers to process in parallel
 const RATE_LIMIT_DELAY = 2000 // Delay between batches in milliseconds
-const MAX_RETRIES = 3
-const INITIAL_RETRY_DELAY = 1000 // 1 second
 
 interface Server {
 	id: string
@@ -24,34 +23,6 @@ interface ScanResult {
 	error?: string
 }
 
-async function withRetry<T>(
-	operation: () => Promise<T>,
-	errorMessage: string,
-	maxRetries = MAX_RETRIES,
-): Promise<{ success: boolean; data?: T; error?: string }> {
-	let retries = 0
-	let delay = INITIAL_RETRY_DELAY
-
-	while (retries < maxRetries) {
-		try {
-			const data = await operation()
-			return { success: true, data }
-		} catch (error) {
-			retries++
-			if (retries === maxRetries) {
-				return {
-					success: false,
-					error: error instanceof Error ? error.message : "Unknown error",
-				}
-			}
-			// Exponential backoff
-			await new Promise((resolve) => setTimeout(resolve, delay))
-			delay *= 2
-		}
-	}
-	return { success: false, error: "Max retries reached" }
-}
-
 async function scanServerTools(server: Server): Promise<ScanResult> {
 	if (!server.tools || !Array.isArray(server.tools)) {
 		return {
@@ -61,60 +32,26 @@ async function scanServerTools(server: Server): Promise<ScanResult> {
 		}
 	}
 
-	try {
-		// Prepare messages for verification
-		const messages = server.tools.map((tool: Tool) => ({
-			role: "system",
-			content: `Tool Name:${tool.name}\nTool Description:${tool.description || ""}`,
-		}))
+	const verificationResult = await verifyServerTools(server.tools)
 
-		// Call MCP Verification API
-		const response = await fetch(MCP_VERIFICATION_API, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ messages }),
-		})
-
-		if (!response.ok) {
-			throw new Error(`MCP Verification API error: ${response.statusText}`)
-		}
-
-		const verificationResults = await response.json()
-
-		// Process results
-		const results: ToolScanResults = {
-			tools: server.tools.map((tool: Tool, index: number) => {
-				const toolErrors = verificationResults.errors
-					.filter((error: { key: string; args: string[] }) => {
-						// Extract the first number from the tuple-like format (0, (7,))
-						const toolIndex = Number.parseInt(
-							error.key.match(/^\((\d+)/)?.[1] || "-1",
-						)
-						return toolIndex === index
-					})
-					.map((error: { key: string; args: string[] }) => error.args[0])
-
-				return {
-					name: tool.name,
-					isSecure: toolErrors.length === 0,
-					securityIssues: toolErrors,
-				}
-			}),
-		}
-
+	if (!verificationResult.ok) {
 		return {
 			serverId: server.id,
 			serverName: server.displayName,
-			results,
+			error: verificationResult.error,
 		}
-	} catch (error) {
-		return {
-			serverId: server.id,
-			serverName: server.displayName,
-			error: "Failed to scan tools",
-		}
+	}
+
+	return {
+		serverId: server.id,
+		serverName: server.displayName,
+		results: {
+			tools: verificationResult.value.tools.map((tool) => ({
+				name: tool.name,
+				isSecure: tool.isSecure,
+				securityIssues: tool.securityIssues,
+			})),
+		},
 	}
 }
 
@@ -134,13 +71,6 @@ export async function runSecurityScan(serverIds?: string[]) {
 	let offset = 0
 	let hasMore = true
 	let totalProcessed = 0
-
-	// Get total count for progress calculation
-	const totalCount = await db
-		.select({ count: sql<number>`count(*)` })
-		.from(servers)
-		.where(and(...conditions))
-		.then((result) => result[0]?.count || 0)
 
 	while (hasMore) {
 		// Get servers in batches with retry

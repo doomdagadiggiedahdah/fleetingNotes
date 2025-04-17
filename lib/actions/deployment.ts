@@ -44,6 +44,7 @@ import { fetchConfigSchema } from "../utils/fetch-config"
 import { fetchServerTools } from "../utils/get-tools"
 import { getDefaultBranch } from "../utils/github"
 import { err, ok, toResult } from "../utils/result"
+import { runSecurityScan } from "./security-scan"
 
 export const getDeployments = async (serverId: string) => {
 	const supabase = await createClient()
@@ -420,6 +421,9 @@ export async function createDeploymentForServer(
 
 						if (toolResult.ok && toolResult.value.tools.length > 0) {
 							updateData.tools = toolResult.value.tools
+
+							// Run security scan on the new tools
+							await runSecurityScan([server.id])
 						}
 
 						// Perform a single update if we have data to update

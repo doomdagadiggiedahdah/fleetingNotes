@@ -126,12 +126,15 @@ Retrieves information about a specific server by its qualified name. The qualifi
     url?: string;
     configSchema: JSONSchema;
   }>;
+  securityScan: {
+    isSecure: boolean;
+  } | null;
 }`}
   showHeader={true}
   className="my-4"
 />
 
-We will return you a response containing information about the server, including its qualified name, display name, and connection details.
+We will return you a response containing information about the server, including its qualified name, display name, connection details, and security scan status.
 
 The connection details specify how you can connect to this server.
 
@@ -141,6 +144,8 @@ The connection details specify how you can connect to this server.
   - `type`: Either `stdio` or `ws` (websocket).
   - `url`: The WebSocket URL to connect to, if applicable.
   - `configSchema`: The JSON schema for the server's configuration. You must specify a config that complies with this schema in order to connect to this server. Some servers will have no configuration required.
+- `securityScan`: Information about the server's security status (recently added feature)
+  - `isSecure`: A boolean indicating whether the server has passed security checks. This field will be `null` if no security scan has been performed yet.
 
 ## Connecting to WebSocket Servers
 
@@ -173,3 +178,4 @@ const transport = new WebSocketClientTransport(url)`}
   showHeader={true}
   className="my-4"
 />
+

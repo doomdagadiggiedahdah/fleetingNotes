@@ -1,6 +1,5 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Card } from "@/components/ui/card"
-import { Shield, Wrench } from "lucide-react"
+import { Shield, Info } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
@@ -28,7 +27,7 @@ function SecurityChip({
 	showBranding?: boolean
 }) {
 	const content = (
-		<div className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1.5">
+		<div className="flex items-center gap-1.5 bg-muted/50 rounded-full px-2 py-1 w-fit">
 			{icon}
 			<span className="text-muted-foreground text-sm">{label}</span>
 			<span className="font-medium text-sm">{value}</span>
@@ -40,12 +39,12 @@ function SecurityChip({
 								href="https://invariantlabs.ai"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="ml-2 border-l border-muted-foreground/20 pl-2"
+								className="ml-1.5 border-l border-muted-foreground/20 pl-1.5"
 							>
 								<ServerFavicon
 									homepage="https://invariantlabs.ai"
 									displayName="Invariant Labs"
-									className="w-4 h-4 my-auto mt-0.5"
+									className="w-3.5 h-3.5 my-auto mt-0.5"
 									iconUrl="/favicons/invariant.ico"
 								/>
 							</Link>
@@ -86,21 +85,38 @@ export function SecurityOverview({ server }: SecurityOverviewProps) {
 	}
 
 	return (
-		<Card className="p-4 space-y-4">
+		<div className="space-y-3">
 			<div className="flex items-center gap-2">
-				<Shield className="h-4 w-4" />
-				<h3 className="text-sm font-medium">Security</h3>
-			</div>
-
-			<div className="space-y-2">
+				<div className="flex items-center gap-1.5 text-muted-foreground">
+					<Shield className="h-4 w-4" />
+					<span className="text-md font-medium">Security</span>
+				</div>
 				<SecurityChip
-					icon={<Wrench className="w-3.5 h-3.5" />}
-					label="Tool Prompts"
+					icon={null}
+					label=""
 					value={securityStatus.status}
-					tooltip="Security status of tool prompts"
 					showBranding={securityStatus.showBranding}
 				/>
+				<TooltipProvider>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Info className="h-3.5 w-3.5 text-muted-foreground" />
+						</TooltipTrigger>
+						<TooltipContent className="max-w-[300px]">
+							<p>
+								This scan checks for potential security vulnerabilities
+								including:
+							</p>
+							<ul className="list-disc list-inside mt-1">
+								<li>Prompt injection attacks</li>
+								<li>Rug pull attempts</li>
+								<li>Cross-origin security issues</li>
+							</ul>
+						</TooltipContent>
+					</Tooltip>
+				</TooltipProvider>
 			</div>
-		</Card>
+			<div className="h-px bg-border" />
+		</div>
 	)
 }

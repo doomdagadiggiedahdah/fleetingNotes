@@ -8,11 +8,11 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SiAnthropic } from "@icons-pack/react-simple-icons"
-import { VscVscode } from "react-icons/vsc"
-import { ServerFavicon } from "../../../../server-favicon"
+import { useMemo } from "react"
 import { OverflowMenu } from "./overflow-menu"
 import type { ClientType } from "@/lib/utils/generate-command"
+import { CLIENTS_CONFIG } from "@/lib/config/clients"
+import { getClientIcon } from "@/components/server-page/server-tabs/overview/side-panel/install-tabs/icons"
 
 type TabOption = {
 	value: ClientType
@@ -28,6 +28,15 @@ interface InstallTabOptionsProps {
 	onOverflowSelect: (tab: ClientType) => void
 }
 
+const renderSelectItem = (tab: TabOption) => (
+	<SelectItem key={tab.value} value={tab.value}>
+		<span className="flex items-center gap-2 max-w-[250px]">
+			{tab.icon}
+			<span className="truncate">{tab.label}</span>
+		</span>
+	</SelectItem>
+)
+
 export function InstallTabOptions({
 	activeTab,
 	tabOrder,
@@ -35,58 +44,31 @@ export function InstallTabOptions({
 	onTabChange,
 	onOverflowSelect,
 }: InstallTabOptionsProps) {
-	// Client configuration data
-	const clientsConfig: Record<
-		ClientType,
-		{ label: string; homepage?: string }
-	> = {
-		claude: { label: "Claude" },
-		cursor: { label: "Cursor", homepage: "https://cursor.sh" },
-		windsurf: { label: "Windsurf", homepage: "https://codeium.com" },
-		cline: { label: "Cline", homepage: "http://cline.bot" },
-		witsy: { label: "Witsy", homepage: "https://witsyai.com" },
-		enconvo: { label: "Enconvo", homepage: "https://www.enconvo.com" },
-		goose: { label: "Goose", homepage: "https://block.github.io/goose/" },
-		spinai: { label: "SpinAI", homepage: "https://docs.spinai.dev/" },
-		vscode: { label: "Vsc", homepage: "https://code.visualstudio.com" },
-		"vscode-insiders": {
-			label: "Vsc Insiders",
-			homepage: "https://code.visualstudio.com",
-		},
-		roocode: { label: "Roo", homepage: "https://roocode.com" },
-	}
-
-	const tabOptions: TabOption[] = Object.entries(clientsConfig).map(
-		([value, config]) => {
-			const clientType = value as ClientType
-			return {
-				value: clientType,
+	const tabOptions = useMemo(
+		() =>
+			Object.entries(CLIENTS_CONFIG).map(([value, config]) => ({
+				value: value as ClientType,
 				label: config.label,
-				icon:
-					clientType === "claude" ? (
-						<SiAnthropic className="w-4 h-4" />
-					) : clientType === "vscode" ? (
-						<VscVscode className="w-4 h-4 text-[#0098FF]" />
-					) : (
-						<ServerFavicon
-							homepage={config.homepage || ""}
-							displayName={config.label}
-							className="w-4 h-4"
-						/>
-					),
-			}
-		},
+				icon: getClientIcon(value as ClientType, config),
+			})),
+		[],
 	)
 
-	const mainTabs = tabOrder.slice(0, visibleCount)
-	const overflowTabs = tabOrder.slice(visibleCount)
+	const { mainTabs, overflowTabs } = useMemo(
+		() => ({
+			mainTabs: tabOrder.slice(0, visibleCount),
+			overflowTabs: tabOrder.slice(visibleCount),
+		}),
+		[tabOrder, visibleCount],
+	)
 
 	const getTabOption = (value: ClientType) =>
 		tabOptions.find((tab) => tab.value === value)!
 
-	const LONG_NAME_THRESHOLD = 8
-	const activeClientName = clientsConfig[activeTab].label
-	const isActiveClientLong = activeClientName.length > LONG_NAME_THRESHOLD
+	const activeTabOption = useMemo(
+		() => getTabOption(activeTab),
+		[activeTab, tabOptions],
+	)
 
 	return (
 		<div className="border-b border-border mb-3">
@@ -98,21 +80,12 @@ export function InstallTabOptions({
 					<SelectTrigger className="w-[150px]">
 						<SelectValue>
 							<span className="flex items-center gap-2">
-								{tabOptions.find((tab) => tab.value === activeTab)?.icon}
-								{tabOptions.find((tab) => tab.value === activeTab)?.label}
+								{activeTabOption.icon}
+								{activeTabOption.label}
 							</span>
 						</SelectValue>
 					</SelectTrigger>
-					<SelectContent>
-						{tabOptions.map((tab) => (
-							<SelectItem key={tab.value} value={tab.value}>
-								<span className="flex items-center gap-2 max-w-[250px]">
-									{tab.icon}
-									<span className="truncate">{tab.label}</span>
-								</span>
-							</SelectItem>
-						))}
-					</SelectContent>
+					<SelectContent>{tabOptions.map(renderSelectItem)}</SelectContent>
 				</Select>
 			</div>
 			<div className="hidden lg:flex w-full justify-start items-center">
@@ -123,22 +96,10 @@ export function InstallTabOptions({
 							<TabsTrigger
 								key={tab.value}
 								value={tab.value}
-								className={`flex items-center gap-2 ${
-									isActiveClientLong && tab.value !== activeTab
-										? "px-2 group hover:px-3"
-										: "px-3"
-								}`}
+								className="flex items-center gap-2 px-3"
 							>
 								{tab.icon}
-								{!isActiveClientLong || tab.value === activeTab ? (
-									<span className={isActiveClientLong ? "truncate" : ""}>
-										{tab.label}
-									</span>
-								) : (
-									<span className="w-0 overflow-hidden group-hover:w-auto transition-all duration-200">
-										{tab.label}
-									</span>
-								)}
+								<span>{tab.label}</span>
 							</TabsTrigger>
 						)
 					})}

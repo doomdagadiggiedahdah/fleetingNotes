@@ -1,6 +1,7 @@
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { deployments } from "@/db/schema/deployments"
+import { serverScans } from "@/db/schema/server-scans"
 import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
@@ -17,6 +18,11 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	remote: true,
 }).extend({
 	connections: z.array(ConnectionSchema),
+	securityScan: z
+		.object({
+			isSecure: z.boolean(),
+		})
+		.nullable(),
 })
 
 export async function GET(
@@ -47,8 +53,12 @@ export async function GET(
 					ORDER BY ${deployments.createdAt} DESC
 					LIMIT 1
 				)`,
+				securityScan: {
+					isSecure: serverScans.isSecure,
+				},
 			})
 			.from(servers)
+			.leftJoin(serverScans, eq(servers.id, serverScans.serverId))
 			.where(eq(servers.qualifiedName, serverQualifiedName))
 			.limit(1)
 			.then((rows) => rows[0])
