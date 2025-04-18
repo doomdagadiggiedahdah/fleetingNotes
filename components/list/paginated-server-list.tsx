@@ -42,7 +42,18 @@ export function PaginatedServerList({
 
 			{servers.length === 0 && (
 				<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
-					No servers found.
+					<p className="mb-2">No servers found.</p>
+					<p className="text-sm text-muted-foreground">
+						Looking for an MCP that doesn&apos;t exist yet?{" "}
+						<a
+							href={`https://github.com/smithery-ai/rfm/discussions/new?category=ideas&title=${encodeURIComponent(searchParams.get("q") || "")}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-primary hover:underline"
+						>
+							Request it on GitHub
+						</a>
+					</p>
 				</div>
 			)}
 
