@@ -85,9 +85,3 @@ To add a new route:
 2. Specify a destination path in your Obsidian vault
 3. Add the pair to the `NOTES_MAP` dictionary
 4. Restart the service: `sudo systemctl restart whisper-loop.service`
-
-## Running Tests
-
-```bash
-./test_to_obsidian.fish
-```
