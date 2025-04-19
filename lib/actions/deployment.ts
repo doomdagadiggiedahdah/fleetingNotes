@@ -421,9 +421,6 @@ export async function createDeploymentForServer(
 
 						if (toolResult.ok && toolResult.value.tools.length > 0) {
 							updateData.tools = toolResult.value.tools
-
-							// Run security scan on the new tools
-							await runSecurityScan([server.id])
 						}
 
 						// Perform a single update if we have data to update
@@ -432,6 +429,22 @@ export async function createDeploymentForServer(
 								.update(servers)
 								.set(updateData)
 								.where(eq(servers.id, server.id))
+
+							if (updateData.tools) {
+								// Run security scan in its own background task
+								waitUntil(
+									(async function runSecurityScanTask() {
+										try {
+											await runSecurityScan([server.id])
+										} catch (error: unknown) {
+											console.error(
+												`Security scan failed for server ${server.id}:`,
+												error,
+											)
+										}
+									})(),
+								)
+							}
 
 							try {
 								const paths = [`/`, `/server/${server.qualifiedName}`]
