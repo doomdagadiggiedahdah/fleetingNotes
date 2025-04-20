@@ -49,6 +49,7 @@ export const CursorBlock = ({
 								.replace("install", "run")
 								.replace("--client cursor ", "")}
 							serverQualifiedName={serverQualifiedName}
+							client="cursor"
 						/>
 					</div>
 					<div>
@@ -65,6 +66,7 @@ export const CursorBlock = ({
 						<AuthBlock
 							command={windowsCmdCommand.replace("install", "run")}
 							serverQualifiedName={serverQualifiedName}
+							client="cursor"
 						/>
 						<div className="text-xs mt-2 mb-3 text-muted-foreground">
 							If the above doesn&apos;t work, try this alternative:
@@ -72,6 +74,7 @@ export const CursorBlock = ({
 						<AuthBlock
 							command={windowsCmdFullCommand.replace("install", "run")}
 							serverQualifiedName={serverQualifiedName}
+							client="cursor"
 						/>
 					</div>
 				</div>
@@ -81,6 +84,7 @@ export const CursorBlock = ({
 				<AuthBlock
 					command={unixCommand}
 					serverQualifiedName={serverQualifiedName}
+					client="cursor"
 				/>
 			</TabsContent>
 		</Tabs>

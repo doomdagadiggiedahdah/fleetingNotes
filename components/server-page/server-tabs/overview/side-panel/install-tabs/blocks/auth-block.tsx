@@ -12,9 +12,10 @@ const AUTH_COMMAND_FEATURE_FLAG = "auth-install-command"
 interface AuthBlock {
 	command: string
 	serverQualifiedName: string
+	client: string
 }
 
-export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
+export function AuthBlock({ command, serverQualifiedName, client }: AuthBlock) {
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [isFeatureEnabled, setIsFeatureEnabled] = useState(false)
 	const isLoggedIn = !!currentSession
@@ -45,6 +46,7 @@ export function AuthBlock({ command, serverQualifiedName }: AuthBlock) {
 				onMouseDown={() => {
 					posthog.capture("Code Copied", {
 						serverQualifiedName,
+						client,
 						eventTag: "install_command",
 					})
 				}}

@@ -1,47 +1,12 @@
 import type { JsonObject } from "@/lib/types/json"
 import type { FetchedServer } from "@/lib/utils/get-server"
-
-/* Supported clients */
-export type ClientType =
-	| "claude"
-	| "cline"
-	| "cursor"
-	| "windsurf"
-	| "witsy"
-	| "enconvo"
-	| "goose"
-	| "spinai"
-	| "vscode"
-	| "roocode"
-	| "vscode-insiders"
-
-/* Client configuration */
-interface ClientConfig {
-	usesRunCommand: boolean
-	usesCustomInstall: boolean
-}
-
-/* Client specific configurations */
-const CLIENT_CONFIGS: Record<ClientType, ClientConfig> = {
-	claude: { usesRunCommand: false, usesCustomInstall: false },
-	cline: { usesRunCommand: false, usesCustomInstall: false },
-	cursor: { usesRunCommand: false, usesCustomInstall: false },
-	windsurf: { usesRunCommand: false, usesCustomInstall: false },
-	witsy: { usesRunCommand: false, usesCustomInstall: false },
-	enconvo: { usesRunCommand: false, usesCustomInstall: false },
-	goose: { usesRunCommand: true, usesCustomInstall: false },
-	spinai: { usesRunCommand: false, usesCustomInstall: true },
-	vscode: { usesRunCommand: false, usesCustomInstall: false },
-	roocode: { usesRunCommand: false, usesCustomInstall: false },
-	"vscode-insiders": { usesRunCommand: false, usesCustomInstall: false },
-}
+import { CLIENTS_CONFIG, type ClientType } from "@/lib/config/clients"
 
 const isRunCommandClient = (client: ClientType): boolean =>
-	CLIENT_CONFIGS[client].usesRunCommand
+	CLIENTS_CONFIG[client].usesRunCommand
 
-// Feels a little off to have a custom client - but keep for now
 const isCustomInstallClient = (client: ClientType): boolean =>
-	CLIENT_CONFIGS[client].usesCustomInstall
+	CLIENTS_CONFIG[client].usesCustomInstall
 
 /* Windows execution methods */
 export enum WindowsExecMethod {

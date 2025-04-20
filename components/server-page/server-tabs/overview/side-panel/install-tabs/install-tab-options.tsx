@@ -10,7 +10,7 @@ import {
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useMemo } from "react"
 import { OverflowMenu } from "./overflow-menu"
-import type { ClientType } from "@/lib/utils/generate-command"
+import type { ClientType } from "@/lib/config/clients"
 import { CLIENTS_CONFIG } from "@/lib/config/clients"
 import { getClientIcon } from "@/components/server-page/server-tabs/overview/side-panel/install-tabs/icons"
 

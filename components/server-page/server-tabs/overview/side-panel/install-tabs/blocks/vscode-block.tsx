@@ -111,6 +111,7 @@ export const VSCodeBlock = ({
 					<AuthBlock
 						command={unixCommand}
 						serverQualifiedName={server.qualifiedName}
+						client="vscode"
 					/>
 				</TabsContent>
 			</Tabs>

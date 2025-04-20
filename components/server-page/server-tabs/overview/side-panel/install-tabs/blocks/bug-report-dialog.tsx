@@ -24,7 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select"
-import type { ClientType } from "@/lib/utils/generate-command"
+import type { ClientType } from "@/lib/config/clients"
 
 interface BugReportDialogProps {
 	open: boolean

@@ -1,7 +1,7 @@
 import { SiAnthropic } from "@icons-pack/react-simple-icons"
 import { VscVscode } from "react-icons/vsc"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
-import type { ClientType } from "@/lib/utils/generate-command"
+import type { ClientType } from "@/lib/config/clients"
 
 const ICON_SIZE = "w-4 h-4"
 

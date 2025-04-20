@@ -8,7 +8,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "./install-warning"
 import { InstallTabContent } from "./install-tab-content"
-import type { ClientType } from "@/lib/utils/generate-command"
+import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
 
