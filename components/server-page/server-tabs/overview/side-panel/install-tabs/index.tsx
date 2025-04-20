@@ -11,7 +11,6 @@ import { InstallTabContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
-import { JsonBlock } from "./blocks/json-block"
 
 export type InstallTabStates = "auto" | "manual"
 
@@ -152,14 +151,25 @@ export function Installtabs({
 					usingSavedConfig={usingSavedConfig}
 					setUsingSaved={handleToggleUsingSavedConfig}
 					onClientChange={setSelectedClient}
+					method={activeTab}
 				/>
 			</TabsContent>
 			<TabsContent value="manual">
-				<JsonBlock
+				<InstallTabContent
 					server={server}
-					cleanedConfig={configValues}
+					client={selectedClient}
+					configSchema={prefetchedSchema}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
 					apiKey={apiKey || undefined}
 					usingSavedConfig={usingSavedConfig}
+					setUsingSaved={handleToggleUsingSavedConfig}
+					onClientChange={setSelectedClient}
+					method={activeTab}
 				/>
 			</TabsContent>
 		</Tabs>

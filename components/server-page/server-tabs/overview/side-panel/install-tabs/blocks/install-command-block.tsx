@@ -1,225 +1,107 @@
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import type { FetchedServer } from "@/lib/utils/get-server"
-import { Bug, FileText, CloudOff } from "lucide-react"
-import type { JsonObject } from "@/lib/types/json"
-import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
-import type { ClientType } from "@/lib/config/clients"
-import { CLIENTS_CONFIG, CLIENT_ORDER } from "@/lib/config/clients"
-import { VSCodeBlock } from "./vscode-block"
-import { BugReportDialog } from "./bug-report-dialog"
-import { RunCommandBlock } from "./run-command-block"
-import { AuthBlock } from "./auth-block"
-import { useState } from "react"
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-} from "@/components/ui/command"
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { getClientIcon } from "../icons"
+"use client"
 
-export const InstallCommandBlock = ({
-	server,
+import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
+import { useAuth } from "@/context/auth-context"
+import { MessageCircleWarning } from "lucide-react"
+import posthog from "posthog-js"
+import { useEffect, useState } from "react"
+
+// Hardcoded feature flag key
+const AUTH_COMMAND_FEATURE_FLAG = "auth-install-command"
+
+interface InstallCommandBlock {
+	command: string
+	serverQualifiedName: string
+	client: string
+}
+
+export function InstallCommandBlock({
+	command,
+	serverQualifiedName,
 	client,
-	config,
-	apiKey,
-	usingSavedConfig,
-	onClientChange,
-}: {
-	server: FetchedServer
-	client: ClientType
-	config?: JsonObject
-	apiKey?: string
-	usingSavedConfig?: boolean
-	onClientChange?: (client: ClientType) => void
-}) => {
-	const [isBugReportOpen, setIsBugReportOpen] = useState(false)
-	const [open, setOpen] = useState(false)
-	const cleanedConfig = cleanConfig(config)
+}: InstallCommandBlock) {
+	const { currentSession, setIsSignInOpen } = useAuth()
+	const [isFeatureEnabled, setIsFeatureEnabled] = useState(false)
+	const isLoggedIn = !!currentSession
 
-	const { unixCommand, windowsCmdCommand, windowsCmdFullCommand } =
-		generateCommandSet({
-			server,
-			client,
-			config: cleanedConfig,
-			apiKey,
-			usingSavedConfig,
-		})
+	// Check feature flag on mount
+	useEffect(() => {
+		// A/B test using PostHog - defaults to 50/50 if not configured in PostHog dashboard
+		const enabled = posthog.getFeatureFlag(AUTH_COMMAND_FEATURE_FLAG) === "test"
+		setIsFeatureEnabled(enabled)
+	}, [])
 
-	const hasValidConnection =
-		server.deploymentUrl ||
-		server.connections.some(
-			(conn) => conn.type === "stdio" && conn.configSchema,
-		)
+	// Check if command contains a sensitive key
+	const containsSensitiveKey = command.includes("--key")
 
-	const clientConfig = CLIENTS_CONFIG[client]
+	// Check for Windows-specific issues
+	const hasWindowsIssues =
+		/[A-Z]:[\\\/].*\s/.test(command) && command.includes("--config")
 
-	const clientOptions = CLIENT_ORDER.map((value) => ({
-		value,
-		label: CLIENTS_CONFIG[value].label,
-		icon: getClientIcon(value, CLIENTS_CONFIG[value]),
-	}))
+	const codeBlockComponent = (
+		<>
+			<SimpleCodeBlock
+				code={command}
+				className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors"
+				disableAutoScroll={true}
+				showHeader={true}
+				headerLabel="terminal"
+				language="bash"
+				onMouseDown={() => {
+					posthog.capture("Code Copied", {
+						serverQualifiedName,
+						client,
+						eventTag: "install_command",
+					})
+				}}
+			/>
+			{containsSensitiveKey && (
+				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
+					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+					<span className="text-amber-300/90 text-xs">
+						Your smithery key is sensitive. Please don&apos;t share it with
+						anyone.
+					</span>
+				</div>
+			)}
+			{hasWindowsIssues && (
+				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
+					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+					<span className="text-amber-300/90 text-xs">
+						Windows path with spaces detected. Please either use a path without
+						spaces or the &quot;save and connect&quot; option instead.
+					</span>
+				</div>
+			)}
+		</>
+	)
 
-	const renderInstallInstructions = () => {
-		if (client === "vscode") {
-			return null
-		}
+	if (!isFeatureEnabled) {
+		return codeBlockComponent
+	}
 
-		if (clientConfig.usesRunCommand) {
-			return (
-				<>
-					Install for{" "}
-					<a
-						href={clientConfig.homepage}
-						target="_blank"
-						className="hover:text-primary"
-					>
-						{clientConfig.label}
-					</a>{" "}
-					by pasting the following command in settings.
-				</>
-			)
-		}
-
+	// Blurred content if not logged in
+	if (!isLoggedIn) {
 		return (
-			<>
-				Run the following command to install for{" "}
-				<a
-					href={clientConfig.homepage}
-					target="_blank"
-					className="hover:text-primary"
+			<div className="relative">
+				{/* biome-ignore lint/nursery/noStaticElementInteractions: <explanation> */}
+				<div
+					className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center cursor-pointer"
+					onClick={() => {
+						setIsSignInOpen(true)
+						posthog.capture("Command Auth Clicked", {
+							serverQualifiedName,
+						})
+					}}
 				>
-					{clientConfig.label}
-				</a>
-				.
-			</>
+					<div className="bg-card p-3 rounded-md shadow-md text-center">
+						<p className="font-medium">Login to use command</p>
+					</div>
+				</div>
+				<div className="blur-sm pointer-events-none">{codeBlockComponent}</div>
+			</div>
 		)
 	}
 
-	return (
-		<>
-			<div>
-				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							role="combobox"
-							aria-expanded={open}
-							className="w-[200px] justify-between hover:border-primary"
-						>
-							<span className="flex items-center gap-2">
-								{getClientIcon(client, clientConfig)}
-								{clientConfig.label}
-							</span>
-							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0">
-						<Command className="overflow-y-auto max-h-[250px] overscroll-contain">
-							<CommandInput placeholder="Search client..." />
-							<CommandEmpty>No client found.</CommandEmpty>
-							<CommandGroup className="dark-scrollbar overflow-y-auto overscroll-contain">
-								{clientOptions.map((option) => (
-									<CommandItem
-										key={option.value}
-										value={option.value}
-										onSelect={(currentValue) => {
-											onClientChange?.(currentValue as ClientType)
-											setOpen(false)
-										}}
-									>
-										<Check
-											className={cn(
-												"mr-2 h-4 w-4",
-												client === option.value ? "opacity-100" : "opacity-0",
-											)}
-										/>
-										<span className="flex items-center gap-2">
-											{option.icon}
-											{option.label}
-										</span>
-									</CommandItem>
-								))}
-							</CommandGroup>
-						</Command>
-					</PopoverContent>
-				</Popover>
-			</div>
-
-			<p className="mt-3 mb-3">{renderInstallInstructions()}</p>
-
-			{hasValidConnection ? (
-				client === "vscode" || client === "vscode-insiders" ? (
-					<VSCodeBlock
-						server={server}
-						config={config}
-						apiKey={apiKey}
-						usingSavedConfig={usingSavedConfig}
-						client={client}
-					/>
-				) : clientConfig.usesRunCommand ? (
-					<RunCommandBlock
-						server={server}
-						client={client}
-						unixCommand={unixCommand}
-						windowsCmdCommand={windowsCmdCommand}
-						windowsCmdFullCommand={windowsCmdFullCommand}
-					/>
-				) : (
-					<AuthBlock
-						command={unixCommand}
-						serverQualifiedName={server.qualifiedName}
-						client={client}
-					/>
-				)
-			) : (
-				<Alert variant="destructive" className="bg-muted/50">
-					<div className="flex items-center gap-3">
-						<CloudOff className="h-5 w-5 text-muted-foreground" />
-						<AlertDescription className="text-sm">
-							Sorry! We couldn&apos;t fetch the configuration for this server.
-							Please try again later.
-						</AlertDescription>
-					</div>
-				</Alert>
-			)}
-
-			<div className="flex gap-4 mt-3 text-muted-foreground text-sm">
-				<button
-					onClick={() => setIsBugReportOpen(true)}
-					className="flex items-center hover:text-primary"
-				>
-					<Bug className="w-3.5 h-3.5 mr-1" />
-					Report Bug
-				</button>
-				<a
-					href="/docs/faq/users"
-					target="_blank"
-					className="flex items-center hover:text-primary"
-				>
-					<FileText className="w-3.5 h-3.5 mr-1" />
-					Troubleshoot
-				</a>
-			</div>
-
-			<BugReportDialog
-				open={isBugReportOpen}
-				onOpenChange={setIsBugReportOpen}
-				serverQualifiedName={server.qualifiedName}
-				serverId={server.id}
-				client={client}
-				connectionType={server.remote ? "remote" : "local"}
-				serverRepo={server.serverRepo}
-			/>
-		</>
-	)
+	return codeBlockComponent
 }

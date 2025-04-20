@@ -1,4 +1,4 @@
-import { AuthBlock } from "./auth-block"
+import { InstallCommandBlock } from "./install-command-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { ClientType } from "@/lib/config/clients"
 import { FaApple, FaWindows } from "react-icons/fa"
@@ -25,7 +25,7 @@ export const RunCommandBlock = ({
 					<FaApple className="w-4 h-4" />
 					Mac/Linux
 				</div>
-				<AuthBlock
+				<InstallCommandBlock
 					command={unixCommand}
 					serverQualifiedName={server.qualifiedName}
 					client={client}
@@ -36,7 +36,7 @@ export const RunCommandBlock = ({
 					<FaWindows className="w-4 h-4" />
 					Windows
 				</div>
-				<AuthBlock
+				<InstallCommandBlock
 					command={windowsCmdCommand}
 					serverQualifiedName={server.qualifiedName}
 					client={client}
@@ -44,7 +44,7 @@ export const RunCommandBlock = ({
 				{/* <p className="text-xs mt-2 mb-3 text-muted-foreground">
 					If the above doesn&apos;t work, try this alternative:
 				</p>
-				<AuthBlock
+				<InstallCommandBlock
 					command={windowsCmdFullCommand}
 					serverQualifiedName={server.qualifiedName}
 					client={client}

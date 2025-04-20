@@ -4,7 +4,7 @@ import posthog from "posthog-js"
 import { ExternalLink, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { generateCommandSet } from "@/lib/utils/generate-command"
-import { AuthBlock } from "./auth-block"
+import { InstallCommandBlock } from "./install-command-block"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import {
@@ -117,7 +117,7 @@ export const VSCodeBlock = ({
 					<p className="text-sm text-muted-foreground mb-4">
 						Install using npm with this command:
 					</p>
-					<AuthBlock
+					<InstallCommandBlock
 						command={unixCommand}
 						serverQualifiedName={server.qualifiedName}
 						client="vscode"

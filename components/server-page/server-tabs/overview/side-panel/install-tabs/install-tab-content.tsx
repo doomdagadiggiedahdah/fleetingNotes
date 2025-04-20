@@ -1,4 +1,5 @@
-import { InstallCommandBlock } from "./blocks/install-command-block"
+import { CommandBlock } from "./blocks/command-block"
+import { JsonBlock } from "./blocks/json-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -9,21 +10,23 @@ import type { ClientType } from "@/lib/config/clients"
 import { CloudOff } from "lucide-react"
 import { extractPrerequisites } from "@/lib/utils/extract-prerequisites"
 import { PrerequisitesDisplay } from "./prerequisites-display"
+import { cleanConfig } from "@/lib/utils/generate-command"
 
-interface InstallTabContentProps {
+type InstallTabContentProps = {
 	server: FetchedServer
 	client: ClientType
 	configSchema: JSONSchema | null
 	isClientConfigured: boolean
 	configValues: JsonObject
 	onClientConfig: (values: JsonObject) => Promise<void>
-	savedConfig?: JSONSchema | null
-	currentSession?: Session | null
-	setIsSignInOpen?: (isOpen: boolean) => void
+	savedConfig: JSONSchema | null
+	currentSession: Session | null
+	setIsSignInOpen: (open: boolean) => void
 	apiKey?: string
-	usingSavedConfig?: boolean
-	setUsingSaved?: (value: boolean) => void
+	usingSavedConfig: boolean
+	setUsingSaved: (value: boolean) => void
 	onClientChange?: (client: ClientType) => void
+	method: "auto" | "manual"
 }
 
 export function InstallTabContent({
@@ -37,9 +40,10 @@ export function InstallTabContent({
 	currentSession,
 	setIsSignInOpen,
 	apiKey,
-	usingSavedConfig = !!savedConfig,
+	usingSavedConfig,
 	setUsingSaved,
 	onClientChange,
+	method,
 }: InstallTabContentProps) {
 	// Show error message first if no schema available
 	if (!configSchema) {
@@ -87,19 +91,30 @@ export function InstallTabContent({
 			</>
 		)
 	} else {
+		const cleanedConfig = cleanConfig(configValues)
 		content = (
 			<>
 				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
-				<InstallCommandBlock
-					server={server}
-					client={client}
-					config={configValues}
-					apiKey={apiKey}
-					usingSavedConfig={usingSavedConfig}
-					onClientChange={onClientChange}
-				/>
+				{method === "manual" ? (
+					<JsonBlock
+						server={server}
+						cleanedConfig={cleanedConfig}
+						apiKey={apiKey}
+						usingSavedConfig={usingSavedConfig}
+					/>
+				) : (
+					<CommandBlock
+						server={server}
+						client={client}
+						config={configValues}
+						apiKey={apiKey}
+						usingSavedConfig={usingSavedConfig}
+						onClientChange={onClientChange}
+						method={method}
+					/>
+				)}
 			</>
 		)
 	}
