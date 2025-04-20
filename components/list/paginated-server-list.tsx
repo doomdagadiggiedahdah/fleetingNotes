@@ -40,9 +40,12 @@ export function PaginatedServerList({
 				))}
 			</div>
 
-			{servers.length === 0 && (
-				<div className="bg-card rounded-lg border border-border p-4 text-center text-card-foreground">
-					<p className="mb-2">No servers found.</p>
+			{/* MCP Request Link Component */}
+			{(servers.length === 0 || (servers.length > 0 && totalPages === 1)) && (
+				<div
+					className={`bg-card rounded-lg border border-border p-4 text-center text-card-foreground ${servers.length > 0 ? "mt-4" : ""}`}
+				>
+					{servers.length === 0 && <p className="mb-2">No servers found.</p>}
 					<p className="text-sm text-muted-foreground">
 						Looking for an MCP that doesn&apos;t exist yet?{" "}
 						<a
