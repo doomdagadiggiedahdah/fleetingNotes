@@ -11,42 +11,31 @@ import { InstallTabContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
+import { JsonBlock } from "./blocks/json-block"
 
-export type InstallTabStates = ClientType
+export type InstallTabStates = "auto" | "manual"
 
 type InstallTabsProps = {
 	server: FetchedServer
-	initTab?: ClientType
+	initTab?: InstallTabStates
 	className?: string
-	onTabChange?: (tab: ClientType) => void
+	onTabChange?: (tab: InstallTabStates) => void
 	apiKey?: string
 	savedConfig?: JSONSchema | null
 }
 
 export function Installtabs({
 	server,
-	initTab = "claude",
+	initTab = "auto",
 	className,
 	onTabChange,
 	apiKey: passedApiKey,
 	savedConfig: passedSavedConfig,
 }: InstallTabsProps) {
-	const [visibleCount] = useState(4)
-	const [activeTab, setActiveTab] = useState<ClientType>(initTab)
-	const [tabOrder, setTabOrder] = useState<ClientType[]>([
-		"claude",
-		"cursor",
-		"windsurf",
-		"vscode",
-		"cline",
-		"witsy",
-		"enconvo",
-		"goose",
-		"spinai",
-		"roocode",
-	])
+	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
+	const [selectedClient, setSelectedClient] = useState<ClientType>("claude")
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
-	const [configValues, setConfigValues] = useState<JsonObject>({}) // values are passed into install tab content
+	const [configValues, setConfigValues] = useState<JsonObject>({})
 	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(
 		passedSavedConfig || null,
 	)
@@ -81,7 +70,6 @@ export function Installtabs({
 		return Promise.resolve()
 	}
 
-	// Remove the existing saved config useEffect and replace with:
 	useEffect(() => {
 		if (passedSavedConfig) {
 			setSavedConfig(passedSavedConfig)
@@ -108,17 +96,6 @@ export function Installtabs({
 		configureEmptySchema()
 	}, [prefetchedSchema, isClientConfigured])
 
-	const handleOverflowSelect = (selected: ClientType) => {
-		const newOrder = [...tabOrder]
-		const selectedIndex = newOrder.indexOf(selected)
-		const temp = newOrder[visibleCount - 1]
-		newOrder[visibleCount - 1] = newOrder[selectedIndex]
-		newOrder[selectedIndex] = temp
-		setTabOrder(newOrder)
-		setActiveTab(selected)
-		onTabChange?.(selected)
-	}
-
 	// Handler for toggling the usingSavedConfig state
 	const handleToggleUsingSavedConfig = (value: boolean) => {
 		setUsingSavedConfig(value)
@@ -139,7 +116,7 @@ export function Installtabs({
 		return <InstallWarning />
 	}
 
-	// CHeck for local server without a published local (STDIO) connection
+	// Check for local server without a published local (STDIO) connection
 	if (!server.remote && !hasPublishedStdioConnection && !bypassWarning) {
 		return (
 			<InstallWarning
@@ -155,36 +132,36 @@ export function Installtabs({
 			value={activeTab}
 			className={className}
 			onValueChange={(tab) => {
-				setActiveTab(tab as ClientType)
-				onTabChange?.(tab as ClientType)
+				setActiveTab(tab as InstallTabStates)
+				onTabChange?.(tab as InstallTabStates)
 			}}
 		>
-			<InstallTabOptions
-				activeTab={activeTab}
-				tabOrder={tabOrder}
-				visibleCount={visibleCount}
-				onTabChange={setActiveTab}
-				onOverflowSelect={handleOverflowSelect}
-			/>
-			{tabOrder.map((clientType) => (
-				<TabsContent key={clientType} value={clientType}>
-					<InstallTabContent
-						server={server}
-						client={clientType}
-						configSchema={prefetchedSchema}
-						isClientConfigured={isClientConfigured}
-						configValues={configValues}
-						// config values are stored in state once onClientConfig is triggered (from config form)
-						onClientConfig={handleClientConfig}
-						savedConfig={savedConfig}
-						currentSession={currentSession}
-						setIsSignInOpen={setIsSignInOpen}
-						apiKey={apiKey || undefined}
-						usingSavedConfig={usingSavedConfig}
-						setUsingSaved={handleToggleUsingSavedConfig}
-					/>
-				</TabsContent>
-			))}
+			<InstallTabOptions activeTab={activeTab} />
+			<TabsContent value="auto">
+				<InstallTabContent
+					server={server}
+					client={selectedClient}
+					configSchema={prefetchedSchema}
+					isClientConfigured={isClientConfigured}
+					configValues={configValues}
+					onClientConfig={handleClientConfig}
+					savedConfig={savedConfig}
+					currentSession={currentSession}
+					setIsSignInOpen={setIsSignInOpen}
+					apiKey={apiKey || undefined}
+					usingSavedConfig={usingSavedConfig}
+					setUsingSaved={handleToggleUsingSavedConfig}
+					onClientChange={setSelectedClient}
+				/>
+			</TabsContent>
+			<TabsContent value="manual">
+				<JsonBlock
+					server={server}
+					cleanedConfig={configValues}
+					apiKey={apiKey || undefined}
+					usingSavedConfig={usingSavedConfig}
+				/>
+			</TabsContent>
 		</Tabs>
 	)
 }

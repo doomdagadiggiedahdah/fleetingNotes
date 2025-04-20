@@ -1,7 +1,7 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JsonObject } from "@/lib/types/json"
 import posthog from "posthog-js"
-import { Zap, ExternalLink, Download } from "lucide-react"
+import { ExternalLink, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { generateCommandSet } from "@/lib/utils/generate-command"
 import { AuthBlock } from "./auth-block"
@@ -19,6 +19,7 @@ interface VSCodeBlockProps {
 	config?: JsonObject
 	apiKey?: string
 	usingSavedConfig?: boolean
+	client: "vscode" | "vscode-insiders"
 }
 
 export const VSCodeBlock = ({
@@ -26,6 +27,7 @@ export const VSCodeBlock = ({
 	config,
 	apiKey,
 	usingSavedConfig,
+	client,
 }: VSCodeBlockProps) => {
 	// Generate magic link
 	const mcpConfig = {
@@ -45,11 +47,12 @@ export const VSCodeBlock = ({
 	}
 	const vscodeConfig = encodeURIComponent(JSON.stringify(mcpConfig))
 	const vscodeUrl = `vscode:mcp/install?${vscodeConfig}`
+	const vscodeInsidersUrl = `vscode-insiders:mcp/install?${vscodeConfig}`
 
 	// Generate standard install command as fallback
 	const { unixCommand } = generateCommandSet({
 		server,
-		client: "vscode",
+		client,
 		config,
 		apiKey,
 		usingSavedConfig,
@@ -65,14 +68,13 @@ export const VSCodeBlock = ({
 					rel="noopener noreferrer"
 					className="inline-flex items-center gap-1 hover:underline"
 				>
-					VS Code
+					{client === "vscode" ? "VS Code" : "VS Code Insiders"}
 				</a>
 			</h3>
 
 			<Tabs defaultValue="magic-link" className="w-full">
 				<TabsList className="mb-2">
 					<TabsTrigger value="magic-link" className="flex items-center gap-2">
-						<Zap className="h-4 w-4 text-primary" />
 						Magic Link
 					</TabsTrigger>
 					<TabsTrigger value="npm" className="flex items-center gap-2">
@@ -83,25 +85,32 @@ export const VSCodeBlock = ({
 
 				<TabsContent value="magic-link">
 					<p className="text-sm text-muted-foreground mb-4">
-						Click below to automatically add to VS Code (v1.99):
+						Click below to automatically add to{" "}
+						{client === "vscode" ? "VS Code" : "VS Code Insiders"} (v1.99):
 					</p>
-					<Button
-						asChild
-						variant="default"
-						className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-base rounded-lg"
-					>
-						<a
-							href={vscodeUrl}
-							onClick={() => {
-								posthog.capture("VS Code Install Link Clicked", {
-									serverQualifiedName: server.qualifiedName,
-								})
-							}}
+					<div className="flex flex-col gap-2">
+						<Button
+							asChild
+							variant="default"
+							className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-base rounded-lg"
 						>
-							<Download className="h-5 w-5" />
-							Install
-						</a>
-					</Button>
+							<a
+								href={client === "vscode" ? vscodeUrl : vscodeInsidersUrl}
+								onClick={() => {
+									posthog.capture(
+										`${client === "vscode" ? "VS Code" : "VS Code Insiders"} Install Link Clicked`,
+										{
+											serverQualifiedName: server.qualifiedName,
+										},
+									)
+								}}
+							>
+								<Download className="h-5 w-5" />
+								Install for{" "}
+								{client === "vscode" ? "VS Code" : "VS Code Insiders"}
+							</a>
+						</Button>
+					</div>
 				</TabsContent>
 
 				<TabsContent value="npm">

@@ -6,6 +6,7 @@ import posthog from "posthog-js"
 import { FaApple, FaWindows, FaLinux } from "react-icons/fa"
 import { JsonCodeBlock } from "@/components/docs/json-code-block"
 import { getServerName } from "@/lib/utils/normalise-id"
+import { MessageCircleWarning } from "lucide-react"
 
 interface JsonBlockProps {
 	server: FetchedServer
@@ -22,6 +23,9 @@ export const JsonBlock = ({
 }: JsonBlockProps) => {
 	// Get the server name that will be used as the key in the JSON
 	const serverName = getServerName(server.qualifiedName)
+
+	// Check if config contains a sensitive key
+	const containsSensitiveKey = !!apiKey
 
 	return (
 		<>
@@ -125,6 +129,16 @@ export const JsonBlock = ({
 					/>
 				</TabsContent>
 			</Tabs>
+
+			{containsSensitiveKey && (
+				<div className="flex items-center gap-3 mt-4 py-2 px-3 rounded-md bg-amber-950/20">
+					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
+					<span className="text-amber-300/90 text-xs">
+						Your smithery key is sensitive. Please don&apos;t share it with
+						anyone.
+					</span>
+				</div>
+			)}
 		</>
 	)
 }

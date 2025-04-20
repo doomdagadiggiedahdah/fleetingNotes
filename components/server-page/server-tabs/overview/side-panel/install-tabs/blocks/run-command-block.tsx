@@ -1,9 +1,9 @@
 import { AuthBlock } from "./auth-block"
-import { ServerFavicon } from "@/components/server-page/server-favicon"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { ClientType } from "@/lib/config/clients"
+import { FaApple, FaWindows } from "react-icons/fa"
 
-interface PlatformCommandBlockProps {
+interface RunCommandBlockProps {
 	server: FetchedServer
 	client: ClientType
 	unixCommand: string
@@ -11,21 +11,18 @@ interface PlatformCommandBlockProps {
 	windowsCmdFullCommand: string
 }
 
-export const PlatformCommandBlock = ({
+export const RunCommandBlock = ({
 	server,
 	client,
 	unixCommand,
 	windowsCmdCommand,
 	// windowsCmdFullCommand,
-}: PlatformCommandBlockProps) => {
+}: RunCommandBlockProps) => {
 	return (
 		<>
 			<div className="mb-4">
 				<div className="flex items-center gap-2 mb-2 text-sm font-medium">
-					<ServerFavicon
-						homepage="https://www.apple.com"
-						displayName="Mac/Linux"
-					/>
+					<FaApple className="w-4 h-4" />
 					Mac/Linux
 				</div>
 				<AuthBlock
@@ -36,10 +33,7 @@ export const PlatformCommandBlock = ({
 			</div>
 			<div>
 				<div className="flex items-center gap-2 mb-2 text-sm font-medium">
-					<ServerFavicon
-						homepage="https://microsoft.com"
-						displayName="Windows"
-					/>
+					<FaWindows className="w-4 h-4" />
 					Windows
 				</div>
 				<AuthBlock

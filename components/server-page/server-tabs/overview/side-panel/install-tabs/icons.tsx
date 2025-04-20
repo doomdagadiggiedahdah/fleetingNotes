@@ -1,4 +1,4 @@
-import { SiAnthropic } from "@icons-pack/react-simple-icons"
+import { RiClaudeFill } from "react-icons/ri"
 import { VscVscode } from "react-icons/vsc"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import type { ClientType } from "@/lib/config/clients"
@@ -11,7 +11,7 @@ export const getClientIcon = (
 ) => {
 	switch (clientType) {
 		case "claude":
-			return <SiAnthropic className={ICON_SIZE} />
+			return <RiClaudeFill className={`${ICON_SIZE} text-[#FF6B00]`} />
 		case "vscode":
 			return <VscVscode className={`${ICON_SIZE} text-[#0098FF]`} />
 		case "goose":

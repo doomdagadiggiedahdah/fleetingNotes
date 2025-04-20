@@ -9,8 +9,25 @@ export type ClientType =
 	| "goose"
 	| "spinai"
 	| "vscode"
-	| "roocode"
 	| "vscode-insiders"
+	| "roocode"
+	| "augment"
+
+// Define the order of clients
+export const CLIENT_ORDER: ClientType[] = [
+	"claude",
+	"cursor",
+	"windsurf",
+	"cline",
+	"vscode",
+	"roocode",
+	"augment",
+	"goose",
+	"vscode-insiders",
+	"witsy",
+	"enconvo",
+	"spinai",
+]
 
 export interface ClientConfig {
 	// UI Configuration
@@ -24,7 +41,8 @@ export interface ClientConfig {
 
 export const CLIENTS_CONFIG: Record<ClientType, ClientConfig> = {
 	claude: {
-		label: "Claude",
+		label: "Claude Desktop",
+		homepage: "https://claude.ai/download",
 		usesRunCommand: false,
 		usesCustomInstall: false,
 	},
@@ -71,21 +89,27 @@ export const CLIENTS_CONFIG: Record<ClientType, ClientConfig> = {
 		usesCustomInstall: true,
 	},
 	vscode: {
-		label: "Vsc",
+		label: "VS Code",
 		homepage: "https://code.visualstudio.com",
 		usesRunCommand: false,
 		usesCustomInstall: false,
 	},
 	"vscode-insiders": {
-		label: "Vsc Insiders",
-		homepage: "https://code.visualstudio.com",
+		label: "VS Code Insiders",
+		homepage: "https://code.visualstudio.com/insiders/",
 		usesRunCommand: false,
 		usesCustomInstall: false,
 	},
 	roocode: {
-		label: "Roo",
+		label: "Roo Code",
 		homepage: "https://roocode.com",
 		usesRunCommand: false,
+		usesCustomInstall: false,
+	},
+	augment: {
+		label: "Augment",
+		homepage: "https://www.augmentcode.com",
+		usesRunCommand: true,
 		usesCustomInstall: false,
 	},
 }

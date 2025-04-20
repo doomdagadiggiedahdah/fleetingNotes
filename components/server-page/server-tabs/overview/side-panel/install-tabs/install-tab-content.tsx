@@ -1,4 +1,4 @@
-import { CommandBlock } from "./blocks/command-block"
+import { InstallCommandBlock } from "./blocks/install-command-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -23,6 +23,7 @@ interface InstallTabContentProps {
 	apiKey?: string
 	usingSavedConfig?: boolean
 	setUsingSaved?: (value: boolean) => void
+	onClientChange?: (client: ClientType) => void
 }
 
 export function InstallTabContent({
@@ -38,6 +39,7 @@ export function InstallTabContent({
 	apiKey,
 	usingSavedConfig = !!savedConfig,
 	setUsingSaved,
+	onClientChange,
 }: InstallTabContentProps) {
 	// Show error message first if no schema available
 	if (!configSchema) {
@@ -90,12 +92,13 @@ export function InstallTabContent({
 				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
-				<CommandBlock
+				<InstallCommandBlock
 					server={server}
 					client={client}
 					config={configValues}
 					apiKey={apiKey}
 					usingSavedConfig={usingSavedConfig}
+					onClientChange={onClientChange}
 				/>
 			</>
 		)

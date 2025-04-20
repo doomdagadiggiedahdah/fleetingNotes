@@ -15,7 +15,7 @@ type Props = {
 
 export async function SidePanel({
 	server,
-	initTab = "claude",
+	initTab = "auto",
 	onTabChange,
 }: Props) {
 	// Fetch data from the separate component
