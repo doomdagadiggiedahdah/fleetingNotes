@@ -43,6 +43,8 @@ const selectFetchedServerSchema = selectServerSchema
 			owner: z.string(),
 			repo: z.string(),
 			isPrivate: z.boolean(),
+			branch: z.string().nullable(),
+			commit: z.string().nullable(),
 		}),
 		isDeployed: z.boolean(),
 		securityScan: z
@@ -68,6 +70,28 @@ export async function getServer(qualifiedName: string) {
 				owner: serverRepos.repoOwner,
 				repo: serverRepos.repoName,
 				isPrivate: serverRepos.isPrivate,
+				branch: sql<string | null>`(
+					WITH latest_deployment AS (
+						SELECT branch, commit
+						FROM ${deployments}
+						WHERE ${deployments.serverId} = ${servers.id}
+						AND ${deployments.status} = 'SUCCESS'
+						ORDER BY ${deployments.createdAt} DESC
+						LIMIT 1
+					)
+					SELECT branch FROM latest_deployment
+				)`,
+				commit: sql<string | null>`(
+					WITH latest_deployment AS (
+						SELECT branch, commit
+						FROM ${deployments}
+						WHERE ${deployments.serverId} = ${servers.id}
+						AND ${deployments.status} = 'SUCCESS'
+						ORDER BY ${deployments.createdAt} DESC
+						LIMIT 1
+					)
+					SELECT commit FROM latest_deployment
+				)`,
 			},
 			license: servers.license,
 			homepage: servers.homepage,

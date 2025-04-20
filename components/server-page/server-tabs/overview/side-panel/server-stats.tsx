@@ -1,33 +1,12 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Globe, Activity } from "lucide-react"
+import { Globe, Activity, GitBranch, GitCommit } from "lucide-react"
 
 interface ServerStatsProps {
 	serverId: string
 	server: FetchedServer
 }
 
-interface TabButtonProps {
-	isActive: boolean
-	onClick: (e: React.MouseEvent) => void
-	icon?: React.ReactNode
-	children: React.ReactNode
-}
-
-const TabButton = ({ isActive, onClick, icon, children }: TabButtonProps) => {
-	return (
-		<button
-			className={`flex items-center gap-2 px-3 py-2 text-sm font-medium ${
-				isActive ? "border-b-2 border-primary" : ""
-			}`}
-			onClick={onClick}
-		>
-			{icon}
-			{children}
-		</button>
-	)
-}
-
-export function ServerStats({ serverId, server }: ServerStatsProps) {
+export function ServerStats({ server }: ServerStatsProps) {
 	return (
 		<div className="space-y-6 mt-4">
 			{/* Stats Grid */}
@@ -56,6 +35,39 @@ export function ServerStats({ serverId, server }: ServerStatsProps) {
 						</span>
 					</div>
 				)}
+
+				{/* Source Code */}
+				{server.sourceUrl &&
+				!server.serverRepo.isPrivate &&
+				server.serverRepo.branch ? (
+					<div>
+						<h3 className="text-md font-medium text-muted-foreground mb-1">
+							Source
+						</h3>
+						<div className="flex items-center gap-2 text-sm text-foreground">
+							<a
+								href={`${server.sourceUrl.replace(/\/tree\/main\/.*$/, "")}/tree/${server.serverRepo.branch}`}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="flex items-center hover:underline"
+							>
+								<GitBranch className="h-3.5 w-3.5 mr-1" />
+								<span>{server.serverRepo.branch}</span>
+							</a>
+							{server.serverRepo.commit && (
+								<a
+									href={`${server.sourceUrl.replace(/\/tree\/main\/.*$/, "")}/commit/${server.serverRepo.commit}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center hover:underline"
+								>
+									<GitCommit className="h-3.5 w-3.5 mr-1" />
+									<span>{server.serverRepo.commit.substring(0, 7)}</span>
+								</a>
+							)}
+						</div>
+					</div>
+				) : null}
 
 				{/* Local/Remote */}
 				<div>
