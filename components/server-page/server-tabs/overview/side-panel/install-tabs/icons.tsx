@@ -3,7 +3,7 @@ import { VscVscode } from "react-icons/vsc"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
 import type { ClientType } from "@/lib/config/clients"
 
-const ICON_SIZE = "w-4 h-4"
+const ICON_SIZE = "w-5 h-5"
 
 export const getClientIcon = (
 	clientType: ClientType,

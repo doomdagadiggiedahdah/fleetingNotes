@@ -1,0 +1,58 @@
+import { ConfigForm } from "../../configure/config-form"
+import { LoginBlur } from "../../overview/side-panel/install-tabs/login-blur"
+import type { JSONSchema } from "@/lib/types/server"
+import type { Session } from "@supabase/supabase-js"
+
+interface ConfigFormWrapperProps {
+	schema: JSONSchema
+	onSubmit: (config: JSONSchema) => Promise<void>
+	onCancel: () => void
+	initialConfig: JSONSchema
+	onSuccess: () => void
+	serverId: string
+	isConnected: boolean
+	savedConfig: JSONSchema | null
+	currentSession: Session | null
+	setIsSignInOpen: (open: boolean) => void
+}
+
+export function ConfigFormWrapper({
+	schema,
+	onSubmit,
+	onCancel,
+	initialConfig,
+	onSuccess,
+	serverId,
+	isConnected,
+	savedConfig,
+	currentSession,
+	setIsSignInOpen,
+}: ConfigFormWrapperProps) {
+	const form = (
+		<ConfigForm
+			schema={schema}
+			onSubmit={onSubmit}
+			onCancel={onCancel}
+			initialConfig={initialConfig}
+			onSuccess={onSuccess}
+			serverId={serverId}
+			isConnected={isConnected}
+			savedConfig={savedConfig}
+			currentSession={currentSession}
+			setIsSignInOpen={setIsSignInOpen}
+		/>
+	)
+
+	if (!currentSession) {
+		return (
+			<LoginBlur
+				setIsSignInOpen={setIsSignInOpen}
+				promptText="Login to configure"
+			>
+				{form}
+			</LoginBlur>
+		)
+	}
+
+	return form
+}

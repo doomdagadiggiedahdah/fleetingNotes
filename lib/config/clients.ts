@@ -12,6 +12,7 @@ export type ClientType =
 	| "vscode-insiders"
 	| "roocode"
 	| "augment"
+	| "boltai"
 
 // Define the order of clients
 export const CLIENT_ORDER: ClientType[] = [
@@ -20,6 +21,7 @@ export const CLIENT_ORDER: ClientType[] = [
 	"windsurf",
 	"cline",
 	"vscode",
+	"boltai",
 	"roocode",
 	"augment",
 	"goose",
@@ -110,6 +112,12 @@ export const CLIENTS_CONFIG: Record<ClientType, ClientConfig> = {
 		label: "Augment",
 		homepage: "https://www.augmentcode.com",
 		usesRunCommand: true,
+		usesCustomInstall: false,
+	},
+	boltai: {
+		label: "BoltAI",
+		homepage: "https://boltai.com",
+		usesRunCommand: false,
 		usesCustomInstall: false,
 	},
 }

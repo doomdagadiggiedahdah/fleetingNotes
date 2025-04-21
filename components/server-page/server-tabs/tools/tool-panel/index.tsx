@@ -12,11 +12,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js"
 import { Settings } from "lucide-react"
 import { useEffect, useState } from "react"
-import { ConfigForm } from "../../configure/config-form"
 import { ToolsPanelSkeleton } from "../skeleton"
-import { ToolCard } from "./tool-card"
 import { ToolResults } from "./tool-results"
 import { useAuth } from "@/context/auth-context"
+import { ToolCardList } from "./tool-card-list"
+import { ConfigFormWrapper } from "./config-form-wrapper"
 
 interface ToolsPanelProps {
 	server: FetchedServer
@@ -50,7 +50,6 @@ export function ToolsPanel({
 	} = useMCP()
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [isLoadingTools, setIsLoadingTools] = useState(false)
-	// const [error, setError] = useState<string | null>(null)
 	const [searchQuery, setSearchQuery] = useState("")
 	const [isExpanded, setIsExpanded] = useState(false)
 	const [activeExecution, setActiveExecution] = useState<{
@@ -135,6 +134,16 @@ export function ToolsPanel({
 		}))
 	}
 
+	const handleExpandedChange = (toolName: string, expanded: boolean) => {
+		if (expanded) {
+			setIsExpanded(true)
+			setActiveToolName(toolName)
+		} else if (activeToolName === toolName) {
+			setIsExpanded(false)
+			setActiveToolName(null)
+		}
+	}
+
 	if (isLoadingTools) {
 		return <ToolsPanelSkeleton />
 	}
@@ -174,56 +183,19 @@ export function ToolsPanel({
 
 			<div className="flex flex-col lg:flex-row gap-6">
 				<div className="w-full lg:w-1/2">
-					{tools.length === 0 && server.deploymentUrl ? (
-						<Card className="p-6">
-							<div className="flex flex-col items-center gap-4">
-								<div className="text-sm text-muted-foreground text-center">
-									{status === "connected"
-										? "No tools provided. Loading available tools..."
-										: "Please configure the server to list available tools."}
-								</div>
-							</div>
-						</Card>
-					) : tools.length > 0 && filteredTools.length === 0 ? (
-						<Card className="p-6">
-							<div className="text-sm text-muted-foreground text-center">
-								No tools found matching your search
-							</div>
-						</Card>
-					) : (
-						<div className="space-y-4">
-							{filteredTools.map((tool) => (
-								<Card
-									className={`p-0 transition-all duration-200 hover:ring-2 hover:ring-primary/75 ${
-										activeToolName === tool.name ? "ring-2 ring-primary/75" : ""
-									}`}
-									key={tool.name}
-								>
-									<ToolCard
-										key={tool.name}
-										tool={tool}
-										onExecute={executeTool}
-										onExpandedChange={(expanded) => {
-											if (expanded) {
-												setIsExpanded(true)
-												setActiveToolName(tool.name)
-											} else if (activeToolName === tool.name) {
-												setIsExpanded(false)
-												setActiveToolName(null)
-											}
-										}}
-										isExpanded={activeToolName === tool.name}
-										onExecutionChange={setActiveExecution}
-										disabled={status !== "connected" || isEditingConfig}
-										toolInputs={toolInputs[tool.name] || {}}
-										onToolInputChange={(inputs) =>
-											handleToolInputChange(tool.name, inputs)
-										}
-									/>
-								</Card>
-							))}
-						</div>
-					)}
+					<ToolCardList
+						tools={tools}
+						filteredTools={filteredTools}
+						activeToolName={activeToolName}
+						isExpanded={isExpanded}
+						status={status}
+						isEditingConfig={isEditingConfig}
+						toolInputs={toolInputs}
+						onExecute={executeTool}
+						onExpandedChange={handleExpandedChange}
+						onToolInputChange={handleToolInputChange}
+						onExecutionChange={setActiveExecution}
+					/>
 				</div>
 
 				<div className="w-full lg:w-1/2">
@@ -233,8 +205,8 @@ export function ToolsPanel({
 							server.deploymentUrl) ||
 						isEditingConfig ? (
 							<div className="hidden lg:block mb-6">
-								<ConfigForm
-									schema={configSchema!}
+								<ConfigFormWrapper
+									schema={configSchema}
 									onSubmit={handleConfigSubmit}
 									onCancel={() => {
 										setIsEditingConfig(false)
