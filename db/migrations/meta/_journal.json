@@ -428,6 +428,20 @@
 			"when": 1744739688254,
 			"tag": "0062_loving_supernaut",
 			"breakpoints": true
+		},
+		{
+			"idx": 63,
+			"version": "7",
+			"when": 1745199496338,
+			"tag": "0063_careful_dreadnoughts",
+			"breakpoints": true
+		},
+		{
+			"idx": 64,
+			"version": "7",
+			"when": 1745202863031,
+			"tag": "0064_past_gorilla_man",
+			"breakpoints": true
 		}
 	]
 }

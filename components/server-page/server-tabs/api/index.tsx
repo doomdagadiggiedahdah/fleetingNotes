@@ -93,7 +93,7 @@ import mcp
 from mcp.client.websocket import websocket_client
 
 # Create Smithery URL with server endpoint
-url = smithery.create_smithery_url("wss://${server.deploymentUrl.replace('https://', '')}/ws"${wsConfig}) + "&api_key=your-smithery-api-key"
+url = smithery.create_smithery_url("wss://${server.deploymentUrl.replace("https://", "")}/ws"${wsConfig}) + "&api_key=your-smithery-api-key"
 
 async def main():
     # Connect to the server using websocket client

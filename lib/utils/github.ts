@@ -1,6 +1,8 @@
 import type { RequestError } from "@octokit/request-error"
 import type { Octokit } from "@octokit/rest"
 import { err, ok, toResult } from "./result"
+import { createHmac } from "node:crypto"
+import type { GithubWebhookRepositoryPayload, RepoChangeInfo } from "../types/github"
 
 /**
  * Extracts the base directory path from a GitHub URL.
@@ -479,4 +481,46 @@ export async function isRepoPrivate(
 		)
 		return false
 	}
+}
+
+/**
+ * Verifies a GitHub webhook signature
+ * @param payload The raw webhook payload
+ * @param signature The signature from the x-hub-signature-256 header
+ * @param secret The webhook secret
+ * @returns True if the signature is valid, false otherwise
+ */
+export function verifyWebhookSignature(
+	payload: string,
+	signature: string,
+	secret: string,
+): boolean {
+	const hmac = createHmac("sha256", secret)
+	const digest = `sha256=${hmac.update(payload).digest("hex")}`
+	return signature === digest
+}
+
+export function extractRepoChangeFromWebhook(
+	event: string,
+	payload: GithubWebhookRepositoryPayload,
+): RepoChangeInfo | null {
+	if (event === "repository") {
+		if (payload.action === "renamed" && payload.repository) {
+			return {
+				oldRepoName: payload.changes?.repository?.name?.from,
+				newRepoName: payload.repository.name,
+				oldOwner: payload.repository.owner.login,
+				newOwner: payload.repository.owner.login,
+			}
+		}
+		if (payload.action === "transferred" && payload.repository) {
+			return {
+				oldOwner: payload.changes?.owner?.from?.login,
+				newOwner: payload.repository.owner.login,
+				oldRepoName: payload.repository.name,
+				newRepoName: payload.repository.name,
+			}
+		}
+	}
+	return null
 }
