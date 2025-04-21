@@ -7,6 +7,10 @@ import {
 	verifyWebhookSignature,
 	extractRepoChangeFromWebhook,
 } from "@/lib/utils/github"
+import type {
+	GitHubWebhookPayload,
+	RepositoryRenamedPayload,
+} from "@/lib/types/github"
 
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET!
 
@@ -23,34 +27,41 @@ export async function POST(request: Request) {
 	}
 
 	const event = request.headers.get("x-github-event")
-	const payload = JSON.parse(body)
+	const payload = JSON.parse(body) as GitHubWebhookPayload
 
-	// Extract repository change info from webhook
-	const repoChange = extractRepoChangeFromWebhook(event!, payload)
-	if (!repoChange) {
-		return NextResponse.json({ success: true })
-	}
+	// Only process repository rename events
+	if (
+		event === "repository" &&
+		"action" in payload &&
+		payload.action === "renamed"
+	) {
+		const renamedPayload = payload as RepositoryRenamedPayload
+		const repoChange = extractRepoChangeFromWebhook(event, renamedPayload)
+		if (!repoChange) {
+			return NextResponse.json({ success: true })
+		}
 
-	// Find server by old owner/repo
-	const serverRepo = await db.query.serverRepos.findFirst({
-		where: and(
-			eq(serverRepos.repoOwner, repoChange.oldOwner ?? repoChange.newOwner!),
-			eq(
-				serverRepos.repoName,
-				repoChange.oldRepoName ?? repoChange.newRepoName!,
+		// Find server by old owner/repo
+		const serverRepo = await db.query.serverRepos.findFirst({
+			where: and(
+				eq(serverRepos.repoOwner, repoChange.oldOwner ?? repoChange.newOwner!),
+				eq(
+					serverRepos.repoName,
+					repoChange.oldRepoName ?? repoChange.newRepoName!,
+				),
 			),
-		),
-	})
-
-	// If we found a matching server, update its repo info and create an alias
-	// This handles cases where a GitHub repo is renamed
-	if (serverRepo) {
-		await updateServerRepo({
-			serverId: serverRepo.serverId,
-			owner: repoChange.newOwner ?? repoChange.oldOwner!,
-			oldRepoName: repoChange.oldRepoName,
-			newRepoName: repoChange.newRepoName,
 		})
+
+		// If we found a matching server, update its repo info and create an alias
+		// This handles cases where a GitHub repo is renamed
+		if (serverRepo) {
+			await updateServerRepo({
+				serverId: serverRepo.serverId,
+				owner: repoChange.newOwner ?? repoChange.oldOwner!,
+				oldRepoName: repoChange.oldRepoName,
+				newRepoName: repoChange.newRepoName,
+			})
+		}
 	}
 
 	return NextResponse.json({ success: true })

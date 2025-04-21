@@ -2,10 +2,7 @@ import type { RequestError } from "@octokit/request-error"
 import type { Octokit } from "@octokit/rest"
 import { err, ok, toResult } from "./result"
 import { createHmac } from "node:crypto"
-import type {
-	GithubWebhookRepositoryPayload,
-	RepoChangeInfo,
-} from "../types/github"
+import type { RepositoryRenamedPayload, RepoChangeInfo } from "../types/github"
 
 /**
  * Extracts the base directory path from a GitHub URL.
@@ -505,24 +502,18 @@ export function verifyWebhookSignature(
 
 export function extractRepoChangeFromWebhook(
 	event: string,
-	payload: GithubWebhookRepositoryPayload,
+	payload: RepositoryRenamedPayload,
 ): RepoChangeInfo | null {
-	if (event === "repository") {
-		if (payload.action === "renamed" && payload.repository) {
-			return {
-				oldRepoName: payload.changes?.repository?.name?.from,
-				newRepoName: payload.repository.name,
-				oldOwner: payload.repository.owner.login,
-				newOwner: payload.repository.owner.login,
-			}
-		}
-		if (payload.action === "transferred" && payload.repository) {
-			return {
-				oldOwner: payload.changes?.owner?.from?.login,
-				newOwner: payload.repository.owner.login,
-				oldRepoName: payload.repository.name,
-				newRepoName: payload.repository.name,
-			}
+	if (
+		event === "repository" &&
+		payload.action === "renamed" &&
+		payload.repository
+	) {
+		return {
+			oldRepoName: payload.changes?.repository?.name?.from,
+			newRepoName: payload.repository.name,
+			oldOwner: payload.repository.owner.login,
+			newOwner: payload.repository.owner.login,
 		}
 	}
 	return null
