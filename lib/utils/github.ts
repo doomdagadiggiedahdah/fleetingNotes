@@ -2,7 +2,10 @@ import type { RequestError } from "@octokit/request-error"
 import type { Octokit } from "@octokit/rest"
 import { err, ok, toResult } from "./result"
 import { createHmac } from "node:crypto"
-import type { GithubWebhookRepositoryPayload, RepoChangeInfo } from "../types/github"
+import type {
+	GithubWebhookRepositoryPayload,
+	RepoChangeInfo,
+} from "../types/github"
 
 /**
  * Extracts the base directory path from a GitHub URL.
