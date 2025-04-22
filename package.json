@@ -2,9 +2,7 @@
 	"name": "@smithery/web",
 	"version": "1.0.0",
 	"private": true,
-	"workspaces": [
-		"functions"
-	],
+	"workspaces": ["functions"],
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
