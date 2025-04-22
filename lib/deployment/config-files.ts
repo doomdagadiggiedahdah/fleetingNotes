@@ -21,7 +21,7 @@ primary_region = 'iad'
   min_machines_running = 0
   
   [http_service.concurrency]
-    type = "connections"
+    type = "requests"
     soft_limit = 50
     hard_limit = 100
   
@@ -39,7 +39,7 @@ primary_region = 'iad'
 export function createDockerfile(baseDockerfile: string, config: ServerConfig) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM registry.fly.io/sidecar:deployment-01JSD5VGVHVCMR2VN85RTK8NBD as sidecar_image
+FROM registry.fly.io/sidecar:deployment-01JSE0BYJF5MCQ0ZP7VTFJE3V0 as sidecar_image
 
 # User's Dockerfile
 ${baseDockerfile}
