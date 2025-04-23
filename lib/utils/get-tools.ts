@@ -1,5 +1,5 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createSmitheryUrl } from "@smithery/sdk"
 import { withTimeout } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
@@ -35,8 +35,8 @@ export async function fetchServerTools(
 		},
 	)
 
-	const transport = new WebSocketClientTransport(
-		createSmitheryUrl(`${deploymentUrl}/ws`, mockConfig ?? {}),
+	const transport = new StreamableHTTPClientTransport(
+		createSmitheryUrl(`${deploymentUrl}/mcp`, mockConfig ?? {}),
 	)
 
 	try {
@@ -64,5 +64,6 @@ export async function fetchServerTools(
 		)
 	} finally {
 		await client.close()
+		await transport.terminateSession()
 	}
 }

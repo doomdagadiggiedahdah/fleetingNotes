@@ -57,7 +57,9 @@ export async function POST(request: Request) {
 		const results = []
 		const batchSize = 50
 		const totalServers = serversToDeploy.length
-		console.log(`Deploying ${totalServers} servers in batches of ${batchSize}`)
+		console.log(
+			`Deploying ${totalServers} servers in batches of ${batchSize}. Time: ${Date.now()}`,
+		)
 
 		// Process each batch
 		for (let i = 0; i < totalServers; i += batchSize) {

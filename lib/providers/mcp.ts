@@ -1,15 +1,15 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import {
-	type Request,
 	type Notification,
+	type Request,
 	type Result,
-	ProgressNotificationSchema,
 	CreateMessageRequestSchema,
 	ListRootsRequestSchema,
+	ProgressNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { z } from "zod"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
+import { z } from "zod"
 import { fetchDefaultOrCreateApiKey } from "../actions/api-keys"
 import {
 	TimeoutError,
@@ -20,7 +20,7 @@ import {
 import { withTimeout } from "../utils"
 
 interface MCPClientConfig {
-	wsUrl: string
+	url: string
 	config?: Record<string, unknown>
 	apiKey?: string
 	onNotification?: (notification: Notification) => void
@@ -73,12 +73,12 @@ export class MCPClient {
 				}
 			}
 
-			const connectionUrl = createSmitheryUrl(this.config.wsUrl, {
+			const connectionUrl = createSmitheryUrl(this.config.url, {
 				...this.config.config,
 				apiKey,
 			})
 
-			const clientTransport = new WebSocketClientTransport(connectionUrl)
+			const clientTransport = new StreamableHTTPClientTransport(connectionUrl)
 
 			if (this.config.onNotification) {
 				this.client.setNotificationHandler(

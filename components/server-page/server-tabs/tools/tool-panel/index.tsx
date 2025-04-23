@@ -118,7 +118,7 @@ export function ToolsPanel({
 		if (!server?.deploymentUrl) {
 			throw new Error("Server URL is required")
 		}
-		await connect(`${server.deploymentUrl}/ws`, { config })
+		await connect(`${server.deploymentUrl}/mcp`, { config })
 		if (onConfigSubmit) {
 			await onConfigSubmit(config)
 		}

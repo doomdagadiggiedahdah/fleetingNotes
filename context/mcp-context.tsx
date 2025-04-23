@@ -54,13 +54,13 @@ export function MCPProvider({
 	)
 
 	const connect = async (
-		wsUrl: string,
+		url: string,
 		options?: { config?: Record<string, unknown> },
 	) => {
 		try {
 			setStatus("connecting")
 			const mcpClient = new MCPClient({
-				wsUrl,
+				url,
 				config: options?.config, // Pass through any config
 			})
 
