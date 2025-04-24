@@ -48,10 +48,14 @@ function SecurityChip({
 									className="w-3.5 h-3.5 my-auto mt-0.5"
 									iconUrl="/favicons/invariant.ico"
 								/>
-								<span className="text-xs text-muted-foreground pr-1">Invariant</span>
+								<span className="text-xs text-muted-foreground pr-1">
+									Invariant
+								</span>
 							</Link>
 						</TooltipTrigger>
-						<TooltipContent className={cn("bg-primary/20 backdrop-blur-sm border-primary/20")}>
+						<TooltipContent
+							className={cn("bg-primary/20 backdrop-blur-sm border-primary/20")}
+						>
 							<p>Powered by Invariant Guardrails</p>
 						</TooltipContent>
 					</Tooltip>

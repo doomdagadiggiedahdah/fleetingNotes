@@ -2,11 +2,15 @@ import { CircleAlert, Sailboat } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CodeBlock } from "@/components/docs/simple-code-block"
 import { CopyButton } from "@/components/docs/copy-button"
+import { TableOfContents } from "@/components/docs/table-of-contents"
 
 export const metadata = {
   title: 'Registry API | Smithery Documentation',
   description: 'Learn how to deploy your Model Context Protocol (MCP) server on Smithery.',
 }
+
+<div className="flex gap-6">
+<div className="flex-1 min-w-0">
 
 # Registry API
 
@@ -26,14 +30,14 @@ The Smithery Registry API provides a programmatic way to search and obtain launc
 Smithery Registry contains an index of MCP servers. Every server may have different ways of launching or connecting to them. Server authors specify a [configuration schema](/docs/config), which is a JSON schema that defines the structure of the configuration that is required to connect to the server.
 
 ### Authentication
-All endpoints require authentication via a bearer token. You can create an API key by clicking on your login icon, and selecting API keys in the dropdown menu.
+All endpoints require authentication via a bearer token. You can create an API key <a href="/account/api-keys" target="_blank" className="text-[#cb4b16] hover:text-[#cb4b16]/80">here</a>.
 
 Include the following header in your API requests:
 
 <CodeBlock 
   language="typescript" 
   code={`headers: {
-  'Authorization': 'Bearer your-api-token'
+  'Authorization': 'Bearer smithery-api-token'
 }`}
   showHeader={true}
   className="my-4"
@@ -190,4 +194,8 @@ const transport = new StreamableHTTPClientTransport(serverUrl)`}
   showHeader={true}
   className="my-4"
 />
+
+</div>
+<TableOfContents />
+</div>
 

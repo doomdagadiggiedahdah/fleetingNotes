@@ -59,7 +59,7 @@ export function ApiTab({ server }: ApiTabProps) {
 	const typescriptTransportCode = server.deploymentUrl
 		? `import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 
-const serverUrl = new URL(${server.deploymentUrl}/mcp)
+const serverUrl = new URL("${server.deploymentUrl}/mcp")
 ${
 	httpConfig
 		? `const config = ${httpConfig.replace(/^,\s*/, "")}
@@ -67,9 +67,9 @@ const configString = JSON.stringify(config)
 serverUrl.searchParams.set("config", btoa(configString))`
 		: ""
 }
-userverUrlrl.searchParams.set("api_key", "your-smithery-api-key")
+serverUrl.searchParams.set("api_key", "your-smithery-api-key")
 
-const transport = new StreamableHTTPClientTransport(url)`
+const transport = new StreamableHTTPClientTransport(serverUrl)`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const transport = new StdioClientTransport(${stdioConfig})`
