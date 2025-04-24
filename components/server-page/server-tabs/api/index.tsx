@@ -2,10 +2,11 @@
 
 import { CodeBlock as SimpleCodeBlock } from "@/components/docs/simple-code-block"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { createDummyConfig, generateConfig } from "@/lib/utils/generate-config"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { SiPython, SiTypescript } from "@icons-pack/react-simple-icons"
-import { Code, ExternalLink } from "lucide-react"
+import { Code, Info } from "lucide-react"
 import Link from "next/link"
 import posthog from "posthog-js"
 
@@ -20,7 +21,7 @@ export function ApiTab({ server }: ApiTabProps) {
 		(conn) => conn.type === "stdio",
 	)
 
-	// Check if the server can be accessed via WebSocket or stdio
+	// Check if the server can be accessed via HTTP or stdio
 	const isServerAvailable = server.deploymentUrl || stdioConnection
 
 	// Generate example config for stdio if needed
@@ -43,23 +44,32 @@ export function ApiTab({ server }: ApiTabProps) {
 		)
 	}
 
-	// Get WebSocket config if available
-	let wsConfig = ""
+	// Get HTTP config if available
+	let httpConfig = ""
 
 	// State to store config schema
 	const configSchema =
 		server.configSchema ?? stdioConnection?.configSchema ?? null
 
 	if (configSchema) {
-		wsConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`
+		httpConfig = `, ${JSON.stringify(createDummyConfig(configSchema), null, 2)}`
 	}
 
 	// Generate transport code based on available connections
 	const typescriptTransportCode = server.deploymentUrl
-		? `\
-import { createTransport } from "@smithery/sdk/transport.js"
+		? `import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 
-const transport = createTransport("${server.deploymentUrl}/ws"${wsConfig}, "your-smithery-api-key")`
+const serverUrl = new URL(${server.deploymentUrl}/mcp)
+${
+	httpConfig
+		? `const config = ${httpConfig.replace(/^,\s*/, "")}
+const configString = JSON.stringify(config)
+serverUrl.searchParams.set("config", btoa(configString))`
+		: ""
+}
+userverUrlrl.searchParams.set("api_key", "your-smithery-api-key")
+
+const transport = new StreamableHTTPClientTransport(url)`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 
 const transport = new StdioClientTransport(${stdioConfig})`
@@ -80,20 +90,31 @@ await client.connect(transport)
 // Use the server tools with your LLM application
 const tools = await client.listTools()
 console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
-
-// Example: Call a tool
-// const result = await client.callTool("tool_name", { param1: "value1" })
 `
-
+	// WIP: http migration
 	// Generate full SDK example code for Python
 	const pythonExample = server.deploymentUrl
 		? `\
-import smithery
 import mcp
 from mcp.client.websocket import websocket_client
+from urllib.parse import urlparse, parse_qs
+import base64
 
-# Create Smithery URL with server endpoint
-url = smithery.create_smithery_url("wss://${server.deploymentUrl.replace("https://", "")}/ws"${wsConfig}) + "&api_key=your-smithery-api-key"
+# Create server URL
+server_url = urlparse("${server.deploymentUrl}/mcp")${
+				httpConfig
+					? `
+
+# Prepare config
+config = ${httpConfig.replace(/^,\s*/, "")}
+config_str = json.dumps(config)
+config_b64 = base64.b64encode(config_str.encode()).decode()`
+					: ""
+			}
+
+# Add config and API key to URL
+params = {${httpConfig ? '"config": config_b64, ' : ""}"api_key": "your-smithery-api-key"}
+url = smithery.create_url(server_url, params)
 
 async def main():
     # Connect to the server using websocket client
@@ -102,9 +123,6 @@ async def main():
             # List available tools
             tools_result = await session.list_tools()
             print(f"Available tools: {', '.join([t.name for t in tools_result.tools])}")
-            
-            # Example: Call a tool
-            # result = await session.call_tool("tool_name", {"param1": "value1"})
 `
 		: `\
 import mcp
@@ -123,9 +141,6 @@ async def main():
             # List available tools
             tools_list = await session.list_tools()
             print(f"Available tools: {', '.join([t.name for t in tools_list.tools])}")
-
-            # Example: Call a tool
-            # result = await session.call_tool("tool-name", arguments={"param1": "value1"})
 `
 
 	return (
@@ -168,11 +183,9 @@ async def main():
 								<h3 className="font-semibold mb-2 text-primary">
 									Installation
 								</h3>
-								<p className="mb-4">
-									Install the Smithery and MCP SDKs using npm:
-								</p>
+								<p className="mb-4">Install the official MCP SDKs using npm:</p>
 								<SimpleCodeBlock
-									code="npm install @smithery/sdk @modelcontextprotocol/sdk"
+									code="npm install @modelcontextprotocol/sdk"
 									language="bash"
 									onCopy={() => {
 										posthog.capture("Code Copied", {
@@ -185,40 +198,28 @@ async def main():
 								<h3 className="font-semibold mb-2 mt-6 text-primary">
 									TypeScript SDK
 								</h3>
-								<p className="mb-2">
-									Use{" "}
-									<a
-										href="https://github.com/smithery-ai/typescript-sdk?tab=readme-ov-file#quickstart"
-										target="_blank"
-										className="hover:text-primary underline inline-flex items-center"
-									>
-										Smithery&apos;s TypeScript SDK
-										<ExternalLink className="w-4 h-4 ml-1 inline" />
-									</a>{" "}
-									to connect to this MCP server:
-								</p>
-								<SimpleCodeBlock
-									code={typescriptExample}
-									language="typescript"
-									showHeader={true}
-									onCopy={() => {
-										posthog.capture("Code Copied", {
-											serverQualifiedName: server.qualifiedName,
-											eventTag: "typescript_api",
-										})
-									}}
-								/>
+								<div className="mt-4">
+									<SimpleCodeBlock
+										code={typescriptExample}
+										language="typescript"
+										showHeader={true}
+										onCopy={() => {
+											posthog.capture("Code Copied", {
+												serverQualifiedName: server.qualifiedName,
+												eventTag: "typescript_api",
+											})
+										}}
+									/>
+								</div>
 							</TabsContent>
 
 							<TabsContent value="python" className="mt-0">
 								<h3 className="font-semibold mb-2 text-primary">
 									Installation
 								</h3>
-								<p className="mb-4">
-									Install the Smithery and MCP SDKs using pip:
-								</p>
+								<p className="mb-4">Install the official MCP SDKs using pip:</p>
 								<SimpleCodeBlock
-									code="pip install smithery mcp"
+									code="pip install mcp"
 									language="bash"
 									onCopy={() => {
 										posthog.capture("Code Copied", {
@@ -231,7 +232,27 @@ async def main():
 								<h3 className="font-semibold mb-2 mt-6 text-primary">
 									Python SDK
 								</h3>
-								<p className="mb-2">
+								<div className="mt-4">
+									<Alert className="mb-4 bg-orange-500/10 border-orange-500/20">
+										<div className="flex items-center gap-3">
+											<Info className="h-5 w-5 text-amber-400" />
+											<AlertDescription className="text-sm text-amber-400">
+												Note: We are currently using legacy WebSocket transport
+												while waiting for Anthropic to introduce the streamable
+												HTTP client transport in the{" "}
+												<a
+													href="https://github.com/modelcontextprotocol/python-sdk"
+													target="_blank"
+													className="underline hover:text-amber-300"
+												>
+													python MCP SDK
+												</a>
+												. The WebSocket version will be deprecated once HTTP
+												transport is available.
+											</AlertDescription>
+										</div>
+									</Alert>
+									{/* <p className="mb-2">
 									Use{" "}
 									<a
 										href="https://github.com/smithery-ai/python-sdk#quickstart"
@@ -242,18 +263,19 @@ async def main():
 										<ExternalLink className="w-4 h-4 ml-1 inline" />
 									</a>{" "}
 									to connect to this MCP server:
-								</p>
-								<SimpleCodeBlock
-									code={pythonExample}
-									language="python"
-									showHeader={true}
-									onCopy={() => {
-										posthog.capture("Code Copied", {
-											serverQualifiedName: server.qualifiedName,
-											eventTag: "python_api",
-										})
-									}}
-								/>
+								</p> */}
+									<SimpleCodeBlock
+										code={pythonExample}
+										language="python"
+										showHeader={true}
+										onCopy={() => {
+											posthog.capture("Code Copied", {
+												serverQualifiedName: server.qualifiedName,
+												eventTag: "python_api",
+											})
+										}}
+									/>
+								</div>
 							</TabsContent>
 						</Tabs>
 					</>

@@ -1,14 +1,13 @@
 # Smithery Deployments Documentation
 
 ## Overview
-Smithery Deployments enable hosting of stdio-based Model Context Protocol (MCP) servers over WebSocket connections, eliminating the need for local installation while maintaining security.
+Smithery Deployments enable hosting of stdio-based Model Context Protocol (MCP) servers over streamable HTTP connections, eliminating the need for local installation while maintaining security.
 
 ## Key Features
-- WebSocket-based hosting for stdio MCP servers
+- Streamable HTTP-based hosting for stdio MCP servers
 - Built-in MCP playground for testing
 - Higher search result ranking for hosted servers
 - Serverless environment with 5-minute idle timeout
-- Session affinity through WebSockets
 
 ## Deployment Process
 1. Add server to Smithery (or claim existing server)
@@ -16,17 +15,12 @@ Smithery Deployments enable hosting of stdio-based Model Context Protocol (MCP) 
 3. Configure and deploy
 
 ## Technical Specifications
-- Transport: WebSocket (WS)
+- Transport: Streamable HTTP
 - Storage: Ephemeral (persistent data requires external database)
 
-## Other Notes
-- WebSockets chosen for session affinity in scaled environments
-- Server-Sent-Events not supported for hosting
-
 ## Best Practices
-- Server initialization: The `initialize` method must be accessible without API keys or configurations
 - Tools List: The `/tools/list` endpoint must be accessible without API keys or configurations
-- Handle WebSocket reconnection
+- Handle HTTP reconnection for stateful sessions
 - Design for ephemeral storage
 - Use external databases for persistent data
 

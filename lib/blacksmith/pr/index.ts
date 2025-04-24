@@ -158,7 +158,7 @@ async function createPR(
 		: ""
 
 	const prBody = `\
-This PR adds files for deploying your MCP server on Smithery. After deployment, users can use your server over WebSockets (hosted on [Smithery](https://smithery.ai)) without needing to install any dependencies.
+This PR adds files for deploying your MCP server on Smithery. After deployment, users can use your server over streamable HTTP (hosted on [Smithery](https://smithery.ai)) without needing to install any dependencies.
 
 ### Changes
 ${changes.join("\n")}

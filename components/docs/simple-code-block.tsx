@@ -4,6 +4,7 @@ import * as React from "react"
 import { SquareTerminal, TerminalIcon, Braces } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
+import { ServerCodeBlock } from "./server-code-block"
 
 interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
 	code: string
@@ -24,9 +25,17 @@ export function CodeBlock({
 }: CodeBlockProps) {
 	const [isHovering, setIsHovering] = React.useState(false)
 	const contentRef = React.useRef<HTMLDivElement>(null)
+	const [highlightedCode, setHighlightedCode] = React.useState<string>("")
 
 	// Determine if code is multiline
 	const isMultiline = code.includes("\n")
+
+	// Get highlighted code from server component on mount
+	React.useEffect(() => {
+		ServerCodeBlock({ code, language }).then(({ highlightedCode }) => {
+			setHighlightedCode(highlightedCode)
+		})
+	}, [code, language])
 
 	React.useEffect(() => {
 		if (disableAutoScroll || isMultiline) return
@@ -52,7 +61,7 @@ export function CodeBlock({
 		return (
 			<div className={cn("rounded-md overflow-hidden", className)}>
 				{/* Header with language label and copy button */}
-				<div className="bg-[#1c1c1c] px-3 py-2 flex justify-between items-center border-b border-[#3c3836]">
+				<div className="bg-[#1d2021] px-3 py-2 flex justify-between items-center border-b border-[#3c3836]">
 					<div className="flex items-center gap-1.5">
 						{language === "json" ? (
 							<>
@@ -76,19 +85,21 @@ export function CodeBlock({
 				{/* Code content */}
 				{/* biome-ignore lint/nursery/noStaticElementInteractions: <explanation> */}
 				<div
-					className="bg-[#282828] text-white py-2 px-3 overflow-auto max-h-[400px] code-scrollbar hide-until-hover"
+					className="bg-[#1d2021] text-white py-2 px-3 overflow-auto max-h-[400px] code-scrollbar hide-until-hover"
 					onMouseEnter={() => setIsHovering(true)}
 					onMouseLeave={() => setIsHovering(false)}
 					{...props}
 				>
-					<pre className="font-mono text-xs">
-						<code
-							ref={contentRef}
-							className={isMultiline ? "" : "whitespace-nowrap"}
-						>
-							{code}
-						</code>
-					</pre>
+					<div
+						ref={contentRef}
+						className={cn(
+							"font-mono text-xs",
+							isMultiline ? "" : "whitespace-nowrap",
+						)}
+						dangerouslySetInnerHTML={{
+							__html: highlightedCode || `<pre><code>${code}</code></pre>`,
+						}}
+					/>
 				</div>
 			</div>
 		)
@@ -98,7 +109,7 @@ export function CodeBlock({
 	return (
 		<div
 			className={cn(
-				"relative rounded-md bg-[#282828] text-white py-2 px-3 overflow-x-auto overflow-y-hidden flex items-center h-9 code-scrollbar hide-until-hover",
+				"relative rounded-md bg-[#1d2021] text-white py-2 px-3 overflow-x-auto overflow-y-hidden flex items-center h-9 code-scrollbar hide-until-hover",
 				className,
 			)}
 			{...props}
@@ -113,13 +124,14 @@ export function CodeBlock({
 				<div
 					ref={contentRef}
 					className="whitespace-nowrap pr-8 font-mono text-xs"
-				>
-					{code}
-				</div>
+					dangerouslySetInnerHTML={{
+						__html: highlightedCode || `<pre><code>${code}</code></pre>`,
+					}}
+				/>
 			</div>
 
 			{/* Copy button in fixed position */}
-			<div className="flex-shrink-0 ml-1 sticky right-0 bg-[#282828]">
+			<div className="flex-shrink-0 ml-1 sticky right-0 bg-[#1d2021]">
 				<CopyButton
 					code={code}
 					className="px-2 py-1 rounded-md hover:bg-gray-800"

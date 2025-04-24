@@ -73,6 +73,11 @@ export async function GET(
 			...(server.deploymentUrl && server.configSchema
 				? [
 						{
+							type: "http",
+							deploymentUrl: `${server.deploymentUrl}/mcp`,
+							configSchema: server.configSchema,
+						},
+						{
 							type: "ws",
 							deploymentUrl: server.deploymentUrl,
 							configSchema: server.configSchema,

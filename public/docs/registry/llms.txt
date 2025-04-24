@@ -71,28 +71,29 @@ GET https://registry.smithery.ai/servers/{qualifiedName}
 }
 ```
 
-## WebSocket Connection
-- URL Format: `https://server.smithery.ai/${qualifiedName}/ws?config=${base64encode(config)}`
+## Connection Details
+- URL Format: `https://server.smithery.ai/${qualifiedName}/mcp?config=${base64encode(config)}&api_key=${smithery_api_key}`
 - Config must comply with server's configSchema
 - Config is base64-encoded JSON
+- API key required for authentication
 
 ## TypeScript SDK Usage
 ```typescript
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 
-const url = createSmitheryUrl(
-  "https://your-smithery-mcp-server/ws",
-  {
-    // config object matching schema
-  },
-)
+const serverUrl = new URL("https://server.smithery.ai/{qualifiedName}/mcp")
+const config = {
+  // config object matching schema
+}
+const configString = JSON.stringify(config)
+serverUrl.searchParams.set("config", btoa(configString))
+serverUrl.searchParams.set("api_key", "your-smithery-api-key")
 
-const transport = new WebSocketClientTransport(url)
+const transport = new StreamableHTTPClientTransport(serverUrl)
 ```
 
 ## Note
 - Smithery Registry indexes MCP servers
 - Servers have configuration schemas defining connection requirements
-- Supported connection types: "ws" (WebSocket) or "stdio"
+- Supported connection types: "http" (streamable HTTP) or "stdio"
 - API is under development and may change

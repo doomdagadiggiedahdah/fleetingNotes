@@ -25,7 +25,7 @@ Imagine you are building an agent where you need to build a search functionality
 
 Typically, you would write your connection as follows:
 ```typescript
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 const url = createSmitheryUrl(
@@ -35,10 +35,10 @@ const url = createSmitheryUrl(
   },
 )
 
-const transport = new WebSocketClientTransport(url)
+const transport = new StreamableHTTPClientTransport(url)
 ```
 
-Instead of specifying your Exa API key every time you connect to the Exa WebSocket, you can create a profile on Smithery and perform an authenticated call to the WebSocket server by specifying the header:
+Instead of specifying your Exa API key every time you connect to the remote Exa servers, you can create a profile on Smithery and perform an authenticated call to the HTTP server by specifying the header:
 
 ```typescript
 headers: {
@@ -46,17 +46,17 @@ headers: {
 }
 ```
 
-With this authentication, you no longer need to pass in the API key when connecting to the Exa WebSocket server.
+With this authentication, you no longer need to pass in the API key when connecting to the Exa server.
 
 ```typescript
-import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
 const url = createSmitheryUrl(
   "https://url-to-exa-mcp-server/ws"
 )
 
-const transport = new WebSocketClientTransport(url)
+const transport = new StreamableHTTPClientTransport(url)
 ```
 
 Configuration profiles act as a default configuration fallback and makes all saved configuration fields optional. You can still pass configuration fields upon connecting to overwrite the default profile configuration.

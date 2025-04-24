@@ -18,7 +18,7 @@ export const metadata = {
   </div>
 </div>
 
-The Smithery Registry API provides a programmatic way to search and obtain launch configurations for Model Context Protocol (MCP) servers. This documentation will walk you through using the Registry API to obtain a WebSocket MCP server and connect to it.
+The Smithery Registry API provides a programmatic way to search and obtain launch configurations for Model Context Protocol (MCP) servers. This documentation will walk you through using the Registry API to obtain a remote MCP server and connect to it.
 
 *Note: Smithery is still in early stages of development and the API may change in the future.*
 
@@ -85,7 +85,7 @@ You can combine multiple filters together. For example:
     homepage: string;
     // Number of times the server has been used via tool calling
     useCount: string;
-    // True if this server is deployed on Smithery as a WebSocket server
+    // True if this server is deployed on Smithery as a HTTP server
     isDeployed: boolean
     createdAt: string;
   }>;
@@ -138,43 +138,48 @@ We will return you a response containing information about the server, including
 
 The connection details specify how you can connect to this server.
 
-- `type`: The type of connection, such as "ws" for MCP served over WebSocket.
+- `type`: The type of connection, such as "http" for MCP served over streamable HTTP.
 - `url`: The URL to connect to.
 - `connections`: A list of possible ways to connect to the server.
-  - `type`: Either `stdio` or `ws` (websocket).
-  - `url`: The WebSocket URL to connect to, if applicable.
+  - `type`: Either `stdio` or `http` (streamable HTTP).
+  - `url`: The HTTP URL to connect to, if applicable.
   - `configSchema`: The JSON schema for the server's configuration. You must specify a config that complies with this schema in order to connect to this server. Some servers will have no configuration required.
 - `securityScan`: Information about the server's security status (recently added feature)
   - `isSecure`: A boolean indicating whether the server has passed security checks. This field will be `null` if no security scan has been performed yet.
 
-## Connecting to WebSocket Servers
+## Connecting to Remote Servers
 
-To connect to WebSocket servers, you have to format your URL as such:
+To connect to remote servers, you have to format your URL as such:
 
 <CodeBlock 
   language="http" 
-  code="https://server.smithery.ai/${qualifiedName}/ws?config=${base64encode(config)}"
+  code="https://server.smithery.ai/${qualifiedName}/mcp?config=${base64_encoded_config}&api_key=${smithery_api_key}"
   showHeader={true}
   className="my-4"
 />
 
-where `{url}` is the URL of the server served over WebSocket and `config` is the JSON configuration for the server that complies with the `configSchema` encoded in base64 format.
-
-If you're using our [Typescript SDK](https://github.com/smithery-ai/typescript-sdk/), you can use the `createSmitheryUrl` function to produce the URL. 
+Here's an example for constructing the URL with the required parameters:
 
 <CodeBlock 
   language="typescript" 
-  code={`import { WebSocketClientTransport } from "@modelcontextprotocol/sdk/client/websocket.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
+  code={`import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 
-const url = createSmitheryUrl(
-  "https://your-smithery-mcp-server/ws",
-  {
-    ...config goes here
-  },
-)
+// Create server URL
+const serverUrl = new URL("https://server.smithery.ai/{qualifiedName}/mcp")
 
-const transport = new WebSocketClientTransport(url)`}
+// Prepare config
+const config = {
+  // Your config object that matches the server's configSchema
+}
+const configString = JSON.stringify(config)
+
+// Add config and API key to URL
+// btoa() converts the JSON string to base64 for safe URL transmission
+serverUrl.searchParams.set("config", btoa(configString))
+serverUrl.searchParams.set("api_key", "your-smithery-api-key")
+
+// Create transport with the configured URL
+const transport = new StreamableHTTPClientTransport(serverUrl)`}
   showHeader={true}
   className="my-4"
 />

@@ -11,16 +11,13 @@ import {
 import { z } from "zod"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 import { fetchDefaultOrCreateApiKey } from "../actions/api-keys"
-
-export class MCPError extends Error {
-	constructor(
-		message: string,
-		public originalError?: unknown,
-	) {
-		super(message)
-		this.name = "MCPError"
-	}
-}
+import {
+	TimeoutError,
+	MCPConnectionError,
+	MCPRequestError,
+	MCPValidationError,
+} from "../types/errors"
+import { withTimeout } from "../utils"
 
 interface MCPClientConfig {
 	wsUrl: string
@@ -34,14 +31,21 @@ interface MCPClientConfig {
 		reject: unknown,
 	) => void
 	getRoots?: () => unknown[]
+	connectTimeout?: number
+	requestTimeout?: number
 }
 
 export class MCPClient {
 	private client: Client<Request, Notification, Result> | null = null
 	private connectionStatus: "disconnected" | "connected" | "error" =
 		"disconnected"
+	private readonly connectTimeout: number
+	private readonly requestTimeout: number
 
-	constructor(private config: MCPClientConfig) {}
+	constructor(private config: MCPClientConfig) {
+		this.connectTimeout = config.connectTimeout ?? 5000
+		this.requestTimeout = config.requestTimeout ?? 10000
+	}
 
 	async connect() {
 		try {
@@ -90,7 +94,10 @@ export class MCPClient {
 				)
 			}
 
-			await this.client.connect(clientTransport)
+			await withTimeout(
+				this.client.connect(clientTransport),
+				this.connectTimeout,
+			)
 
 			if (this.config.onPendingRequest) {
 				this.client.setRequestHandler(CreateMessageRequestSchema, (request) => {
@@ -109,7 +116,10 @@ export class MCPClient {
 			this.connectionStatus = "connected"
 		} catch (error) {
 			this.connectionStatus = "error"
-			throw new MCPError("Failed to connect to MCP server", error)
+			if (error instanceof Error && error.message.includes("timed out")) {
+				throw new TimeoutError()
+			}
+			throw new MCPConnectionError("Failed to connect to MCP server", error)
 		}
 	}
 
@@ -122,30 +132,27 @@ export class MCPClient {
 				status: this.connectionStatus,
 				hasClient: !!this.client,
 			})
-			throw new MCPError("Client not connected")
+			throw new MCPConnectionError("Client not connected")
 		}
 
 		try {
-			const abortController = new AbortController()
-			const timeoutId = setTimeout(() => {
-				console.warn("[MCP] Request timed out")
-				abortController.abort("Request timed out")
-			}, 10000)
-
-			try {
-				const response = await this.client.request(request, schema, {
-					signal: abortController.signal,
-				})
-				return response
-			} finally {
-				clearTimeout(timeoutId)
-			}
+			const response = await withTimeout(
+				this.client.request(request, schema),
+				this.requestTimeout,
+			)
+			return response
 		} catch (error) {
 			console.error("[MCP] Request failed:", error)
-			if (error instanceof z.ZodError) {
-				throw new MCPError("Invalid response format from server", error)
+			if (error instanceof Error && error.message.includes("timed out")) {
+				throw new TimeoutError()
 			}
-			throw new MCPError(
+			if (error instanceof z.ZodError) {
+				throw new MCPValidationError(
+					"Invalid response format from server",
+					error,
+				)
+			}
+			throw new MCPRequestError(
 				error instanceof Error ? error.message : "Unknown error occurred",
 				error,
 			)
@@ -154,13 +161,13 @@ export class MCPClient {
 
 	async sendNotification(notification: Notification) {
 		if (!this.client || this.connectionStatus !== "connected") {
-			throw new MCPError("Client not connected")
+			throw new MCPConnectionError("Client not connected")
 		}
 
 		try {
 			await this.client.notification(notification)
 		} catch (error) {
-			throw new MCPError("Failed to send notification", error)
+			throw new MCPRequestError("Failed to send notification", error)
 		}
 	}
 

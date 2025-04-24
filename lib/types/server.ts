@@ -99,6 +99,16 @@ export const ConnectionSchema = z.union([
 			configSchema: JSONSchemaSchema,
 		})
 		.describe("A Websocket connection for remote execution of the MCP server."),
+	z
+		.object({
+			type: z.literal("http"),
+			deploymentUrl: z
+				.string()
+				.url()
+				.describe("The HTTP endpoint URL of the deployment"),
+			configSchema: JSONSchemaSchema,
+		})
+		.describe("An HTTP connection for remote execution of the MCP server."),
 ])
 
 export type Connection = z.infer<typeof ConnectionSchema>

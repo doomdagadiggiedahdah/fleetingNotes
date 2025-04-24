@@ -22,44 +22,10 @@ export const metadata = {
     className="w-full [counter-reset:section] [&>*>h2]:before:content-[counter(section)_'.\_'] [&>*>h2]:before:mr-2 [&>*]:counter-increment-section [&>*]:border-0"
   >
     <AccordionItem value="prerequisites">
-      <AccordionTrigger className="text-xl font-normal hover:text-orange-500 hover:no-underline">What are the prerequisites for using smithery?</AccordionTrigger>
+      <AccordionTrigger className="text-xl font-normal hover:text-orange-500 hover:no-underline">What are the prerequisites for using smithery cli?</AccordionTrigger>
       <AccordionContent>
         - [Node.js](https://nodejs.org/) 18.0.0 or higher
         - [npm](https://www.npmjs.com/) (usually included in Node.js installation)
-      </AccordionContent>
-    </AccordionItem>
-
-    <AccordionItem value="npx-cursor">
-      <AccordionTrigger className="text-xl font-normal hover:text-orange-500 hover:no-underline">How do I fix npx on Cursor (Windows)?</AccordionTrigger>
-      <AccordionContent>
-        If you're experiencing issues with npx on Cursor, there are three workarounds:
-
-        **Option 1:** Use the full Windows path command:
-        
-        <CodeBlock 
-          language="shell" 
-          code='C:\Windows\System32\cmd.exe /c npx -y @smithery/cli@latest run @smithery-ai/fetch --config "{}"'
-          showHeader={true}
-          className="my-4"
-        />
-
-        **Option 2:** Add npx to your system PATH:
-        
-        - Open System Properties > Advanced > Environment Variables
-        - Under System Variables, find and select "Path"
-        - Click Edit and add the npm directory (typically `C:\Users\{username}\AppData\Roaming\npm`)
-
-        **Option 3:** Use Smithery's native CLI instead:
-        
-        - Follow the installation guide at [Smithery CLI Installation](/docs/smithery-cli)
-        - Then run: 
-        
-        <CodeBlock 
-          language="shell" 
-          code='smithery run @smithery-ai/server-sequential-thinking --config "{}"'
-          showHeader={true}
-          className="my-4"
-        />
       </AccordionContent>
     </AccordionItem>
 

@@ -17,7 +17,7 @@ export const metadata = {
   </div>
 </div>
 
-Smithery Deployments allow you to host your [standard input/output (STDIO)](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server on Smithery served over a WebSocket connection.
+Smithery Deployments allow you to host your [standard input/output (STDIO)](https://modelcontextprotocol.io/docs/concepts/transports#standard-input-output-stdio) MCP server on Smithery served over [streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) connection.
 
 Benefits of hosting:
 - Smithery will show an MCP playground on your server page, allowing users to try your MCP online.
@@ -33,22 +33,14 @@ Deploying on Smithery is straightforward:
 
 That's it! Your MCP server will be built and deployed according to your configuration.
 
-## Why WebSockets?
-
-Smithery Deployments use WebSockets (WS) because WebSockets enable session affinity.
-This means when we scale up your MCP based on traffic, the same client will always connect to the same server.
-The Server-Sent-Events transport provided by Model Context Protocol is unable to easily achieve this for scalable hosting. See [this discussion](https://github.com/modelcontextprotocol/specification/discussions/102) for more details.
-
-WebSockets transport implementations are maintained by the official MCP SDK in [Typescript](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/client/websocket.ts), [Python](https://github.com/modelcontextprotocol/python-sdk/blob/main/src/mcp/server/websocket.py) and [Kotlin](https://github.com/modelcontextprotocol/kotlin-sdk/blob/main/src/commonMain/kotlin/io/modelcontextprotocol/kotlin/sdk/shared/WebSocketMcpTransport.kt).
-
 ## Serverless Hosting
 
-We serve your hosted MCP servers on Smithery over WebSockets (WS) in a serverless environment and they will timeout after 5 minutes.
-You will need to handle reconnection if needed.
+We serve your hosted MCP servers on Smithery over streamable HTTP in a serverless environment. Connections to stateful servers will timeout after 2 minutes of inactivity.
+You will need to handle reconnection at the client if needed.
 You should design your server with ephemeral storage in mind.
 Persistent data should be stored in an external database.
 
 ## Tool Lists
 Smithery can only display tool lists for servers that don't require authentication to list tools. Server developers must ensure that the list tools functionality is not dependent on any API keys or configurations that users have to provide.
 
-As a server developer, you can implement this by supporting "lazy loading" - only authenticating using your required configuration/API keys upon tool call, rather than upon initialization.
+As a server developer, you can implement this by supporting "lazy loading" - only authenticating using your required configuration/API keys upon tool call, rather than upon initialization or tool listing.

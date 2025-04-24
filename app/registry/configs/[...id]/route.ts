@@ -103,6 +103,11 @@ export async function GET(
 			...(result.deploymentUrl && result.configSchema
 				? [
 						{
+							type: "http",
+							deploymentUrl: `${result.deploymentUrl}/mcp`,
+							configSchema: result.configSchema,
+						},
+						{
 							type: "ws",
 							deploymentUrl: result.deploymentUrl,
 							configSchema: result.configSchema,
