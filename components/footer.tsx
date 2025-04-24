@@ -22,7 +22,7 @@ export function Footer() {
 							</span>
 						</Link>
 						<p className="mt-2 text-sm text-muted-foreground">
-							Building the operating system for AI
+							The infrastructure for agents
 						</p>
 					</div>
 
