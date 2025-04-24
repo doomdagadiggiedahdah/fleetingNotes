@@ -58,6 +58,7 @@ GET https://registry.smithery.ai/servers/{qualifiedName}
   qualifiedName: string;
   displayName: string;
   remote: boolean;  // Whether the server is designed to run remotely or locally
+  iconUrl: string | null;  // URL to the server's icon image, null if not set
   deploymentUrl: string | null;  // URL for deployed servers, null if not deployed
   configSchema: JSONSchema;  // Schema for server configuration
   connections: Array<{
@@ -73,9 +74,7 @@ GET https://registry.smithery.ai/servers/{qualifiedName}
     description: string | null;
   }> | null;  // Added recently. List of tools provided by the server, null if not retrieved
 }
-```
-
-## Connection Details
+```## Connection Details
 - URL Format: `https://server.smithery.ai/${qualifiedName}/mcp?config=${base64encode(config)}&api_key=${smithery_api_key}`
 - Config must comply with server's configSchema
 - Config is base64-encoded JSON

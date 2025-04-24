@@ -18,6 +18,7 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	displayName: true,
 	remote: true,
 }).extend({
+	iconUrl: z.string().nullable(),
 	connections: z.array(ConnectionSchema),
 	security: z
 		.object({
@@ -46,6 +47,7 @@ export async function GET(
 				id: servers.id,
 				qualifiedName: servers.qualifiedName,
 				displayName: servers.displayName,
+				iconUrl: servers.iconUrl,
 				connections: servers.connections,
 				remote: servers.remote,
 				configSchema: servers.configSchema,
@@ -109,6 +111,7 @@ export async function GET(
 			ReturnTypeSchema.parse({
 				qualifiedName: server.qualifiedName,
 				displayName: server.displayName,
+				iconUrl: server.iconUrl,
 				remote: server.remote,
 				connections,
 				security: server.security
