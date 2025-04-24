@@ -56,7 +56,8 @@ export default function CareersPage() {
 							<h3 className="text-lg font-semibold mb-2">Area of Expertise</h3>
 
 							<p className="text-muted-foreground mb-4">
-								We&apos;re seeking people with deep expertise in one of these areas:
+								We&apos;re seeking people with deep expertise in one of these
+								areas:
 							</p>
 							<ul className="list-disc pl-6 space-y-2 text-muted-foreground">
 								<li>Design engineering with strong UI/UX taste</li>

@@ -77,23 +77,23 @@ You can combine multiple filters together. For example:
 <CodeBlock 
   language="typescript" 
   code={`{
-  servers: Array<{
-    qualifiedName: string;
-    displayName: string;
-    description: string;
-    // Link to Smithery server page
-    homepage: string;
-    // Number of times the server has been used via tool calling
-    useCount: string;
-    // True if this server is deployed on Smithery as a HTTP server
-    isDeployed: boolean
-    createdAt: string;
-  }>;
-  pagination: {
-    currentPage: number;
-    pageSize: number;
-    totalPages: number;
-    totalCount: number;
+    servers: Array<{
+      qualifiedName: string;
+      displayName: string;
+      description: string;
+      // Link to Smithery server page
+      homepage: string;
+      // Number of times the server has been used via tool calling
+      useCount: string;
+      // True if this server is deployed on Smithery as a HTTP server
+      isDeployed: boolean
+      createdAt: string;
+    }>;
+    pagination: {
+      currentPage: number;
+      pageSize: number;
+      totalPages: number;
+      totalCount: number;
   };
 }`}
   showHeader={true}
@@ -118,17 +118,17 @@ Retrieves information about a specific server by its qualified name. The qualifi
 <CodeBlock 
   language="typescript" 
   code={`{
-  qualifiedName: string;
-  displayName: string;
-  deploymentUrl: string;
-  connections: Array<{
-    type: string;
-    url?: string;
-    configSchema: JSONSchema;
-  }>;
-  securityScan: {
-    isSecure: boolean;
-  } | null;
+    qualifiedName: string;
+    displayName: string;
+    deploymentUrl: string;
+    connections: Array<{
+      type: string;
+      url?: string;
+      configSchema: JSONSchema;
+    }>;
+    security: {
+      scanPassed: boolean;
+    } | null;
 }`}
   showHeader={true}
   className="my-4"
@@ -144,8 +144,8 @@ The connection details specify how you can connect to this server.
   - `type`: Either `stdio` or `http` (streamable HTTP).
   - `url`: The HTTP URL to connect to, if applicable.
   - `configSchema`: The JSON schema for the server's configuration. You must specify a config that complies with this schema in order to connect to this server. Some servers will have no configuration required.
-- `securityScan`: Information about the server's security status (recently added feature)
-  - `isSecure`: A boolean indicating whether the server has passed security checks. This field will be `null` if no security scan has been performed yet.
+- `security`: Information about the server's security status (recently added feature)
+  - `scanPassed`: A boolean indicating whether the server has passed security checks. Currently we use [Invariant](https://invariantlabs.ai/blog/introducing-mcp-scan) to scan the server for tool poisoning, rug pulls, cross origins escalations and prompt injection attacks. This field will be `null` if no security scan has been performed yet.
 
 ## Connecting to Remote Servers
 

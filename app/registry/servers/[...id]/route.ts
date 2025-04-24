@@ -7,6 +7,7 @@ import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
+import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -18,10 +19,18 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 	remote: true,
 }).extend({
 	connections: z.array(ConnectionSchema),
-	securityScan: z
+	security: z
 		.object({
-			isSecure: z.boolean(),
+			scanPassed: z.boolean(),
 		})
+		.nullable(),
+	tools: z
+		.array(
+			z.object({
+				name: z.string(),
+				description: z.string().nullable(),
+			}),
+		)
 		.nullable(),
 })
 
@@ -40,6 +49,7 @@ export async function GET(
 				connections: servers.connections,
 				remote: servers.remote,
 				configSchema: servers.configSchema,
+				tools: servers.tools,
 				deploymentUrl: sql<string>`(
 					SELECT
 					CASE
@@ -53,8 +63,8 @@ export async function GET(
 					ORDER BY ${deployments.createdAt} DESC
 					LIMIT 1
 				)`,
-				securityScan: {
-					isSecure: serverScans.isSecure,
+				security: {
+					scanPassed: serverScans.isSecure,
 				},
 			})
 			.from(servers)
@@ -86,10 +96,25 @@ export async function GET(
 				: []),
 		]
 
+		// Format tools as name-description pairs if they exist
+		const tools =
+			server.tools && Array.isArray(server.tools)
+				? server.tools.map((tool: Tool) => ({
+						name: tool.name,
+						description: tool.description || null,
+					}))
+				: null
+
 		return NextResponse.json(
 			ReturnTypeSchema.parse({
-				...server,
+				qualifiedName: server.qualifiedName,
+				displayName: server.displayName,
+				remote: server.remote,
 				connections,
+				security: server.security
+					? { scanPassed: server.security.scanPassed }
+					: null,
+				tools,
 			}),
 		)
 	} catch (error) {
