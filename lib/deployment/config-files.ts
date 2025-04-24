@@ -24,6 +24,17 @@ primary_region = 'iad'
     type = "connections"
     soft_limit = 40
     hard_limit = 100
+
+  [[http_service.checks]]
+    interval = "30s"
+    grace_period = "5s"
+    method = "get"
+    path = "/.well-known/mcp/smithery.json"
+    protocol = "http"
+    timeout = "8s"
+    tls_skip_verify = false
+    [http_service.checks.headers]
+      X-Forwarded-Proto = "https"
   
 [[vm]]
   memory = '1gb'
@@ -39,7 +50,7 @@ primary_region = 'iad'
 export function createDockerfile(baseDockerfile: string, config: ServerConfig) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM registry.fly.io/sidecar:deployment-01JSGFZ9BQA6H9HYCPCR5W73H9 as sidecar_image
+FROM registry.fly.io/sidecar:deployment-01JSJN17SWDXGHDGCFJHAPJJ68 as sidecar_image
 
 # User's Dockerfile
 ${baseDockerfile}
