@@ -42,7 +42,7 @@ export function ServerStats({ server }: ServerStatsProps) {
 				server.serverRepo.branch ? (
 					<div>
 						<h3 className="text-md font-medium text-muted-foreground mb-1">
-							Source
+							Deployed from
 						</h3>
 						<div className="flex items-center gap-2 text-sm text-foreground">
 							<a
