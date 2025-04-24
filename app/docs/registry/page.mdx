@@ -129,6 +129,10 @@ Retrieves information about a specific server by its qualified name. The qualifi
     security: {
       scanPassed: boolean;
     } | null;
+    tools: Array<{
+      name: string;
+      description: string | null;
+    }> | null;
 }`}
   showHeader={true}
   className="my-4"
@@ -146,6 +150,9 @@ The connection details specify how you can connect to this server.
   - `configSchema`: The JSON schema for the server's configuration. You must specify a config that complies with this schema in order to connect to this server. Some servers will have no configuration required.
 - `security`: Information about the server's security status (recently added feature)
   - `scanPassed`: A boolean indicating whether the server has passed security checks. Currently we use [Invariant](https://invariantlabs.ai/blog/introducing-mcp-scan) to scan the server for tool poisoning, rug pulls, cross origins escalations and prompt injection attacks. This field will be `null` if no security scan has been performed yet.
+- `tools`: An array of tools that this server provides, or `null` if no tools have been retrieved by smithery
+  - `name`: The name of the tool
+  - `description`: A description of what the tool does, or `null` if no description is provided
 
 ## Connecting to Remote Servers
 

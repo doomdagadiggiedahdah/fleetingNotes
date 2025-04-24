@@ -65,9 +65,13 @@ GET https://registry.smithery.ai/servers/{qualifiedName}
     url?: string;
     configSchema: JSONSchema;
   }>;
-  securityScan: {
-    isSecure: boolean;
-  } | null;  // Added recently, null if no scan performed
+  security: {
+    scanPassed: boolean;
+  } | null;  // Added recently, null if no security scan performed
+  tools: Array<{
+    name: string;
+    description: string | null;
+  }> | null;  // Added recently. List of tools provided by the server, null if not retrieved
 }
 ```
 

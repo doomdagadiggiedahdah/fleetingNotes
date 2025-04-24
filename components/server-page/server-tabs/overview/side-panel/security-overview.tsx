@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/tooltip"
 import Link from "next/link"
 import { ServerFavicon } from "@/components/server-page/server-favicon"
+import { cn } from "@/lib/utils"
 
 interface SecurityOverviewProps {
 	server: FetchedServer
@@ -39,7 +40,7 @@ function SecurityChip({
 								href="https://invariantlabs.ai"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="ml-1.5 border-l border-muted-foreground/20 pl-1.5"
+								className="ml-1.5 border-l border-muted-foreground/20 pl-1.5 flex items-center gap-1"
 							>
 								<ServerFavicon
 									homepage="https://invariantlabs.ai"
@@ -47,9 +48,10 @@ function SecurityChip({
 									className="w-3.5 h-3.5 my-auto mt-0.5"
 									iconUrl="/favicons/invariant.ico"
 								/>
+								<span className="text-xs text-muted-foreground pr-1">Invariant</span>
 							</Link>
 						</TooltipTrigger>
-						<TooltipContent>
+						<TooltipContent className={cn("bg-primary/20 backdrop-blur-sm border-primary/20")}>
 							<p>Powered by Invariant Guardrails</p>
 						</TooltipContent>
 					</Tooltip>
@@ -102,15 +104,16 @@ export function SecurityOverview({ server }: SecurityOverviewProps) {
 						<TooltipTrigger asChild>
 							<Info className="h-3.5 w-3.5 text-muted-foreground" />
 						</TooltipTrigger>
-						<TooltipContent className="max-w-[300px]">
+						<TooltipContent className="max-w-[300px] bg-primary/20 backdrop-blur-md border-primary/20">
 							<p>
 								This scan checks for potential security vulnerabilities
 								including:
 							</p>
 							<ul className="list-disc list-inside mt-1">
-								<li>Prompt injection attacks</li>
-								<li>Rug pull attempts</li>
-								<li>Cross-origin security issues</li>
+								<li>Tool Poisoning</li>
+								<li>MCP rug pulls</li>
+								<li>Cross-origin escalations</li>
+								<li>Prompt Injection Attacks</li>
 							</ul>
 						</TooltipContent>
 					</Tooltip>
