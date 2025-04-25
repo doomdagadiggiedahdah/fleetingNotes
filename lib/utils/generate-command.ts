@@ -23,19 +23,21 @@ const COMMAND_TEMPLATES = {
 	STANDARD_INSTALL: (
 		serverName: string,
 		clientName: string,
+		apiKey: string,
 		config?: string,
-		apiKey?: string,
 		usingSavedConfig?: boolean,
 	) => {
-		// For saved config with API key, use --key instead of --config
-		if (usingSavedConfig && apiKey) {
-			return `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --key ${apiKey}`
+		// Base command with server and client
+		let command = `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`
+
+		// Add config if not using saved config and config exists and is not empty
+		if (!usingSavedConfig && config && config !== '"{}"') {
+			command += ` --config ${config}`
 		}
 
-		// Only add the --config flag if config is provided and not empty
-		return config && config !== '"{}"'
-			? `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName} --config ${config}`
-			: `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`
+		// Always attach API key at the end
+		command += ` --key ${apiKey}`
+		return command
 	},
 	STANDARD_RUN: (
 		serverName: string,
@@ -43,15 +45,19 @@ const COMMAND_TEMPLATES = {
 		apiKey?: string,
 		usingSavedConfig?: boolean,
 	) => {
-		// For saved config with API key, use --key instead of --config
-		if (usingSavedConfig && apiKey) {
-			return `${NPX_SMITHERY_PREFIX} run ${serverName} --key ${apiKey}`
+		// Base command with server
+		let command = `${NPX_SMITHERY_PREFIX} run ${serverName}`
+
+		// Add config if not using saved config and config is not empty
+		if (!usingSavedConfig && config !== '"{}"') {
+			command += ` --config ${config}`
 		}
 
-		// Only add the --config flag if config is not empty
-		return config !== '"{}"'
-			? `${NPX_SMITHERY_PREFIX} run ${serverName} --config ${config}`
-			: `${NPX_SMITHERY_PREFIX} run ${serverName}`
+		// Always attach API key at the end
+		if (apiKey) {
+			command += ` --key ${apiKey}`
+		}
+		return command
 	},
 	SPINAI_INSTALL: (serverName: string, config?: string) =>
 		config && config !== '"{}"'
@@ -85,8 +91,8 @@ export const generateUnixCommand = (baseCommand: string): string =>
 export const generateInstallCommand = (
 	server: FetchedServer,
 	client: ClientType,
+	apiKey: string,
 	config?: JsonObject,
-	apiKey?: string,
 	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = config
@@ -98,8 +104,8 @@ export const generateInstallCommand = (
 		: COMMAND_TEMPLATES.STANDARD_INSTALL(
 				server.qualifiedName,
 				client,
-				cleanedConfig,
 				apiKey,
+				cleanedConfig,
 				usingSavedConfig,
 			)
 }
@@ -108,8 +114,8 @@ export const generateInstallCommand = (
 export const generateRunCommand = (
 	server: FetchedServer,
 	client: ClientType,
+	apiKey: string,
 	config?: JsonObject,
-	apiKey?: string,
 	usingSavedConfig?: boolean,
 ): string => {
 	const cleanedConfig = JSON.stringify(JSON.stringify(config))
@@ -137,16 +143,16 @@ export const generateCommand = ({
 }: {
 	server: FetchedServer
 	client: ClientType
+	apiKey: string
 	config?: JsonObject
-	apiKey?: string
 	usingSavedConfig?: boolean
 	platform?: Platform
 	windowsMethod?: WindowsExecMethod
 }): string => {
 	// Keep run vs install distinction, but both now support config
 	const baseCommand = isRunCommandClient(client)
-		? generateRunCommand(server, client, config, apiKey, usingSavedConfig)
-		: generateInstallCommand(server, client, config, apiKey, usingSavedConfig)
+		? generateRunCommand(server, client, apiKey, config, usingSavedConfig)
+		: generateInstallCommand(server, client, apiKey, config, usingSavedConfig)
 
 	return platform === "windows"
 		? generateWindowsCommand(windowsMethod, baseCommand)
@@ -170,8 +176,8 @@ export const generateCommandSet = ({
 }: {
 	server: FetchedServer
 	client: ClientType
+	apiKey: string
 	config?: JsonObject
-	apiKey?: string
 	usingSavedConfig?: boolean
 }): CommandSet => {
 	return {

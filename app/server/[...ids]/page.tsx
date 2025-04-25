@@ -143,7 +143,11 @@ export default async function Page(props: Props) {
 	// Render full page or just config tab
 	if (activeTab === "config") {
 		// Fetch saved config needed for the config tab
-		const { savedConfig } = await fetchData(server.id)
+		const result = await fetchData(server.id)
+		if (!result.ok) {
+			return <ErrorMessage message={result.error} />
+		}
+		const { savedConfig } = result.value
 
 		return (
 			<main className="min-h-screen bg-background flex justify-center">

@@ -22,7 +22,7 @@ type InstallTabContentProps = {
 	savedConfig: JSONSchema | null
 	currentSession: Session | null
 	setIsSignInOpen: (open: boolean) => void
-	apiKey?: string
+	apiKey: string
 	usingSavedConfig: boolean
 	setUsingSaved: (value: boolean) => void
 	onClientChange?: (client: ClientType) => void

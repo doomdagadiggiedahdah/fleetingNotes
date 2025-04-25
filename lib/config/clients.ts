@@ -18,17 +18,17 @@ export type ClientType =
 export const CLIENT_ORDER: ClientType[] = [
 	"claude",
 	"cursor",
-	"windsurf",
-	"cline",
 	"vscode",
-	"boltai",
+	"cline",
+	"windsurf",
 	"roocode",
 	"augment",
+	"spinai",
+	"boltai",
 	"goose",
 	"vscode-insiders",
 	"witsy",
 	"enconvo",
-	"spinai",
 ]
 
 export interface ClientConfig {

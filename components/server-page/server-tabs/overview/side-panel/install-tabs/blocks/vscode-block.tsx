@@ -16,16 +16,16 @@ import {
 
 interface VSCodeBlockProps {
 	server: FetchedServer
+	apiKey: string
 	config?: JsonObject
-	apiKey?: string
 	usingSavedConfig?: boolean
 	client: "vscode" | "vscode-insiders"
 }
 
 export const VSCodeBlock = ({
 	server,
-	config,
 	apiKey,
+	config,
 	usingSavedConfig,
 	client,
 }: VSCodeBlockProps) => {

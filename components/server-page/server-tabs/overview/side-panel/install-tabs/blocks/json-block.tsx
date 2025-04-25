@@ -10,22 +10,19 @@ import { MessageCircleWarning } from "lucide-react"
 
 interface JsonBlockProps {
 	server: FetchedServer
+	apiKey: string
 	cleanedConfig?: JsonObject
-	apiKey?: string
 	usingSavedConfig?: boolean
 }
 
 export const JsonBlock = ({
 	server,
-	cleanedConfig,
 	apiKey,
+	cleanedConfig,
 	usingSavedConfig,
 }: JsonBlockProps) => {
 	// Get the server name that will be used as the key in the JSON
 	const serverName = getServerName(server.qualifiedName)
-
-	// Check if config contains a sensitive key
-	const containsSensitiveKey = !!apiKey
 
 	return (
 		<>
@@ -51,9 +48,9 @@ export const JsonBlock = ({
 					<JsonCodeBlock
 						code={generateMcpJsonConfig(
 							server,
+							apiKey ?? "",
 							cleanedConfig,
 							false,
-							apiKey,
 							usingSavedConfig,
 						)}
 						language="json"
@@ -78,9 +75,9 @@ export const JsonBlock = ({
 					<JsonCodeBlock
 						code={generateMcpJsonConfig(
 							server,
+							apiKey ?? "",
 							cleanedConfig,
 							true,
-							apiKey,
 							usingSavedConfig,
 						)}
 						language="json"
@@ -105,9 +102,9 @@ export const JsonBlock = ({
 					<JsonCodeBlock
 						code={generateMcpJsonConfig(
 							server,
+							apiKey,
 							cleanedConfig,
 							false,
-							apiKey,
 							usingSavedConfig,
 							true, // isWsl = true
 						)}
@@ -130,7 +127,7 @@ export const JsonBlock = ({
 				</TabsContent>
 			</Tabs>
 
-			{containsSensitiveKey && (
+			{apiKey && (
 				<div className="flex items-center gap-3 mt-4 py-2 px-3 rounded-md bg-amber-950/20">
 					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
 					<span className="text-amber-300/90 text-xs">

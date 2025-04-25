@@ -16,10 +16,10 @@ export type InstallTabStates = "auto" | "manual"
 
 type InstallTabsProps = {
 	server: FetchedServer
+	apiKey: string
 	initTab?: InstallTabStates
 	className?: string
 	onTabChange?: (tab: InstallTabStates) => void
-	apiKey?: string
 	savedConfig?: JSONSchema | null
 }
 
@@ -57,7 +57,7 @@ export function Installtabs({
 		if (passedApiKey) {
 			setApiKey(passedApiKey)
 		} else if (!currentSession) {
-			setApiKey(null)
+			throw new Error("User must be logged in")
 		}
 	}, [passedApiKey, currentSession])
 
@@ -147,7 +147,7 @@ export function Installtabs({
 					savedConfig={savedConfig}
 					currentSession={currentSession}
 					setIsSignInOpen={setIsSignInOpen}
-					apiKey={apiKey || undefined}
+					apiKey={apiKey || ""}
 					usingSavedConfig={usingSavedConfig}
 					setUsingSaved={handleToggleUsingSavedConfig}
 					onClientChange={setSelectedClient}
@@ -165,7 +165,7 @@ export function Installtabs({
 					savedConfig={savedConfig}
 					currentSession={currentSession}
 					setIsSignInOpen={setIsSignInOpen}
-					apiKey={apiKey || undefined}
+					apiKey={apiKey || ""}
 					usingSavedConfig={usingSavedConfig}
 					setUsingSaved={handleToggleUsingSavedConfig}
 					onClientChange={setSelectedClient}

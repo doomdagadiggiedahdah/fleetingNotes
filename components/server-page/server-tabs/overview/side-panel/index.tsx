@@ -6,6 +6,7 @@ import { Suspense } from "react"
 import { InstallTabsSkeleton } from "./skeleton"
 import { fetchData } from "./fetch-data"
 import { SecurityOverview } from "./security-overview"
+import { ApiKeyError } from "./error/api-key-error"
 
 type Props = {
 	server: FetchedServer
@@ -18,8 +19,14 @@ export async function SidePanel({
 	initTab = "auto",
 	onTabChange,
 }: Props) {
-	// Fetch data from the separate component
-	const { apiKey, savedConfig } = await fetchData(server.id)
+	// Fetch api key and saved config (if any) from server side
+	const result = await fetchData(server.id)
+
+	if (!result.ok) {
+		return <ApiKeyError message={result.error} />
+	}
+
+	const { apiKey, savedConfig } = result.value
 
 	return (
 		<div>
@@ -31,7 +38,6 @@ export async function SidePanel({
 			<Suspense fallback={<InstallTabsSkeleton />}>
 				<div className="bg-background p-3 rounded-lg border border-border">
 					<Installtabs
-						// key={`install-tabs-${Date.now()}`}
 						server={server}
 						initTab={initTab}
 						onTabChange={onTabChange}

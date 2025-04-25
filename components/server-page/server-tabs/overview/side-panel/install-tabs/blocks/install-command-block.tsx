@@ -31,9 +31,6 @@ export function InstallCommandBlock({
 		setIsFeatureEnabled(enabled)
 	}, [])
 
-	// Check if command contains a sensitive key
-	const containsSensitiveKey = command.includes("--key")
-
 	// Check for Windows-specific issues
 	const hasWindowsIssues =
 		/[A-Z]:[\\\/].*\s/.test(command) && command.includes("--config")
@@ -55,7 +52,7 @@ export function InstallCommandBlock({
 					})
 				}}
 			/>
-			{containsSensitiveKey && (
+			{command.includes("--key") && (
 				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
 					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
 					<span className="text-amber-300/90 text-xs">

@@ -34,12 +34,12 @@ export const CommandBlock = ({
 	apiKey,
 	usingSavedConfig,
 	onClientChange,
-	method = "auto",
+	// method = "auto",
 }: {
 	server: FetchedServer
 	client: ClientType
 	config?: JsonObject
-	apiKey?: string
+	apiKey: string
 	usingSavedConfig?: boolean
 	onClientChange?: (client: ClientType) => void
 	method?: "auto" | "manual"
@@ -52,8 +52,8 @@ export const CommandBlock = ({
 		generateCommandSet({
 			server,
 			client,
-			config: cleanedConfig,
 			apiKey,
+			config: cleanedConfig,
 			usingSavedConfig,
 		})
 

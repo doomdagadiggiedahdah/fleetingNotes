@@ -5,24 +5,24 @@ import type { JsonObject } from "@/lib/types/json"
 /* Generates the formatted MCP JSON configuration for Cursor integration */
 export function generateMcpJsonConfig(
 	server: FetchedServer,
+	apiKey: string,
 	cleanedConfig?: JsonObject,
 	isWindows = false,
-	apiKey?: string,
 	usingSavedConfig?: boolean,
 	isWsl = false,
 ): string {
 	// Base arguments for npx command
 	const npxArgs = ["-y", "@smithery/cli@latest", "run", server.qualifiedName]
 
-	// Use --key flag with API key if using saved config, otherwise use --config with encoded config
-	if (usingSavedConfig && apiKey) {
-		npxArgs.push("--key", apiKey)
-	} else {
-		// Use simple stringification for config
-		const encodedConfig = cleanedConfig
-			? JSON.stringify(cleanedConfig)
-			: "<your-config-here>"
+	// Add config if not using saved config
+	if (!usingSavedConfig && cleanedConfig) {
+		const encodedConfig = JSON.stringify(cleanedConfig)
 		npxArgs.push("--config", encodedConfig)
+	}
+
+	// Always attach API key if provided
+	if (apiKey) {
+		npxArgs.push("--key", apiKey)
 	}
 
 	let commandConfig: { command: string; args: string[] }
