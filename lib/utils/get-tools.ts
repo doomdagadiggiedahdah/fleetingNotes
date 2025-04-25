@@ -45,7 +45,6 @@ export async function fetchServerTools(
 		await client.connect(transport)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
-		await client.close()
 		await transport.terminateSession()
 		return err(
 			`Unable to connect to server: ${e instanceof Error ? e.message : "Unknown error"}`,
@@ -53,6 +52,7 @@ export async function fetchServerTools(
 	}
 
 	try {
+		console.log("[MCP] listing tools...")
 		const toolResult = await client.listTools()
 
 		return ok({
@@ -66,7 +66,6 @@ export async function fetchServerTools(
 			`Unable to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
 		)
 	} finally {
-		await client.close()
 		await transport.terminateSession()
 	}
 }

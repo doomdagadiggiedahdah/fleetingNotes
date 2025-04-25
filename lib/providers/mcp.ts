@@ -183,8 +183,6 @@ export class MCPClient {
 	}
 
 	async disconnect() {
-		await this.client?.close()
-
 		if (this.transport) {
 			// Close the transport connection
 			await this.transport.terminateSession()
