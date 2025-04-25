@@ -11,8 +11,7 @@ import Link from "next/link"
 
 export const metadata: Metadata = {
 	title: "Careers | Smithery",
-	description:
-		"Join our team to build the infrastructure for AI agents",
+	description: "Join our team to build the infrastructure for AI agents",
 }
 
 export default function CareersPage() {

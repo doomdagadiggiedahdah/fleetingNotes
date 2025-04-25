@@ -8,16 +8,15 @@ import {
 	ListRootsRequestSchema,
 	ProgressNotificationSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
 import { z } from "zod"
 import { fetchDefaultOrCreateApiKey } from "../actions/api-keys"
 import {
-	TimeoutError,
 	MCPConnectionError,
 	MCPRequestError,
 	MCPValidationError,
+	TimeoutError,
 } from "../types/errors"
-import { withTimeout } from "../utils"
+import { createSmitheryUrl, withTimeout } from "../utils"
 
 interface MCPClientConfig {
 	url: string
@@ -35,8 +34,10 @@ interface MCPClientConfig {
 	requestTimeout?: number
 }
 
+// TODO: This class can be refactored to be functional and be much simpler
 export class MCPClient {
 	private client: Client<Request, Notification, Result> | null = null
+	private transport: StreamableHTTPClientTransport | null = null
 	private connectionStatus: "disconnected" | "connected" | "error" =
 		"disconnected"
 	private readonly connectTimeout: number
@@ -52,15 +53,10 @@ export class MCPClient {
 			this.client = new Client<Request, Notification, Result>(
 				{
 					name: "smithery",
-					version: "0.0.1",
+					version: "1.0,0",
 				},
 				{
-					capabilities: {
-						sampling: {},
-						roots: {
-							listChanged: true,
-						},
-					},
+					capabilities: { tools: {} },
 				},
 			)
 
@@ -73,12 +69,19 @@ export class MCPClient {
 				}
 			}
 
-			const connectionUrl = createSmitheryUrl(this.config.url, {
-				...this.config.config,
-				apiKey,
-			})
+			if (!apiKey) {
+				throw new MCPConnectionError(
+					"Failed to connect to MCP server: No API key",
+				)
+			}
 
-			const clientTransport = new StreamableHTTPClientTransport(connectionUrl)
+			const connectionUrl = createSmitheryUrl(
+				this.config.url,
+				this.config.config ?? {},
+				apiKey,
+			)
+
+			this.transport = new StreamableHTTPClientTransport(connectionUrl)
 
 			if (this.config.onNotification) {
 				this.client.setNotificationHandler(
@@ -94,11 +97,6 @@ export class MCPClient {
 				)
 			}
 
-			await withTimeout(
-				this.client.connect(clientTransport),
-				this.connectTimeout,
-			)
-
 			if (this.config.onPendingRequest) {
 				this.client.setRequestHandler(CreateMessageRequestSchema, (request) => {
 					return new Promise((resolve, reject) => {
@@ -112,6 +110,8 @@ export class MCPClient {
 					return { roots: this.config.getRoots!() }
 				})
 			}
+
+			this.client.connect(this.transport)
 
 			this.connectionStatus = "connected"
 		} catch (error) {
@@ -177,5 +177,18 @@ export class MCPClient {
 
 	getCapabilities() {
 		return this.client?.getServerCapabilities() ?? null
+	}
+
+	async disconnect() {
+		await this.client?.close()
+
+		if (this.transport) {
+			// Close the transport connection
+			await this.transport.terminateSession()
+			this.transport = null
+		}
+
+		this.client = null
+		this.connectionStatus = "disconnected"
 	}
 }

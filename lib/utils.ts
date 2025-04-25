@@ -31,6 +31,18 @@ export async function withTimeout<T>(
 	return Promise.race([promise, timeout])
 }
 
+export function createSmitheryUrl(
+	url: string,
+	config: Record<string, unknown>,
+	apiKey: string,
+) {
+	const serverUrl = new URL(url)
+	const configString = JSON.stringify(config)
+	serverUrl.searchParams.set("config", btoa(configString))
+	serverUrl.searchParams.set("api_key", apiKey)
+	return serverUrl
+}
+
 /**
  * Calculates the dot product of two vectors
  * @param a First vector

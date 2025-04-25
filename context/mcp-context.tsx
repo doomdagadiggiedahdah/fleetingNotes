@@ -6,6 +6,7 @@ import {
 	type ReactNode,
 	useState,
 	useCallback,
+	useEffect,
 } from "react"
 import { MCPClient } from "@/lib/providers/mcp"
 import type { z } from "zod"
@@ -22,6 +23,7 @@ interface MCPContextType {
 		wsUrl: string,
 		options?: { config?: Record<string, unknown> },
 	) => Promise<void>
+	disconnect: () => Promise<void>
 	listTools: () => Promise<void>
 	makeRequestTo: <T>(
 		request: {
@@ -53,29 +55,43 @@ export function MCPProvider({
 		null,
 	)
 
-	const connect = async (
-		url: string,
-		options?: { config?: Record<string, unknown> },
-	) => {
-		try {
-			setStatus("connecting")
-			const mcpClient = new MCPClient({
-				url,
-				config: options?.config, // Pass through any config
-			})
+	const connect = useCallback(
+		async (url: string, options?: { config?: Record<string, unknown> }) => {
+			try {
+				setStatus("connecting")
+				const mcpClient = new MCPClient({
+					url,
+					config: options?.config, // Pass through any config
+				})
 
-			await mcpClient.connect()
+				await mcpClient.connect()
+				setClient(mcpClient)
+				setStatus("connected")
 
-			setClient(mcpClient)
-			setStatus("connected")
+				const serverCapabilities = mcpClient.getCapabilities()
+				setCapabilities(serverCapabilities)
+			} catch (error) {
+				setStatus("error")
+				throw error
+			}
+		},
+		[],
+	)
 
-			const serverCapabilities = mcpClient.getCapabilities()
-			setCapabilities(serverCapabilities)
-		} catch (error) {
-			setStatus("error")
-			throw error
+	const disconnect = useCallback(async () => {
+		if (client) {
+			try {
+				await client.disconnect()
+				setStatus("disconnected")
+				setTools([])
+				setCapabilities(null)
+			} catch (error) {
+				console.error("Error disconnecting from MCP server:", error)
+			} finally {
+				setClient(null)
+			}
 		}
-	}
+	}, [client])
 
 	const listTools = useCallback(async () => {
 		if (!client || status !== "connected") {
@@ -109,6 +125,17 @@ export function MCPProvider({
 		[client, status],
 	)
 
+	// Cleanup effect to disconnect when the provider unmounts
+	useEffect(() => {
+		return () => {
+			// Call disconnect when unmounting
+			if (client) {
+				// Use void to handle the Promise without awaiting
+				void client.disconnect()
+			}
+		}
+	}, [client])
+
 	return (
 		<MCPContext.Provider
 			value={{
@@ -116,6 +143,7 @@ export function MCPProvider({
 				status,
 				tools,
 				connect,
+				disconnect,
 				listTools,
 				makeRequestTo,
 				getStatus: () => status,
