@@ -1,7 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createSmitheryUrl } from "@smithery/sdk"
-import { withTimeout } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
 import { err, ok } from "./result"
@@ -12,7 +11,6 @@ import { err, ok } from "./result"
 export async function fetchServerTools(
 	deploymentUrl: string,
 	config?: Record<string, unknown>,
-	timeoutMs = 10000,
 ) {
 	// Fetch schema using the new utility
 	const configSchemaResult = await fetchConfigSchema(deploymentUrl)
@@ -51,7 +49,7 @@ export async function fetchServerTools(
 	}
 
 	try {
-		const toolResult = await withTimeout(client.listTools(), timeoutMs)
+		const toolResult = await client.listTools()
 
 		return ok({
 			tools: toolResult.tools,

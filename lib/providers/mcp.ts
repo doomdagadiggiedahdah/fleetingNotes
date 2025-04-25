@@ -44,7 +44,7 @@ export class MCPClient {
 	private readonly requestTimeout: number
 
 	constructor(private config: MCPClientConfig) {
-		this.connectTimeout = config.connectTimeout ?? 5000
+		this.connectTimeout = config.connectTimeout ?? 8000
 		this.requestTimeout = config.requestTimeout ?? 10000
 	}
 
@@ -111,7 +111,10 @@ export class MCPClient {
 				})
 			}
 
-			this.client.connect(this.transport)
+			await withTimeout(
+				this.client.connect(this.transport),
+				this.connectTimeout,
+			)
 
 			this.connectionStatus = "connected"
 		} catch (error) {
