@@ -34,12 +34,13 @@ export async function withTimeout<T>(
 export function createSmitheryUrl(
 	url: string,
 	config: Record<string, unknown>,
-	apiKey: string,
+	// Must be set if going through gateway
+	apiKey?: string,
 ) {
 	const serverUrl = new URL(url)
 	const configString = JSON.stringify(config)
 	serverUrl.searchParams.set("config", btoa(configString))
-	serverUrl.searchParams.set("api_key", apiKey)
+	if (apiKey) serverUrl.searchParams.set("api_key", apiKey)
 	return serverUrl
 }
 

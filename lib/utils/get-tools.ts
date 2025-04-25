@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { createSmitheryUrl } from "@smithery/sdk"
+import { createSmitheryUrl } from "../utils"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
 import { err, ok } from "./result"
@@ -16,6 +16,8 @@ export async function fetchServerTools(
 	const configSchemaResult = await fetchConfigSchema(deploymentUrl)
 
 	if (!configSchemaResult.ok) return configSchemaResult
+
+	console.log("configSchemaResult.ok", configSchemaResult.ok)
 
 	// Use createDummyConfig with empty config if no schema
 	const configSchema = configSchemaResult.value
@@ -33,16 +35,18 @@ export async function fetchServerTools(
 		},
 	)
 
+	console.log(`[MCP] attempting connection to ${deploymentUrl}/mcp`)
 	const transport = new StreamableHTTPClientTransport(
 		createSmitheryUrl(`${deploymentUrl}/mcp`, mockConfig ?? {}),
 	)
 
 	try {
-		// We can't timeout this because it could open an SSE RPCs back
+		console.log("[MCP] connecting...")
 		await client.connect(transport)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
 		await client.close()
+		await transport.terminateSession()
 		return err(
 			`Unable to connect to server: ${e instanceof Error ? e.message : "Unknown error"}`,
 		)

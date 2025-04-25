@@ -8,7 +8,7 @@ import {
 	type ServerConfig,
 	ServerConfigSchema,
 } from "@/lib/types/server-config"
-import { wait, withTimeout } from "@/lib/utils"
+import { wait } from "@/lib/utils"
 import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { fetchServerTools } from "@/lib/utils/get-tools"
 import { joinGithubPath } from "@/lib/utils/github"
@@ -401,9 +401,10 @@ export async function testSandbox(
 	}
 
 	// Validate if tool API call works
-	const toolFetchResult = await withTimeout(
-		fetchServerTools(deployedUrl, smitheryConfig.startCommand.exampleConfig),
-		10000,
+	console.log(`[${flyAppId}] Validating tool API call...`)
+	const toolFetchResult = await fetchServerTools(
+		deployedUrl,
+		smitheryConfig.startCommand.exampleConfig,
 	)
 	console.log(`[${flyAppId}] toolFetchResult.ok`, toolFetchResult.ok)
 
