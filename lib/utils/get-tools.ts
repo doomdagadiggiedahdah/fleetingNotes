@@ -40,7 +40,8 @@ export async function fetchServerTools(
 	)
 
 	try {
-		await withTimeout(client.connect(transport), timeoutMs)
+		// We can't timeout this because it could open an SSE RPCs back
+		await client.connect(transport)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
 		await client.close()
