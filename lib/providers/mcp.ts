@@ -16,7 +16,8 @@ import {
 	MCPValidationError,
 	TimeoutError,
 } from "../types/errors"
-import { createSmitheryUrl, withTimeout } from "../utils"
+import { withTimeout } from "../utils"
+import { createStreamableHTTPTransportUrl } from "../utils/create-streamable-http-transport-url"
 
 interface MCPClientConfig {
 	url: string
@@ -45,7 +46,7 @@ export class MCPClient {
 
 	constructor(private config: MCPClientConfig) {
 		this.connectTimeout = config.connectTimeout ?? 8000
-		this.requestTimeout = config.requestTimeout ?? 10000
+		this.requestTimeout = config.requestTimeout ?? 60000 // some requests take long
 	}
 
 	async connect() {
@@ -75,10 +76,10 @@ export class MCPClient {
 				)
 			}
 
-			const connectionUrl = createSmitheryUrl(
+			const connectionUrl = createStreamableHTTPTransportUrl(
 				this.config.url,
-				this.config.config ?? {},
 				apiKey,
+				this.config.config ?? {},
 			)
 
 			this.transport = new StreamableHTTPClientTransport(connectionUrl)

@@ -1,5 +1,6 @@
 import { CommandBlock } from "./blocks/command-block"
 import { JsonBlock } from "./blocks/json-block"
+import { UrlBlock } from "./blocks/url-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
@@ -26,7 +27,7 @@ type InstallTabContentProps = {
 	usingSavedConfig: boolean
 	setUsingSaved: (value: boolean) => void
 	onClientChange?: (client: ClientType) => void
-	method: "auto" | "manual"
+	method: "auto" | "manual" | "url"
 }
 
 export function InstallTabContent({
@@ -104,6 +105,13 @@ export function InstallTabContent({
 						apiKey={apiKey}
 						usingSavedConfig={usingSavedConfig}
 					/>
+				) : method === "url" ? (
+					<UrlBlock
+						server={server}
+						config={configValues}
+						apiKey={apiKey}
+						usingSavedConfig={usingSavedConfig}
+					/>
 				) : (
 					<CommandBlock
 						server={server}
@@ -112,7 +120,6 @@ export function InstallTabContent({
 						apiKey={apiKey}
 						usingSavedConfig={usingSavedConfig}
 						onClientChange={onClientChange}
-						method={method}
 					/>
 				)}
 			</>

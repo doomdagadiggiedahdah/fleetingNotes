@@ -1,7 +1,7 @@
 export class TimeoutError extends Error {
 	constructor() {
 		super(
-			"Uh oh! Our servers seem to be at full capacity, please try again later.",
+			"Sorry, our servers seem to be at full capacity. Please try again later.",
 		)
 		this.name = "TimeoutError"
 	}

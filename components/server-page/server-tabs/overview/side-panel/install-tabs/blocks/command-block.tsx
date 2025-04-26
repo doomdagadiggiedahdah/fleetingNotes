@@ -34,7 +34,6 @@ export const CommandBlock = ({
 	apiKey,
 	usingSavedConfig,
 	onClientChange,
-	// method = "auto",
 }: {
 	server: FetchedServer
 	client: ClientType
@@ -42,7 +41,6 @@ export const CommandBlock = ({
 	apiKey: string
 	usingSavedConfig?: boolean
 	onClientChange?: (client: ClientType) => void
-	method?: "auto" | "manual"
 }) => {
 	const [isBugReportOpen, setIsBugReportOpen] = useState(false)
 	const [open, setOpen] = useState(false)
@@ -83,7 +81,7 @@ export const CommandBlock = ({
 					<a
 						href={clientConfig.homepage}
 						target="_blank"
-						className="hover:text-primary"
+						className="text-primary hover:text-primary/80"
 					>
 						{clientConfig.label}
 					</a>{" "}
@@ -98,7 +96,7 @@ export const CommandBlock = ({
 				<a
 					href={clientConfig.homepage}
 					target="_blank"
-					className="hover:text-primary"
+					className="text-primary"
 				>
 					{clientConfig.label}
 				</a>
@@ -157,7 +155,9 @@ export const CommandBlock = ({
 				</Popover>
 			</div>
 
-			<p className="mt-3 mb-3">{renderInstallInstructions()}</p>
+			<p className="mt-3 mb-3 text-muted-foreground text-sm">
+				{renderInstallInstructions()}
+			</p>
 
 			{hasValidConnection ? (
 				client === "vscode" || client === "vscode-insiders" ? (
@@ -195,7 +195,7 @@ export const CommandBlock = ({
 				</Alert>
 			)}
 
-			<div className="flex gap-4 mt-3 text-muted-foreground text-sm">
+			<div className="flex gap-4 mt-3 text-muted-foreground text-xs">
 				<button
 					onClick={() => setIsBugReportOpen(true)}
 					className="flex items-center hover:text-primary"

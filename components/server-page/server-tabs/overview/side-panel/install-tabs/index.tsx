@@ -12,7 +12,7 @@ import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
 
-export type InstallTabStates = "auto" | "manual"
+export type InstallTabStates = "auto" | "manual" | "url"
 
 type InstallTabsProps = {
 	server: FetchedServer
@@ -135,43 +135,30 @@ export function Installtabs({
 				onTabChange?.(tab as InstallTabStates)
 			}}
 		>
-			<InstallTabOptions activeTab={activeTab} />
-			<TabsContent value="auto">
-				<InstallTabContent
-					server={server}
-					client={selectedClient}
-					configSchema={prefetchedSchema}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-					apiKey={apiKey || ""}
-					usingSavedConfig={usingSavedConfig}
-					setUsingSaved={handleToggleUsingSavedConfig}
-					onClientChange={setSelectedClient}
-					method={activeTab}
-				/>
-			</TabsContent>
-			<TabsContent value="manual">
-				<InstallTabContent
-					server={server}
-					client={selectedClient}
-					configSchema={prefetchedSchema}
-					isClientConfigured={isClientConfigured}
-					configValues={configValues}
-					onClientConfig={handleClientConfig}
-					savedConfig={savedConfig}
-					currentSession={currentSession}
-					setIsSignInOpen={setIsSignInOpen}
-					apiKey={apiKey || ""}
-					usingSavedConfig={usingSavedConfig}
-					setUsingSaved={handleToggleUsingSavedConfig}
-					onClientChange={setSelectedClient}
-					method={activeTab}
-				/>
-			</TabsContent>
+			<InstallTabOptions
+				activeTab={activeTab}
+				deploymentUrl={server.deploymentUrl}
+			/>
+			{(["auto", "manual", "url"] as const).map((tab) => (
+				<TabsContent key={tab} value={tab}>
+					<InstallTabContent
+						server={server}
+						client={selectedClient}
+						configSchema={prefetchedSchema}
+						isClientConfigured={isClientConfigured}
+						configValues={configValues}
+						onClientConfig={handleClientConfig}
+						savedConfig={savedConfig}
+						currentSession={currentSession}
+						setIsSignInOpen={setIsSignInOpen}
+						apiKey={apiKey || ""}
+						usingSavedConfig={usingSavedConfig}
+						setUsingSaved={handleToggleUsingSavedConfig}
+						onClientChange={setSelectedClient}
+						method={activeTab}
+					/>
+				</TabsContent>
+			))}
 		</Tabs>
 	)
 }

@@ -1,6 +1,6 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { createSmitheryUrl } from "../utils"
+import { createStreamableHTTPTransportUrl } from "../utils/create-streamable-http-transport-url"
 import { fetchConfigSchema } from "./fetch-config"
 import { createDummyConfig } from "./generate-config"
 import { err, ok } from "./result"
@@ -37,7 +37,11 @@ export async function fetchServerTools(
 
 	console.log(`[MCP] attempting connection to ${deploymentUrl}/mcp`)
 	const transport = new StreamableHTTPClientTransport(
-		createSmitheryUrl(`${deploymentUrl}/mcp`, mockConfig ?? {}),
+		createStreamableHTTPTransportUrl(
+			deploymentUrl,
+			"dummy-api-key",
+			mockConfig ?? {},
+		),
 	)
 
 	try {

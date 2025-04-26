@@ -5,6 +5,7 @@ import { useAuth } from "@/context/auth-context"
 import { MessageCircleWarning } from "lucide-react"
 import posthog from "posthog-js"
 import { useEffect, useState } from "react"
+import { ApiKeySensitivityAlert } from "../alerts/api-key-sensitivity-alert"
 
 // Hardcoded feature flag key
 const AUTH_COMMAND_FEATURE_FLAG = "auth-install-command"
@@ -39,7 +40,7 @@ export function InstallCommandBlock({
 		<>
 			<SimpleCodeBlock
 				code={command}
-				className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors"
+				// className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors"
 				disableAutoScroll={true}
 				showHeader={true}
 				headerLabel="terminal"
@@ -52,15 +53,7 @@ export function InstallCommandBlock({
 					})
 				}}
 			/>
-			{command.includes("--key") && (
-				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
-					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />
-					<span className="text-amber-300/90 text-xs">
-						Your smithery key is sensitive. Please don&apos;t share it with
-						anyone.
-					</span>
-				</div>
-			)}
+			{command.includes("--key") && <ApiKeySensitivityAlert apiKey="present" />}
 			{hasWindowsIssues && (
 				<div className="flex items-center gap-3 mt-2 py-2 px-3 rounded-md bg-amber-950/20">
 					<MessageCircleWarning className="h-4 w-4 text-amber-300/80 flex-shrink-0" />

@@ -7,6 +7,7 @@ import { InstallTabsSkeleton } from "./skeleton"
 import { fetchData } from "./fetch-data"
 import { SecurityOverview } from "./security-overview"
 import { ApiKeyError } from "./error/api-key-error"
+import { LoginError } from "./error/login-error"
 
 type Props = {
 	server: FetchedServer
@@ -22,11 +23,26 @@ export async function SidePanel({
 	// Fetch api key and saved config (if any) from server side
 	const result = await fetchData(server.id)
 
-	if (!result.ok) {
+	// If user is not logged in, show the NotLoggedInError component
+	if (result.type === "not_logged_in") {
+		return (
+			<div>
+				<h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+					<Terminal className="h-6 w-6" />
+					Installation
+				</h2>
+				<LoginError />
+			</div>
+		)
+	}
+
+	// If there's an API key error, show the ApiKeyError component
+	if (result.type === "api_key_error") {
 		return <ApiKeyError message={result.error} />
 	}
 
-	const { apiKey, savedConfig } = result.value
+	// Success case - user is logged in and has API key
+	const { apiKey, savedConfig } = result.data
 
 	return (
 		<div>

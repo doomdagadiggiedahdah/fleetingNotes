@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { SquareTerminal, TerminalIcon, Braces } from "lucide-react"
+import { SquareTerminal, Braces } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { CopyButton } from "./copy-button"
 import { ServerCodeBlock } from "./server-code-block"
@@ -79,7 +79,11 @@ export function CodeBlock({
 							</>
 						)}
 					</div>
-					<CopyButton code={code} className="hover:text-gray-200" />
+					<CopyButton
+						code={code}
+						className="hover:text-gray-200"
+						textSize="text-xs"
+					/>
 				</div>
 
 				{/* Code content */}
@@ -107,36 +111,32 @@ export function CodeBlock({
 
 	// Original implementation without header (for single-line commands)
 	return (
-		<div
-			className={cn(
-				"relative rounded-md bg-[#1d2021] text-white py-2 px-3 overflow-x-auto overflow-y-hidden flex items-center h-9 code-scrollbar hide-until-hover",
-				className,
-			)}
-			{...props}
-		>
-			{/* Terminal icon with fixed width */}
-			<div className="flex-shrink-0 w-5 mr-1.5">
-				<TerminalIcon className="h-4 w-4 text-gray-400" />
-			</div>
-
-			{/* Code content with right padding for copy button */}
-			<div className="flex-grow">
+		<div className="flex items-center gap-2 w-full">
+			{/* Code content in a simple box */}
+			<div
+				className={cn(
+					"flex-1 rounded-md border border-[#3c3836] bg-[#1d2021] px-3 py-2 text-sm font-mono min-w-0 text-white pb-0",
+					className,
+				)}
+				{...props}
+			>
 				<div
 					ref={contentRef}
-					className="whitespace-nowrap pr-8 font-mono text-xs"
+					className="whitespace-nowrap overflow-x-auto code-scrollbar pb-2"
 					dangerouslySetInnerHTML={{
 						__html: highlightedCode || `<pre><code>${code}</code></pre>`,
 					}}
 				/>
 			</div>
 
-			{/* Copy button in fixed position */}
-			<div className="flex-shrink-0 ml-1 sticky right-0 bg-[#1d2021]">
-				<CopyButton
-					code={code}
-					className="px-2 py-1 rounded-md hover:bg-gray-800"
-				/>
-			</div>
+			{/* Separate copy button */}
+			<CopyButton
+				code={code}
+				className="shrink-0 h-10 px-4 rounded-md border border-[#3c3836] bg-[#1d2021] text-white hover:bg-[#282828]"
+				textSize="text-md"
+				showText={false}
+				iconSize="h-4 w-4"
+			/>
 		</div>
 	)
 }

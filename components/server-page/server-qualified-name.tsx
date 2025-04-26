@@ -8,6 +8,7 @@ import {
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { FetchedServers } from "@/lib/utils/search-servers"
 import { useState } from "react"
+import { Copy } from "lucide-react"
 
 interface Props {
 	server: FetchedServer | FetchedServers[number]
@@ -38,10 +39,11 @@ export function ServerQualifiedName({ server, copyable = false }: Props) {
 					<TooltipTrigger asChild>
 						<button
 							onClick={copyable ? copyToClipboard : undefined}
-							className="hover:text-foreground transition-colors cursor-pointer overflow-hidden text-ellipsis"
+							className="hover:text-foreground transition-colors cursor-pointer overflow-hidden text-ellipsis flex items-center gap-1"
 							type="button"
 						>
 							{server.qualifiedName}
+							{copyable && <Copy className="w-3 h-3" />}
 						</button>
 					</TooltipTrigger>
 					<TooltipContent>

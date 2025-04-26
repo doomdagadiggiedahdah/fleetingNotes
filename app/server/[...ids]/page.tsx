@@ -13,6 +13,8 @@ import { redirect } from "next/navigation"
 import { ConfigTab } from "@/components/server-page/server-tabs/config"
 import { Container } from "@/components/layouts/container"
 import { fetchData } from "@/components/server-page/server-tabs/overview/side-panel/fetch-data"
+import { LoginError } from "@/components/server-page/server-tabs/overview/side-panel/error/login-error"
+import { ApiKeyError } from "@/components/server-page/server-tabs/overview/side-panel/error/api-key-error"
 
 type Props = {
 	params: Promise<{ ids: string[] }>
@@ -144,10 +146,25 @@ export default async function Page(props: Props) {
 	if (activeTab === "config") {
 		// Fetch saved config needed for the config tab
 		const result = await fetchData(server.id)
-		if (!result.ok) {
-			return <ErrorMessage message={result.error} />
+		if (result.type === "not_logged_in") {
+			return (
+				<main className="min-h-screen bg-background flex justify-center">
+					<Container className="w-full max-w-2xl py-24 px-4 sm:px-6 lg:px-8">
+						<LoginError />
+					</Container>
+				</main>
+			)
 		}
-		const { savedConfig } = result.value
+		if (result.type === "api_key_error") {
+			return (
+				<main className="min-h-screen bg-background flex justify-center">
+					<Container className="w-full max-w-2xl py-24 px-4 sm:px-6 lg:px-8">
+						<ApiKeyError message={result.error} />
+					</Container>
+				</main>
+			)
+		}
+		const { savedConfig } = result.data
 
 		return (
 			<main className="min-h-screen bg-background flex justify-center">

@@ -2,28 +2,30 @@ import type { JSONSchema } from "@/lib/types/server"
 import { fetchDefaultOrCreateApiKey } from "@/lib/actions/api-keys"
 import { getMe } from "@/lib/supabase/server"
 import { getSavedConfig } from "@/lib/actions/save-configuration"
-import { err, ok, type Result } from "@/lib/utils/result"
 
 type FetchedData = {
 	apiKey: string
 	savedConfig: JSONSchema | null
 }
 
-export async function fetchData(
-	serverId: string,
-): Promise<Result<FetchedData, string>> {
+type FetchResult =
+	| { type: "success"; data: FetchedData }
+	| { type: "not_logged_in" }
+	| { type: "api_key_error"; error: string }
+
+export async function fetchData(serverId: string): Promise<FetchResult> {
 	const currentUser = await getMe()
 	let savedConfig: JSONSchema | null = null
 
 	if (!currentUser) {
-		return err("User must be logged in")
+		return { type: "not_logged_in" }
 	}
 
 	// Fetch API key using the render-safe function
 	const keyResult = await fetchDefaultOrCreateApiKey()
 
 	if (!keyResult.ok) {
-		return err("Failed to fetch API key")
+		return { type: "api_key_error", error: "Failed to fetch API key" }
 	}
 
 	// Fetch saved config - failure here is not critical
@@ -39,8 +41,11 @@ export async function fetchData(
 		// Continue with null savedConfig
 	}
 
-	return ok({
-		apiKey: keyResult.value.key,
-		savedConfig, // This is not as critical as api key (will be null if failed)
-	})
+	return {
+		type: "success",
+		data: {
+			apiKey: keyResult.value.key,
+			savedConfig, // This is not as critical as api key (will be null if failed)
+		},
+	}
 }

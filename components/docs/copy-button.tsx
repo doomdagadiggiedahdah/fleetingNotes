@@ -9,12 +9,18 @@ interface CopyButtonProps
 	code: string
 	className?: string
 	copiedText?: string
+	textSize?: string
+	showText?: boolean
+	iconSize?: string
 }
 
 export function CopyButton({
 	code,
 	className,
 	copiedText = "Copied",
+	textSize = "text-xs",
+	showText = true,
+	iconSize = "h-3.5 w-3.5",
 	...props
 }: CopyButtonProps) {
 	const [copied, setCopied] = React.useState(false)
@@ -34,13 +40,17 @@ export function CopyButton({
 		>
 			{copied ? (
 				<>
-					<CheckIcon className="h-3.5 w-3.5 text-green-400" />
-					<span className="text-xs text-green-400">{copiedText}</span>
+					<CheckIcon className={cn(iconSize, "text-green-400")} />
+					{showText && (
+						<span className={cn(textSize, "text-green-400")}>{copiedText}</span>
+					)}
 				</>
 			) : (
 				<>
-					<Copy className="h-3.5 w-3.5 text-gray-400" />
-					<span className="text-xs text-gray-400">Copy</span>
+					<Copy className={cn(iconSize, "text-gray-400")} />
+					{showText && (
+						<span className={cn(textSize, "text-gray-400")}>Copy</span>
+					)}
 				</>
 			)}
 		</button>
