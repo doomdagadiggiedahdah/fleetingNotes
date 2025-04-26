@@ -13,6 +13,7 @@ export type ClientType =
 	| "roocode"
 	| "augment"
 	| "boltai"
+	| "amazon-bedrock"
 
 // Define the order of clients
 export const CLIENT_ORDER: ClientType[] = [
@@ -29,6 +30,7 @@ export const CLIENT_ORDER: ClientType[] = [
 	"vscode-insiders",
 	"witsy",
 	"enconvo",
+	"amazon-bedrock",
 ]
 
 export interface ClientConfig {
@@ -117,6 +119,12 @@ export const CLIENTS_CONFIG: Record<ClientType, ClientConfig> = {
 	boltai: {
 		label: "BoltAI",
 		homepage: "https://boltai.com",
+		usesRunCommand: false,
+		usesCustomInstall: false,
+	},
+	"amazon-bedrock": {
+		label: "Amazon Bedrock",
+		homepage: "https://aws.amazon.com/bedrock/",
 		usesRunCommand: false,
 		usesCustomInstall: false,
 	},
