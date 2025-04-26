@@ -7,7 +7,6 @@ import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
-import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -27,10 +26,7 @@ const ReturnTypeSchema = RegistryServerSchema.pick({
 		.nullable(),
 	tools: z
 		.array(
-			z.object({
-				name: z.string(),
-				description: z.string().nullable(),
-			}),
+			z.any(), // Changed from z.object({name, description}) to accept full Tool object
 		)
 		.nullable(),
 })
@@ -98,14 +94,8 @@ export async function GET(
 				: []),
 		]
 
-		// Format tools as name-description pairs if they exist
 		const tools =
-			server.tools && Array.isArray(server.tools)
-				? server.tools.map((tool: Tool) => ({
-						name: tool.name,
-						description: tool.description || null,
-					}))
-				: null
+			server.tools && Array.isArray(server.tools) ? server.tools : null
 
 		return NextResponse.json(
 			ReturnTypeSchema.parse({
