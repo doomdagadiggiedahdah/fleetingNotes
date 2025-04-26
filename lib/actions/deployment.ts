@@ -406,11 +406,16 @@ export async function createDeploymentForServer(
 					const backgroundUpdate = async () => {
 						// Populate `configSchema` and `tools` in server based on call to server
 
+						console.log("populating configSchema and tools")
+
 						// Run both API calls in parallel
 						const [configSchemaResult, toolResult] = await Promise.all([
 							fetchConfigSchema(deploymentUrl),
 							fetchServerTools(deploymentUrl),
 						])
+
+						console.log("configSchemaResult.ok", configSchemaResult.ok)
+						console.log("toolResult.ok", toolResult.ok)
 
 						// Prepare update data based on results
 						const updateData: Partial<typeof servers.$inferInsert> = {}
