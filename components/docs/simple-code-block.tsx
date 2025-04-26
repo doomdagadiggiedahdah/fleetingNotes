@@ -89,7 +89,7 @@ export function CodeBlock({
 				{/* Code content */}
 				{/* biome-ignore lint/nursery/noStaticElementInteractions: <explanation> */}
 				<div
-					className="bg-[#1d2021] text-white py-2 px-3 overflow-auto max-h-[400px] code-scrollbar hide-until-hover"
+					className="bg-[#1d2021] text-white py-2 px-3 overflow-auto max-h-[600px] code-scrollbar hide-until-hover"
 					onMouseEnter={() => setIsHovering(true)}
 					onMouseLeave={() => setIsHovering(false)}
 					{...props}

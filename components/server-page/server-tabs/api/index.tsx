@@ -97,33 +97,39 @@ console.log(\`Available tools: \${tools.map(t => t.name).join(", ")}\`)
 		? `\
 import mcp
 from mcp.client.websocket import websocket_client
-from urllib.parse import urlparse, parse_qs
+import json
 import base64
+${
+	httpConfig
+		? `
+config = ${httpConfig.replace(/^,\s*/, "")}
+# Encode config in base64
+config_b64 = base64.b64encode(json.dumps(config).encode())
+smithery_api_key = "your-api-key"
 
 # Create server URL
-server_url = urlparse("${server.deploymentUrl}/mcp")${
-				httpConfig
-					? `
-
-# Prepare config
-config = ${httpConfig.replace(/^,\s*/, "")}
-config_str = json.dumps(config)
-config_b64 = base64.b64encode(config_str.encode()).decode()`
-					: ""
-			}
-
-# Add config and API key to URL
-params = {${httpConfig ? '"config": config_b64, ' : ""}"api_key": "your-smithery-api-key"}
-url = smithery.create_url(server_url, params)
+url = f"${server.deploymentUrl.replace("https://", "wss://")}/ws?config={config_b64}&api_key={smithery_api_key}"`
+		: `
+smithery_api_key = "your-api-key"
+url = f"${server.deploymentUrl.replace("https://", "wss://")}/ws?api_key={smithery_api_key}"`
+}
 
 async def main():
     # Connect to the server using websocket client
     async with websocket_client(url) as streams:
         async with mcp.ClientSession(*streams) as session:
+            # Initialize the connection
+            await session.initialize()
             # List available tools
             tools_result = await session.list_tools()
             print(f"Available tools: {', '.join([t.name for t in tools_result.tools])}")
-`
+
+            # Example of calling a tool:
+            # result = await session.call_tool("tool-name", arguments={"arg1": "value"})
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())`
 		: `\
 import mcp
 from mcp.client.stdio import stdio_client
@@ -187,6 +193,7 @@ async def main():
 								<SimpleCodeBlock
 									code="npm install @modelcontextprotocol/sdk"
 									language="bash"
+									showHeader={true}
 									onCopy={() => {
 										posthog.capture("Code Copied", {
 											serverQualifiedName: server.qualifiedName,
@@ -219,12 +226,25 @@ async def main():
 								</h3>
 								<p className="mb-4">Install the official MCP SDKs using pip:</p>
 								<SimpleCodeBlock
-									code="pip install mcp"
+									code='pip install "mcp[cli]"'
 									language="bash"
+									showHeader={true}
 									onCopy={() => {
 										posthog.capture("Code Copied", {
 											serverQualifiedName: server.qualifiedName,
 											eventTag: "install_pip",
+										})
+									}}
+								/>
+								<p className="mt-4 mb-4">Or using uv:</p>
+								<SimpleCodeBlock
+									code='uv add "mcp[cli]"'
+									language="bash"
+									showHeader={true}
+									onCopy={() => {
+										posthog.capture("Code Copied", {
+											serverQualifiedName: server.qualifiedName,
+											eventTag: "install_uv",
 										})
 									}}
 								/>
