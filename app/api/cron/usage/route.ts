@@ -21,18 +21,17 @@ export async function GET(request: Request) {
 
 	try {
 		// Create a HogQL query to fetch all tool call events and group by serverId
-		// "Event Tracked" name exclusively tracks tool calls.
 		const queryData = {
 			query: {
 				kind: "HogQLQuery",
 				query: `\
 SELECT 
     events.properties.serverId as serverId,
-    countIf(event = 'Event Tracked' OR event = 'Tool Called') as useCount,
+    countIf(event = 'Tool Called') as useCount,
     countIf(event = 'Bug Report') as bugReportCount
 FROM events
 WHERE 
-    (event = 'Event Tracked' OR event = 'Tool Called' OR event = 'Bug Report')
+    (event = 'Tool Called' OR event = 'Bug Report')
 	AND serverId IS NOT NULL
 	AND timestamp >= now() - INTERVAL 1 MONTH
 GROUP BY serverId
