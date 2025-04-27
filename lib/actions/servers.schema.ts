@@ -56,4 +56,8 @@ export const updateRepoConnectionSchema = z.object({
 			(val) => !val.endsWith("/"),
 			"Base directory cannot end with a trailing slash",
 		),
+	branch: z
+		.string()
+		.optional()
+		.transform((val) => (val === "" ? undefined : val)),
 })

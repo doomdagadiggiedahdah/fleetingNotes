@@ -72,20 +72,25 @@ export const getDeployments = async (serverId: string) => {
 	return deployments ?? []
 }
 
-async function getCommitInfo(octokit: Octokit, owner: string, repo: string) {
-	const branch = await getDefaultBranch(octokit, owner, repo)
+async function getCommitInfo(
+	octokit: Octokit,
+	owner: string,
+	repo: string,
+	branch?: string,
+) {
+	const refBranch = branch ?? (await getDefaultBranch(octokit, owner, repo))
 
 	const commit = await octokit.request(
 		"GET /repos/{owner}/{repo}/commits/{ref}",
 		{
 			owner,
 			repo,
-			ref: branch,
+			ref: refBranch,
 		},
 	)
 	return {
 		...commit,
-		branch,
+		branch: refBranch,
 	}
 }
 
@@ -129,7 +134,7 @@ export async function createDeploymentForServer(
 	sync = false,
 ) {
 	// Get repo details
-	const { repoOwner, repoName } = serverRepo
+	const { repoOwner, repoName, branch } = serverRepo
 
 	const installTokenResult = await getInstallationToken(repoOwner, repoName)
 
@@ -145,8 +150,9 @@ export async function createDeploymentForServer(
 		setupGitSandbox(
 			`https://x-access-token:${installToken}@github.com/${repoOwner}/${repoName}`,
 			serverRepo.baseDirectory,
+			branch ?? undefined,
 		),
-		toResult(getCommitInfo(octokit, repoOwner, repoName)),
+		toResult(getCommitInfo(octokit, repoOwner, repoName, branch ?? undefined)),
 	])
 
 	if (!gitSandboxResult.ok) {

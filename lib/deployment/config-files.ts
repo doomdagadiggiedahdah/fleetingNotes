@@ -42,6 +42,9 @@ primary_region = 'iad'
   memory = '2gb'
   cpu_kind = 'performance'
   cpus = 1
+
+[env]
+  PORT = 8080
 `
 	}
 	return `\
@@ -77,6 +80,9 @@ primary_region = 'iad'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+[env]
+  PORT = 8080
 `
 }
 
@@ -84,7 +90,10 @@ primary_region = 'iad'
  * Creates a Dockerfile that wraps the user's Dockerfile to launch as a server.
  * Should be named `Dockerfile.smithery`
  */
-export function createDockerfile(baseDockerfile: string, config: ServerConfig) {
+export function wrapDockerfileWithSidecar(
+	baseDockerfile: string,
+	config: ServerConfig,
+) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
 FROM registry.fly.io/sidecar:deployment-01JSJN17SWDXGHDGCFJHAPJJ68 as sidecar_image

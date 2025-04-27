@@ -1,7 +1,7 @@
 import uniqid from "uniqid"
 
 import {
-	createDockerfile,
+	wrapDockerfileWithSidecar,
 	createFlyConfig,
 } from "@/lib/deployment/config-files"
 import {
@@ -42,6 +42,7 @@ export function getDeployedUrl(flyAppId: string) {
 export async function setupGitSandbox(
 	gitUrl: string,
 	baseDirectory: string,
+	branch?: string,
 ): Promise<Result<GitSandbox, Error>> {
 	// Uses the E2B template Dockerfile
 	try {
@@ -50,7 +51,7 @@ export async function setupGitSandbox(
 			await sandbox.commands.run("mkdir ~/workspace")
 			const cloneRepoResult = await toCommandResult(
 				sandbox.commands.run(
-					`git clone --single-branch --depth 1 ${gitUrl} .`,
+					`git clone --single-branch --depth 1${branch ? ` --branch ${branch}` : ""} ${gitUrl} .`,
 					{ cwd: REPO_WORKING_DIR },
 				),
 			)
@@ -173,17 +174,20 @@ export async function prepareBuild(
 	if (!smitheryConfigResult.ok) return smitheryConfigResult
 
 	// Create a new dockerfile based on the above
-	const newDockerfile = createDockerfile(
-		dockerfileResult.value,
-		smitheryConfigResult.value,
-	)
+	const finalDockerfile =
+		smitheryConfigResult.value.startCommand.type === "stdio"
+			? wrapDockerfileWithSidecar(
+					dockerfileResult.value,
+					smitheryConfigResult.value,
+				)
+			: dockerfileResult.value
 
-	await writeFile(sbx, "Dockerfile.smithery", newDockerfile)
+	await writeFile(sbx, "Dockerfile.smithery", finalDockerfile)
 	// For testing we require at least one machine running
 	await writeFile(sbx, "fly.toml", createFlyConfig(flyAppId))
 
 	return ok({
-		dockerfile: newDockerfile,
+		dockerfile: finalDockerfile,
 		smitheryConfig: smitheryConfigResult.value,
 	})
 }

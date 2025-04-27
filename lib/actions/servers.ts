@@ -286,7 +286,7 @@ export async function updateRepoConnection(
 	serverId: string,
 	formData: unknown,
 ) {
-	const { baseDirectory } = updateRepoConnectionSchema.parse(formData)
+	const { baseDirectory, branch } = updateRepoConnectionSchema.parse(formData)
 
 	// Check ownership first
 	const serverResult = await getMyServer(serverId)
@@ -300,6 +300,7 @@ export async function updateRepoConnection(
 			.update(serverRepos)
 			.set({
 				baseDirectory,
+				branch: branch ?? null,
 				updatedAt: new Date(),
 			})
 			.where(eq(serverRepos.serverId, serverId))
@@ -310,8 +311,8 @@ export async function updateRepoConnection(
 		revalidatePath(`/server/${server.qualifiedName}`)
 		return { success: true }
 	} catch (error) {
-		console.error("Error updating base directory:", error)
-		return { error: "Failed to update base directory" }
+		console.error("Error updating repository connection:", error)
+		return { error: "Failed to update repository connection" }
 	}
 }
 

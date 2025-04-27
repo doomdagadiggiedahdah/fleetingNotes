@@ -48,6 +48,7 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 		resolver: zodResolver(updateRepoConnectionSchema),
 		defaultValues: {
 			baseDirectory: serverRepo.baseDirectory,
+			branch: serverRepo.branch || "",
 		},
 	})
 
@@ -62,13 +63,17 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 					variant: "destructive",
 				})
 			} else {
+				toast({
+					title: "Success",
+					description: "Repository settings updated successfully",
+				})
 				router.refresh()
 			}
 		} catch (error) {
 			console.error(error)
 			toast({
 				title: "Error",
-				description: "Failed to update base directory",
+				description: "Failed to update repository settings",
 				variant: "destructive",
 			})
 		} finally {
@@ -104,13 +109,25 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 						</div>
 					</div>
 
-					{/* Base Directory Section */}
+					{/* Repository Settings Section */}
 					<div className="space-y-4">
 						<div>
-							<h3 className="font-medium mb-1.5">Base Directory</h3>
-							<p className="text-sm text-muted-foreground">
-								The directory containing your Dockerfile and smithery.yaml files
-							</p>
+							<h3 className="font-medium mb-1.5">Repository Settings</h3>
+							<div className="space-y-4">
+								<div>
+									<h4 className="text-sm font-medium mb-1">Base Directory</h4>
+									<p className="text-sm text-muted-foreground">
+										The directory containing your Dockerfile and smithery.yaml
+										files
+									</p>
+								</div>
+								<div>
+									<h4 className="text-sm font-medium mb-1">Branch</h4>
+									<p className="text-sm text-muted-foreground">
+										Specify which branch to deploy from (optional)
+									</p>
+								</div>
+							</div>
 						</div>
 
 						<Form {...form}>
@@ -118,23 +135,40 @@ export function RepoConnectionForm({ serverId, serverRepo }: Props) {
 								onSubmit={form.handleSubmit(onSubmit)}
 								className="space-y-4"
 							>
-								<FormField
-									control={form.control}
-									name="baseDirectory"
-									render={({ field }) => (
-										<FormItem>
-											<FormControl>
-												<Input placeholder="." {...field} />
-											</FormControl>
-											<FormMessage />
-											<p className="text-xs text-muted-foreground">
-												Use &quot;.&quot; for root directory
-											</p>
-										</FormItem>
-									)}
-								/>
+								<div className="space-y-4">
+									<FormField
+										control={form.control}
+										name="baseDirectory"
+										render={({ field }) => (
+											<FormItem>
+												<FormControl>
+													<Input placeholder="." {...field} />
+												</FormControl>
+												<FormMessage />
+												<p className="text-xs text-muted-foreground">
+													Use &quot;.&quot; for root directory
+												</p>
+											</FormItem>
+										)}
+									/>
+									<FormField
+										control={form.control}
+										name="branch"
+										render={({ field }) => (
+											<FormItem>
+												<FormControl>
+													<Input placeholder="main" {...field} />
+												</FormControl>
+												<FormMessage />
+												<p className="text-xs text-muted-foreground">
+													Leave empty to use the default branch
+												</p>
+											</FormItem>
+										)}
+									/>
+								</div>
 								<Button type="submit" disabled={isSubmitting}>
-									{isSubmitting ? "Saving..." : "Save Directory"}
+									{isSubmitting ? "Saving..." : "Save Repository Settings"}
 								</Button>
 							</form>
 						</Form>
