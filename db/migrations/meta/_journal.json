@@ -456,6 +456,13 @@
 			"when": 1745341487845,
 			"tag": "0066_migrate_config_owners",
 			"breakpoints": true
+		},
+		{
+			"idx": 67,
+			"version": "7",
+			"when": 1745790351256,
+			"tag": "0067_petite_storm",
+			"breakpoints": true
 		}
 	]
 }
