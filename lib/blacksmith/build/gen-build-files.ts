@@ -404,7 +404,7 @@ async function createMCPClient(
 			}
 
 			if (!existingSmitheryConfig) {
-				const validatedOutput = validateServer(finalOutput.smitheryConfig)
+				const validatedOutput = validateServerConfig(finalOutput.smitheryConfig)
 				if (validatedOutput.isError) {
 					return {
 						content: [
@@ -572,7 +572,7 @@ function postProcessOutput(
  * Validates the output of the model by calling the command functions and
  * doing input checking.
  */
-function validateServer(output: ExtractServerConfig) {
+function validateServerConfig(output: ServerConfig) {
 	const ajv = new Ajv()
 
 	let evaluated_output = null
@@ -603,6 +603,13 @@ function validateServer(output: ExtractServerConfig) {
 		return {
 			message: `Could not compile JSON Schema \`configSchema\` Error: ${e}`,
 			isError: true,
+		} as const
+	}
+
+	if (startCommand.type === "http") {
+		return {
+			message: "Config set.",
+			isError: false,
 		} as const
 	}
 

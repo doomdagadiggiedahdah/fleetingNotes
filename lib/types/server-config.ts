@@ -7,28 +7,49 @@ export const StartCommandSchema = z
 	.union([
 		z.object({
 			type: z.literal("stdio"),
-			configSchema: JSONSchemaSchema,
-			commandFunction: z
-				.string()
-				.describe(
-					"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
-				),
-			exampleConfig: z
-				.any()
-				.optional()
-				.describe("An example config that satisfies the configSchema"),
+			commandFunction: z.string().describe(
+				`\
+A lambda Javascript function that takes in the config object and returns an object of type StdioConnection:
+
+interface StdioConnection {
+	command: string,
+	args?: string[],
+	env?: Record<string, string>,
+}
+
+<example>
+\`\`\`js
+(config) => ({
+	command:'npx',
+	args:['-y', '@modelcontextprotocol/server-brave-search'],
+	env: {
+		BRAVE_API_KEY: config.braveApiKey
+	}
+})
+\`\`\`
+</example>
+`,
+			),
 		}),
 		z.object({
 			type: z.literal("http"),
-			configSchema: JSONSchemaSchema,
-			exampleConfig: z
-				.any()
-				.optional()
-				.describe("An example config that satisfies the configSchema"),
 		}),
 	])
+	.and(
+		z.object({
+			configSchema: JSONSchemaSchema.describe(
+				`The JSON Schema to validate a end-user supplied config object that will be passed to the commandFunction. Configuration variables should always be in camelCase.`,
+			),
+			exampleConfig: z
+				.any()
+				.describe(
+					`Create an example config object that will be used to help users fill out the form. Make this look as realistic as possible with dummy variables. The example config should showcase all possible configuration variables defined in the configSchema. This example will be used to create test connections to the server.`,
+				),
+		}),
+	)
 	.describe("Determines how to start the server.")
 
+// Smithery.yaml
 export const ServerConfigSchema = z.object({
 	build: z
 		.object({

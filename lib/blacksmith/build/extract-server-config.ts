@@ -3,7 +3,7 @@ import { JSONSchemaSchema } from "@/lib/types/server"
 import { ServerConfigSchema } from "@/lib/types/server-config"
 import { z } from "zod"
 
-export const StartCommandSchema = z
+const StartCommandSchema = z
 	.object({
 		configSchema: JSONSchemaSchema.describe(`\
 The JSON Schema to validate a end-user supplied config object that will be passed to the commandFunction. Configuration variables should always be in camelCase.`),
