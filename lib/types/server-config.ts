@@ -4,19 +4,29 @@ import { z } from "zod"
 import { JSONSchemaSchema } from "./server"
 
 export const StartCommandSchema = z
-	.object({
-		type: z.literal("stdio"),
-		configSchema: JSONSchemaSchema,
-		commandFunction: z
-			.string()
-			.describe(
-				"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
-			),
-		exampleConfig: z
-			.any()
-			.optional()
-			.describe("An example config that satisfies the configSchema"),
-	})
+	.union([
+		z.object({
+			type: z.literal("stdio"),
+			configSchema: JSONSchemaSchema,
+			commandFunction: z
+				.string()
+				.describe(
+					"A lambda Javascript function that takes in the config object and returns a StdioConnection object.",
+				),
+			exampleConfig: z
+				.any()
+				.optional()
+				.describe("An example config that satisfies the configSchema"),
+		}),
+		z.object({
+			type: z.literal("http"),
+			configSchema: JSONSchemaSchema,
+			exampleConfig: z
+				.any()
+				.optional()
+				.describe("An example config that satisfies the configSchema"),
+		}),
+	])
 	.describe("Determines how to start the server.")
 
 export const ServerConfigSchema = z.object({
