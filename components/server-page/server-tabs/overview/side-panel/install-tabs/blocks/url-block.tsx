@@ -1,16 +1,16 @@
-import type { FetchedServer } from "@/lib/utils/get-server"
-import type { JsonObject } from "@/lib/types/json"
-import { createStreamableHTTPTransportUrl } from "@/lib/utils/create-streamable-http-transport-url"
 import { CodeBlock } from "@/components/docs/simple-code-block"
-import { ApiKeySensitivityAlert } from "../alerts/api-key-sensitivity-alert"
-import { Info } from "lucide-react"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
+import type { JsonObject } from "@/lib/types/json"
 import { cn } from "@/lib/utils"
+import type { FetchedServer } from "@/lib/utils/get-server"
+import { createSmitheryUrl } from "@smithery/sdk"
+import { Info } from "lucide-react"
+import { ApiKeySensitivityAlert } from "../alerts/api-key-sensitivity-alert"
 
 interface UrlBlockProps {
 	server: FetchedServer
@@ -27,10 +27,10 @@ export const UrlBlock = ({
 }: UrlBlockProps) => {
 	const serverUrl = server.deploymentUrl || ""
 
-	const transportUrl = createStreamableHTTPTransportUrl(
+	const transportUrl = createSmitheryUrl(
 		serverUrl,
-		apiKey,
 		usingSavedConfig ? undefined : config,
+		apiKey,
 	).toString()
 
 	return (

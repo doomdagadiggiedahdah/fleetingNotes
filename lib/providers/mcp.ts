@@ -17,7 +17,7 @@ import {
 	TimeoutError,
 } from "../types/errors"
 import { withTimeout } from "../utils"
-import { createStreamableHTTPTransportUrl } from "../utils/create-streamable-http-transport-url"
+import { createSmitheryUrl } from "@smithery/sdk"
 
 interface MCPClientConfig {
 	url: string
@@ -76,10 +76,10 @@ export class MCPClient {
 				)
 			}
 
-			const connectionUrl = createStreamableHTTPTransportUrl(
+			const connectionUrl = createSmitheryUrl(
 				this.config.url,
-				apiKey,
 				this.config.config ?? {},
+				apiKey,
 			)
 
 			this.transport = new StreamableHTTPClientTransport(connectionUrl)
