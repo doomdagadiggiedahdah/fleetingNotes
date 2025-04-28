@@ -49,7 +49,7 @@ export async function fetchServerTools(
 		await client.connect(transport)
 	} catch (e) {
 		console.error(`[MCP] Connection error ${deploymentUrl}:`, e)
-		await transport.terminateSession()
+		transport.terminateSession().catch(() => {})
 		return err(
 			`Unable to connect to server: ${e instanceof Error ? e.message : "Unknown error"}`,
 		)
@@ -70,6 +70,6 @@ export async function fetchServerTools(
 			`Unable to fetch tools: ${error instanceof Error ? error.message : "Unknown error"}`,
 		)
 	} finally {
-		await transport.terminateSession()
+		transport.terminateSession().catch(() => {})
 	}
 }

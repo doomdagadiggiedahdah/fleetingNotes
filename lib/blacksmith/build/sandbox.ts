@@ -1,8 +1,9 @@
 import uniqid from "uniqid"
 
 import {
+	createStdioFlyConfig,
+	createHttpFlyConfig,
 	wrapDockerfileWithSidecar,
-	createFlyConfig,
 } from "@/lib/deployment/config-files"
 import {
 	type ServerConfig,
@@ -184,7 +185,13 @@ export async function prepareBuild(
 
 	await writeFile(sbx, "Dockerfile.smithery", finalDockerfile)
 	// For testing we require at least one machine running
-	await writeFile(sbx, "fly.toml", createFlyConfig(flyAppId))
+	await writeFile(
+		sbx,
+		"fly.toml",
+		smitheryConfigResult.value.startCommand.type === "http"
+			? createHttpFlyConfig(flyAppId)
+			: createStdioFlyConfig(flyAppId),
+	)
 
 	return ok({
 		dockerfile: finalDockerfile,

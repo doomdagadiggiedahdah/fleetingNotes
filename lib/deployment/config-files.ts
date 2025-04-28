@@ -6,47 +6,7 @@ import type { ServerConfig } from "../types/server-config"
  * @param appId
  * @returns
  */
-export function createFlyConfig(appId: string, performance = false) {
-	if (performance) {
-		// Performance machine settings
-		return `\
-app = '${appId}'
-primary_region = 'iad'
-
-[build]
-  dockerfile = "Dockerfile.smithery"
-
-[http_service]
-  internal_port = 8080
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  
-  [http_service.concurrency]
-    type = "connections"
-    soft_limit = 80
-    hard_limit = 120
-
-  [[http_service.checks]]
-    interval = "30s"
-    grace_period = "5s"
-    method = "get"
-    path = "/.well-known/mcp/smithery.json"
-    protocol = "http"
-    timeout = "8s"
-    tls_skip_verify = false
-    [http_service.checks.headers]
-      X-Forwarded-Proto = "https"
-  
-[[vm]]
-  memory = '2gb'
-  cpu_kind = 'performance'
-  cpus = 1
-
-[env]
-  PORT = 8080
-`
-	}
+export function createStdioFlyConfig(appId: string) {
 	return `\
 app = '${appId}'
 primary_region = 'iad'
@@ -61,7 +21,7 @@ primary_region = 'iad'
   min_machines_running = 0
   
   [http_service.concurrency]
-    type = "connections"
+    type = "requests"
     soft_limit = 40
     hard_limit = 100
 
@@ -76,6 +36,32 @@ primary_region = 'iad'
     [http_service.checks.headers]
       X-Forwarded-Proto = "https"
   
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+`
+}
+
+export function createHttpFlyConfig(appId: string) {
+	return `\
+app = '${appId}'
+primary_region = 'iad'
+
+[build]
+  dockerfile = "Dockerfile.smithery"
+
+[http_service]
+  internal_port = 8080
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 800
+    hard_limit = 1000
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
