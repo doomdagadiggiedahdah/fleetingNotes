@@ -36,18 +36,24 @@ export default function CareersPage() {
 						<div>
 							<h3 className="text-lg font-semibold mb-2">The Role</h3>
 							<p className="text-muted-foreground mb-4">
-								Join us as one of the first five team members at Smithery, where
-								we&apos;re building the core infrastructure for the next
-								generation of AI agents. As Founding Technical Staff,
-								you&apos;ll help define our product, culture, and technical
-								foundation from the ground up.
+								Join us as one of the first five people at Smithery to build the
+								infrastructure for AI agents and MCPs. As Founding Technical
+								Staff, you&apos;ll be building a startup in its primordial phase
+								and shipping in an environment that&apos;s high ownership, constantly
+								changing, and fast-paced. Your work will define our product,
+								culture, and technical foundations.
 							</p>
-
+							<p className="text-muted-foreground mb-4">
+								This role is flexible and the scope is up to us to mutually
+								define. It may include:
+							</p>
 							<ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-								<li>Architect and scale MCP hosting infrastructure</li>
-								<li>Build systems for MCP discovery, CI/CD, and deployment</li>
-								<li>Develop high-performance backend services</li>
-								<li>Ship fast and often</li>
+								<li>Architecting and scaling MCP hosting infrastructure</li>
+								<li>
+									Building systems for MCP discovery, CI/CD, and deployment
+								</li>
+								<li>Engineering AI agents that optimize tool calling</li>
+								<li>Empowering and engaging with a community of developers</li>
 							</ul>
 						</div>
 
@@ -55,19 +61,19 @@ export default function CareersPage() {
 							<h3 className="text-lg font-semibold mb-2">Area of Expertise</h3>
 
 							<p className="text-muted-foreground mb-4">
-								We&apos;re seeking people with deep expertise in one of these
-								areas:
+								We&apos;re seeking people with deep expertise in{" "}
+								<strong>one of</strong> these areas:
 							</p>
 							<ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-								<li>Design engineering with strong UI/UX taste</li>
-								<li>Distributed systems and infrastructure engineering</li>
+								<li>Design engineering with exceptional UI/UX taste</li>
 								<li>
-									Virtualization and containerization (e.g., Firecracker,
-									microVMs)
+									Distributed systems, containerization and infrastructure
+									engineering
 								</li>
-								<li>Developer tools, SDKs, and API design</li>
+								<li>Security, authentication and payments engineering</li>
 								<li>Prompt engineering and building AI agents with LLMs</li>
-								<li>Community building and growth hacking</li>
+								<li>Developer tools, SDKs, and API design</li>
+								<li>Developer community building and growth hacking</li>
 							</ul>
 						</div>
 
@@ -76,7 +82,7 @@ export default function CareersPage() {
 							<ul className="list-disc pl-6 space-y-2 text-muted-foreground">
 								<li>Authorized to work in either U.S. or Singapore</li>
 								<li>
-									Willing to travel to San Francisco up to 8 weeks per year
+									Able to travel to San Francisco for up to 8 weeks per year
 								</li>
 								<li>
 									Comfortable in a hybrid (remote/in-person) work environment
@@ -88,9 +94,9 @@ export default function CareersPage() {
 							<Button asChild size="lg">
 								<Link href="mailto:careers@smithery.ai">Apply Now</Link>
 							</Button>
-							<p className="text-muted-foreground mt-2">
+							<p className="text-muted-foreground text-sm mt-2">
 								<i>
-									Send your resume and a short note highlighting your most
+									Please send your resume and a concise highlight of your most
 									impressive accomplishment in your area of expertise.
 								</i>
 							</p>
