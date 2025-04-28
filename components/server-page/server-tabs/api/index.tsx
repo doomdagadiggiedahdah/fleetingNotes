@@ -58,16 +58,10 @@ export function ApiTab({ server }: ApiTabProps) {
 	// Generate transport code based on available connections
 	const typescriptTransportCode = server.deploymentUrl
 		? `import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+import { createSmitheryUrl } from "@smithery/sdk"
 
-const serverUrl = new URL("${server.deploymentUrl}/mcp")
-${
-	httpConfig
-		? `const config = ${httpConfig.replace(/^,\s*/, "")}
-const configString = JSON.stringify(config)
-serverUrl.searchParams.set("config", btoa(configString))`
-		: ""
-}
-serverUrl.searchParams.set("api_key", "your-smithery-api-key")
+const config = ${httpConfig.replace(/^,\s*/, "")}
+const serverUrl = createSmitheryUrl("${server.deploymentUrl}", config, "your-smithery-api-key")
 
 const transport = new StreamableHTTPClientTransport(serverUrl)`
 		: `import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -191,7 +185,7 @@ async def main():
 								</h3>
 								<p className="mb-4">Install the official MCP SDKs using npm:</p>
 								<SimpleCodeBlock
-									code="npm install @modelcontextprotocol/sdk"
+									code="npm install @modelcontextprotocol/sdk @smithery/sdk"
 									language="bash"
 									showHeader={true}
 									onCopy={() => {
@@ -226,7 +220,7 @@ async def main():
 								</h3>
 								<p className="mb-4">Install the official MCP SDKs using pip:</p>
 								<SimpleCodeBlock
-									code='pip install "mcp[cli]"'
+									code='pip install "mcp[cli]" smithery'
 									language="bash"
 									showHeader={true}
 									onCopy={() => {
@@ -238,7 +232,7 @@ async def main():
 								/>
 								<p className="mt-4 mb-4">Or using uv:</p>
 								<SimpleCodeBlock
-									code='uv add "mcp[cli]"'
+									code='uv add "mcp[cli]" smithery'
 									language="bash"
 									showHeader={true}
 									onCopy={() => {
@@ -261,7 +255,7 @@ async def main():
 												while waiting for Anthropic to introduce the streamable
 												HTTP client transport in the{" "}
 												<a
-													href="https://github.com/modelcontextprotocol/python-sdk"
+													href="https://github.com/modelcontextprotocol/python-sdk/issues/443"
 													target="_blank"
 													className="underline hover:text-amber-300"
 												>

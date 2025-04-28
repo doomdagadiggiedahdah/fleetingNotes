@@ -37,9 +37,11 @@ interface StdioConnection {
 	])
 	.and(
 		z.object({
-			configSchema: JSONSchemaSchema.describe(
-				`The JSON Schema to validate a end-user supplied config object that will be passed to the commandFunction. Configuration variables should always be in camelCase.`,
-			),
+			configSchema: JSONSchemaSchema.nullish()
+				.transform((schema) => schema ?? {})
+				.describe(
+					`The JSON Schema to validate a end-user supplied config object that will be passed to the commandFunction. Configuration variables should always be in camelCase.`,
+				),
 			exampleConfig: z
 				.any()
 				.describe(
