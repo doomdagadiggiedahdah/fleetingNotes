@@ -1,10 +1,4 @@
 import { CodeBlock } from "@/components/docs/simple-code-block"
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@/components/ui/tooltip"
 import type { JsonObject } from "@/lib/types/json"
 import { cn } from "@/lib/utils"
 import type { FetchedServer } from "@/lib/utils/get-server"
@@ -45,27 +39,14 @@ export const UrlBlock = ({
 	return (
 		<div className="flex flex-col gap-0 py-2 pb-4">
 			<div className="flex flex-col gap-3">
-				<div className="flex items-center gap-2">
-					<p className="text-sm text-muted-foreground">
-						Use this URL to connect to the server
-					</p>
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Info className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-							</TooltipTrigger>
-							<TooltipContent
-								className={cn(
-									"bg-primary/50 backdrop-blur-sm border-primary/20",
-								)}
-							>
-								<p>
-									This URL works only with clients that support streamable HTTP
-									transport.
-								</p>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+				<p className="text-sm text-muted-foreground">
+					Use this URL to connect to the server
+				</p>
+				<div className="flex items-center gap-3 py-2 px-3 rounded-md bg-blue-950/20">
+					<Info className="h-4 w-4 text-blue-300/80 flex-shrink-0" />
+					<span className="text-blue-300/90 text-xs">
+						This URL works only with clients that support streamable HTTP transport.
+					</span>
 				</div>
 				<CodeBlock
 					code={finalUrl}

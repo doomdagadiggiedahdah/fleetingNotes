@@ -147,8 +147,8 @@ export async function getOrCreateProfile(): Promise<
 		return err("Username not found")
 	}
 
-	const qualifiedName = await generateProfileQualifiedName() // e.g. "clever-dolphin-a9X3"
-	const displayName = "Default Profile"
+	const qualifiedName = await generateProfileQualifiedName() // e.g. "clever-dolphin-a9X3dB"
+	const displayName = "Personal"
 	const description = "My saved configurations"
 
 	try {
