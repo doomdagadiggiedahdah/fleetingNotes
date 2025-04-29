@@ -50,7 +50,9 @@ export async function POST(request: Request) {
 			await db.transaction(async (tx) => {
 				for (const profile of batch) {
 					const newQualifiedName = await generateProfileQualifiedName()
-					const updateData: { qualifiedName: string; displayName?: string } = { qualifiedName: newQualifiedName }
+					const updateData: { qualifiedName: string; displayName?: string } = {
+						qualifiedName: newQualifiedName,
+					}
 					if (profile.displayName === "Default Profile") {
 						updateData.displayName = "Personal"
 					}

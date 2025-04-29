@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 
-export function LoginError() {
+export interface LoginErrorProps {
+	message?: string
+}
+
+export function LoginError({
+	message = "Login to configure this server.",
+}: LoginErrorProps) {
 	const { setIsSignInOpen } = useAuth()
 	const router = useRouter()
 
@@ -16,7 +22,7 @@ export function LoginError() {
 				<User className="h-8 w-8" />
 				<div className="text-center">
 					<h3 className="text-xl font-semibold mb-2">Please Login</h3>
-					<p className="mb-4">Login to configure this server.</p>
+					<p className="mb-4">{message}</p>
 					<div className="flex flex-col items-center gap-4">
 						<Button
 							variant="default"
