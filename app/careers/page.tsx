@@ -39,9 +39,9 @@ export default function CareersPage() {
 								Join us as one of the first five people at Smithery to build the
 								infrastructure for AI agents and MCPs. As Founding Technical
 								Staff, you&apos;ll be building a startup in its primordial phase
-								and shipping in an environment that&apos;s high ownership, constantly
-								changing, and fast-paced. Your work will define our product,
-								culture, and technical foundations.
+								and shipping in an environment that&apos;s high ownership,
+								constantly changing, and fast-paced. Your work will define our
+								product, culture, and technical foundations.
 							</p>
 							<p className="text-muted-foreground mb-4">
 								This role is flexible and the scope is up to us to mutually
@@ -97,7 +97,8 @@ export default function CareersPage() {
 							<p className="text-muted-foreground text-sm mt-2">
 								<i>
 									Please send your resume and a concise highlight of your most
-									impressive accomplishment in your area of expertise.
+									impressive accomplishment in your area of expertise to{" "}
+									<a href="mailto:careers@smithery.ai">careers@smithery.ai</a>.
 								</i>
 							</p>
 						</div>
