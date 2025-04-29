@@ -8,6 +8,7 @@ import { fetchData } from "./fetch-data"
 import { SecurityOverview } from "./security-overview"
 import { ApiKeyError } from "./error/api-key-error"
 import { LoginError } from "./error/login-error"
+import { ProfilesError } from "./error/profiles-error"
 
 type Props = {
 	server: FetchedServer
@@ -20,7 +21,7 @@ export async function SidePanel({
 	initTab = "auto",
 	onTabChange,
 }: Props) {
-	// Fetch api key and saved config (if any) from server side
+	// Fetch api key and profiles from server side
 	const result = await fetchData(server.id)
 
 	// If user is not logged in, show the NotLoggedInError component
@@ -41,8 +42,13 @@ export async function SidePanel({
 		return <ApiKeyError message={result.error} />
 	}
 
-	// Success case - user is logged in and has API key
-	const { apiKey, savedConfig } = result.data
+	// If there's a profiles error, show the ProfilesError component
+	if (result.type === "profiles_error") {
+		return <ProfilesError message={result.error} />
+	}
+
+	// Success - user is logged in and has API key
+	const { apiKey, profiles } = result.data
 
 	return (
 		<div>
@@ -58,7 +64,7 @@ export async function SidePanel({
 						initTab={initTab}
 						onTabChange={onTabChange}
 						apiKey={apiKey}
-						savedConfig={savedConfig}
+						profiles={profiles} // contains n profiles / user and one | null saved config per profile for the given server
 					/>
 				</div>
 			</Suspense>

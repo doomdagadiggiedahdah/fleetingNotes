@@ -42,9 +42,12 @@ export async function ServerPage({ server, activeTab }: Props) {
 							</h1>
 							{server.verified && <VerifiedBadge />}
 						</div>
-						<Suspense>
-							<ClaimButton server={server} />
-						</Suspense>
+						<div className="flex items-center gap-2">
+							<Suspense>
+								<ClaimButton server={server} />
+							</Suspense>
+							{/* <Button size="default"><Plus className="mr-2 h-4 w-4" />Add to Profile</Button> */}
+						</div>
 					</div>
 					<div className="flex items-center gap-4 text-sm text-muted-foreground">
 						<ServerQualifiedName server={server} copyable={true} />

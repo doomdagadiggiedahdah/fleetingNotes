@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { useMCP } from "@/context/mcp-context"
 import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
+import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 import {
 	type CompatibilityCallToolResult,
 	CompatibilityCallToolResultSchema,
@@ -27,7 +28,7 @@ interface ToolsPanelProps {
 	onConfigCancel?: () => void
 	initialConfig?: JSONSchema
 	onConfigSuccess?: () => void
-	savedConfig?: JSONSchema | null
+	profiles: ProfileWithSavedConfig[]
 }
 
 export function ToolsPanel({
@@ -39,7 +40,7 @@ export function ToolsPanel({
 	onConfigCancel,
 	initialConfig = {},
 	onConfigSuccess,
-	savedConfig,
+	profiles,
 }: ToolsPanelProps) {
 	const {
 		status,
@@ -219,7 +220,7 @@ export function ToolsPanel({
 									}}
 									serverId={server.id}
 									isConnected={status === "connected"}
-									savedConfig={savedConfig}
+									profiles={profiles}
 									currentSession={currentSession}
 									setIsSignInOpen={setIsSignInOpen}
 								/>

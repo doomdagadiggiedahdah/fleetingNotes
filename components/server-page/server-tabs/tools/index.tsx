@@ -1,7 +1,7 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import { ToolsPanel } from "./tool-panel"
-import { fetchData } from "./fetch-data"
+import { fetchData } from "../overview/side-panel/fetch-data"
 import { Suspense } from "react"
 import { ToolsPanelSkeleton } from "./skeleton"
 import { MCPProvider } from "@/context/mcp-context"
@@ -15,7 +15,10 @@ export async function ToolPanelContainer({ server }: ServerTabsProps) {
 	const configSchema = server.configSchema ?? undefined
 
 	// Use the existing fetch-data function
-	const { savedConfig } = await fetchData(server.id)
+	const result = await fetchData(server.id)
+	if (result.type !== "success") {
+		return <ToolsPanelSkeleton />
+	}
 
 	return (
 		<Suspense fallback={<ToolsPanelSkeleton />}>
@@ -25,7 +28,7 @@ export async function ToolPanelContainer({ server }: ServerTabsProps) {
 					tools={tools}
 					showConfigForm={true}
 					configSchema={configSchema}
-					savedConfig={savedConfig}
+					profiles={result.data.profiles}
 				/>
 			</MCPProvider>
 		</Suspense>

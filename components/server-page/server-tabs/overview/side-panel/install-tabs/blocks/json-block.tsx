@@ -13,6 +13,7 @@ interface JsonBlockProps {
 	apiKey: string
 	cleanedConfig?: JsonObject
 	usingSavedConfig?: boolean
+	profileQualifiedName?: string
 }
 
 export const JsonBlock = ({
@@ -20,6 +21,7 @@ export const JsonBlock = ({
 	apiKey,
 	cleanedConfig,
 	usingSavedConfig,
+	profileQualifiedName,
 }: JsonBlockProps) => {
 	// Get the server name that will be used as the key in the JSON
 	const serverName = getServerName(server.qualifiedName)
@@ -51,9 +53,11 @@ export const JsonBlock = ({
 						code={generateMcpJsonConfig(
 							server,
 							apiKey ?? "",
+							profileQualifiedName,
 							cleanedConfig,
 							false,
 							usingSavedConfig,
+							false,
 						)}
 						language="json"
 						// className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
@@ -78,9 +82,11 @@ export const JsonBlock = ({
 						code={generateMcpJsonConfig(
 							server,
 							apiKey ?? "",
+							profileQualifiedName,
 							cleanedConfig,
 							true,
 							usingSavedConfig,
+							false,
 						)}
 						language="json"
 						// className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"
@@ -105,10 +111,11 @@ export const JsonBlock = ({
 						code={generateMcpJsonConfig(
 							server,
 							apiKey,
+							profileQualifiedName,
 							cleanedConfig,
 							false,
 							usingSavedConfig,
-							true, // isWsl = true
+							true,
 						)}
 						language="json"
 						// className="bg-[#282828] border border-[#cb4b16]/40 shadow-md hover:bg-[#3c3836] transition-colors text-sm mb-3"

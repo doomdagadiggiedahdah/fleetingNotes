@@ -3,7 +3,6 @@
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
 import type { JsonObject } from "@/lib/types/json"
-import type { JSONSchema } from "@/lib/types/server"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import React, { useEffect, useState } from "react"
 import { InstallWarning } from "./install-warning"
@@ -11,6 +10,7 @@ import { InstallTabContent } from "./install-tab-content"
 import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
+import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 
 export type InstallTabStates = "auto" | "manual" | "url"
 
@@ -20,7 +20,7 @@ type InstallTabsProps = {
 	initTab?: InstallTabStates
 	className?: string
 	onTabChange?: (tab: InstallTabStates) => void
-	savedConfig?: JSONSchema | null
+	profiles: ProfileWithSavedConfig[]
 }
 
 export function Installtabs({
@@ -29,20 +29,18 @@ export function Installtabs({
 	className,
 	onTabChange,
 	apiKey: passedApiKey,
-	savedConfig: passedSavedConfig,
+	profiles,
 }: InstallTabsProps) {
 	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
 	const [selectedClient, setSelectedClient] = useState<ClientType>("claude")
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
-	const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(
-		passedSavedConfig || null,
-	)
+	// const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
 	const [apiKey, setApiKey] = useState<string | null>(passedApiKey || null)
-	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(
-		!!passedSavedConfig,
-	)
+	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(false)
 	const [bypassWarning, setBypassWarning] = useState(false)
+	const [selectedProfileQualifiedName, setSelectedProfileQualifiedName] =
+		useState<string | undefined>()
 
 	const { currentSession, setIsSignInOpen } = useAuth()
 
@@ -70,14 +68,16 @@ export function Installtabs({
 	}
 
 	useEffect(() => {
-		if (passedSavedConfig) {
-			setSavedConfig(passedSavedConfig)
+		// Check for default profile first, then fall back to first profile
+		const defaultProfile = profiles?.find((profile) => profile.is_default)
+		const profileToUse = defaultProfile || profiles?.[0]
+
+		if (profileToUse?.savedConfig) {
 			setUsingSavedConfig(true)
 		} else if (!currentSession) {
-			setSavedConfig(null)
 			setUsingSavedConfig(false)
 		}
-	}, [passedSavedConfig, currentSession])
+	}, [profiles, currentSession])
 
 	// Effect for handling empty schema configuration
 	useEffect(() => {
@@ -148,7 +148,6 @@ export function Installtabs({
 						isClientConfigured={isClientConfigured}
 						configValues={configValues}
 						onClientConfig={handleClientConfig}
-						savedConfig={savedConfig}
 						currentSession={currentSession}
 						setIsSignInOpen={setIsSignInOpen}
 						apiKey={apiKey || ""}
@@ -156,6 +155,9 @@ export function Installtabs({
 						setUsingSaved={handleToggleUsingSavedConfig}
 						onClientChange={setSelectedClient}
 						method={activeTab}
+						profiles={profiles}
+						selectedProfileQualifiedName={selectedProfileQualifiedName}
+						setSelectedProfileQualifiedName={setSelectedProfileQualifiedName}
 					/>
 				</TabsContent>
 			))}

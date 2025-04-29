@@ -164,7 +164,16 @@ export default async function Page(props: Props) {
 				</main>
 			)
 		}
-		const { savedConfig } = result.data
+		if (result.type === "profiles_error") {
+			return (
+				<main className="min-h-screen bg-background flex justify-center">
+					<Container className="w-full max-w-2xl py-24 px-4 sm:px-6 lg:px-8">
+						<ApiKeyError message={result.error} />
+					</Container>
+				</main>
+			)
+		}
+		const { profiles } = result.data
 
 		return (
 			<main className="min-h-screen bg-background flex justify-center">
@@ -172,7 +181,7 @@ export default async function Page(props: Props) {
 					<ConfigTab
 						server={server}
 						configSchema={server.configSchema}
-						savedConfig={savedConfig}
+						profiles={profiles}
 					/>
 				</Container>
 			</main>

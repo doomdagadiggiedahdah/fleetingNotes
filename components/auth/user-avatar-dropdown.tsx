@@ -16,6 +16,7 @@ import {
 	LogOut,
 	Server as ServerIcon,
 	User as UserIcon,
+	UsersRound,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -81,6 +82,13 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 				>
 					<ServerIcon className="h-4 w-4" />
 					<span>Servers</span>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					className="flex items-center gap-2 cursor-pointer"
+					onClick={() => router.push("/account/profiles")}
+				>
+					<UsersRound className="h-4 w-4" />
+					<span>Configuration Profiles</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="flex items-center gap-2 cursor-pointer"

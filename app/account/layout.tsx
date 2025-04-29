@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/context/auth-context"
 import { redirect, usePathname } from "next/navigation"
-import { Key } from "lucide-react"
+import { Key, UsersRound } from "lucide-react"
 
 const navItems = [
+	{
+		name: "Profiles",
+		href: "/account/profiles",
+		icon: <UsersRound className="h-4 w-4" />,
+	},
 	{
 		name: "API Keys",
 		href: "/account/api-keys",

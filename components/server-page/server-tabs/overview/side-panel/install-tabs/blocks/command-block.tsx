@@ -34,6 +34,7 @@ export const CommandBlock = ({
 	apiKey,
 	usingSavedConfig,
 	onClientChange,
+	profileQualifiedName,
 }: {
 	server: FetchedServer
 	client: ClientType
@@ -41,6 +42,7 @@ export const CommandBlock = ({
 	apiKey: string
 	usingSavedConfig?: boolean
 	onClientChange?: (client: ClientType) => void
+	profileQualifiedName?: string
 }) => {
 	const [isBugReportOpen, setIsBugReportOpen] = useState(false)
 	const [open, setOpen] = useState(false)
@@ -53,6 +55,7 @@ export const CommandBlock = ({
 			apiKey,
 			config: cleanedConfig,
 			usingSavedConfig,
+			profileQualifiedName,
 		})
 
 	const hasValidConnection =

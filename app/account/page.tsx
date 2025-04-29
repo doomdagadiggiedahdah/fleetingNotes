@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 
 export default function AccountPage() {
 	// Redirect to API keys by default
-	redirect("/account/api-keys")
+	redirect("/account/profiles")
 }

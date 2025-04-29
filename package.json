@@ -67,6 +67,7 @@
 		"json-schema-to-zod": "^2.5.0",
 		"lodash": "^4.17.21",
 		"lucide-react": "^0.468.0",
+		"nanoid": "^5.1.5",
 		"next": "^15.2.3",
 		"nextjs-toploader": "^3.7.15",
 		"openai": "^4.94.0",
@@ -74,6 +75,7 @@
 		"postgres": "^3.4.5",
 		"posthog-js": "^1.195.0",
 		"posthog-node": "^4.3.2",
+		"random-word-slugs": "^0.1.7",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-hook-form": "^7.54.2",
@@ -84,6 +86,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"umap-js": "^1.4.0",
 		"uniqid": "^5.4.0",
+		"unique-names-generator": "^4.7.1",
 		"yaml": "^2.7.0",
 		"zod": "^3.24.1"
 	},

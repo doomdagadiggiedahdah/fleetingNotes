@@ -17,6 +17,7 @@ interface UrlBlockProps {
 	apiKey: string
 	config?: JsonObject
 	usingSavedConfig?: boolean
+	profileQualifiedName?: string
 }
 
 export const UrlBlock = ({
@@ -24,14 +25,22 @@ export const UrlBlock = ({
 	apiKey,
 	config,
 	usingSavedConfig,
+	profileQualifiedName,
 }: UrlBlockProps) => {
 	const serverUrl = server.deploymentUrl || ""
 
 	const transportUrl = createSmitheryUrl(
 		serverUrl,
-		usingSavedConfig ? undefined : config,
-		apiKey,
+		usingSavedConfig ? undefined : config
 	).toString()
+
+	// Add profile and API key as URL parameters
+	const url = new URL(transportUrl)
+	if (profileQualifiedName) {
+		url.searchParams.set("profile", profileQualifiedName)
+	}
+	url.searchParams.set("api_key", apiKey)
+	const finalUrl = url.toString()
 
 	return (
 		<div className="flex flex-col gap-0 py-2 pb-4">
@@ -59,7 +68,7 @@ export const UrlBlock = ({
 					</TooltipProvider>
 				</div>
 				<CodeBlock
-					code={transportUrl}
+					code={finalUrl}
 					disableAutoScroll={true}
 					language="http"
 					showHeader={true}

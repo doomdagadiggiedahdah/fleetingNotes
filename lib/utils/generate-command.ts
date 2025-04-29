@@ -26,6 +26,7 @@ const COMMAND_TEMPLATES = {
 		apiKey: string,
 		config?: string,
 		usingSavedConfig?: boolean,
+		profileQualifiedName?: string,
 	) => {
 		// Base command with server and client
 		let command = `${NPX_SMITHERY_PREFIX} install ${serverName} --client ${clientName}`
@@ -33,6 +34,11 @@ const COMMAND_TEMPLATES = {
 		// Add config if not using saved config and config exists and is not empty
 		if (!usingSavedConfig && config && config !== '"{}"') {
 			command += ` --config ${config}`
+		}
+
+		// Add profile if provided
+		if (profileQualifiedName) {
+			command += ` --profile ${profileQualifiedName}`
 		}
 
 		// Always attach API key at the end
@@ -44,6 +50,7 @@ const COMMAND_TEMPLATES = {
 		config: string,
 		apiKey?: string,
 		usingSavedConfig?: boolean,
+		profileQualifiedName?: string,
 	) => {
 		// Base command with server
 		let command = `${NPX_SMITHERY_PREFIX} run ${serverName}`
@@ -51,6 +58,11 @@ const COMMAND_TEMPLATES = {
 		// Add config if not using saved config and config is not empty
 		if (!usingSavedConfig && config !== '"{}"') {
 			command += ` --config ${config}`
+		}
+
+		// Add profile if provided
+		if (profileQualifiedName) {
+			command += ` --profile ${profileQualifiedName}`
 		}
 
 		// Always attach API key at the end
@@ -94,20 +106,26 @@ export const generateInstallCommand = (
 	apiKey: string,
 	config?: JsonObject,
 	usingSavedConfig?: boolean,
+	profileQualifiedName?: string,
 ): string => {
 	const cleanedConfig = config
 		? `'${JSON.stringify(JSON.stringify(config))}'`
 		: undefined
 
-	return isCustomInstallClient(client)
-		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
-		: COMMAND_TEMPLATES.STANDARD_INSTALL(
-				server.qualifiedName,
-				client,
-				apiKey,
-				cleanedConfig,
-				usingSavedConfig,
-			)
+	// For custom install clients, don't add profile flag
+	if (isCustomInstallClient(client)) {
+		return COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
+	}
+
+	// For all other clients, add profile flag if provided
+	return COMMAND_TEMPLATES.STANDARD_INSTALL(
+		server.qualifiedName,
+		client,
+		apiKey,
+		cleanedConfig,
+		usingSavedConfig,
+		profileQualifiedName,
+	)
 }
 
 /* Run command */
@@ -117,16 +135,23 @@ export const generateRunCommand = (
 	apiKey: string,
 	config?: JsonObject,
 	usingSavedConfig?: boolean,
+	profileQualifiedName?: string,
 ): string => {
 	const cleanedConfig = JSON.stringify(JSON.stringify(config))
-	return isCustomInstallClient(client)
-		? COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
-		: COMMAND_TEMPLATES.STANDARD_RUN(
-				server.qualifiedName,
-				cleanedConfig,
-				apiKey,
-				usingSavedConfig,
-			)
+
+	// For custom install clients, don't add profile flag
+	if (isCustomInstallClient(client)) {
+		return COMMAND_TEMPLATES.SPINAI_INSTALL(server.qualifiedName, cleanedConfig)
+	}
+
+	// For all other clients, add profile flag if provided
+	return COMMAND_TEMPLATES.STANDARD_RUN(
+		server.qualifiedName,
+		cleanedConfig,
+		apiKey,
+		usingSavedConfig,
+		profileQualifiedName,
+	)
 }
 
 type Platform = "unix" | "windows"
@@ -140,6 +165,7 @@ export const generateCommand = ({
 	usingSavedConfig,
 	platform = "unix",
 	windowsMethod = WindowsExecMethod.SCOOP,
+	profileQualifiedName,
 }: {
 	server: FetchedServer
 	client: ClientType
@@ -148,11 +174,26 @@ export const generateCommand = ({
 	usingSavedConfig?: boolean
 	platform?: Platform
 	windowsMethod?: WindowsExecMethod
+	profileQualifiedName?: string
 }): string => {
 	// Keep run vs install distinction, but both now support config
 	const baseCommand = isRunCommandClient(client)
-		? generateRunCommand(server, client, apiKey, config, usingSavedConfig)
-		: generateInstallCommand(server, client, apiKey, config, usingSavedConfig)
+		? generateRunCommand(
+				server,
+				client,
+				apiKey,
+				config,
+				usingSavedConfig,
+				profileQualifiedName,
+			)
+		: generateInstallCommand(
+				server,
+				client,
+				apiKey,
+				config,
+				usingSavedConfig,
+				profileQualifiedName,
+			)
 
 	return platform === "windows"
 		? generateWindowsCommand(windowsMethod, baseCommand)
@@ -173,12 +214,14 @@ export const generateCommandSet = ({
 	config,
 	apiKey,
 	usingSavedConfig,
+	profileQualifiedName,
 }: {
 	server: FetchedServer
 	client: ClientType
 	apiKey: string
 	config?: JsonObject
 	usingSavedConfig?: boolean
+	profileQualifiedName?: string
 }): CommandSet => {
 	return {
 		unixCommand: generateCommand({
@@ -188,6 +231,7 @@ export const generateCommandSet = ({
 			apiKey,
 			usingSavedConfig,
 			platform: "unix",
+			profileQualifiedName,
 		}),
 		windowsScoopCommand: generateCommand({
 			server,
@@ -197,6 +241,7 @@ export const generateCommandSet = ({
 			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.SCOOP,
+			profileQualifiedName,
 		}),
 		windowsCmdCommand: generateCommand({
 			server,
@@ -206,6 +251,7 @@ export const generateCommandSet = ({
 			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.CMD,
+			profileQualifiedName,
 		}),
 		windowsCmdFullCommand: generateCommand({
 			server,
@@ -215,6 +261,7 @@ export const generateCommandSet = ({
 			usingSavedConfig,
 			platform: "windows",
 			windowsMethod: WindowsExecMethod.CMD_FULL,
+			profileQualifiedName,
 		}),
 	}
 }

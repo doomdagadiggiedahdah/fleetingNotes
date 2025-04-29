@@ -1,6 +1,6 @@
 {
-	"id": "ca8bb2f9-24c8-423c-843f-75f7ff162566",
-	"prevId": "a30ca1ee-5615-4478-a4f7-1fa8d1d69e96",
+	"id": "4bed7aca-08a1-496e-af41-386160ac9829",
+	"prevId": "ca8bb2f9-24c8-423c-843f-75f7ff162566",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -867,6 +867,12 @@
 					"type": "text",
 					"primaryKey": false,
 					"notNull": true
+				},
+				"branch": {
+					"name": "branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
 				},
 				"base_directory": {
 					"name": "base_directory",

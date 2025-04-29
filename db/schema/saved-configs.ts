@@ -1,6 +1,6 @@
 import { jsonb, pgTable, timestamp, uuid } from "drizzle-orm/pg-core"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
-import { authUsers } from "drizzle-orm/supabase"
+// import { authUsers } from "drizzle-orm/supabase"
 import type { z } from "zod"
 import { servers } from "./servers"
 import { profiles } from "./profiles"
@@ -15,14 +15,11 @@ export const savedConfigs = pgTable("saved_configs", {
 	// Configuration data stored as JSON
 	configData: jsonb("config_data").notNull(),
 
-	owner: uuid("owner")
-		.notNull()
-		.references(() => authUsers.id, { onDelete: "cascade" }),
-
-	// TODO: After data migration, this should be made non-nullable
-	profileId: uuid("profile_id").references(() => profiles.id, {
-		onDelete: "cascade",
-	}),
+	profileId: uuid("profile_id")
+		.references(() => profiles.id, {
+			onDelete: "cascade",
+		})
+		.notNull(),
 
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),

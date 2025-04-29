@@ -4,7 +4,7 @@ import { UrlBlock } from "./blocks/url-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
-import { ConfigForm } from "../../../configure/config-form"
+import { ConfigForm } from "../../../../../configure/config-form"
 import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/config/clients"
@@ -12,6 +12,7 @@ import { CloudOff } from "lucide-react"
 import { extractPrerequisites } from "@/lib/utils/extract-prerequisites"
 import { PrerequisitesDisplay } from "./prerequisites-display"
 import { cleanConfig } from "@/lib/utils/generate-command"
+import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 
 type InstallTabContentProps = {
 	server: FetchedServer
@@ -19,8 +20,7 @@ type InstallTabContentProps = {
 	configSchema: JSONSchema | null
 	isClientConfigured: boolean
 	configValues: JsonObject
-	onClientConfig: (values: JsonObject) => Promise<void>
-	savedConfig: JSONSchema | null
+	onClientConfig: (values: JsonObject, profileId?: string) => Promise<void>
 	currentSession: Session | null
 	setIsSignInOpen: (open: boolean) => void
 	apiKey: string
@@ -28,6 +28,9 @@ type InstallTabContentProps = {
 	setUsingSaved: (value: boolean) => void
 	onClientChange?: (client: ClientType) => void
 	method: "auto" | "manual" | "url"
+	profiles: ProfileWithSavedConfig[]
+	selectedProfileQualifiedName?: string
+	setSelectedProfileQualifiedName: (name: string | undefined) => void
 }
 
 export function InstallTabContent({
@@ -37,7 +40,6 @@ export function InstallTabContent({
 	isClientConfigured,
 	configValues,
 	onClientConfig,
-	savedConfig,
 	currentSession,
 	setIsSignInOpen,
 	apiKey,
@@ -45,6 +47,9 @@ export function InstallTabContent({
 	setUsingSaved,
 	onClientChange,
 	method,
+	profiles,
+	selectedProfileQualifiedName,
+	setSelectedProfileQualifiedName,
 }: InstallTabContentProps) {
 	// Show error message first if no schema available
 	if (!configSchema) {
@@ -79,15 +84,26 @@ export function InstallTabContent({
 				)}
 				<ConfigForm
 					schema={configSchema}
-					onSubmit={async (values) => await onClientConfig(values)}
+					onSubmit={async (values, profileId) => {
+						if (profileId && profiles) {
+							const selectedProfile = profiles.find((p) => p.id === profileId)
+							setSelectedProfileQualifiedName(
+								selectedProfile?.qualifiedName ?? "",
+							)
+						}
+						await onClientConfig(values, profileId)
+					}}
 					onCancel={() => {}}
 					onSuccess={() => {}}
 					serverId={server.id}
 					initialConfig={configValues}
-					savedConfig={savedConfig}
 					currentSession={currentSession}
 					setIsSignInOpen={setIsSignInOpen}
 					onUsingSavedConfig={setUsingSaved}
+					profiles={profiles}
+					buttonAlignment="start"
+					onlySaveAndConnect={true} // with profiles, this might make more sense - else it's too complicated
+					// however, we guarantee that it's saved before we go to the next step
 				/>
 			</>
 		)
@@ -103,14 +119,16 @@ export function InstallTabContent({
 						server={server}
 						cleanedConfig={cleanedConfig}
 						apiKey={apiKey}
-						usingSavedConfig={usingSavedConfig}
+						usingSavedConfig={true}
+						profileQualifiedName={selectedProfileQualifiedName}
 					/>
 				) : method === "url" ? (
 					<UrlBlock
 						server={server}
 						config={configValues}
 						apiKey={apiKey}
-						usingSavedConfig={usingSavedConfig}
+						usingSavedConfig={true}
+						profileQualifiedName={selectedProfileQualifiedName}
 					/>
 				) : (
 					<CommandBlock
@@ -118,8 +136,9 @@ export function InstallTabContent({
 						client={client}
 						config={configValues}
 						apiKey={apiKey}
-						usingSavedConfig={usingSavedConfig}
+						usingSavedConfig={true}
 						onClientChange={onClientChange}
+						profileQualifiedName={selectedProfileQualifiedName}
 					/>
 				)}
 			</>

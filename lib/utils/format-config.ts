@@ -6,6 +6,7 @@ import type { JsonObject } from "@/lib/types/json"
 export function generateMcpJsonConfig(
 	server: FetchedServer,
 	apiKey: string,
+	profileQualifiedName?: string,
 	cleanedConfig?: JsonObject,
 	isWindows = false,
 	usingSavedConfig?: boolean,
@@ -23,6 +24,11 @@ export function generateMcpJsonConfig(
 	// Always attach API key if provided
 	if (apiKey) {
 		npxArgs.push("--key", apiKey)
+	}
+
+	// Add profile name if provided
+	if (profileQualifiedName) {
+		npxArgs.push("--profile", profileQualifiedName)
 	}
 
 	let commandConfig: { command: string; args: string[] }

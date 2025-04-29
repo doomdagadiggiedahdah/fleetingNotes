@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "is_default" boolean DEFAULT false;--> statement-breakpoint
+CREATE UNIQUE INDEX "default_profile_per_owner" ON "profiles" USING btree ("owner","is_default") WHERE "profiles"."is_default" = true;

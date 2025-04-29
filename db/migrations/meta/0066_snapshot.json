@@ -1,6 +1,6 @@
 {
-	"id": "ca8bb2f9-24c8-423c-843f-75f7ff162566",
-	"prevId": "a30ca1ee-5615-4478-a4f7-1fa8d1d69e96",
+	"id": "a30ca1ee-5615-4478-a4f7-1fa8d1d69e96",
+	"prevId": "dd0d422b-8a4a-442c-8ab4-21dc77848bd3",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -723,11 +723,17 @@
 					"primaryKey": false,
 					"notNull": true
 				},
+				"owner": {
+					"name": "owner",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
 				"profile_id": {
 					"name": "profile_id",
 					"type": "uuid",
 					"primaryKey": false,
-					"notNull": true
+					"notNull": false
 				},
 				"created_at": {
 					"name": "created_at",
@@ -751,6 +757,16 @@
 					"tableFrom": "saved_configs",
 					"tableTo": "servers",
 					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"saved_configs_owner_users_id_fk": {
+					"name": "saved_configs_owner_users_id_fk",
+					"tableFrom": "saved_configs",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner"],
 					"columnsTo": ["id"],
 					"onDelete": "cascade",
 					"onUpdate": "no action"

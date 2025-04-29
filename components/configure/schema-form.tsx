@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { JSONSchema, SchemaValueType } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff } from "lucide-react"
 
 interface SchemaFormProps {
@@ -56,6 +56,11 @@ export function SchemaForm({
 	const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(
 		{},
 	)
+
+	// Sync values with initialValues prop changes
+	useEffect(() => {
+		setValues(getInitialValues())
+	}, [initialValues])
 
 	const handleValueChange = (key: string, value: SchemaValueType) => {
 		setValues((prev) => ({ ...prev, [key]: value }))
@@ -239,7 +244,6 @@ export function SchemaForm({
 
 	return (
 		<div>
-			<h1 className="text-md font-bold text-primary mb-1">Configuration</h1>
 			{error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
 			<form onSubmit={handleSubmit} className="space-y-4">

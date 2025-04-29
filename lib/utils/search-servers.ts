@@ -111,7 +111,7 @@ export async function getAllServers(
 				: undefined,
 			// Exact match filter
 			cleanedQuery
-				? sql`to_tsvector('english', ${servers.ftsContent}) @@ websearch_to_tsquery('english', ${cleanedQuery})`
+				? sql`to_tsvector('english', ${servers.qualifiedName}) @@ websearch_to_tsquery('english', ${cleanedQuery})`
 				: undefined,
 		),
 		parsedQueryObj?.owner
@@ -145,7 +145,7 @@ export async function getAllServers(
 	const totalPages = Math.ceil(totalCount / pageSize)
 
 	const matchSimilarity = cleanedQuery
-		? sql<number>`ts_rank_cd(to_tsvector('english', ${servers.ftsContent}), websearch_to_tsquery('english', ${cleanedQuery}))`
+		? sql<number>`ts_rank_cd(to_tsvector('english', ${servers.qualifiedName}), websearch_to_tsquery('english', ${cleanedQuery}))`
 		: null
 
 	const relevanceScore =

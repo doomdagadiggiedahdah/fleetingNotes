@@ -1,7 +1,8 @@
-import { ConfigForm } from "../../configure/config-form"
+import { ConfigForm } from "../../../../configure/config-form"
 import { LoginBlur } from "../../overview/side-panel/install-tabs/login-blur"
 import type { JSONSchema } from "@/lib/types/server"
 import type { Session } from "@supabase/supabase-js"
+import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 
 interface ConfigFormWrapperProps {
 	schema: JSONSchema
@@ -11,7 +12,7 @@ interface ConfigFormWrapperProps {
 	onSuccess: () => void
 	serverId: string
 	isConnected: boolean
-	savedConfig: JSONSchema | null
+	profiles: ProfileWithSavedConfig[]
 	currentSession: Session | null
 	setIsSignInOpen: (open: boolean) => void
 }
@@ -24,7 +25,7 @@ export function ConfigFormWrapper({
 	onSuccess,
 	serverId,
 	isConnected,
-	savedConfig,
+	profiles,
 	currentSession,
 	setIsSignInOpen,
 }: ConfigFormWrapperProps) {
@@ -37,7 +38,7 @@ export function ConfigFormWrapper({
 			onSuccess={onSuccess}
 			serverId={serverId}
 			isConnected={isConnected}
-			savedConfig={savedConfig}
+			profiles={profiles}
 			currentSession={currentSession}
 			setIsSignInOpen={setIsSignInOpen}
 		/>

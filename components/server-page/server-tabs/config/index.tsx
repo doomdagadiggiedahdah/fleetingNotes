@@ -1,7 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { ConfigForm } from "../configure/config-form"
+import { ConfigForm } from "../../../configure/config-form"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import { useAuth } from "@/context/auth-context"
@@ -16,18 +16,15 @@ import { Activity, ExternalLink, Github, Lock, Anvil } from "lucide-react"
 import Link from "next/link"
 import { SecurityOverview } from "../overview/side-panel/security-overview"
 import { ServerStatusChip } from "@/components/server-type-chip"
+import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 
 interface ConfigTabProps {
 	server: FetchedServer
 	configSchema: JSONSchema | null
-	savedConfig?: JSONSchema | null
+	profiles: ProfileWithSavedConfig[]
 }
 
-export function ConfigTab({
-	server,
-	configSchema,
-	savedConfig,
-}: ConfigTabProps) {
+export function ConfigTab({ server, configSchema, profiles }: ConfigTabProps) {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const { currentSession, setIsSignInOpen, stateChangedOnce } = useAuth()
@@ -180,10 +177,13 @@ export function ConfigTab({
 							schema={configSchema}
 							onSubmit={handleConfigSubmit}
 							onCancel={() => router.push(`/server/${server.qualifiedName}`)}
-							initialConfig={savedConfig || {}}
+							initialConfig={
+								profiles.find((p) => p.is_default)?.savedConfig ||
+								profiles[0]?.savedConfig ||
+								{}
+							}
 							onSuccess={() => {}}
 							serverId={server.id}
-							savedConfig={savedConfig}
 							currentSession={currentSession}
 							setIsSignInOpen={setIsSignInOpen}
 							onlySaveAndConnect={true}
@@ -278,10 +278,13 @@ export function ConfigTab({
 					schema={configSchema}
 					onSubmit={handleConfigSubmit}
 					onCancel={() => router.push(`/server/${server.qualifiedName}`)}
-					initialConfig={savedConfig || {}}
+					initialConfig={
+						profiles.find((p) => p.is_default)?.savedConfig ||
+						profiles[0]?.savedConfig ||
+						{}
+					}
 					onSuccess={() => {}}
 					serverId={server.id}
-					savedConfig={savedConfig}
 					currentSession={currentSession}
 					setIsSignInOpen={setIsSignInOpen}
 					onlySaveAndConnect={true}

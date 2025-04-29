@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import {
+	pgTable,
+	text,
+	timestamp,
+	uuid,
+	uniqueIndex,
+	boolean,
+} from "drizzle-orm/pg-core"
+import { sql } from "drizzle-orm"
 import { savedConfigs } from "./saved-configs"
 import { createInsertSchema, createSelectSchema } from "drizzle-zod"
 import type { z } from "zod"
@@ -6,19 +14,29 @@ import { authUsers } from "drizzle-orm/supabase"
 
 export { savedConfigs }
 
-export const profiles = pgTable("profiles", {
-	id: uuid("id").primaryKey().defaultRandom(),
-	// Qualified name of the profile
-	qualifiedName: text("qualified_name").notNull().unique(),
-	displayName: text("display_name").notNull(),
-	// Short description snippet
-	description: text("description"),
-	owner: uuid("owner")
-		.notNull()
-		.references(() => authUsers.id, { onDelete: "cascade" }),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}).enableRLS()
+export const profiles = pgTable(
+	"profiles",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		// Qualified name of the profile
+		qualifiedName: text("qualified_name").notNull().unique(),
+		displayName: text("display_name").notNull(),
+		// Short description snippet
+		description: text("description"),
+		owner: uuid("owner")
+			.notNull()
+			.references(() => authUsers.id, { onDelete: "cascade" }),
+		is_default: boolean("is_default").default(false),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+	},
+	(table) => ({
+		// Only one default profile per owner
+		defaultConstraint: uniqueIndex("default_profile_per_owner")
+			.on(table.owner, table.is_default)
+			.where(sql`${table.is_default} = true`),
+	}),
+).enableRLS()
 
 export const insertProfileSchema = createInsertSchema(profiles)
 export const selectProfileSchema = createSelectSchema(profiles)
