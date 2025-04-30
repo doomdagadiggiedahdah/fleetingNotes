@@ -47,6 +47,17 @@ const BUG_PENALTY_FACTOR = 20 // Controls how much bug reports reduce quality sc
 
 const openAI = new OpenAI()
 
+const formatTsQuery = (query: string) => {
+	// Split on spaces, remove empty strings
+	const tokens = query.split(/\s+/).filter(Boolean)
+	// Escape special characters and add :* for prefix matching
+	const formattedTokens = tokens.map(token => 
+		token.replace(/[&|!:*()]/g, '\\$&') + ':*'
+	)
+	// Join with & operator
+	return formattedTokens.join(' & ')
+}
+
 /**
  * @param query A string to search for. If null, we won't search
  * @param pagination Pagination parameters
@@ -111,7 +122,7 @@ export async function getAllServers(
 				: undefined,
 			// Exact match filter
 			cleanedQuery
-				? sql`to_tsvector('english', ${servers.qualifiedName}) @@ websearch_to_tsquery('english', ${cleanedQuery})`
+				? sql`to_tsvector('english', ${servers.ftsContent}) @@ to_tsquery('english', ${formatTsQuery(cleanedQuery)})`
 				: undefined,
 		),
 		parsedQueryObj?.owner
