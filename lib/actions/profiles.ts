@@ -1,10 +1,10 @@
 "use server"
 
 import { db } from "@/db"
-import { profiles, savedConfigs, servers } from "@/db/schema"
+import { profiles, savedConfigs, servers, apiKeys } from "@/db/schema"
 import { getMe } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
-import { eq, inArray, and } from "drizzle-orm"
+import { eq, inArray, and, sql, desc, asc } from "drizzle-orm"
 import { err, ok, type Result } from "../utils/result"
 import type { JSONSchema } from "@/lib/types/server"
 import type {
@@ -19,6 +19,7 @@ import {
 	animals,
 } from "unique-names-generator"
 import { customAlphabet } from "nanoid"
+import type { Connection } from "@/lib/types/server"
 
 // URL-safe base-62 NanoID, 6 chars
 const nano6 = customAlphabet(
@@ -543,4 +544,88 @@ export async function getProfileWithSavedConfig(
 		createdAt: profile.createdAt,
 		savedConfig: (savedConfig?.configData as JSONSchema) || null,
 	})
+}
+
+/**
+ * Gets a saved configuration for a server using an API key.
+ * This is used by the registry configs endpoint.
+ * @param serverName - The qualified name of the server
+ * @param apiKey - The API key to authenticate with
+ * @param profileName - Optional profile qualified name to get config for
+ * @returns The saved configuration or null if not found
+ */
+export async function getSavedConfig(
+	serverName: string,
+	apiKey: string,
+	profileName?: string,
+): Promise<
+	Result<
+		{
+			success: boolean
+			config: JSONSchema
+			server?: {
+				qualifiedName: string
+				displayName: string
+				remote: boolean
+				connections: Connection[]
+			}
+		},
+		string
+	>
+> {
+	try {
+		const result = await db
+			.select({
+				userId: apiKeys.owner,
+				savedConfig: savedConfigs.configData,
+				serverQualifiedName: servers.qualifiedName,
+				serverDisplayName: servers.displayName,
+				serverRemote: servers.remote,
+				serverConnections: servers.connections,
+			})
+			.from(apiKeys)
+			.leftJoin(
+				profiles,
+				and(
+					eq(profiles.owner, apiKeys.owner),
+					profileName ? eq(profiles.qualifiedName, profileName) : sql`TRUE`,
+				),
+			)
+			.leftJoin(servers, eq(servers.qualifiedName, serverName))
+			.leftJoin(
+				savedConfigs,
+				and(
+					eq(savedConfigs.profileId, profiles.id),
+					eq(savedConfigs.serverId, servers.id),
+				),
+			)
+			.where(eq(apiKeys.key, apiKey))
+			.orderBy(
+				desc(profiles.is_default), // default profile first
+				asc(profiles.id), // else earliest profile (migration fallback)
+			)
+			.limit(1)
+			.then((rows) => rows[0])
+
+		if (!result) {
+			return ok({ success: false, config: {} })
+		}
+
+		return ok({
+			success: true,
+			config: (result.savedConfig as JSONSchema) || {},
+			// If we have serverQualifiedName, we know the server exists and all its fields are non-null
+			server: result.serverQualifiedName
+				? {
+						qualifiedName: result.serverQualifiedName,
+						displayName: result.serverDisplayName!,
+						remote: result.serverRemote!,
+						connections: result.serverConnections as Connection[],
+					}
+				: undefined,
+		})
+	} catch (error) {
+		console.error("Error getting config:", error)
+		return err("Failed to get config")
+	}
 }
