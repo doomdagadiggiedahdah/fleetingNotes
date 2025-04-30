@@ -39,15 +39,15 @@ export function ServerQualifiedName({ server, copyable = false }: Props) {
 					<TooltipTrigger asChild>
 						<button
 							onClick={copyable ? copyToClipboard : undefined}
-							className="hover:text-foreground transition-colors cursor-pointer overflow-hidden text-ellipsis flex items-center gap-1"
+							className="hover:text-foreground transition-colors cursor-pointer flex items-center gap-1 max-w-full"
 							type="button"
 						>
-							{server.qualifiedName}
-							{copyable && <Copy className="w-3 h-3" />}
+							<span className="truncate">{server.qualifiedName}</span>
+							{copyable && <Copy className="w-3 h-3 flex-shrink-0" />}
 						</button>
 					</TooltipTrigger>
 					<TooltipContent>
-						<p>Copied to clipboard!</p>
+						<p>{copied ? "Copied to clipboard!" : server.qualifiedName}</p>
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
