@@ -24,7 +24,7 @@ interface CreateProfileDialogProps {
 }
 
 export function CreateProfileDialog({
-	open = false,
+	open,
 	onOpenChange = () => {},
 	source = "profile_page",
 	trigger = (
@@ -47,10 +47,16 @@ export function CreateProfileDialog({
 		const description = formData.get("description") as string
 
 		try {
-			await createProfile({
+			const result = await createProfile({
 				displayName,
 				description: description || undefined,
 			})
+
+			if (!result.ok) {
+				setError(result.error)
+				return
+			}
+
 			posthog.capture("Profile Created", {
 				source,
 			})

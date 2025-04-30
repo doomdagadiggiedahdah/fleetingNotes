@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import { ConfigForm } from "@/components/configure/config-form"
+import { ConfigForm } from "@/components/config-form"
 import type {
 	ProfileServers,
 	Server,
@@ -10,7 +10,7 @@ import { useAuth } from "@/context/auth-context"
 import { cn } from "@/lib/utils"
 import { getProfileWithSavedConfig } from "@/lib/actions/profiles"
 import { useEffect, useState } from "react"
-import { ConfigFormSkeleton } from "@/components/configure/config-form-skeleton"
+import { ConfigFormSkeleton } from "@/components/config-form/config-form-skeleton"
 import { useToast } from "@/lib/hooks/use-toast"
 import type { JSONSchema } from "@/lib/types/server"
 

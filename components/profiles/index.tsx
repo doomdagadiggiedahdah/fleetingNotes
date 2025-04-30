@@ -14,7 +14,7 @@ import { ProfileItem } from "./profile-item"
 import { DeleteProfileDialog } from "./delete-profile-dialog"
 import { CreateProfileDialog } from "./create-profile-dialog"
 import { setDefaultProfile } from "@/lib/actions/profiles"
-import { useTransition } from "react"
+import { useTransition, useState } from "react"
 import { useToast } from "@/lib/hooks/use-toast"
 import type { ProfileServers } from "@/lib/types/profiles"
 import Link from "next/link"
@@ -27,6 +27,7 @@ interface ProfilesProps {
 export function Profiles({ profileServers }: ProfilesProps) {
 	const [isPending, startTransition] = useTransition()
 	const { toast } = useToast()
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
 	const handleSetDefault = () => {
 		startTransition(async () => {
@@ -60,7 +61,10 @@ export function Profiles({ profileServers }: ProfilesProps) {
 					</p>
 				</div>
 				<div className="flex justify-end">
-					<CreateProfileDialog />
+					<CreateProfileDialog
+						open={isCreateDialogOpen}
+						onOpenChange={setIsCreateDialogOpen}
+					/>
 				</div>
 			</div>
 

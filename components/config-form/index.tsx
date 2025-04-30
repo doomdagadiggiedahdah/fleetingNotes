@@ -1,6 +1,6 @@
 "use client"
 
-import { SchemaForm } from "@/components/configure/schema-form"
+import { SchemaForm } from "@/components/config-form/schema-form"
 import { saveConfiguration } from "@/lib/actions/save-configuration"
 import type { JsonObject } from "@/lib/types/json"
 import type { JSONSchema } from "@/lib/types/server"
@@ -9,8 +9,8 @@ import { useState, useMemo, useEffect } from "react"
 import type { Session } from "@supabase/supabase-js"
 import { processConfig } from "@/lib/utils/process-config"
 import { areObjectsEqual } from "@/lib/utils/compare-objects"
-import { ProfileSelector } from "@/components/configure/profile-selector"
-import { ConfigFormSkeleton } from "@/components/configure/config-form-skeleton"
+import { ProfileSelector } from "@/components/config-form/profile-selector"
+import { ConfigFormSkeleton } from "@/components/config-form/config-form-skeleton"
 
 // Loading fallback UI shown while configuration is being loaded
 export function ConfigFormLoading() {

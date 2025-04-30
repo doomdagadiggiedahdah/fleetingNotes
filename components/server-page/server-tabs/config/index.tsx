@@ -1,7 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { ConfigForm } from "../../../configure/config-form"
+import { ConfigForm } from "../../../config-form"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import { useAuth } from "@/context/auth-context"

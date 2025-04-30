@@ -1,4 +1,4 @@
-import { ConfigForm } from "../../../../configure/config-form"
+import { ConfigForm } from "../../../../config-form"
 import { LoginBlur } from "../../overview/side-panel/install-tabs/login-blur"
 import type { JSONSchema } from "@/lib/types/server"
 import type { Session } from "@supabase/supabase-js"

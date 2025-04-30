@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { useState } from "react"
 import { Settings, UsersRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ProfileInfoChip } from "@/components/configure/profile-info-chip"
+import { ProfileInfoChip } from "@/components/config-form/profile-info-chip"
 import posthog from "posthog-js"
 import {
 	Tooltip,
