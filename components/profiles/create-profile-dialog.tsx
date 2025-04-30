@@ -14,9 +14,26 @@ import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import { createProfile } from "@/lib/actions/profiles"
+import posthog from "posthog-js"
 
-export function CreateProfileDialog() {
-	const [open, setOpen] = useState(false)
+interface CreateProfileDialogProps {
+	open?: boolean
+	onOpenChange?: (open: boolean) => void
+	source?: string
+	trigger?: React.ReactNode
+}
+
+export function CreateProfileDialog({
+	open = false,
+	onOpenChange = () => {},
+	source = "profile_page",
+	trigger = (
+		<Button>
+			<Plus className="w-4 h-4 mr-2" />
+			Create Profile
+		</Button>
+	),
+}: CreateProfileDialogProps) {
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -34,7 +51,10 @@ export function CreateProfileDialog() {
 				displayName,
 				description: description || undefined,
 			})
-			setOpen(false)
+			posthog.capture("Profile Created", {
+				source,
+			})
+			onOpenChange(false)
 		} catch (error) {
 			console.error("Error creating profile:", error)
 			setError(
@@ -46,13 +66,8 @@ export function CreateProfileDialog() {
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button>
-					<Plus className="w-4 h-4 mr-2" />
-					Create Profile
-				</Button>
-			</DialogTrigger>
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogTrigger asChild>{trigger}</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Create New Profile</DialogTitle>

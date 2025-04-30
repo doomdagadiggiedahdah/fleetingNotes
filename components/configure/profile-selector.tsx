@@ -6,13 +6,13 @@ import {
 	SelectItem,
 } from "@/components/ui/select"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
-import { CreateProfileDialog } from "./create-profile-dialog"
+import { CreateProfileDialog } from "@/components/profiles/create-profile-dialog"
 import { Separator } from "@/components/ui/separator"
 import { useState } from "react"
 import { Settings, UsersRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
 import { ProfileInfoChip } from "@/components/configure/profile-info-chip"
+import posthog from "posthog-js"
 import {
 	Tooltip,
 	TooltipTrigger,
@@ -32,12 +32,14 @@ export function ProfileSelector({
 	onProfileChange,
 }: ProfileSelectorProps) {
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-	const router = useRouter()
 
 	if (profiles.length === 0) return null
 
 	const handleSelect = (value: string) => {
 		if (value === "create") {
+			posthog.capture("Create Profile Clicked", {
+				source: "configuration_form",
+			})
 			setIsCreateDialogOpen(true)
 			return
 		}
@@ -96,7 +98,12 @@ export function ProfileSelector({
 								variant="ghost"
 								size="icon"
 								className="h-6 w-6"
-								onClick={() => window.open("/account/profiles", "_blank")}
+								onClick={() => {
+									posthog.capture("Manage Profiles Clicked", {
+										source: "configuration_form",
+									})
+									window.open("/account/profiles", "_blank")
+								}}
 							>
 								<Settings className="h-4 w-4" />
 							</Button>
@@ -105,9 +112,10 @@ export function ProfileSelector({
 					</Tooltip>
 				</TooltipProvider>
 				<CreateProfileDialog
-					onProfileCreated={handleProfileCreated}
 					open={isCreateDialogOpen}
 					onOpenChange={setIsCreateDialogOpen}
+					source="configuration_form"
+					trigger={null}
 				/>
 			</div>
 			<Separator className="my-2" />
