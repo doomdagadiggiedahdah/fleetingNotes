@@ -82,7 +82,7 @@ export function wrapDockerfileWithSidecar(
 ) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
 	return `\
-FROM registry.fly.io/sidecar:deployment-01JSJN17SWDXGHDGCFJHAPJJ68 as sidecar_image
+FROM registry.fly.io/sidecar:deployment-01JT24ECEX1GA2W2G8NTXF2ZYS as sidecar_image
 
 # User's Dockerfile
 ${baseDockerfile}
