@@ -1,5 +1,7 @@
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, MessageCircleWarning } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { CodeBlock } from "@/components/docs/simple-code-block"
+import { cn } from "@/lib/utils"
 
 export const metadata = {
   title: 'Profiles | Smithery Documentation',
@@ -8,58 +10,88 @@ export const metadata = {
 
 # Configuration Profiles
 
-Configuration profiles (or **profile** for short), are a way for you to specify and save default server configurations on Smithery.
-When you connect to Smithery through a specific profile, we will pre-fill the configuration of any servers you connect to.
-This allows you to use Smithery with a seamless authentication experience.
+<Alert variant="info" className={cn("my-6")}>
+  <MessageCircleWarning className="h-5 w-5" />
+  <AlertTitle>Under Development</AlertTitle>
+  <AlertDescription>
+    Profiles are currently under active development. We'd love to hear your feedback and suggestions in our <a href="https://discord.gg/Afd38S5p9A" className="font-medium underline underline-offset-4 hover:text-primary">Discord community</a>!
+  </AlertDescription>
+</Alert>
 
-## Profile API Keys
-API keys can be associated with specific profiles.
-You can create an API key by clicking on your login icon, and selecting API keys in the dropdown menu.
-When creating an API key, you will be asked to associate it with a specific profile.
-If you authenticate with Smithery using an API key associated with a profile, we will pre-fill the configuration of any servers you connect to using that profile.
 
-## Example
-Configuration profiles are useful if you're building agents or autonomous systems and want to avoid passing in a bunch of API key.
+Configuration profiles (or **profiles** for short), is a way for you to assign specific personas, contexts and acesses to your AI agents. 
+Think of it like login profiles in your desktop, which let you decide what applications are installed and what accesses a user has in your computer.
+In a similar way, profiles let you link specific servers and their configurations to your agent. 
 
-Imagine you are building an agent where you need to build a search functionality in it and want to integrate [Exa](/server/exa) into your agent.
+## Examples
 
-Typically, you would write your connection as follows:
-```typescript
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+Say you're building a research assistant. A "Research" profile could connect Zotero MCP for reference management, Exa Search for finding relevant papers, PubMedSearch for medical literature, and Memory Tool for storing your research notes - giving your agent everything it needs to help with literature review.
+
+Instead of managing multiple API keys and configurations separately, profiles let you bundle them together and reuse them across your agents. Here's how it works:
+
+To add servers to your profile, you can:
+- From any server page, select the profile you want to add the server to and click "Connect"
+- From Account > Profiles, select your profile and use the "Add Server" search bar shown below
+
+<div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+  <img src="/docs/profiles/profiles-view.png" width="500" alt="Profiles View" />
+</div>
+
+Once you've added servers to your profile, you can connect to them using your profile's API key. The URL will automatically include your profile's configuration:
+
+<CodeBlock
+  language="typescript"
+  showHeader={true}
+  className="mb-4"
+  code={`import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+
+// One URL to access all servers in your profile
+const url = "https://servers.smithery.ai/ws?profile=clear-basilisk-FucEL4&api_key=your-smithery-api-key"
+const transport = new StreamableHTTPClientTransport(url)`}
+/>
+
+Instead of the typical way where you'd need to specify all configurations:
+
+<CodeBlock
+  language="typescript"
+  showHeader={true}
+  className="mb-4"
+  code={`import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { createSmitheryUrl } from "@smithery/sdk/config.js"
 
-const url = createSmitheryUrl(
-  "https://url-to-exa-mcp-server/ws",
+// Configure each server separately with their own API keys and settings
+const exaUrl = createSmitheryUrl(
+  "https://servers.smithery.ai/exa/ws",
   {
-    ...config goes here
-  },
+    api_key: "your-exa-api-key",
+  }
 )
+const exaTransport = new StreamableHTTPClientTransport(exaUrl)
 
-const transport = new StreamableHTTPClientTransport(url)
-```
-
-Instead of specifying your Exa API key every time you connect to the remote Exa servers, you can create a profile on Smithery and perform an authenticated call to the HTTP server by specifying the header:
-
-```typescript
-headers: {
-  'Authorization': 'Bearer your-profile-api-key'
-}
-```
-
-With this authentication, you no longer need to pass in the API key when connecting to the Exa server.
-
-```typescript
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { createSmitheryUrl } from "@smithery/sdk/config.js"
-
-const url = createSmitheryUrl(
-  "https://url-to-exa-mcp-server/ws"
+const zoteroUrl = createSmitheryUrl(
+  "https://servers.smithery.ai/zotero/ws",
+  {
+    api_key: "your-zotero-api-key",
+    library_id: "your-library-id",
+    collection_key: "your-collection"
+  }
 )
+const zoteroTransport = new StreamableHTTPClientTransport(zoteroUrl)
 
-const transport = new StreamableHTTPClientTransport(url)
-```
+const pubmedUrl = createSmitheryUrl(
+  "https://servers.smithery.ai/pubmed/ws",
+  {
+    api_key: "your-pubmed-api-key",
+    database: "pubmed",
+    max_results: 10
+  }
+)
+const pubmedTransport = new StreamableHTTPClientTransport(pubmedUrl)
+
+// ... and so on for each server you want to connect to`}
+/>
 
 Configuration profiles act as a default configuration fallback and makes all saved configuration fields optional. You can still pass configuration fields upon connecting to overwrite the default profile configuration.
 
 Obviously, this is not very useful if you're only connecting to one MCP. It becomes handy when you have multiple MCPs and you don't want to specify configurations for each of them.
-Some MCPs require OAuth, which may have complex configurations. You can authenticate via the UI on Smithery instead of offloading it to your end users.
+Some MCPs require OAuth, which may have complex configurations. In the future, you can authenticate via the UI on Smithery instead of offloading it to your end users.
