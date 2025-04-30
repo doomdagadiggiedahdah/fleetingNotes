@@ -78,24 +78,26 @@ Create a `smithery.yaml` file in your repository root. This file defines how you
 Here's a minimal example of a server with no configuration options:
 
 <SimpleCodeBlock
-  code={`# Smithery.ai configuration
+  code={`
+# Smithery.ai configuration
 startCommand:
-  type: stdio
-  configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    {}
-  commandFunction:
-    # A function that produces the CLI command to start the MCP on stdio.
-    |-
-    (config) => ({
-      "command": "node",
-      "args": [
-        "dist/index.js"
-      ],
-      "env": {
-        ...
-      }
-    })`}
+    type: stdio
+    configSchema:
+      # JSON Schema defining the configuration options for the MCP.
+      {}
+    commandFunction:
+      # A function that produces the CLI command to start the MCP on stdio.
+      |-
+      (config) => ({
+        "command": "node",
+        "args": [
+          "dist/index.js"
+        ],
+        "env": {
+          ...
+        }
+      })`
+  }
   language="yaml"
   showHeader={true}
   headerLabel="smithery.yaml"
