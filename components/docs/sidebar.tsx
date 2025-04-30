@@ -10,7 +10,7 @@ export const navigation = [
 				links: [
 					{ title: "Integration", href: "/docs/integration" },
 					{ title: "Registry API", href: "/docs/registry" },
-					// { title: "Smithery CLI", href: "/docs/smithery-cli" }, @deprecated
+					{ title: "Configuration Profiles", href: "/docs/profiles" },
 					{ title: "Data Policy", href: "/docs/data-policy" },
 					{ title: "Client FAQ", href: "/docs/faq/users" },
 				],
