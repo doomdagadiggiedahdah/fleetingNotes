@@ -11,6 +11,7 @@ import {
 } from "../ui/dropdown-menu"
 import { Check, SlidersHorizontal, X } from "lucide-react"
 import { FILTER_OPTIONS } from "@/components/homepage/constants"
+import posthog from "posthog-js"
 
 export function ServerFilters() {
 	const router = useRouter()
@@ -24,6 +25,12 @@ export function ServerFilters() {
 			?.value || ""
 
 	const handleFilterChange = (value: string) => {
+		// Track filter option selection
+		posthog.capture("Filter Option Selected", {
+			filter_value: value,
+			filter_label: FILTER_OPTIONS.find((opt) => opt.value === value)?.label,
+		})
+
 		const newQuery = [baseQuery, value].filter(Boolean).join(" ")
 		const params = new URLSearchParams(searchParams.toString())
 		params.set("q", newQuery)
@@ -43,6 +50,12 @@ export function ServerFilters() {
 					<Button
 						variant="outline"
 						className="rounded-full px-4 h-[40px] border-[1.5px] hover:bg-secondary/80 bg-background text-base"
+						onClick={() => {
+							// Track filter button click
+							posthog.capture("Filter Button Clicked", {
+								current_filter: currentFilter,
+							})
+						}}
 					>
 						<SlidersHorizontal className="h-7 w-7 mr-2" />
 						Filter

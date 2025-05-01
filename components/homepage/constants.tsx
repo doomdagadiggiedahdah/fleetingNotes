@@ -18,7 +18,7 @@ export const FILTER_OPTIONS: FilterOption[] = [
 	{
 		label: "Remote",
 		value: "is:remote",
-		description: "Servers hosted by smithery",
+		description: "Servers running on the cloud",
 		icon: <Globe className="h-4 w-4 text-muted-foreground" />,
 	},
 	{
