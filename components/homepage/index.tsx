@@ -2,7 +2,7 @@ import ServerList from "@/components/homepage/server-list"
 import SwimlaneShowcase from "@/components/homepage/swimlane-showcase"
 import { Suspense } from "react"
 import { Container } from "../layouts/container"
-import ServerSearch from "../server-search"
+import { SearchAndFilters } from "./search-and-filters"
 import { Skeleton } from "../ui/skeleton"
 
 export const HomeSearch = ({
@@ -33,7 +33,7 @@ export const HomeSearch = ({
 					</p>
 				</div>
 				<Container size="md">
-					<ServerSearch />
+					<SearchAndFilters />
 				</Container>
 
 				{query ? (

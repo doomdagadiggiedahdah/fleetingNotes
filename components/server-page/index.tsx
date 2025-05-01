@@ -7,7 +7,7 @@ import { ClaimButton } from "./claim/claim-button"
 import { ServerFavicon } from "./server-favicon"
 import { ServerQualifiedName } from "./server-qualified-name"
 import { ServerTabs } from "./server-tabs"
-import ServerSearch from "../server-search"
+import ServerSearch from "../homepage/server-search"
 import { ServerStatusChip } from "../server-type-chip"
 import { SecurityStatusChip } from "../security-status-chip"
 

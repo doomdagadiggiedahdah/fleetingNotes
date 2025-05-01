@@ -4,7 +4,7 @@ import { Search as SearchIcon } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useRouter } from "nextjs-toploader/app"
 import { useCallback, useState, useEffect, useRef } from "react"
-import { ButtonLoading } from "./ui/loading-button"
+import { ButtonLoading } from "../ui/loading-button"
 import { cn } from "@/lib/utils"
 import { getRandomCategories } from "@/lib/actions/category"
 
@@ -93,7 +93,7 @@ export default function ServerSearch({
 	}
 
 	return (
-		<div className="mb-8">
+		<div>
 			<div className="relative" ref={searchContainerRef}>
 				<form onSubmit={handleSearch}>
 					<div className="relative">
