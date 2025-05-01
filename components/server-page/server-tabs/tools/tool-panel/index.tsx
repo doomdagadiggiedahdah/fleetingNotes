@@ -149,14 +149,14 @@ export function ToolsPanel({
 		return <ToolsPanelSkeleton />
 	}
 
-	if (!server.deploymentUrl || !configSchema) {
+	if (!tools.length) {
 		return (
 			<div className="flex flex-col lg:flex-row gap-6">
 				<div className="w-full lg:w-1/2">
 					<Card className="p-6">
 						<div className="text-sm text-muted-foreground text-center">
 							Tool listing on web is only available for hosted servers with
-							successful deployments. <br /> To find out more, check out our{" "}
+							successful deployments. To find out more, check out our{" "}
 							<a
 								href="https://smithery.ai/docs/deployments"
 								className="text-primary hover:underline"
@@ -196,6 +196,7 @@ export function ToolsPanel({
 						onExpandedChange={handleExpandedChange}
 						onToolInputChange={handleToolInputChange}
 						onExecutionChange={setActiveExecution}
+						hasDeploymentUrl={!!server.deploymentUrl}
 					/>
 				</div>
 
@@ -225,7 +226,7 @@ export function ToolsPanel({
 									setIsSignInOpen={setIsSignInOpen}
 								/>
 							</div>
-						) : isExpanded ? (
+						) : isExpanded && server.deploymentUrl ? (
 							<Card className="p-6">
 								<ToolResults {...activeExecution} />
 							</Card>

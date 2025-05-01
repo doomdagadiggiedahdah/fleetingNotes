@@ -43,32 +43,21 @@ const ToolsPreview = ({
 					</h2>
 				</div>
 				<div>
-					{deploymentUrl ? (
-						hasTools ? (
-							<>
-								{previewTools.map((tool) => (
-									<ToolPreview key={tool.name} tool={tool} href={toolsPath} />
-								))}
-								{hasMoreTools && (
-									<Link href={toolsPath}>
-										<div className="p-3 text-sm text-center text-muted-foreground hover:text-primary hover:bg-muted/50 rounded-md transition-colors cursor-pointer mt-2">
-											View {tools.length - NUM_TOOL_PREVIEW} more tool
-											{tools.length - NUM_TOOL_PREVIEW > 1 ? "s" : ""}
-										</div>
-									</Link>
-								)}
-							</>
-						) : (
-							<div className="p-4 text-center text-muted-foreground bg-muted/30 rounded-md">
-								<p className="mb-2">Configuration required for preview.</p>
+					{hasTools ? (
+						<>
+							{previewTools.map((tool) => (
+								<ToolPreview key={tool.name} tool={tool} href={toolsPath} />
+							))}
+							{hasMoreTools && (
 								<Link href={toolsPath}>
-									<Button variant="secondary" size="sm">
-										Explore Tools
-									</Button>
+									<div className="p-3 text-sm text-center text-muted-foreground hover:text-primary hover:bg-muted/50 rounded-md transition-colors cursor-pointer mt-2">
+										View {tools.length - NUM_TOOL_PREVIEW} more tool
+										{tools.length - NUM_TOOL_PREVIEW > 1 ? "s" : ""}
+									</div>
 								</Link>
-							</div>
-						)
-					) : (
+							)}
+						</>
+					) : !deploymentUrl ? (
 						<div className="p-4 text-center text-muted-foreground rounded-md">
 							<div className="text-muted-foreground mb-3">
 								Inspect available tools by running:
@@ -78,6 +67,15 @@ const ToolsPreview = ({
 									command={`npx -y @smithery/cli@latest inspect ${qualifiedName}`}
 								/>
 							</div>
+						</div>
+					) : (
+						<div className="p-4 text-center text-muted-foreground bg-muted/30 rounded-md">
+							<p className="mb-2">Configuration required for preview.</p>
+							<Link href={toolsPath}>
+								<Button variant="secondary" size="sm">
+									Explore Tools
+								</Button>
+							</Link>
 						</div>
 					)}
 				</div>

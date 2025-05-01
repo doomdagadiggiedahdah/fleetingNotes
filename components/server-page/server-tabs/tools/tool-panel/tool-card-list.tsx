@@ -26,6 +26,7 @@ interface ToolCardListProps {
 	onExpandedChange: (toolName: string, expanded: boolean) => void
 	onToolInputChange: (toolName: string, inputs: Record<string, unknown>) => void
 	onExecutionChange: (execution: ToolExecutionResult) => void
+	hasDeploymentUrl: boolean
 }
 
 export function ToolCardList({
@@ -40,6 +41,7 @@ export function ToolCardList({
 	onExpandedChange,
 	onToolInputChange,
 	onExecutionChange,
+	hasDeploymentUrl,
 }: ToolCardListProps) {
 	if (tools.length === 0) {
 		return (
@@ -87,9 +89,12 @@ export function ToolCardList({
 						}}
 						isExpanded={activeToolName === tool.name}
 						onExecutionChange={onExecutionChange}
-						disabled={status !== "connected" || isEditingConfig}
+						disabled={
+							!hasDeploymentUrl || status !== "connected" || isEditingConfig
+						}
 						toolInputs={toolInputs[tool.name] || {}}
 						onToolInputChange={(inputs) => onToolInputChange(tool.name, inputs)}
+						hasDeploymentUrl={hasDeploymentUrl}
 					/>
 				</Card>
 			))}

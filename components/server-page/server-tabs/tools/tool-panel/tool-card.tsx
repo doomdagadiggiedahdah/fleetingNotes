@@ -38,6 +38,7 @@ interface ToolCardProps {
 	isExpanded?: boolean
 	toolInputs: Record<string, unknown>
 	onToolInputChange: (inputs: Record<string, unknown>) => void
+	hasDeploymentUrl: boolean
 }
 
 export function ToolCard({
@@ -49,6 +50,7 @@ export function ToolCard({
 	isExpanded,
 	toolInputs,
 	onToolInputChange,
+	hasDeploymentUrl,
 }: ToolCardProps) {
 	const [execution, setExecution] = useState({
 		isExecuting: false,
@@ -134,12 +136,14 @@ export function ToolCard({
 							)}
 						</div>
 						{!isExpanded ? (
-							<div className="rounded-full px-4 py-2 border borderxwwww-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
-								<Play className="h-4 w-4 shrink-0 text-muted-foreground hover:text-primary" />
-								<span className="text-xs text-muted-foreground hover:text-primary font-medium">
-									Run
-								</span>
-							</div>
+							hasDeploymentUrl && (
+								<div className="rounded-full px-4 py-2 border borderxwwww-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5 transition-colors flex items-center gap-2">
+									<Play className="h-4 w-4 shrink-0 text-muted-foreground hover:text-primary" />
+									<span className="text-xs text-muted-foreground hover:text-primary font-medium">
+										Run
+									</span>
+								</div>
+							)
 						) : (
 							<ChevronUp className="h-4 w-4 text-muted-foreground hover:text-primary" />
 						)}
@@ -153,47 +157,49 @@ export function ToolCard({
 							setToolInputs={onToolInputChange}
 							showValidation={showValidation}
 						/>
-						<div className="flex flex-col items-center gap-2">
-							{validationErrors.length > 0 && (
-								<div className="text-destructive text-sm">
-									{validationErrors.map((error, index) => (
-										// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-										<div key={index}>{error}</div>
-									))}
-								</div>
-							)}
-							<TooltipProvider delayDuration={0}>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div>
-											<Button
-												className="w-32 flex items-center justify-center gap-2 rounded-full border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
-												variant="ghost"
-												disabled={execution.isExecuting || disabled}
-												onClick={handleExecute}
-											>
-												{execution.isExecuting ? (
-													<>
-														<Loader2 className="w-4 h-4 animate-spin" />
-														<span className="text-xs">Executing...</span>
-													</>
-												) : (
-													<>
-														<Play className="h-4 w-4 shrink-0 text-muted-foreground" />
-														<span className="text-xs">Run</span>
-													</>
-												)}
-											</Button>
-										</div>
-									</TooltipTrigger>
-									{disabled && (
-										<TooltipContent sideOffset={5}>
-											<p>Please configure and connect to run this tool.</p>
-										</TooltipContent>
-									)}
-								</Tooltip>
-							</TooltipProvider>
-						</div>
+						{hasDeploymentUrl && (
+							<div className="flex flex-col items-center gap-2">
+								{validationErrors.length > 0 && (
+									<div className="text-destructive text-sm">
+										{validationErrors.map((error, index) => (
+											// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+											<div key={index}>{error}</div>
+										))}
+									</div>
+								)}
+								<TooltipProvider delayDuration={0}>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<div>
+												<Button
+													className="w-32 flex items-center justify-center gap-2 rounded-full border border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5"
+													variant="ghost"
+													disabled={execution.isExecuting || disabled}
+													onClick={handleExecute}
+												>
+													{execution.isExecuting ? (
+														<>
+															<Loader2 className="w-4 h-4 animate-spin" />
+															<span className="text-xs">Executing...</span>
+														</>
+													) : (
+														<>
+															<Play className="h-4 w-4 shrink-0 text-muted-foreground" />
+															<span className="text-xs">Run</span>
+														</>
+													)}
+												</Button>
+											</div>
+										</TooltipTrigger>
+										{disabled && (
+											<TooltipContent sideOffset={5}>
+												<p>Please configure and connect to run this tool.</p>
+											</TooltipContent>
+										)}
+									</Tooltip>
+								</TooltipProvider>
+							</div>
+						)}
 					</div>
 				</AccordionContent>
 			</AccordionItem>
