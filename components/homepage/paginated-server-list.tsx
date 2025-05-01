@@ -1,6 +1,6 @@
 "use client"
 
-import type { FetchedServers } from "@/lib/utils/search-servers"
+import type { FetchedServers } from "@/lib/actions/search-servers"
 import { ServerListItem } from "./server-list-item"
 import { useRouter, useSearchParams } from "next/navigation"
 import {

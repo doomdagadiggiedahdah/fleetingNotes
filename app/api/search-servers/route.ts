@@ -1,4 +1,4 @@
-import { getAllServers } from "@/lib/utils/search-servers"
+import { getAllServers } from "@/lib/actions/search-servers"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {

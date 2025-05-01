@@ -135,6 +135,7 @@ export async function getAllServers(
 			: undefined,
 		parsedQueryObj?.is === "local" ? eq(servers.remote, false) : undefined,
 		parsedQueryObj?.is === "deployed" ? eq(isDeployedQuery, true) : undefined,
+		parsedQueryObj?.is === "featured" ? eq(servers.featured, true) : undefined,
 		parsedQueryObj?.is === "installable"
 			? or(
 					eq(isDeployedQuery, true),

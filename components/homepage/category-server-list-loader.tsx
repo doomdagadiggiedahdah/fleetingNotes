@@ -1,4 +1,4 @@
-import { getAllServers } from "@/lib/utils/search-servers"
+import { getAllServers } from "@/lib/actions/search-servers"
 import { CategoryServerList } from "./category-server-list"
 import { Skeleton } from "@/components/ui/skeleton"
 

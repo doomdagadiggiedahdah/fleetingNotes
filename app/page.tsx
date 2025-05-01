@@ -1,4 +1,4 @@
-import { HomeSearch } from "@/components/list/home-search"
+import { HomeSearch } from "@/components/homepage/home-search"
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { sql } from "drizzle-orm"

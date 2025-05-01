@@ -1,5 +1,5 @@
-import ServerList from "@/components/list/server-list"
-import SwimlaneShowcase from "@/components/list/swimlane-showcase"
+import ServerList from "@/components/homepage/server-list"
+import SwimlaneShowcase from "@/components/homepage/swimlane-showcase"
 import { Suspense } from "react"
 import { Container } from "../layouts/container"
 import ServerSearch from "../server-search"

@@ -1,4 +1,4 @@
-import { DEFAULT_PAGE_SIZE, getAllServers } from "@/lib/utils/search-servers"
+import { DEFAULT_PAGE_SIZE, getAllServers } from "@/lib/actions/search-servers"
 import { PaginatedServerList } from "./paginated-server-list"
 
 /**

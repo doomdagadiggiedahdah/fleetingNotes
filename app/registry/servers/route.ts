@@ -1,5 +1,5 @@
 import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
-import { getAllServers } from "@/lib/utils/search-servers"
+import { getAllServers } from "@/lib/actions/search-servers"
 import { pick } from "lodash"
 import { NextResponse } from "next/server"
 

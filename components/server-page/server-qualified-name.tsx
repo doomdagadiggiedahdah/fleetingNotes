@@ -6,7 +6,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import type { FetchedServers } from "@/lib/utils/search-servers"
+import type { FetchedServers } from "@/lib/actions/search-servers"
 import { useState } from "react"
 import { Copy } from "lucide-react"
 

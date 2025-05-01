@@ -1,4 +1,4 @@
-import type { FetchedServers } from "@/lib/utils/search-servers"
+import type { FetchedServers } from "@/lib/actions/search-servers"
 import { Sparkles } from "lucide-react"
 import Link from "next/link"
 

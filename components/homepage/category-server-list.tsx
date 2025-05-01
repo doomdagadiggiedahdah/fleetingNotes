@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import type { FetchedServers } from "@/lib/utils/search-servers"
+import type { FetchedServers } from "@/lib/actions/search-servers"
 import { ServerListItem } from "./server-list-item"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
