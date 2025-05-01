@@ -80,7 +80,7 @@ export function Footer() {
 								<SiGithub className="w-4 h-4" />
 							</a>
 							<a
-								href="https://discord.gg/Afd38S5p9A"
+								href="https://discord.gg/sKd9uycgH9"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-muted-foreground hover:text-foreground transition-colors"
