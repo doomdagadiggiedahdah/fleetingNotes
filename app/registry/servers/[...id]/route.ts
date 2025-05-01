@@ -7,6 +7,7 @@ import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
+import { getSavedConfig } from "@/lib/actions/profiles"
 
 import { eq, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
@@ -36,9 +37,10 @@ export async function GET(
 	props: { params: Promise<{ id: string[] }> },
 ) {
 	const params = await props.params
+	const serverQualifiedName = params.id.join("/")
+
 	try {
-		const serverQualifiedName = params.id.join("/")
-		const server = await db
+		const query = db
 			.select({
 				id: servers.id,
 				qualifiedName: servers.qualifiedName,
@@ -69,10 +71,16 @@ export async function GET(
 			.leftJoin(serverScans, eq(servers.id, serverScans.serverId))
 			.where(eq(servers.qualifiedName, serverQualifiedName))
 			.limit(1)
-			.then((rows) => rows[0])
+
+		const server = await query.then((rows) => rows[0])
 
 		if (!server) {
-			return NextResponse.json({ error: "Server not found" }, { status: 404 })
+			return NextResponse.json(
+				{
+					error: "Server not found",
+				},
+				{ status: 404 },
+			)
 		}
 
 		// Prepare the connections array with the deployment URL if available
@@ -111,7 +119,6 @@ export async function GET(
 			}),
 		)
 	} catch (error) {
-		console.error("Error fetching server:", error)
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },
@@ -132,29 +139,40 @@ const RequestSchema = z.object({
 })
 
 // Called by stdio setup
-// @deprecated, because in the future you can just pull Docker images with the config inside the server.
 export async function POST(
 	request: Request,
 	props: { params: Promise<{ id: string[] }> },
 ) {
-	let apiKey: Awaited<ReturnType<typeof checkApiKey>> = null
-	const token = extractBearerToken(request)
-	if (token) {
-		apiKey = await checkApiKey(token)
-	}
-
 	const params = await props.params
 	const serverId = params.id.join("/")
+
+	let apiKey: Awaited<ReturnType<typeof checkApiKey>> = null
+	const token = extractBearerToken(request)
+
+	if (token) {
+		try {
+			apiKey = await checkApiKey(token)
+		} catch (error) {
+			console.warn(`Invalid API key`)
+		}
+	}
+
 	try {
 		const result = await db.query.servers.findFirst({
 			where: eq(servers.qualifiedName, serverId),
 		})
 
 		if (!result) {
-			return NextResponse.json({ error: "Server not found" }, { status: 404 })
+			return NextResponse.json(
+				{
+					error: "Server not found",
+				},
+				{ status: 404 },
+			)
 		}
 
-		const { data, error } = RequestSchema.safeParse(await request.json())
+		const requestBody = await request.json()
+		const { data, error } = RequestSchema.safeParse(requestBody)
 
 		if (error) {
 			return NextResponse.json({ error: error.errors }, { status: 400 })
@@ -163,7 +181,6 @@ export async function POST(
 		const connections = RegistryServerSchema.shape.connections.parse(
 			result.connections,
 		)
-		// choose connection based on priority
 		const connection = chooseConnection(connections)
 
 		if (!connection) {
@@ -173,10 +190,30 @@ export async function POST(
 			)
 		}
 
-		const finalResult = generateConfig(connection, data.config)
+		/* Get saved config if apiKey exists */
+		let savedConfig: Record<string, unknown> = {}
+		if (apiKey) {
+			const savedConfigResult = await getSavedConfig(serverId, apiKey.key)
+			if (savedConfigResult.ok) {
+				savedConfig = savedConfigResult.value.config
+			}
+		}
+
+		/* Merge saved config with request config */
+		const mergedConfig: Record<string, unknown> = {
+			...savedConfig,
+			...data.config, // Request config takes precedence
+		}
+
+		const finalResult = generateConfig(connection, mergedConfig) // returns STDIO connection
 
 		if (!finalResult.success) {
-			return NextResponse.json({ error: finalResult.error }, { status: 400 })
+			return NextResponse.json(
+				{
+					error: finalResult.error,
+				},
+				{ status: 400 },
+			)
 		}
 
 		posthog.capture({
@@ -189,7 +226,6 @@ export async function POST(
 		})
 		return NextResponse.json(finalResult)
 	} catch (error) {
-		console.error(`Error generating config for server ${serverId}:`, error)
 		return NextResponse.json(
 			{ error: "Internal server error" },
 			{ status: 500 },

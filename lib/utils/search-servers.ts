@@ -51,11 +51,11 @@ const formatTsQuery = (query: string) => {
 	// Split on spaces, remove empty strings
 	const tokens = query.split(/\s+/).filter(Boolean)
 	// Escape special characters and add :* for prefix matching
-	const formattedTokens = tokens.map(token => 
-		token.replace(/[&|!:*()]/g, '\\$&') + ':*'
+	const formattedTokens = tokens.map(
+		(token) => `${token.replace(/[&|!:*()]/g, "\\$&")}:*`,
 	)
 	// Join with & operator
-	return formattedTokens.join(' & ')
+	return formattedTokens.join(" & ")
 }
 
 /**
