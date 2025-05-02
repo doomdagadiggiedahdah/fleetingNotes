@@ -14,12 +14,14 @@ interface InstallCommandBlock {
 	command: string
 	serverQualifiedName: string
 	client: string
+	profileQualifiedName?: string
 }
 
 export function InstallCommandBlock({
 	command,
 	serverQualifiedName,
 	client,
+	profileQualifiedName,
 }: InstallCommandBlock) {
 	const { currentSession, setIsSignInOpen } = useAuth()
 	const [isFeatureEnabled, setIsFeatureEnabled] = useState(false)

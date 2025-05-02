@@ -11,6 +11,7 @@ import type { ClientType } from "@/lib/config/clients"
 import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
+import { getServerConfigSchema } from "@/lib/utils/get-server-config-schema"
 
 export type InstallTabStates = "auto" | "manual" | "url"
 
@@ -32,10 +33,9 @@ export function Installtabs({
 	profiles,
 }: InstallTabsProps) {
 	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
-	const [selectedClient, setSelectedClient] = useState<ClientType>("claude")
+	const [selectedClient, setSelectedClient] = useState<ClientType | null>(null)
 	const [isClientConfigured, setIsClientConfigured] = useState(false)
 	const [configValues, setConfigValues] = useState<JsonObject>({})
-	// const [savedConfig, setSavedConfig] = useState<JSONSchema | null>(null)
 	const [apiKey, setApiKey] = useState<string | null>(passedApiKey || null)
 	const [usingSavedConfig, setUsingSavedConfig] = useState<boolean>(false)
 	const [bypassWarning, setBypassWarning] = useState(false)
@@ -44,11 +44,8 @@ export function Installtabs({
 
 	const { currentSession, setIsSignInOpen } = useAuth()
 
-	// Get schema directly from server instead of using utility function
-	const prefetchedSchema = server.deploymentUrl
-		? server.configSchema
-		: server.connections.find((conn) => conn.type === "stdio")?.configSchema ||
-			null
+	// Get schema using utility function
+	const serverConfigSchema = getServerConfigSchema(server)
 
 	// Update apiKey state when passedApiKey or session changes
 	useEffect(() => {
@@ -59,8 +56,9 @@ export function Installtabs({
 		}
 	}, [passedApiKey, currentSession])
 
+	/* Callback from config form */
 	const handleClientConfig = async (values: JsonObject) => {
-		const finalValues = processConfig(values, prefetchedSchema)
+		const finalValues = processConfig(values, serverConfigSchema)
 
 		setConfigValues(finalValues)
 		setIsClientConfigured(true)
@@ -82,10 +80,10 @@ export function Installtabs({
 	// Effect for handling empty schema configuration
 	useEffect(() => {
 		async function configureEmptySchema() {
-			if (!isClientConfigured && prefetchedSchema) {
+			if (!isClientConfigured && serverConfigSchema) {
 				const isEmptySchema =
-					!prefetchedSchema.properties ||
-					Object.keys(prefetchedSchema.properties).length === 0
+					!serverConfigSchema.properties ||
+					Object.keys(serverConfigSchema.properties).length === 0
 				if (isEmptySchema) {
 					await handleClientConfig({})
 				}
@@ -93,11 +91,20 @@ export function Installtabs({
 		}
 
 		configureEmptySchema()
-	}, [prefetchedSchema, isClientConfigured])
+	}, [serverConfigSchema, isClientConfigured])
 
 	// Handler for toggling the usingSavedConfig state
 	const handleToggleUsingSavedConfig = (value: boolean) => {
 		setUsingSavedConfig(value)
+	}
+
+	// Reset configuration when client changes
+	const handleClientChange = (client: ClientType | null) => {
+		setSelectedClient(client)
+		if (client === null) {
+			setIsClientConfigured(false)
+			setConfigValues({})
+		}
 	}
 
 	// Check is any connection is published
@@ -144,7 +151,7 @@ export function Installtabs({
 					<InstallTabContent
 						server={server}
 						client={selectedClient}
-						configSchema={prefetchedSchema}
+						configSchema={serverConfigSchema}
 						isClientConfigured={isClientConfigured}
 						configValues={configValues}
 						onClientConfig={handleClientConfig}
@@ -153,7 +160,7 @@ export function Installtabs({
 						apiKey={apiKey || ""}
 						usingSavedConfig={usingSavedConfig}
 						setUsingSaved={handleToggleUsingSavedConfig}
-						onClientChange={setSelectedClient}
+						onClientChange={handleClientChange}
 						method={activeTab}
 						profiles={profiles}
 						selectedProfileQualifiedName={selectedProfileQualifiedName}

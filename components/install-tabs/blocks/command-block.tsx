@@ -4,28 +4,17 @@ import { Bug, FileText, CloudOff } from "lucide-react"
 import type { JsonObject } from "@/lib/types/json"
 import { cleanConfig, generateCommandSet } from "@/lib/utils/generate-command"
 import type { ClientType } from "@/lib/config/clients"
-import { CLIENTS_CONFIG, CLIENT_ORDER } from "@/lib/config/clients"
+import { CLIENTS_CONFIG } from "@/lib/config/clients"
 import { VSCodeBlock } from "./vscode-block"
+import { WindsurfBlock } from "./windsurf-block"
 import { BugReportDialog } from "./bug-report-dialog"
 import { RunCommandBlock } from "./run-command-block"
 import { InstallCommandBlock } from "./install-command-block"
-import { useState } from "react"
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-} from "@/components/ui/command"
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
-import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { getClientIcon } from "../icons"
+import { useState, useEffect } from "react"
+import posthog from "posthog-js"
+
+// Feature flag for Windsurf magic link
+const WINDSURF_MAGIC_LINK_FLAG = "windsurf-magic-link"
 
 export const CommandBlock = ({
 	server,
@@ -33,7 +22,6 @@ export const CommandBlock = ({
 	config,
 	apiKey,
 	usingSavedConfig,
-	onClientChange,
 	profileQualifiedName,
 }: {
 	server: FetchedServer
@@ -41,12 +29,17 @@ export const CommandBlock = ({
 	config?: JsonObject
 	apiKey: string
 	usingSavedConfig?: boolean
-	onClientChange?: (client: ClientType) => void
 	profileQualifiedName?: string
 }) => {
 	const [isBugReportOpen, setIsBugReportOpen] = useState(false)
-	const [open, setOpen] = useState(false)
+	const [isWindsurfMagicLinkEnabled, setIsWindsurfMagicLinkEnabled] =
+		useState(false)
 	const cleanedConfig = cleanConfig(config)
+
+	useEffect(() => {
+		const enabled = posthog.getFeatureFlag(WINDSURF_MAGIC_LINK_FLAG) === true
+		setIsWindsurfMagicLinkEnabled(enabled)
+	}, [])
 
 	const { unixCommand, windowsCmdCommand, windowsCmdFullCommand } =
 		generateCommandSet({
@@ -65,12 +58,6 @@ export const CommandBlock = ({
 		)
 
 	const clientConfig = CLIENTS_CONFIG[client]
-
-	const clientOptions = CLIENT_ORDER.map((value) => ({
-		value,
-		label: CLIENTS_CONFIG[value].label,
-		icon: getClientIcon(value, CLIENTS_CONFIG[value]),
-	}))
 
 	const renderInstallInstructions = () => {
 		if (client === "vscode") {
@@ -110,55 +97,7 @@ export const CommandBlock = ({
 
 	return (
 		<>
-			<div>
-				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							role="combobox"
-							aria-expanded={open}
-							className="w-[200px] justify-between hover:border-primary"
-						>
-							<span className="flex items-center gap-2">
-								{getClientIcon(client, clientConfig)}
-								{clientConfig.label}
-							</span>
-							<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0">
-						<Command className="overflow-y-auto max-h-[250px] overscroll-contain">
-							<CommandInput placeholder="Search client..." />
-							<CommandEmpty>No client found.</CommandEmpty>
-							<CommandGroup className="dark-scrollbar overflow-y-auto overscroll-contain">
-								{clientOptions.map((option) => (
-									<CommandItem
-										key={option.value}
-										value={option.value}
-										onSelect={(currentValue) => {
-											onClientChange?.(currentValue as ClientType)
-											setOpen(false)
-										}}
-									>
-										<Check
-											className={cn(
-												"mr-2 h-4 w-4",
-												client === option.value ? "opacity-100" : "opacity-0",
-											)}
-										/>
-										<span className="flex items-center gap-2">
-											{option.icon}
-											{option.label}
-										</span>
-									</CommandItem>
-								))}
-							</CommandGroup>
-						</Command>
-					</PopoverContent>
-				</Popover>
-			</div>
-
-			<p className="mt-3 mb-3 text-muted-foreground text-sm">
+			<p className="mb-3 text-muted-foreground text-sm">
 				{renderInstallInstructions()}
 			</p>
 
@@ -170,6 +109,16 @@ export const CommandBlock = ({
 						apiKey={apiKey}
 						usingSavedConfig={usingSavedConfig}
 						client={client}
+						profileQualifiedName={profileQualifiedName}
+					/>
+				) : client === "windsurf" && isWindsurfMagicLinkEnabled ? (
+					<WindsurfBlock
+						server={server}
+						config={config}
+						apiKey={apiKey}
+						usingSavedConfig={usingSavedConfig}
+						client={client}
+						profileQualifiedName={profileQualifiedName}
 					/>
 				) : clientConfig.usesRunCommand ? (
 					<RunCommandBlock

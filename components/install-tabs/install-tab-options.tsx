@@ -22,7 +22,7 @@ export function InstallTabOptions({
 						className="flex items-center gap-2 px-3"
 						data-state={activeTab === "auto" ? "active" : "inactive"}
 					>
-						<Zap className="h-4 w-4 text-primary fill-current" />
+						<Zap className="h-4 w-4 text-primary" />
 						Auto
 					</TabsTrigger>
 					<TabsTrigger

@@ -1,5 +1,5 @@
 import { ConfigForm } from "../../../../config-form"
-import { LoginBlur } from "../../overview/side-panel/install-tabs/login-blur"
+import { LoginBlur } from "../../../../install-tabs/login-blur"
 import type { JSONSchema } from "@/lib/types/server"
 import type { Session } from "@supabase/supabase-js"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"

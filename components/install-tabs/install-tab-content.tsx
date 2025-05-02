@@ -4,7 +4,7 @@ import { UrlBlock } from "./blocks/url-block"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { JSONSchema } from "@/lib/types/server"
 import type { JsonObject } from "@/lib/types/json"
-import { ConfigForm } from "../../../../../config-form"
+import { ConfigForm } from "../config-form"
 import { LoginBlur } from "./login-blur"
 import type { Session } from "@supabase/supabase-js"
 import type { ClientType } from "@/lib/config/clients"
@@ -13,10 +13,12 @@ import { extractPrerequisites } from "@/lib/utils/extract-prerequisites"
 import { PrerequisitesDisplay } from "./prerequisites-display"
 import { cleanConfig } from "@/lib/utils/generate-command"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
+import { ClientSelector } from "./client-selector"
+import { ClientSelect } from "./compact-client-selector"
 
 type InstallTabContentProps = {
 	server: FetchedServer
-	client: ClientType
+	client: ClientType | null
 	configSchema: JSONSchema | null
 	isClientConfigured: boolean
 	configValues: JsonObject
@@ -26,7 +28,7 @@ type InstallTabContentProps = {
 	apiKey: string
 	usingSavedConfig: boolean
 	setUsingSaved: (value: boolean) => void
-	onClientChange?: (client: ClientType) => void
+	onClientChange: (client: ClientType | null) => void
 	method: "auto" | "manual" | "url"
 	profiles: ProfileWithSavedConfig[]
 	selectedProfileQualifiedName?: string
@@ -43,7 +45,7 @@ export function InstallTabContent({
 	currentSession,
 	setIsSignInOpen,
 	apiKey,
-	usingSavedConfig,
+	// usingSavedConfig,
 	setUsingSaved,
 	onClientChange,
 	method,
@@ -70,15 +72,35 @@ export function InstallTabContent({
 		)
 	}
 
+	// If no client is selected, show the full client selector
+	if (!client && method === "auto") {
+		return (
+			<div className="space-y-4">
+				<p className="text-md font-medium text-muted-foreground">
+					Choose a client to get started
+				</p>
+				<ClientSelector selectedClient={null} onClientChange={onClientChange} />
+			</div>
+		)
+	}
+
 	// Extract prerequisites information
 	const prerequisites = extractPrerequisites(server)
 
 	// Prepare content based on configuration state
 	let content: React.ReactNode
 
+	// if client is not configured, always show config form
 	if (!isClientConfigured) {
 		content = (
 			<>
+				{method === "auto" && (
+					<ClientSelect
+						client={client}
+						onClientChange={onClientChange}
+						className="mb-4 pl-2"
+					/>
+				)}
 				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
@@ -102,60 +124,79 @@ export function InstallTabContent({
 					onUsingSavedConfig={setUsingSaved}
 					profiles={profiles}
 					buttonAlignment="start"
-					onlySaveAndConnect={true} // with profiles, this might make more sense - else it's too complicated
-					// however, we guarantee that it's saved before we go to the next step
+					onlySaveAndConnect={true}
 				/>
 			</>
 		)
-	} else {
-		const cleanedConfig = cleanConfig(configValues)
+		// if client configured and method is auto, we show command block
+	} else if (method === "auto" && client) {
+		content = (
+			<>
+				<ClientSelect
+					client={client}
+					onClientChange={onClientChange}
+					className="mb-4 pl-2"
+				/>
+				{!server.remote && prerequisites !== "npx" && (
+					<PrerequisitesDisplay prerequisites={prerequisites} />
+				)}
+				<CommandBlock
+					server={server}
+					client={client}
+					config={configValues}
+					apiKey={apiKey}
+					usingSavedConfig={true}
+					profileQualifiedName={selectedProfileQualifiedName}
+				/>
+			</>
+		)
+		// if manual we show JSON block
+	} else if (method === "manual") {
 		content = (
 			<>
 				{!server.remote && prerequisites !== "npx" && (
 					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
-				{method === "manual" ? (
-					<JsonBlock
-						server={server}
-						cleanedConfig={cleanedConfig}
-						apiKey={apiKey}
-						usingSavedConfig={true}
-						profileQualifiedName={selectedProfileQualifiedName}
-					/>
-				) : method === "url" ? (
-					<UrlBlock
-						server={server}
-						config={configValues}
-						apiKey={apiKey}
-						usingSavedConfig={true}
-						profileQualifiedName={selectedProfileQualifiedName}
-					/>
-				) : (
-					<CommandBlock
-						server={server}
-						client={client}
-						config={configValues}
-						apiKey={apiKey}
-						usingSavedConfig={true}
-						onClientChange={onClientChange}
-						profileQualifiedName={selectedProfileQualifiedName}
-					/>
+				<JsonBlock
+					server={server}
+					cleanedConfig={cleanConfig(configValues)}
+					apiKey={apiKey}
+					usingSavedConfig={true}
+					profileQualifiedName={selectedProfileQualifiedName}
+				/>
+			</>
+		)
+		// For url, we show url block
+	} else if (method === "url") {
+		content = (
+			<>
+				{!server.remote && prerequisites !== "npx" && (
+					<PrerequisitesDisplay prerequisites={prerequisites} />
 				)}
+				<UrlBlock
+					server={server}
+					config={configValues}
+					apiKey={apiKey}
+					usingSavedConfig={true}
+					profileQualifiedName={selectedProfileQualifiedName}
+				/>
 			</>
 		)
 	}
 
-	// Check session status directly - no loading state needed anymore
+	const wrappedContent = <div className="space-y-4">{content}</div>
+
+	// If user is not logged in, show login blur
 	if (!currentSession) {
 		return (
 			<LoginBlur
 				setIsSignInOpen={setIsSignInOpen}
 				promptText="Login to configure client"
 			>
-				{content}
+				{wrappedContent}
 			</LoginBlur>
 		)
 	}
 
-	return content
+	return wrappedContent
 }

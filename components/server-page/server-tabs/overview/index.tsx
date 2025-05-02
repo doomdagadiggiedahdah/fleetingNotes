@@ -7,10 +7,12 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import type { JSONSchema } from "@/lib/types/server"
 import { ToolPreview } from "./tool-preview"
 import { CommandChip } from "@/components/docs/command-chip"
+import type { fetchData } from "./side-panel/fetch-data"
 
 interface OverviewTabProps {
 	server: FetchedServer
 	configSchema?: JSONSchema | null
+	fetchResult: Awaited<ReturnType<typeof fetchData>>
 }
 
 interface ToolsPreviewProps {
@@ -84,7 +86,7 @@ const ToolsPreview = ({
 	)
 }
 
-export function OverviewTab({ server }: OverviewTabProps) {
+export function OverviewTab({ server, fetchResult }: OverviewTabProps) {
 	const tools = (server.tools as Tool[]) ?? []
 
 	return (
@@ -104,7 +106,7 @@ export function OverviewTab({ server }: OverviewTabProps) {
 
 				{/* Side Panel */}
 				<div className="md:col-span-5">
-					<SidePanel server={server} />
+					<SidePanel server={server} fetchResult={fetchResult} />
 				</div>
 			</div>
 		</div>

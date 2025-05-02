@@ -20,6 +20,7 @@ interface VSCodeBlockProps {
 	config?: JsonObject
 	usingSavedConfig?: boolean
 	client: "vscode" | "vscode-insiders"
+	profileQualifiedName?: string
 }
 
 export const VSCodeBlock = ({
@@ -28,6 +29,7 @@ export const VSCodeBlock = ({
 	config,
 	usingSavedConfig,
 	client,
+	profileQualifiedName,
 }: VSCodeBlockProps) => {
 	// Generate magic link
 	const mcpConfig = {
@@ -43,6 +45,7 @@ export const VSCodeBlock = ({
 				: config && Object.keys(config).length > 0
 					? ["--config", JSON.stringify(config)]
 					: []),
+			...(profileQualifiedName ? ["--profile", profileQualifiedName] : []),
 		],
 	}
 	const vscodeConfig = encodeURIComponent(JSON.stringify(mcpConfig))
@@ -56,6 +59,7 @@ export const VSCodeBlock = ({
 		config,
 		apiKey,
 		usingSavedConfig,
+		profileQualifiedName,
 	})
 
 	return (
@@ -97,12 +101,11 @@ export const VSCodeBlock = ({
 							<a
 								href={client === "vscode" ? vscodeUrl : vscodeInsidersUrl}
 								onClick={() => {
-									posthog.capture(
-										`${client === "vscode" ? "VS Code" : "VS Code Insiders"} Install Link Clicked`,
-										{
-											serverQualifiedName: server.qualifiedName,
-										},
-									)
+									posthog.capture("Magic Link Clicked", {
+										// serverUrl: client === "vscode" ? vscodeUrl : vscodeInsidersUrl,
+										serverQualifiedName: server.qualifiedName,
+										client: client,
+									})
 								}}
 							>
 								<Download className="h-5 w-5" />

@@ -7,16 +7,19 @@ import { DeploymentsTab } from "./deployments"
 import { SettingsTab } from "./settings"
 import { ServerTabsNav } from "./tabs-nav"
 import { ToolPanelContainer } from "./tools"
+import type { fetchData } from "./overview/side-panel/fetch-data"
 
 interface ServerTabsProps {
 	server: FetchedServer
 	activeTab: string
+	fetchResult: Awaited<ReturnType<typeof fetchData>>
 	// configSchema?: JSONSchema | null
 }
 
 export function ServerTabs({
 	server,
 	activeTab,
+	fetchResult,
 	// configSchema,
 }: ServerTabsProps) {
 	return (
@@ -27,7 +30,9 @@ export function ServerTabs({
 
 				{/* Content Grid */}
 				<TabsContent value="about">
-					{activeTab === "about" && <OverviewTab server={server} />}
+					{activeTab === "about" && (
+						<OverviewTab server={server} fetchResult={fetchResult} />
+					)}
 				</TabsContent>
 
 				<TabsContent value="tools">

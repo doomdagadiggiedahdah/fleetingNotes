@@ -4,6 +4,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import { createSmitheryUrl } from "@smithery/sdk"
 import { Info } from "lucide-react"
 import { ApiKeySensitivityAlert } from "../alerts/api-key-sensitivity-alert"
+import posthog from "posthog-js"
 
 interface UrlBlockProps {
 	server: FetchedServer
@@ -54,6 +55,12 @@ export const UrlBlock = ({
 					language="http"
 					showHeader={true}
 					headerLabel="HTTP URL"
+					onMouseDown={() => {
+						posthog.capture("HTTP URL Copied", {
+							serverQualifiedName: server.qualifiedName,
+							eventTag: "http_url",
+						})
+					}}
 				/>
 			</div>
 

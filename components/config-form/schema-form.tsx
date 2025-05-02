@@ -170,7 +170,9 @@ export function SchemaForm({
 				return (
 					<div
 						className={
-							isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""
+							isFieldInvalid(key)
+								? "ring-2 ring-destructive rounded-md p-1"
+								: "p-1"
 						}
 					>
 						<Input
@@ -199,7 +201,7 @@ export function SchemaForm({
 			default:
 				return (
 					<div
-						className={`relative ${isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}`}
+						className={`relative p-1 ${isFieldInvalid(key) ? "ring-2 ring-destructive rounded-md" : ""}`}
 					>
 						<Input
 							id={key}
@@ -247,54 +249,56 @@ export function SchemaForm({
 			{error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
 			<form onSubmit={handleSubmit} className="space-y-4">
-				{hasConfigFields ? (
-					<>
-						{Object.entries(schema?.properties || {})
-							// Sort entries to put required fields first
-							.sort(([keyA], [keyB]) => {
-								const isRequiredA =
-									Array.isArray(schema.required) &&
-									schema.required.includes(keyA)
-								const isRequiredB =
-									Array.isArray(schema.required) &&
-									schema.required.includes(keyB)
+				<div className="max-h-[400px] overflow-y-auto dark-scrollbar pr-2 space-y-4">
+					{hasConfigFields ? (
+						<>
+							{Object.entries(schema?.properties || {})
+								// Sort entries to put required fields first
+								.sort(([keyA], [keyB]) => {
+									const isRequiredA =
+										Array.isArray(schema.required) &&
+										schema.required.includes(keyA)
+									const isRequiredB =
+										Array.isArray(schema.required) &&
+										schema.required.includes(keyB)
 
-								if (isRequiredA && !isRequiredB) return -1
-								if (!isRequiredA && isRequiredB) return 1
-								return 0 // Keep original order for fields with same required status
-							})
-							.map(([key, field]: [string, JSONSchema]) => {
-								const isRequired =
-									Array.isArray(schema.required) &&
-									schema.required.includes(key)
-								return (
-									<div key={key} className="space-y-2">
-										<Label htmlFor={key}>
-											{key}
-											{isRequired && (
-												<span className="text-destructive ml-1">*</span>
+									if (isRequiredA && !isRequiredB) return -1
+									if (!isRequiredA && isRequiredB) return 1
+									return 0 // Keep original order for fields with same required status
+								})
+								.map(([key, field]: [string, JSONSchema]) => {
+									const isRequired =
+										Array.isArray(schema.required) &&
+										schema.required.includes(key)
+									return (
+										<div key={key} className="space-y-2">
+											<Label htmlFor={key}>
+												{key}
+												{isRequired && (
+													<span className="text-destructive ml-1">*</span>
+												)}
+											</Label>
+											{field.description && (
+												<p className="text-xs text-muted-foreground mt-1 mb-2">
+													{field.description}
+												</p>
 											)}
-										</Label>
-										{field.description && (
-											<p className="text-xs text-muted-foreground mt-1 mb-2">
-												{field.description}
-											</p>
-										)}
-										{renderInput(key, field)}
-										{isFieldInvalid(key) && (
-											<p className="text-xs text-destructive mt-1">
-												This field is required
-											</p>
-										)}
-									</div>
-								)
-							})}
-					</>
-				) : (
-					<p className="text-start text-muted-foreground mb-4">
-						No configuration needed. Connect to run tools.
-					</p>
-				)}
+											{renderInput(key, field)}
+											{isFieldInvalid(key) && (
+												<p className="text-xs text-destructive mt-1">
+													This field is required
+												</p>
+											)}
+										</div>
+									)
+								})}
+						</>
+					) : (
+						<p className="text-start text-muted-foreground mb-4">
+							No configuration needed. Connect to run tools.
+						</p>
+					)}
+				</div>
 
 				<div className={`flex gap-2 justify-${buttonAlignment}`}>
 					{onCancel && (
