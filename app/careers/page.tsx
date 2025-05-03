@@ -92,15 +92,10 @@ export default function CareersPage() {
 
 						<div className="pt-4">
 							<Button asChild size="lg">
-								<Link href="mailto:careers@smithery.ai">Apply Now</Link>
+								<Link href="https://wood-asp-06c.notion.site/1e8a0cc76127806e840af5b14f289027">
+									Apply Now
+								</Link>
 							</Button>
-							<p className="text-muted-foreground text-sm mt-2">
-								<i>
-									Please send your resume and a concise highlight of your most
-									impressive accomplishment in your area of expertise to{" "}
-									<a href="mailto:careers@smithery.ai">careers@smithery.ai</a>.
-								</i>
-							</p>
 						</div>
 					</CardContent>
 				</Card>
