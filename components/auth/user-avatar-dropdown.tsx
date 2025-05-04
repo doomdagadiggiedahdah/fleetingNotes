@@ -11,13 +11,7 @@ import {
 import { useToast } from "@/lib/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
-import {
-	Key,
-	LogOut,
-	Server as ServerIcon,
-	User as UserIcon,
-	UsersRound,
-} from "lucide-react"
+import { Key, LogOut, Server as ServerIcon, UsersRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface UserAvatarDropdownProps {
@@ -72,16 +66,19 @@ export function UserAvatarDropdown({ user }: UserAvatarDropdownProps) {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
+				{/* <DropdownMenuItem
+					className="flex items-center gap-2 cursor-pointer"
+					onClick={() => router.push("/account")}
+				>
 					<UserIcon className="h-4 w-4" />
 					<span>{name}</span>
-				</DropdownMenuItem>
+				</DropdownMenuItem> */}
 				<DropdownMenuItem
 					className="flex items-center gap-2 cursor-pointer"
 					onClick={handleServersClick}
 				>
 					<ServerIcon className="h-4 w-4" />
-					<span>Servers</span>
+					<span>My Servers</span>
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					className="flex items-center gap-2 cursor-pointer"
