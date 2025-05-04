@@ -149,7 +149,7 @@ export function ToolsPanel({
 		return <ToolsPanelSkeleton />
 	}
 
-	if (!tools.length) {
+	if (!tools.length || !server.deploymentUrl) {
 		return (
 			<div className="flex flex-col lg:flex-row gap-6">
 				<div className="w-full lg:w-1/2">
