@@ -11,16 +11,14 @@ import {
 	ServerConfigSchema,
 } from "@/lib/types/server-config"
 import { wait } from "@/lib/utils"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { fetchServerTools } from "@/lib/utils/get-tools"
 import { joinGithubPath } from "@/lib/utils/github"
-import { err, ok, type Result, toResult } from "@/lib/utils/result"
+import { err, ok, type Result } from "@/lib/utils/result"
 import {
 	CommandExitError,
 	type CommandResult,
 	Sandbox,
 } from "@e2b/code-interpreter"
-import { retry } from "@lifeomic/attempt"
 import YAML from "yaml"
 
 // Path to clone repo into
@@ -388,56 +386,33 @@ export async function testSandbox(
 
 	const deployedUrl = getDeployedUrl(flyAppId)
 
-	// Ping the server at least once
-	const pingResult = await toResult(
-		retry(
-			async () => {
-				console.log("Waiting for server to come online...")
-				const result = await fetchConfigSchema(deployedUrl)
-
-				if (!result.ok) throw result.error
-			},
-			{
-				maxAttempts: 5,
-				factor: 2,
-				delay: 1000,
-			},
-		),
-	)
-
-	if (!pingResult.ok) {
-		console.log("Failed to ping server online")
-		await waitForLogs()
-		await cleanup()
-		return err({
-			startupError:
-				"Unable to successfully ping server after waiting 30 seconds.",
-			serverRuntimeLogs: logs,
-		})
-	}
-
-	// Validate if tool API call works
-	console.log(`[${flyAppId}] Validating tool API call...`)
-	const toolFetchResult = await fetchServerTools(
+	const toolResult = await fetchServerTools(
 		deployedUrl,
+		smitheryConfig.startCommand.configSchema,
 		smitheryConfig.startCommand.exampleConfig,
 	)
-	console.log(`[${flyAppId}] toolFetchResult.ok`, toolFetchResult.ok)
+	console.log(`[${flyAppId}] toolFetchResult.ok`, toolResult.ok)
 
-	if (!toolFetchResult.ok) {
-		console.log(`[${flyAppId}] toolFetchResult.error:`, toolFetchResult.error)
+	if (!toolResult.ok) {
+		console.log(`[${flyAppId}] toolResult.error:`, toolResult.error)
 
-		await logCommand.kill()
 		await waitForLogs()
 		await cleanup()
+
+		await logCommand.kill()
+
 		return err({
-			clientError: toolFetchResult.error,
+			clientError: toolResult.error,
+			message:
+				toolResult.error.type === "connectionError"
+					? "Unable to connect to server after retrying for over 30 seconds. There may be some issues with the server initialization."
+					: "Server connected, but unable to fetch tools.",
 			serverRuntimeLogs: logs,
 		})
 	}
 	await logCommand.kill()
 	await cleanup()
-	return toolFetchResult
+	return toolResult
 }
 
 function trimLines(lines: string) {

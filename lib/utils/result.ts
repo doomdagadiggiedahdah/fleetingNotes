@@ -62,3 +62,17 @@ export function toResult<T>(
 		return err(error)
 	}
 }
+
+/**
+ * @returns The value of the Result, or null if the Result is an error.
+ */
+export function toNull<T>(result: Result<T>): T | null {
+	return result.ok ? result.value : null
+}
+
+/**
+ * @returns The error of the Result, or null if the Result is an error.
+ */
+export function toErr<T, E>(result: Result<T, E>): E | null {
+	return result.ok ? null : result.error
+}

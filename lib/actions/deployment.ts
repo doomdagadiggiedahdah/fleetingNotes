@@ -40,10 +40,9 @@ import { createServerRepoPullRequestFromBuild } from "../blacksmith/pr"
 import { posthog } from "../posthog_server"
 import type { ServerConfig } from "../types/server-config"
 import { withTimeout } from "../utils"
-import { fetchConfigSchema } from "../utils/fetch-config"
 import { fetchServerTools } from "../utils/get-tools"
 import { getDefaultBranch } from "../utils/github"
-import { err, ok, toResult } from "../utils/result"
+import { err, ok, toNull, toResult } from "../utils/result"
 import { runSecurityScan } from "./security-scan"
 
 export const getDeployments = async (serverId: string) => {
@@ -339,7 +338,7 @@ export async function createDeploymentForServer(
 						} as const)
 					}
 
-					appendLog("Deployment successful!")
+					appendLog("Deployment successful.")
 
 					// Only create PR if files have changed from what's already in the repo
 					const dockerfileChanged =
@@ -348,6 +347,10 @@ export async function createDeploymentForServer(
 						buildFiles.smitheryConfig.content,
 						repoFiles.smitheryConfig?.content,
 					)
+					// The actual config that was used
+					const config =
+						repoFiles.smitheryConfig?.content ??
+						buildFiles.smitheryConfig.content
 
 					if (dockerfileChanged || configChanged) {
 						try {
@@ -386,8 +389,26 @@ export async function createDeploymentForServer(
 					}
 
 					const deploymentUrl = getDeployedUrl(flyAppId)
+
+					appendLog("Scanning for tools...")
+
+					const toolResult = await fetchServerTools(
+						deploymentUrl,
+						config.startCommand.configSchema,
+						config.startCommand.exampleConfig,
+					)
+
+					if (toolResult.ok) {
+						appendLog("Server tools successfully scanned.")
+					} else {
+						appendLog(
+							`Failed to scan tools list from server: ${toolResult.error.message}\n\nPlease ensure your server performs lazy loading of configurations: https://smithery.ai/docs/deployments#tool-lists`,
+						)
+					}
+
 					// Must await this first to prevent race condition
 					await lastAppend
+
 					await Promise.all([
 						db
 							.update(deployments)
@@ -395,6 +416,8 @@ export async function createDeploymentForServer(
 								status: "SUCCESS",
 								updatedAt: sql`NOW()`,
 								deploymentUrl,
+								configSchema: config.startCommand.configSchema,
+								tools: toNull(toolResult),
 							})
 							.where(eq(deployments.id, deploymentRow.id)),
 						db
@@ -409,84 +432,50 @@ export async function createDeploymentForServer(
 							}),
 					])
 
-					const backgroundUpdate = async () => {
-						// Populate `configSchema` and `tools` in server based on call to server
+					const revalidatePage = async () => {
+						try {
+							const paths = [`/`, `/server/${server.qualifiedName}`]
 
-						console.log("populating configSchema and tools")
+							// For Vercel deployments, use VERCEL_URL environment variable
+							// This code always runs server-side
+							const baseUrl =
+								process.env.NEXT_PUBLIC_BASE_URL ||
+								(process.env.VERCEL_PROJECT_PRODUCTION_URL
+									? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+									: "http://localhost:3000")
 
-						// Run both API calls in parallel
-						const [configSchemaResult, toolResult] = await Promise.all([
-							fetchConfigSchema(deploymentUrl),
-							fetchServerTools(deploymentUrl),
-						])
-
-						console.log("configSchemaResult.ok", configSchemaResult.ok)
-						console.log("toolResult.ok", toolResult.ok)
-
-						// Prepare update data based on results
-						const updateData: Partial<typeof servers.$inferInsert> = {}
-
-						if (configSchemaResult.ok) {
-							updateData.configSchema = configSchemaResult.value
-						}
-
-						if (toolResult.ok && toolResult.value.tools.length > 0) {
-							updateData.tools = toolResult.value.tools
-						}
-
-						// Perform a single update if we have data to update
-						if (Object.keys(updateData).length > 0) {
-							await db
-								.update(servers)
-								.set(updateData)
-								.where(eq(servers.id, server.id))
-
-							if (updateData.tools) {
-								// Run security scan in its own background task
-								waitUntil(
-									(async function runSecurityScanTask() {
-										try {
-											await runSecurityScan([server.id])
-										} catch (error: unknown) {
-											console.error(
-												`Security scan failed for server ${server.id}:`,
-												error,
-											)
-										}
-									})(),
-								)
-							}
-
-							try {
-								const paths = [`/`, `/server/${server.qualifiedName}`]
-
-								// For Vercel deployments, use VERCEL_URL environment variable
-								// This code always runs server-side
-								const baseUrl =
-									process.env.NEXT_PUBLIC_BASE_URL ||
-									(process.env.VERCEL_PROJECT_PRODUCTION_URL
-										? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-										: "http://localhost:3000")
-
-								// Trigger revalidation for each path
-								await Promise.all(
-									paths.map(async (path) => {
-										await fetch(`${baseUrl}/api/revalidate`, {
-											method: "POST",
-											body: JSON.stringify({ path }),
-											headers: {
-												"Content-Type": "application/json",
-												Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
-											},
-										})
-									}),
-								)
-							} catch (e) {
-								console.error("Failed to trigger revalidation:", e)
-							}
+							// Trigger revalidation for each path
+							await Promise.all(
+								paths.map(async (path) => {
+									await fetch(`${baseUrl}/api/revalidate`, {
+										method: "POST",
+										body: JSON.stringify({ path }),
+										headers: {
+											"Content-Type": "application/json",
+											Authorization: `Bearer ${REVALIDATE_AUTH_TOKEN}`,
+										},
+									})
+								}),
+							)
+						} catch (e) {
+							console.error("Failed to trigger revalidation:", e)
 						}
 					}
-					waitUntil(backgroundUpdate())
+					waitUntil(revalidatePage())
+
+					if (toolResult.ok && toolResult.value.tools.length > 0) {
+						async function runSecurityScanTask() {
+							try {
+								await runSecurityScan([server.id])
+							} catch (error: unknown) {
+								console.error(
+									`Security scan failed for server ${server.id}:`,
+									error,
+								)
+							}
+						}
+						waitUntil(runSecurityScanTask())
+					}
 
 					return ok()
 				})(),

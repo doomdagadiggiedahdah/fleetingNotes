@@ -75,9 +75,9 @@ export type DeploymentStatus = (typeof deploymentStatus.enumValues)[number]
 // Holds build files that should be cached
 export const buildCache = pgTable("build_cache", {
 	serverId: uuid("server_id")
+		.primaryKey()
 		.notNull()
-		.references(() => servers.id, { onDelete: "cascade" })
-		.unique(),
+		.references(() => servers.id, { onDelete: "cascade" }),
 	files: jsonb("files"),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at").notNull().defaultNow(),

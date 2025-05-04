@@ -77,6 +77,7 @@ MCP servers are typically command line programs that run locally, and may requir
 
 ## Tips
 - Understand the arguments and environmental variables carefully by navigating the source code, as the README may not provide a comprehensive list of arguments or variables.
+- If you're working in a monorepo, you can use the \`build\` object to specify the Docker build context. This can help you when the Dockerfile is not written to the root directory.
 - Some MCPs may have no configuration required, in which case you should output a configSchema that accepts an empty object.
 - Ensure the final run command points to the correct built artifact or entry file within the Docker image.`
 		: ""
