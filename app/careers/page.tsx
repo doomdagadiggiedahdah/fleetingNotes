@@ -85,7 +85,7 @@ export default function CareersPage() {
 									Able to travel to San Francisco for up to 8 weeks per year
 								</li>
 								<li>
-									Comfortable in a hybrid (remote/in-person) work environment
+									Comfortable in both remote and in-person work environments
 								</li>
 							</ul>
 						</div>
@@ -93,7 +93,7 @@ export default function CareersPage() {
 						<div className="pt-4">
 							<Button asChild size="lg">
 								<Link href="https://wood-asp-06c.notion.site/1e8a0cc76127806e840af5b14f289027">
-									Apply Now
+									Apply
 								</Link>
 							</Button>
 						</div>

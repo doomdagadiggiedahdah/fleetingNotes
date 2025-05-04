@@ -1,4 +1,6 @@
+import { DockerfileParser } from "dockerfile-ast"
 import type { ServerConfig } from "../types/server-config"
+import { err, ok } from "../utils/result"
 
 /**
  * Creates a fly config file
@@ -61,14 +63,16 @@ primary_region = 'iad'
     type = "requests"
     soft_limit = 800
     hard_limit = 1000
-
+  
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
 
 [env]
-  PORT = 8080
+  INCOMING_PORT = 8080
+  OUTGOING_PORT = 8081
+  PORT = 8081
 `
 }
 
@@ -76,12 +80,12 @@ primary_region = 'iad'
  * Creates a Dockerfile that wraps the user's Dockerfile to launch as a server.
  * Should be named `Dockerfile.smithery`
  */
-export function wrapDockerfileWithSidecar(
+export function wrapDockerfileWithStdioSidecar(
 	baseDockerfile: string,
 	config: ServerConfig,
 ) {
 	const configb64 = Buffer.from(JSON.stringify(config)).toString("base64")
-	return `\
+	return ok(`\
 FROM registry.fly.io/sidecar:deployment-01JT24ECEX1GA2W2G8NTXF2ZYS as sidecar_image
 
 # User's Dockerfile
@@ -148,5 +152,103 @@ EXPOSE 8080
 # Use Smithery Gateway as the entrypoint
 ENTRYPOINT ["/usr/local/bin/smithery-gateway"]
 CMD ["--port", "8080", "--configb64", "${configb64}"]
-`
+`)
+}
+
+export function wrapDockerfileWithHttpSidecar(baseDockerfile: string) {
+	try {
+		const dockerfile = DockerfileParser.parse(baseDockerfile)
+		const entryPoints = JSON.parse(
+			dockerfile.getENTRYPOINTs().at(-1)?.getArgumentsContent() ?? "[]",
+		)
+		const cmds = JSON.parse(
+			dockerfile.getCMDs().at(-1)?.getArgumentsContent() ?? "[]",
+		)
+		const serverCommand = entryPoints.concat(cmds).join(" ")
+
+		return ok(`\
+FROM registry.fly.io/http-sidecar:deployment-01JTEB4PMPAYGAANPDWXG0H0PK as sidecar_image
+
+# User's Dockerfile
+${baseDockerfile}
+# End user Dockerfile
+
+COPY --from=sidecar_image /app/sidecar-app-glibc /tmp/smithery-sidecar-glibc
+COPY --from=sidecar_image /app/sidecar-app-musl  /tmp/smithery-sidecar-musl
+
+USER root
+
+# Install required dependencies for Alpine
+RUN /bin/sh -c 'set -eux && \
+  if grep -q "Alpine" /etc/os-release 2>/dev/null; then \
+    echo "Alpine Linux detected, installing required libraries" && \
+    apk add --no-cache libstdc++ libgcc && \
+    echo "musl" > /tmp/os-family; \
+    exit 0; \
+  fi'
+
+# Fallback detection script if not Alpine: tries ldd on /bin/sh (or /usr/bin/env) to see if it's musl or glibc.
+# If ldd or /bin/sh doesn't exist, this might fail.
+RUN /bin/sh -c 'set -eux && \
+  if [ -f /tmp/os-family ]; then \
+    echo "OS family already detected, skipping detection"; \
+    exit 0; \
+  fi && \
+  if [ ! -x /bin/sh ] && [ ! -x /usr/bin/env ]; then \
+    echo "ERROR: No shell found in the user image. Can not detect OS family." >&2 && \
+    exit 1; \
+  fi && \
+  shell_to_check="/bin/sh" && \
+  if [ ! -x "$shell_to_check" ]; then \
+    shell_to_check="/usr/bin/env"; \
+  fi && \
+  if ! command -v ldd >/dev/null 2>&1; then \
+    echo "ERROR: ldd not found in the user image. Can not detect OS family." >&2 && \
+    exit 1; \
+  fi && \
+  if ldd "$shell_to_check" 2>&1 | grep -qi musl; then \
+    echo "musl detected" && \
+    echo "musl" > /tmp/os-family; \
+  else \
+    echo "glibc detected" && \
+    echo "glibc" > /tmp/os-family; \
+  fi'
+
+# Pick the correct binary based on /tmp/os-family
+RUN /bin/sh -c 'set -eux && \
+  os_family="$(cat /tmp/os-family)" && \
+  case "$os_family" in \
+    musl)  mv /tmp/smithery-sidecar-musl /usr/local/bin/smithery-sidecar ;; \
+    glibc) mv /tmp/smithery-sidecar-glibc /usr/local/bin/smithery-sidecar ;; \
+    *) \
+      echo "Unknown OS family: $os_family" >&2 && \
+      exit 1 ;; \
+  esac && \
+  chmod +x /usr/local/bin/smithery-sidecar && \
+  rm -f /tmp/smithery-sidecar-*'
+
+# Create a startup script to run sidecar and the original entrypoint in parallel
+RUN cat <<'EOF' > /usr/local/bin/startup.sh && \
+    chmod +x /usr/local/bin/startup.sh
+#!/bin/sh
+
+# Start the server command in the background
+${serverCommand} &
+server_pid=$!
+
+# Start the smithery sidecar in the background
+/usr/local/bin/smithery-sidecar &
+sidecar_pid=$!
+
+# Wait for the server process to exit
+wait $server_pid
+EOF
+
+ENTRYPOINT ["/bin/sh"]
+CMD ["/usr/local/bin/startup.sh"]
+`)
+	} catch (e) {
+		console.error(e)
+		return err({ error: "Failed to parse Dockerfile" })
+	}
 }

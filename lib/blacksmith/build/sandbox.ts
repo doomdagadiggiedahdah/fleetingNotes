@@ -1,9 +1,10 @@
 import uniqid from "uniqid"
 
 import {
-	createStdioFlyConfig,
 	createHttpFlyConfig,
-	wrapDockerfileWithSidecar,
+	createStdioFlyConfig,
+	wrapDockerfileWithHttpSidecar,
+	wrapDockerfileWithStdioSidecar,
 } from "@/lib/deployment/config-files"
 import {
 	type ServerConfig,
@@ -175,13 +176,17 @@ export async function prepareBuild(
 	if (!smitheryConfigResult.ok) return smitheryConfigResult
 
 	// Create a new dockerfile based on the above
-	const finalDockerfile =
+	const finalDockerfileResult =
 		smitheryConfigResult.value.startCommand.type === "stdio"
-			? wrapDockerfileWithSidecar(
+			? wrapDockerfileWithStdioSidecar(
 					dockerfileResult.value,
 					smitheryConfigResult.value,
 				)
-			: dockerfileResult.value
+			: wrapDockerfileWithHttpSidecar(dockerfileResult.value)
+
+	if (!finalDockerfileResult.ok) return finalDockerfileResult
+
+	const finalDockerfile = finalDockerfileResult.value
 
 	await writeFile(sbx, "Dockerfile.smithery", finalDockerfile)
 	// For testing we require at least one machine running
