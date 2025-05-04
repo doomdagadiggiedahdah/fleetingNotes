@@ -1,7 +1,7 @@
 "use client"
 
 import { SchemaViewer } from "./schema-viewer"
-import { Installtabs } from "@/components/install-tabs"
+import { InstallTabs } from "@/components/install-tabs"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 import { useEffect, useState } from "react"
@@ -49,7 +49,7 @@ export function ConfigWrapper({
 			{isFeatureEnabled ? (
 				<SchemaViewer schema={configSchema} />
 			) : (
-				<Installtabs server={server} apiKey={apiKey} profiles={profiles} />
+				<InstallTabs server={server} apiKey={apiKey} profiles={profiles} />
 			)}
 		</div>
 	)

@@ -5,7 +5,7 @@ import { Download } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Installtabs } from "../install-tabs"
+import { InstallTabs } from "../install-tabs"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 import { useAuth } from "@/context/auth-context"
@@ -96,7 +96,7 @@ export function InstallButton({
 						<DialogTitle>Install {server.displayName}</DialogTitle>
 					</VisuallyHidden.Root>
 					<div className="overflow-y-auto max-h-[80vh] pr-6 -mr-6">
-						<Installtabs
+						<InstallTabs
 							key={`install-tabs-${currentSession?.user?.id}`} // re-render on auth state change
 							server={server}
 							apiKey={apiKey || ""}

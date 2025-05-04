@@ -12,6 +12,8 @@ import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 import { getServerConfigSchema } from "@/lib/utils/get-server-config-schema"
+import { LoginError } from "@/components/server-page/server-tabs/overview/side-panel/error/login-error"
+import { ApiKeyError } from "@/components/server-page/server-tabs/overview/side-panel/error/api-key-error"
 
 export type InstallTabStates = "auto" | "manual" | "url"
 
@@ -24,7 +26,7 @@ type InstallTabsProps = {
 	profiles: ProfileWithSavedConfig[]
 }
 
-export function Installtabs({
+export function InstallTabs({
 	server,
 	initTab = "auto",
 	className,
@@ -51,8 +53,6 @@ export function Installtabs({
 	useEffect(() => {
 		if (passedApiKey) {
 			setApiKey(passedApiKey)
-		} else if (!currentSession) {
-			throw new Error("User must be logged in")
 		}
 	}, [passedApiKey, currentSession])
 
@@ -133,6 +133,16 @@ export function Installtabs({
 		)
 	}
 
+	if (!currentSession && !passedApiKey) {
+		return <LoginError message="Login to view installation instructions." />
+	}
+
+	if (!apiKey) {
+		return (
+			<ApiKeyError message="Something went wrong. Please try refreshing the page." />
+		)
+	}
+
 	return (
 		<Tabs
 			value={activeTab}
@@ -157,7 +167,7 @@ export function Installtabs({
 						onClientConfig={handleClientConfig}
 						currentSession={currentSession}
 						setIsSignInOpen={setIsSignInOpen}
-						apiKey={apiKey || ""}
+						apiKey={apiKey}
 						usingSavedConfig={usingSavedConfig}
 						setUsingSaved={handleToggleUsingSavedConfig}
 						onClientChange={handleClientChange}
