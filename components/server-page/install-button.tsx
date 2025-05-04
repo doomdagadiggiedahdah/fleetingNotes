@@ -86,7 +86,7 @@ export function InstallButton({
 				className="h-10 px-6 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-medium"
 				onClick={handleClick}
 			>
-				<Download className="h-4 w-4 mr-2" />
+				<Download className="h-4 w-4" />
 				Install
 			</Button>
 
