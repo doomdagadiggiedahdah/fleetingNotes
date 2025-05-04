@@ -6,7 +6,6 @@ import {
 	servers,
 } from "@/db/schema"
 import { createDeploymentForServer } from "@/lib/actions/deployment"
-import { fetchConfigSchema } from "@/lib/utils/fetch-config"
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm"
 import { NextResponse } from "next/server"
 
@@ -19,7 +18,7 @@ export async function POST(request: Request) {
 
 	try {
 		// Parse the request to check for serverId
-		const { serverId, onlyFailing } = await request.json().catch(() => ({}))
+		const { serverId } = await request.json().catch(() => ({}))
 
 		const serversToDeploy = await db
 			.select({
@@ -70,15 +69,7 @@ export async function POST(request: Request) {
 
 			// Process batch in parallel
 			const batchResults = await Promise.all(
-				batch.map(async ({ server, serverRepo, url }) => {
-					// Skip active servers if onlyFailing is true
-					if (url && onlyFailing) {
-						try {
-							const check = await fetchConfigSchema(url)
-							if (check.ok) return null
-						} catch {}
-					}
-
+				batch.map(async ({ server, serverRepo }) => {
 					// Deploy the server
 					console.log(`Deploying ${server.id}...`)
 					const result = await createDeploymentForServer(

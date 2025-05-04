@@ -40,6 +40,12 @@ export const deployments = pgTable(
 		deploymentUrl: text("deployment_url"),
 		// Path the log
 		logs: text("logs"),
+
+		// Configuration schema for this server. Obtained upon deployment.
+		configSchema: jsonb("config_schema"),
+		// List of tools available for this server. Obtained upon deployment.
+		tools: jsonb("tools"),
+
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		updatedAt: timestamp("updated_at").notNull().defaultNow(),
 	},

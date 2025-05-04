@@ -470,6 +470,13 @@
 			"when": 1745961536757,
 			"tag": "0068_shiny_speed",
 			"breakpoints": true
+		},
+		{
+			"idx": 69,
+			"version": "7",
+			"when": 1746398053048,
+			"tag": "0069_sour_ironclad",
+			"breakpoints": true
 		}
 	]
 }
