@@ -50,10 +50,6 @@ export const servers = pgTable(
 		// True if this server is featured in the registry
 		featured: boolean("featured").notNull().default(false),
 
-		// List of tools available for this server. Derived from MCP call data and populated upon deployment.
-		tools: jsonb("tools"),
-		// Configuration schema for this server. Derived from MCP call data and populated upon deployment.
-		configSchema: jsonb("config_schema"),
 		// Environmental variables
 		env: jsonb("env").default({}).notNull(),
 
@@ -89,9 +85,11 @@ export const insertServerSchema = createInsertSchema(servers).extend({
 
 export const selectServerSchema = createSelectSchema(servers).extend({
 	connections: z.array(ConnectionSchema),
+	env: z.record(z.string(), z.string()),
+})
+export const selectServerSchemaWithTools = selectServerSchema.extend({
 	configSchema: JSONSchemaSchema.nullable(),
 	tools: z.array(z.any()).nullable(),
-	env: z.record(z.string(), z.string()),
 })
 
 export type Server = z.infer<typeof selectServerSchema>

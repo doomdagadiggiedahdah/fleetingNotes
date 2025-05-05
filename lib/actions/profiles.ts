@@ -1,7 +1,13 @@
 "use server"
 
 import { db } from "@/db"
-import { profiles, savedConfigs, servers, apiKeys } from "@/db/schema"
+import {
+	profiles,
+	savedConfigs,
+	servers,
+	apiKeys,
+	latestDeploymentConfigSchema,
+} from "@/db/schema"
 import { getMe } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { eq, inArray, and, sql, desc, asc } from "drizzle-orm"
@@ -238,18 +244,18 @@ export async function getProfilesWithServers(): Promise<
 	// Fetch all servers in one query
 	const serverList =
 		serverIds.length > 0
-			? await db.query.servers.findMany({
-					where: inArray(servers.id, serverIds),
-					columns: {
-						id: true,
-						displayName: true,
-						qualifiedName: true,
-						iconUrl: true,
-						homepage: true,
-						configSchema: true,
-						description: true,
-					},
-				})
+			? await db
+					.select({
+						id: servers.id,
+						displayName: servers.displayName,
+						qualifiedName: servers.qualifiedName,
+						iconUrl: servers.iconUrl,
+						homepage: servers.homepage,
+						description: servers.description,
+						configSchema: latestDeploymentConfigSchema,
+					})
+					.from(servers)
+					.where(inArray(servers.id, serverIds))
 			: []
 
 	// Return profiles with their associated servers

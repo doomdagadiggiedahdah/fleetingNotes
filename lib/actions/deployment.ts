@@ -417,7 +417,7 @@ export async function createDeploymentForServer(
 								updatedAt: sql`NOW()`,
 								deploymentUrl,
 								configSchema: config.startCommand.configSchema,
-								tools: toNull(toolResult),
+								tools: toNull(toolResult)?.tools,
 							})
 							.where(eq(deployments.id, deploymentRow.id)),
 						db

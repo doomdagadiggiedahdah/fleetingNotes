@@ -1,7 +1,7 @@
 import { db } from "@/db"
 import {
 	deployments,
-	selectServerSchema,
+	selectServerSchemaWithTools,
 	serverRepos,
 	servers,
 	serverScans,
@@ -10,13 +10,15 @@ import {
 	isDeployedQuery,
 	sourceUrlQuery,
 	useCountQuery,
+	latestDeploymentToolsQuery,
+	latestDeploymentConfigSchema,
 } from "@/db/schema/queries"
 import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
 
 // We have a special schema for selecting servers for rendering
 // TODO: Remove this if we no longer need connections object in the future
-const selectFetchedServerSchema = selectServerSchema
+const selectFetchedServerSchema = selectServerSchemaWithTools
 	.pick({
 		id: true,
 		qualifiedName: true,
@@ -102,8 +104,8 @@ export async function getServer(qualifiedName: string) {
 			remote: servers.remote,
 			published: servers.published,
 			owner: servers.owner,
-			tools: servers.tools,
-			configSchema: servers.configSchema,
+			tools: latestDeploymentToolsQuery,
+			configSchema: latestDeploymentConfigSchema,
 			iconUrl: servers.iconUrl,
 			deploymentUrl: sql<string | null>`(
 				SELECT

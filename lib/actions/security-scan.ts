@@ -6,6 +6,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import type { ToolScanResults } from "@/db/schema/server-scans"
 import { verifyServerTools } from "@/lib/utils/invariant"
 import { withRetry } from "@/lib/utils/retry"
+import { latestDeploymentToolsQuery } from "@/db/schema"
 
 const BATCH_SIZE = 3 // Number of servers to process in parallel
 const RATE_LIMIT_DELAY = 2000 // Delay between batches in milliseconds
@@ -80,7 +81,7 @@ export async function runSecurityScan(serverIds?: string[]) {
 					.select({
 						id: servers.id,
 						displayName: servers.displayName,
-						tools: servers.tools,
+						tools: latestDeploymentToolsQuery,
 					})
 					.from(servers)
 					.where(and(...conditions))
