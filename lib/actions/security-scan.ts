@@ -1,12 +1,11 @@
 import { db } from "@/db"
-import { servers } from "@/db/schema/servers"
-import { serverScans } from "@/db/schema/server-scans"
-import { inArray, and } from "drizzle-orm"
-import type { Tool } from "@modelcontextprotocol/sdk/types.js"
 import type { ToolScanResults } from "@/db/schema/server-scans"
+import { serverScans } from "@/db/schema/server-scans"
+import { servers } from "@/db/schema/servers"
 import { verifyServerTools } from "@/lib/utils/invariant"
 import { withRetry } from "@/lib/utils/retry"
-import { latestDeploymentToolsQuery } from "@/db/schema"
+import type { Tool } from "@modelcontextprotocol/sdk/types.js"
+import { and, inArray } from "drizzle-orm"
 
 const BATCH_SIZE = 3 // Number of servers to process in parallel
 const RATE_LIMIT_DELAY = 2000 // Delay between batches in milliseconds
@@ -81,7 +80,7 @@ export async function runSecurityScan(serverIds?: string[]) {
 					.select({
 						id: servers.id,
 						displayName: servers.displayName,
-						tools: latestDeploymentToolsQuery,
+						tools: servers.tools,
 					})
 					.from(servers)
 					.where(and(...conditions))

@@ -1,19 +1,15 @@
-import { NextResponse } from "next/server"
-import { eq, sql } from "drizzle-orm"
 import { db } from "@/db"
-import { servers } from "@/db/schema/servers"
 import { deployments } from "@/db/schema/deployments"
-import {
-	latestDeploymentConfigSchema,
-	latestDeploymentToolsQuery,
-} from "@/db/schema/queries"
 import { serverScans } from "@/db/schema/server-scans"
+import { servers } from "@/db/schema/servers"
+import { getSavedConfig } from "@/lib/actions/profiles"
 import { checkApiKey, extractBearerToken } from "@/lib/auth/api"
 import { posthog } from "@/lib/posthog_server"
 import { ConnectionSchema, RegistryServerSchema } from "@/lib/types/server"
 import { chooseConnection } from "@/lib/utils/choose-connection"
 import { generateConfig } from "@/lib/utils/generate-config"
-import { getSavedConfig } from "@/lib/actions/profiles"
+import { eq, sql } from "drizzle-orm"
+import { NextResponse } from "next/server"
 
 import { z } from "zod"
 
@@ -52,8 +48,8 @@ export async function GET(
 				iconUrl: servers.iconUrl,
 				connections: servers.connections,
 				remote: servers.remote,
-				configSchema: latestDeploymentConfigSchema,
-				tools: latestDeploymentToolsQuery,
+				configSchema: servers.configSchema,
+				tools: servers.tools,
 				deploymentUrl: sql<string>`(
 					SELECT
 					CASE

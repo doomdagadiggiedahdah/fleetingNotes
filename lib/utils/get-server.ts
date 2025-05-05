@@ -10,8 +10,6 @@ import {
 	isDeployedQuery,
 	sourceUrlQuery,
 	useCountQuery,
-	latestDeploymentToolsQuery,
-	latestDeploymentConfigSchema,
 } from "@/db/schema/queries"
 import { eq, sql } from "drizzle-orm"
 import { z } from "zod"
@@ -104,8 +102,8 @@ export async function getServer(qualifiedName: string) {
 			remote: servers.remote,
 			published: servers.published,
 			owner: servers.owner,
-			tools: latestDeploymentToolsQuery,
-			configSchema: latestDeploymentConfigSchema,
+			tools: servers.tools,
+			configSchema: servers.configSchema,
 			iconUrl: servers.iconUrl,
 			deploymentUrl: sql<string | null>`(
 				SELECT

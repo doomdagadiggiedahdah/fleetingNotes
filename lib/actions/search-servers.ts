@@ -4,7 +4,6 @@ import {
 	bugReportCountQuery,
 	isDeployedQuery,
 	isNewQuery,
-	latestDeploymentConfigSchema,
 	useCountQuery,
 } from "@/db/schema/queries"
 import {
@@ -202,7 +201,7 @@ export async function getAllServers(
 				) THEN 1
 				
 				-- High quality servers: deployed servers with tools / usage beyond threshold
-				WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${latestDeploymentConfigSchema} IS NOT NULL) THEN 0
+				WHEN (${t.isDeployed} OR NOT (jsonb_typeof(${servers.connections}) IS NULL OR ${servers.connections} = '[]'::jsonb)) AND (${servers.configSchema} IS NOT NULL) THEN 0
 				WHEN ${useCountQuery} >= ${MIN_USAGE_THRESHOLD} THEN 0
 				
 				-- Default case

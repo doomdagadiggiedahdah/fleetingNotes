@@ -1,13 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import {
-	profiles,
-	savedConfigs,
-	servers,
-	apiKeys,
-	latestDeploymentConfigSchema,
-} from "@/db/schema"
+import { profiles, savedConfigs, servers, apiKeys } from "@/db/schema"
 import { getMe } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { eq, inArray, and, sql, desc, asc } from "drizzle-orm"
@@ -252,7 +246,7 @@ export async function getProfilesWithServers(): Promise<
 						iconUrl: servers.iconUrl,
 						homepage: servers.homepage,
 						description: servers.description,
-						configSchema: latestDeploymentConfigSchema,
+						configSchema: servers.configSchema,
 					})
 					.from(servers)
 					.where(inArray(servers.id, serverIds))

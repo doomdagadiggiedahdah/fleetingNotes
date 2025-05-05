@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm"
 import { deployments } from "./deployments"
 import { serverUsageCounts } from "./events"
 import { serverRepos, servers } from "./servers"
-import type { JSONSchema } from "@/lib/types/server"
 
 export const isDeployedQuery = sql<boolean>`EXISTS (
 		SELECT 1
@@ -63,32 +62,3 @@ CASE
 THEN TRUE ELSE FALSE END`
 // Add this to make it top 3
 // DESC OFFSET 3
-
-// Get the tools and configSchema from the latest successful deployment for a server
-export const latestDeploymentConfigSchema = sql<JSONSchema | null>`
-  COALESCE(
-    (
-      SELECT ${deployments.configSchema}
-      FROM ${deployments}
-      WHERE ${deployments.serverId} = ${servers.id}
-      AND ${deployments.status} = 'SUCCESS'
-      ORDER BY ${deployments.createdAt} DESC
-      LIMIT 1
-    ),
-    NULL
-  )
-`
-
-export const latestDeploymentToolsQuery = sql<unknown[] | null>`
-  COALESCE(
-    (
-      SELECT ${deployments.tools}
-      FROM ${deployments}
-      WHERE ${deployments.serverId} = ${servers.id}
-      AND ${deployments.status} = 'SUCCESS'
-      ORDER BY ${deployments.createdAt} DESC
-      LIMIT 1
-    ),
-    '[]'
-  )
-`

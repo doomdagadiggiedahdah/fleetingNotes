@@ -53,6 +53,11 @@ export const servers = pgTable(
 		// Environmental variables
 		env: jsonb("env").default({}).notNull(),
 
+		// Just a cache from the latest deployment
+		tools: jsonb("tools"),
+		// Just a cache from the latest deployment
+		configSchema: jsonb("config_schema"),
+
 		// Search embedding
 		embedding: vector("embedding", { dimensions: 1536 }),
 

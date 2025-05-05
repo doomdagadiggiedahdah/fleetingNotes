@@ -1,9 +1,5 @@
 import { db } from "@/db"
-import {
-	latestDeploymentToolsQuery,
-	serverCategories,
-	servers,
-} from "@/db/schema"
+import { serverCategories, servers } from "@/db/schema"
 import { eq, isNotNull } from "drizzle-orm"
 import { HDBSCAN } from "hdbscan-ts"
 import { zodResponseFormat } from "openai/helpers/zod"
@@ -167,7 +163,7 @@ export async function generateCategoriesFromServerEmbeddings() {
 			id: servers.id,
 			name: servers.displayName,
 			description: servers.description,
-			tools: latestDeploymentToolsQuery,
+			tools: servers.tools,
 			embedding: servers.embedding,
 		})
 		.from(servers)
