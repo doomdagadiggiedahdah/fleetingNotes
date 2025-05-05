@@ -123,7 +123,7 @@ export function SecurityOverview({ server }: SecurityOverviewProps) {
 					</Tooltip>
 				</TooltipProvider>
 			</div>
-			<div className="h-px bg-border" />
+			{/* <div className="h-px bg-border" /> */}
 		</div>
 	)
 }

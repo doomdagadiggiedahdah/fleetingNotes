@@ -10,7 +10,6 @@ import { ServerTabs } from "./server-tabs"
 import ServerSearch from "../homepage/server-search"
 import { ServerStatusChip } from "../server-type-chip"
 import { SecurityStatusChip } from "../security-status-chip"
-// import { CopyButton } from "@/components/ui/copy-button"
 import { fetchData } from "./server-tabs/overview/side-panel/fetch-data"
 import { InstallButton } from "./install-button"
 
@@ -20,8 +19,9 @@ interface Props {
 }
 
 export async function ServerPage({ server, activeTab }: Props) {
+	/* for future to display server url */
 	// const serverUrl = server.deploymentUrl || undefined
-	// const baseUrl = serverUrl ? createSmitheryUrl(serverUrl).toString() : ""
+	// const baseUrl = serverUrl ? createSmitheryUrl(serverUrl).toString()
 
 	// Fetch API key server-side
 	const result = await fetchData(server.id)
@@ -67,10 +67,7 @@ export async function ServerPage({ server, activeTab }: Props) {
 								<InstallButton
 									key={`install-${result.type === "success" ? result.data.apiKey : null}`}
 									server={server}
-									apiKey={result.type === "success" ? result.data.apiKey : null}
-									profiles={
-										result.type === "success" ? result.data.profiles : undefined
-									}
+									fetchResult={result}
 								/>
 								<ClaimButton server={server} />
 							</Suspense>

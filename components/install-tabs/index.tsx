@@ -12,18 +12,19 @@ import { InstallTabOptions } from "./install-tab-options"
 import { processConfig } from "@/lib/utils/process-config"
 import type { ProfileWithSavedConfig } from "@/lib/types/profiles"
 import { getServerConfigSchema } from "@/lib/utils/get-server-config-schema"
-import { LoginError } from "@/components/server-page/server-tabs/overview/side-panel/error/login-error"
-import { ApiKeyError } from "@/components/server-page/server-tabs/overview/side-panel/error/api-key-error"
+import { ConfigFormSkeleton } from "@/components/config-form/config-form-skeleton"
+import { InstallPreview } from "./install-preview"
 
 export type InstallTabStates = "auto" | "manual" | "url"
 
 type InstallTabsProps = {
 	server: FetchedServer
-	apiKey: string
+	apiKey: string | undefined
 	initTab?: InstallTabStates
 	className?: string
 	onTabChange?: (tab: InstallTabStates) => void
 	profiles: ProfileWithSavedConfig[]
+	preview?: boolean
 }
 
 export function InstallTabs({
@@ -33,6 +34,7 @@ export function InstallTabs({
 	onTabChange,
 	apiKey: passedApiKey,
 	profiles,
+	preview = false,
 }: InstallTabsProps) {
 	const [activeTab, setActiveTab] = useState<InstallTabStates>(initTab)
 	const [selectedClient, setSelectedClient] = useState<ClientType | null>(null)
@@ -133,16 +135,6 @@ export function InstallTabs({
 		)
 	}
 
-	if (!currentSession && !passedApiKey) {
-		return <LoginError message="Login to view installation instructions." />
-	}
-
-	if (!apiKey) {
-		return (
-			<ApiKeyError message="Something went wrong. Please try refreshing the page." />
-		)
-	}
-
 	return (
 		<Tabs
 			value={activeTab}
@@ -156,28 +148,45 @@ export function InstallTabs({
 				activeTab={activeTab}
 				deploymentUrl={server.deploymentUrl}
 			/>
-			{(["auto", "manual", "url"] as const).map((tab) => (
-				<TabsContent key={tab} value={tab}>
-					<InstallTabContent
-						server={server}
-						client={selectedClient}
-						configSchema={serverConfigSchema}
-						isClientConfigured={isClientConfigured}
-						configValues={configValues}
-						onClientConfig={handleClientConfig}
-						currentSession={currentSession}
-						setIsSignInOpen={setIsSignInOpen}
-						apiKey={apiKey}
-						usingSavedConfig={usingSavedConfig}
-						setUsingSaved={handleToggleUsingSavedConfig}
-						onClientChange={handleClientChange}
-						method={activeTab}
-						profiles={profiles}
-						selectedProfileQualifiedName={selectedProfileQualifiedName}
-						setSelectedProfileQualifiedName={setSelectedProfileQualifiedName}
-					/>
-				</TabsContent>
-			))}
+			{preview ? (
+				<InstallPreview
+					activeTab={activeTab}
+					selectedClient={selectedClient}
+					onClientChange={handleClientChange}
+					server={server}
+					apiKey={apiKey || undefined}
+					configValues={configValues}
+				/>
+			) : (
+				(["auto", "manual", "url"] as const).map((tab) => (
+					<TabsContent key={tab} value={tab}>
+						{apiKey ? (
+							<InstallTabContent
+								server={server}
+								client={selectedClient}
+								configSchema={serverConfigSchema}
+								isClientConfigured={isClientConfigured}
+								configValues={configValues}
+								onClientConfig={handleClientConfig}
+								currentSession={currentSession}
+								setIsSignInOpen={setIsSignInOpen}
+								apiKey={apiKey}
+								usingSavedConfig={usingSavedConfig}
+								setUsingSaved={handleToggleUsingSavedConfig}
+								onClientChange={handleClientChange}
+								method={activeTab}
+								profiles={profiles}
+								selectedProfileQualifiedName={selectedProfileQualifiedName}
+								setSelectedProfileQualifiedName={
+									setSelectedProfileQualifiedName
+								}
+							/>
+						) : (
+							<ConfigFormSkeleton />
+						)}
+					</TabsContent>
+				))
+			)}
 		</Tabs>
 	)
 }

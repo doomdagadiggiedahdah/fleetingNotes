@@ -1,11 +1,11 @@
 import type { FetchedServer } from "@/lib/utils/get-server"
-import { Terminal } from "lucide-react"
 import { Suspense } from "react"
 import { ServerStats } from "./server-stats"
 import { SecurityOverview } from "./security-overview"
 import { ConfigFormLoading } from "@/components/config-form"
 import type { fetchData } from "./fetch-data"
 import { ConfigWrapper } from "./config-wrapper"
+import { Info } from "lucide-react"
 
 type Props = {
 	server: FetchedServer
@@ -32,29 +32,22 @@ export async function SidePanel({ server, fetchResult }: Props) {
 		)
 	}
 
-	// Extract API key and profiles from fetchResult if available
-	const apiKey = fetchResult.type === "success" ? fetchResult.data.apiKey : ""
-	const profiles =
-		fetchResult.type === "success" ? fetchResult.data.profiles : []
-
 	return (
 		<div>
-			<h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-				<Terminal className="h-6 w-6" />
-				Configuration
-			</h2>
-
 			<Suspense fallback={<ConfigFormLoading />}>
 				<ConfigWrapper
-					key={`config-wrapper-${apiKey}`}
+					key={`config-wrapper-${fetchResult.type === "success" ? fetchResult.data.apiKey : "no-key"}`}
 					server={server}
-					apiKey={apiKey}
-					profiles={profiles}
+					fetchResult={fetchResult}
 					configSchema={configSchema}
 				/>
 			</Suspense>
 
 			<div className="mt-6">
+				<h1 className="text-xl font-semibold mb-4 flex items-center gap-2">
+					<Info className="h-5 w-5" />
+					Details
+				</h1>
 				<SecurityOverview server={server} />
 			</div>
 

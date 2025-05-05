@@ -1,4 +1,5 @@
 "use client"
+
 import { useToast } from "@/lib/hooks/use-toast"
 import { supabase } from "@/lib/supabase/client"
 import { GitHubLogoIcon } from "@radix-ui/react-icons"
@@ -53,7 +54,7 @@ export function GithubAuthButton({
 			{...props}
 		>
 			<GitHubLogoIcon className="h-4 w-4" />
-			Connect with GitHub
+			Continue with GitHub
 		</Button>
 	)
 }

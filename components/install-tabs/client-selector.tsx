@@ -40,7 +40,7 @@ export const ClientSelector = ({
 					No clients found.
 				</p>
 			) : (
-				<ul className="space-y-0.5 max-h-[400px] overflow-y-auto dark-scrollbar">
+				<ul className="space-y-0.5 max-h-[320px] overflow-y-auto dark-scrollbar">
 					{clientOptions.map((option, index) => (
 						<li
 							key={option.value}

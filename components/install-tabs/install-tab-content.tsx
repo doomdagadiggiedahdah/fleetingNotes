@@ -45,7 +45,6 @@ export function InstallTabContent({
 	currentSession,
 	setIsSignInOpen,
 	apiKey,
-	// usingSavedConfig,
 	setUsingSaved,
 	onClientChange,
 	method,

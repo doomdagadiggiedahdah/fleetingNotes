@@ -57,8 +57,10 @@ export function SchemaViewer({ schema }: SchemaViewerProps) {
 					<div>
 						<h3 className="text-sm font-semibold flex items-center gap-2">
 							{name}
-							{required && (
+							{required ? (
 								<span className="text-xs text-red-500">required</span>
+							) : (
+								<span className="text-xs text-blue-500/70">optional</span>
 							)}
 						</h3>
 					</div>
