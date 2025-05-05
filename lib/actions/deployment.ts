@@ -409,6 +409,7 @@ export async function createDeploymentForServer(
 					// Must await this first to prevent race condition
 					await lastAppend
 
+					const tools = toNull(toolResult)?.tools
 					await Promise.all([
 						db
 							.update(deployments)
@@ -417,7 +418,7 @@ export async function createDeploymentForServer(
 								updatedAt: sql`NOW()`,
 								deploymentUrl,
 								configSchema: config.startCommand.configSchema,
-								tools: toNull(toolResult)?.tools,
+								tools,
 							})
 							.where(eq(deployments.id, deploymentRow.id)),
 						db
@@ -430,6 +431,14 @@ export async function createDeploymentForServer(
 								target: buildCache.serverId,
 								set: { files: buildFiles },
 							}),
+						// Update servers cache with configSchema and tools
+						db
+							.update(servers)
+							.set({
+								configSchema: config.startCommand.configSchema,
+								tools,
+							})
+							.where(eq(servers.id, server.id)),
 					])
 
 					const revalidatePage = async () => {
