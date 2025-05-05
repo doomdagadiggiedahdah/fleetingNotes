@@ -8,7 +8,7 @@ type FetchedData = {
 	profiles: ProfileWithSavedConfig[]
 }
 
-type FetchResult =
+export type FetchResult =
 	| { type: "success"; data: FetchedData }
 	| { type: "not_logged_in" }
 	| { type: "api_key_error"; error: string }

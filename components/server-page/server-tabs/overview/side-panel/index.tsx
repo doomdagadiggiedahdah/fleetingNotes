@@ -43,15 +43,14 @@ export async function SidePanel({ server, fetchResult }: Props) {
 				/>
 			</Suspense>
 
-			<div className="mt-6">
-				<h1 className="text-xl font-semibold mb-4 flex items-center gap-2">
-					<Info className="h-5 w-5" />
-					Details
-				</h1>
+			<h1 className="text-xl font-semibold mb-4 mt-6 flex items-center gap-2">
+				<Info className="h-5 w-5" />
+				Details
+			</h1>
+			<div className="border rounded-lg p-4">
 				<SecurityOverview server={server} />
+				<ServerStats server={server} serverId={server.qualifiedName} />
 			</div>
-
-			<ServerStats server={server} serverId={server.qualifiedName} />
 		</div>
 	)
 }

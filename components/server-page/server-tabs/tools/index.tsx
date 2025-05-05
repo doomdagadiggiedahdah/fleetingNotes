@@ -5,9 +5,6 @@ import { fetchData } from "../overview/side-panel/fetch-data"
 import { Suspense } from "react"
 import { ToolsPanelSkeleton } from "./skeleton"
 import { MCPProvider } from "@/context/mcp-context"
-import { LoginError } from "../overview/side-panel/error/login-error"
-import { ApiKeyError } from "../overview/side-panel/error/api-key-error"
-import { ProfilesError } from "../overview/side-panel/error/profiles-error"
 
 interface ServerTabsProps {
 	server: FetchedServer
@@ -20,30 +17,20 @@ export async function ToolPanelContainer({ server }: ServerTabsProps) {
 	// Use the existing fetch-data function
 	const result = await fetchData(server.id)
 
-	// If user is not logged in, show the LoginError component
-	if (result.type === "not_logged_in") {
-		return <LoginError message="Login to access the server playground." />
-	}
-
-	// If there's an API key error, show the ApiKeyError component
-	if (result.type === "api_key_error") {
-		return <ApiKeyError message={result.error} />
-	}
-
-	// If there's a profiles error, show the ProfilesError component
-	if (result.type === "profiles_error") {
-		return <ProfilesError message={result.error} />
-	}
+	// To trigger re-rendering of tool panel when api key is successfully fetched
+	const sessionKey =
+		result.type === "success" ? result.data.apiKey : "no-session"
 
 	return (
 		<Suspense fallback={<ToolsPanelSkeleton />}>
 			<MCPProvider>
 				<ToolsPanel
+					key={sessionKey}
 					server={server}
 					tools={tools}
 					showConfigForm={true}
 					configSchema={configSchema}
-					profiles={result.data.profiles}
+					result={result}
 				/>
 			</MCPProvider>
 		</Suspense>

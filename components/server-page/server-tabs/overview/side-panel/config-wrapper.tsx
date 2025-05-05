@@ -6,7 +6,7 @@ import type { FetchedServer } from "@/lib/utils/get-server"
 import { useEffect, useState } from "react"
 import { ConfigSkeleton } from "./config-skeleton"
 import type { JSONSchema } from "@/lib/types/server"
-import { Download, Braces } from "lucide-react"
+import { ArrowDownToLine, Braces } from "lucide-react"
 import type { fetchData } from "./fetch-data"
 import { InstallError } from "@/components/install-tabs/install-error"
 import { useAuth } from "@/context/auth-context"
@@ -57,8 +57,8 @@ export function ConfigWrapper({
 					</>
 				) : (
 					<>
-						<Download className="h-6 w-6" />
-						Installation
+						<ArrowDownToLine className="h-6 w-6" />
+						Install
 					</>
 				)}
 			</h1>

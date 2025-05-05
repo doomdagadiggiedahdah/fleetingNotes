@@ -92,7 +92,7 @@ export function OverviewTab({ server, fetchResult }: OverviewTabProps) {
 	return (
 		<div>
 			<div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-				<div className="md:col-span-7">
+				<div className="md:col-span-7 md:mr-4">
 					<div className="mb-4">
 						<p className="whitespace-pre-line">{server.description}</p>
 					</div>

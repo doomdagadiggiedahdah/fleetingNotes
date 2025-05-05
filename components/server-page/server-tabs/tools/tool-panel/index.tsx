@@ -17,7 +17,11 @@ import { ToolsPanelSkeleton } from "../skeleton"
 import { ToolResults } from "./tool-results"
 import { useAuth } from "@/context/auth-context"
 import { ToolCardList } from "./tool-card-list"
-import { ConfigFormWrapper } from "./config-form-wrapper"
+import { ConfigForm } from "@/components/config-form"
+import type { FetchResult } from "../../overview/side-panel/fetch-data"
+import { ApiKeyError } from "../../overview/side-panel/error/api-key-error"
+import { ProfilesError } from "../../overview/side-panel/error/profiles-error"
+import { InstallLogin } from "@/components/install-tabs/install-login"
 
 interface ToolsPanelProps {
 	server: FetchedServer
@@ -28,7 +32,8 @@ interface ToolsPanelProps {
 	onConfigCancel?: () => void
 	initialConfig?: JSONSchema
 	onConfigSuccess?: () => void
-	profiles: ProfileWithSavedConfig[]
+	profiles?: ProfileWithSavedConfig[]
+	result: FetchResult
 }
 
 export function ToolsPanel({
@@ -40,7 +45,7 @@ export function ToolsPanel({
 	onConfigCancel,
 	initialConfig = {},
 	onConfigSuccess,
-	profiles,
+	result,
 }: ToolsPanelProps) {
 	const {
 		status,
@@ -67,6 +72,8 @@ export function ToolsPanel({
 	const [toolInputs, setToolInputs] = useState<
 		Record<string, Record<string, unknown>>
 	>({})
+
+	const profiles = result.type === "success" ? result.data.profiles : []
 
 	// Prefer context tools if available, fallback to prop tools
 	const tools = contextTools.length > 0 ? contextTools : propTools
@@ -201,20 +208,20 @@ export function ToolsPanel({
 				</div>
 
 				<div className="w-full lg:w-1/2">
-					<div className="lg:sticky lg:top-4">
+					<div className="lg:sticky lg:top-4 relative">
 						{(showConfigForm &&
 							status !== "connected" &&
 							server.deploymentUrl) ||
 						isEditingConfig ? (
-							<div className="hidden lg:block mb-6">
-								<ConfigFormWrapper
+							<div className="hidden lg:block mb-6 relative">
+								<ConfigForm
 									schema={configSchema}
 									onSubmit={handleConfigSubmit}
 									onCancel={() => {
 										setIsEditingConfig(false)
 										onConfigCancel?.()
 									}}
-									initialConfig={initialConfig}
+									initialConfig={result.type === "success" ? initialConfig : {}}
 									onSuccess={() => {
 										setIsEditingConfig(false)
 										onConfigSuccess?.()
@@ -225,6 +232,22 @@ export function ToolsPanel({
 									currentSession={currentSession}
 									setIsSignInOpen={setIsSignInOpen}
 								/>
+								{result.type !== "success" && (
+									<>
+										<div className="absolute inset-0 z-10 blur-[2px] pointer-events-none" />
+										<div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
+											{result.type === "not_logged_in" && (
+												<InstallLogin hideTitle={true} />
+											)}
+											{result.type === "api_key_error" && (
+												<ApiKeyError message={result.error} />
+											)}
+											{result.type === "profiles_error" && (
+												<ProfilesError message={result.error} />
+											)}
+										</div>
+									</>
+								)}
 							</div>
 						) : isExpanded && server.deploymentUrl ? (
 							<Card className="p-6">
