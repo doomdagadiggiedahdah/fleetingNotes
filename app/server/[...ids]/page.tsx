@@ -4,7 +4,6 @@ import { db } from "@/db"
 import { servers } from "@/db/schema"
 import type { FetchedServer } from "@/lib/utils/get-server"
 import { getServer } from "@/lib/utils/get-server"
-import { getAllServers } from "@/lib/actions/search-servers"
 import { eq } from "drizzle-orm"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
@@ -27,24 +26,25 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-	// Pre-build the top 1K most popular servers
-	const result = await getAllServers(
-		undefined,
-		{ page: 1, pageSize: 1000 },
-		true,
-	)
+	return []
+	// // Pre-build the top 1K most popular servers
+	// const result = await getAllServers(
+	// 	undefined,
+	// 	{ page: 1, pageSize: 1000 },
+	// 	true,
+	// )
 
-	// Process the servers array from the result and map to path objects
-	const paths = result.servers.flatMap((server) => {
-		const segments = server.qualifiedName.split("/")
-		return [
-			{ ids: segments },
-			{ ids: [...segments, "tools"] },
-			{ ids: [...segments, "api"] },
-		]
-	})
+	// // Process the servers array from the result and map to path objects
+	// const paths = result.servers.flatMap((server) => {
+	// 	const segments = server.qualifiedName.split("/")
+	// 	return [
+	// 		{ ids: segments },
+	// 		{ ids: [...segments, "tools"] },
+	// 		{ ids: [...segments, "api"] },
+	// 	]
+	// })
 
-	return paths
+	// return paths
 }
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
