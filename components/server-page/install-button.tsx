@@ -83,8 +83,7 @@ export function InstallButton({ server, fetchResult }: InstallButtonProps) {
 		<>
 			<Button
 				variant="default"
-				size="lg"
-				className="h-10 px-6 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-lg font-medium"
+				className="rounded-md bg-primary text-primary-foreground hover:bg-primary/90 font-medium text-md"
 				onClick={handleClick}
 			>
 				<Download className="h-4 w-4" />

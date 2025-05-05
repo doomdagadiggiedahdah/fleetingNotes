@@ -26,14 +26,16 @@ export const ClientSelector = ({
 
 	return (
 		<div className="w-full space-y-2">
-			<div className="relative">
-				<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<input
-					className="w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					placeholder="Search clients..."
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-				/>
+			<div className="p-1">
+				<div className="relative">
+					<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<input
+						className="w-full rounded-md border border-input bg-background px-9 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						placeholder="Search clients..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+					/>
+				</div>
 			</div>
 			{clientOptions.length === 0 ? (
 				<p className="text-center text-sm text-muted-foreground">
