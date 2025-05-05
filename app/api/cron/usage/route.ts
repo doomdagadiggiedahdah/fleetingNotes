@@ -21,6 +21,7 @@ export async function GET(request: Request) {
 
 	try {
 		// Create a HogQL query to fetch all tool call events and group by serverId
+		// Track all JSON RPC errors except ParseError (-32700) and MethodNotFound (-32601)
 		const queryData = {
 			query: {
 				kind: "HogQLQuery",
@@ -28,7 +29,10 @@ export async function GET(request: Request) {
 SELECT 
     events.properties.serverId as serverId,
     countIf(event = 'Tool Called') as useCount,
-    countIf(event = 'Bug Report') as bugReportCount
+    countIf(event = 'Bug Report') as bugReportCount,
+    countIf(event = 'Tool Called' AND events.properties.toolResult LIKE '%"code":-32600%') as invalidRequestCount,
+    countIf(event = 'Tool Called' AND events.properties.toolResult LIKE '%"code":-32602%') as invalidParamsCount,
+    countIf(event = 'Tool Called' AND events.properties.toolResult LIKE '%"code":-32603%') as internalErrorCount
 FROM events
 WHERE 
     (event = 'Tool Called' OR event = 'Bug Report')
@@ -81,7 +85,7 @@ LIMIT 10000`,
 				(result: unknown) =>
 					result &&
 					Array.isArray(result) &&
-					result.length >= 3 &&
+					result.length >= 6 &&
 					validIdSet.has(result[0]),
 			)
 
@@ -99,6 +103,9 @@ LIMIT 10000`,
 							serverId: result[0],
 							useCount: result[1],
 							bugReportCount: result[2],
+							invalidRequestCount: result[3],
+							invalidParamsCount: result[4],
+							internalErrorCount: result[5],
 						})),
 					)
 				})

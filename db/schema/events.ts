@@ -10,4 +10,7 @@ export const serverUsageCounts = pgTable("server_usage_counts", {
 		.notNull(),
 	useCount: integer("use_count").notNull().default(0),
 	bugReportCount: integer("bug_report_count").notNull().default(0),
+	invalidRequestCount: integer("invalid_request_count").notNull().default(0),
+	invalidParamsCount: integer("invalid_params_count").notNull().default(0),
+	internalErrorCount: integer("internal_error_count").notNull().default(0),
 }).enableRLS()

@@ -1,8 +1,6 @@
 export class TimeoutError extends Error {
 	constructor() {
-		super(
-			"Sorry, the connection timed out. Please try again later.",
-		)
+		super("Sorry, the connection timed out. Please try again later.")
 		this.name = "TimeoutError"
 	}
 }

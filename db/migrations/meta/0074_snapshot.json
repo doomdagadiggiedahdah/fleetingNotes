@@ -1,0 +1,1271 @@
+{
+	"id": "8414c673-9292-446a-870e-4bea56d3787f",
+	"prevId": "e00136ca-a304-413f-b4e9-9311ea7c2de8",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {
+		"public.api_keys": {
+			"name": "api_keys",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"api_key": {
+					"name": "api_key",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"owner": {
+					"name": "owner",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"is_default": {
+					"name": "is_default",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": false
+				},
+				"timestamp": {
+					"name": "timestamp",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"default_key_per_owner": {
+					"name": "default_key_per_owner",
+					"columns": [
+						{
+							"expression": "owner",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "is_default",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"where": "\"api_keys\".\"is_default\" = true",
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"api_keys_owner_users_id_fk": {
+					"name": "api_keys_owner_users_id_fk",
+					"tableFrom": "api_keys",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"api_keys_api_key_unique": {
+					"name": "api_keys_api_key_unique",
+					"nullsNotDistinct": false,
+					"columns": ["api_key"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.candidate_urls": {
+			"name": "candidate_urls",
+			"schema": "",
+			"columns": {
+				"crawl_url": {
+					"name": "crawl_url",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"processed": {
+					"name": "processed",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"errored": {
+					"name": "errored",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.pr_queue": {
+			"name": "pr_queue",
+			"schema": "",
+			"columns": {
+				"server_id": {
+					"name": "server_id",
+					"type": "text",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"processed": {
+					"name": "processed",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"pr_url": {
+					"name": "pr_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"errored": {
+					"name": "errored",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"checked": {
+					"name": "checked",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.pull_requests": {
+			"name": "pull_requests",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_repo": {
+					"name": "server_repo",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"pr_task": {
+					"name": "pr_task",
+					"type": "pr_task",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"pr_id": {
+					"name": "pr_id",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"is_closed": {
+					"name": "is_closed",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"merged_at": {
+					"name": "merged_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"pull_requests_server_repo_server_repos_id_fk": {
+					"name": "pull_requests_server_repo_server_repos_id_fk",
+					"tableFrom": "pull_requests",
+					"tableTo": "server_repos",
+					"columnsFrom": ["server_repo"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"pull_requests_pr_id_server_repo_unique": {
+					"name": "pull_requests_pr_id_server_repo_unique",
+					"nullsNotDistinct": false,
+					"columns": ["pr_id", "server_repo"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.pull_requests_failures": {
+			"name": "pull_requests_failures",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_repo": {
+					"name": "server_repo",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"pr_task": {
+					"name": "pr_task",
+					"type": "pr_task",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"error": {
+					"name": "error",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"pull_requests_failures_server_repo_server_repos_id_fk": {
+					"name": "pull_requests_failures_server_repo_server_repos_id_fk",
+					"tableFrom": "pull_requests_failures",
+					"tableTo": "server_repos",
+					"columnsFrom": ["server_repo"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"pull_requests_failures_server_repo_unique": {
+					"name": "pull_requests_failures_server_repo_unique",
+					"nullsNotDistinct": false,
+					"columns": ["server_repo"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.server_categories": {
+			"name": "server_categories",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"title": {
+					"name": "title",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"query": {
+					"name": "query",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"manual": {
+					"name": "manual",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"priority": {
+					"name": "priority",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 100
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.build_cache": {
+			"name": "build_cache",
+			"schema": "",
+			"columns": {
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"files": {
+					"name": "files",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"build_cache_server_id_servers_id_fk": {
+					"name": "build_cache_server_id_servers_id_fk",
+					"tableFrom": "build_cache",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.deployments": {
+			"name": "deployments",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"status": {
+					"name": "status",
+					"type": "deployment_status",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"commit": {
+					"name": "commit",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"commit_message": {
+					"name": "commit_message",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"repo": {
+					"name": "repo",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"branch": {
+					"name": "branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"deployment_url": {
+					"name": "deployment_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"logs": {
+					"name": "logs",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"config_schema": {
+					"name": "config_schema",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"tools": {
+					"name": "tools",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"deployments_server_id_servers_id_fk": {
+					"name": "deployments_server_id_servers_id_fk",
+					"tableFrom": "deployments",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"deployments_repo_server_repos_id_fk": {
+					"name": "deployments_repo_server_repos_id_fk",
+					"tableFrom": "deployments",
+					"tableTo": "server_repos",
+					"columnsFrom": ["repo"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {
+				"Users can read deployments for their servers": {
+					"name": "Users can read deployments for their servers",
+					"as": "PERMISSIVE",
+					"for": "SELECT",
+					"to": ["authenticated"],
+					"using": "\n\t\t\tEXISTS (\n\t\t\t\tSELECT 1 FROM \"servers\"\n\t\t\t\tWHERE \"servers\".\"id\" = \"deployments\".\"server_id\"\n\t\t\t\tAND \"servers\".\"owner\" = auth.uid()\n\t\t\t)"
+				}
+			},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.server_usage_counts": {
+			"name": "server_usage_counts",
+			"schema": "",
+			"columns": {
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true
+				},
+				"use_count": {
+					"name": "use_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"bug_report_count": {
+					"name": "bug_report_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"invalid_request_count": {
+					"name": "invalid_request_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"invalid_params_count": {
+					"name": "invalid_params_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				},
+				"internal_error_count": {
+					"name": "internal_error_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true,
+					"default": 0
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"server_usage_counts_server_id_servers_id_fk": {
+					"name": "server_usage_counts_server_id_servers_id_fk",
+					"tableFrom": "server_usage_counts",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.profiles": {
+			"name": "profiles",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"qualified_name": {
+					"name": "qualified_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"display_name": {
+					"name": "display_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"owner": {
+					"name": "owner",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"is_default": {
+					"name": "is_default",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"default_profile_per_owner": {
+					"name": "default_profile_per_owner",
+					"columns": [
+						{
+							"expression": "owner",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "is_default",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": true,
+					"where": "\"profiles\".\"is_default\" = true",
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"profiles_owner_users_id_fk": {
+					"name": "profiles_owner_users_id_fk",
+					"tableFrom": "profiles",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"profiles_qualified_name_unique": {
+					"name": "profiles_qualified_name_unique",
+					"nullsNotDistinct": false,
+					"columns": ["qualified_name"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.saved_configs": {
+			"name": "saved_configs",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"config_data": {
+					"name": "config_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"profile_id": {
+					"name": "profile_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"saved_configs_server_id_servers_id_fk": {
+					"name": "saved_configs_server_id_servers_id_fk",
+					"tableFrom": "saved_configs",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				},
+				"saved_configs_profile_id_profiles_id_fk": {
+					"name": "saved_configs_profile_id_profiles_id_fk",
+					"tableFrom": "saved_configs",
+					"tableTo": "profiles",
+					"columnsFrom": ["profile_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.server_scans": {
+			"name": "server_scans",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"scan_at": {
+					"name": "scan_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"is_secure": {
+					"name": "is_secure",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"metadata": {
+					"name": "metadata",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"server_scans_server_id_servers_id_fk": {
+					"name": "server_scans_server_id_servers_id_fk",
+					"tableFrom": "server_scans",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"server_scans_server_id_unique": {
+					"name": "server_scans_server_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["server_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.server_repos": {
+			"name": "server_repos",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"type": {
+					"name": "type",
+					"type": "provider",
+					"typeSchema": "public",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"repo_owner": {
+					"name": "repo_owner",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"repo_name": {
+					"name": "repo_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"branch": {
+					"name": "branch",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"base_directory": {
+					"name": "base_directory",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'.'"
+				},
+				"is_private": {
+					"name": "is_private",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"server_repos_server_id_servers_id_fk": {
+					"name": "server_repos_server_id_servers_id_fk",
+					"tableFrom": "server_repos",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"server_repos_server_id_type_unique": {
+					"name": "server_repos_server_id_type_unique",
+					"nullsNotDistinct": false,
+					"columns": ["server_id", "type"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.servers": {
+			"name": "servers",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"qualified_name": {
+					"name": "qualified_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"display_name": {
+					"name": "display_name",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"crawl_url": {
+					"name": "crawl_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"homepage": {
+					"name": "homepage",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"license": {
+					"name": "license",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"verified": {
+					"name": "verified",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"remote": {
+					"name": "remote",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": true
+				},
+				"published": {
+					"name": "published",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"owner": {
+					"name": "owner",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"connections": {
+					"name": "connections",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"icon_url": {
+					"name": "icon_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"featured": {
+					"name": "featured",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": false
+				},
+				"env": {
+					"name": "env",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "'{}'::jsonb"
+				},
+				"tools": {
+					"name": "tools",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"config_schema": {
+					"name": "config_schema",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"embedding": {
+					"name": "embedding",
+					"type": "vector(1536)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"fts_content": {
+					"name": "fts_content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false,
+					"generated": {
+						"as": "\"servers\".\"display_name\" || ' ' || \"servers\".\"qualified_name\" || ' ' || \"servers\".\"description\"",
+						"type": "stored"
+					}
+				}
+			},
+			"indexes": {
+				"embeddingIndex": {
+					"name": "embeddingIndex",
+					"columns": [
+						{
+							"expression": "embedding",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last",
+							"opclass": "vector_ip_ops"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "hnsw",
+					"with": {}
+				},
+				"ftsIndex": {
+					"name": "ftsIndex",
+					"columns": [
+						{
+							"expression": "to_tsvector('english', \"fts_content\")",
+							"asc": true,
+							"isExpression": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "gin",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"servers_owner_users_id_fk": {
+					"name": "servers_owner_users_id_fk",
+					"tableFrom": "servers",
+					"tableTo": "users",
+					"schemaTo": "auth",
+					"columnsFrom": ["owner"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"servers_qualified_name_unique": {
+					"name": "servers_qualified_name_unique",
+					"nullsNotDistinct": false,
+					"columns": ["qualified_name"]
+				}
+			},
+			"policies": {
+				"Users can read their servers": {
+					"name": "Users can read their servers",
+					"as": "PERMISSIVE",
+					"for": "SELECT",
+					"to": ["authenticated"],
+					"using": "(select auth.uid()) = owner"
+				}
+			},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		},
+		"public.server_aliases": {
+			"name": "server_aliases",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"server_id": {
+					"name": "server_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"alias": {
+					"name": "alias",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"alias_idx": {
+					"name": "alias_idx",
+					"columns": [
+						{
+							"expression": "alias",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"server_aliases_server_id_servers_id_fk": {
+					"name": "server_aliases_server_id_servers_id_fk",
+					"tableFrom": "server_aliases",
+					"tableTo": "servers",
+					"columnsFrom": ["server_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"server_aliases_alias_unique": {
+					"name": "server_aliases_alias_unique",
+					"nullsNotDistinct": false,
+					"columns": ["alias"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": true
+		}
+	},
+	"enums": {
+		"public.pr_task": {
+			"name": "pr_task",
+			"schema": "public",
+			"values": ["config", "readme"]
+		},
+		"public.deployment_status": {
+			"name": "deployment_status",
+			"schema": "public",
+			"values": [
+				"QUEUED",
+				"WORKING",
+				"SUCCESS",
+				"FAILURE",
+				"INTERNAL_ERROR",
+				"CANCELLED"
+			]
+		},
+		"public.provider": {
+			"name": "provider",
+			"schema": "public",
+			"values": ["github"]
+		}
+	},
+	"schemas": {},
+	"sequences": {},
+	"roles": {},
+	"policies": {},
+	"views": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}
