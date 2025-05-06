@@ -78,12 +78,30 @@ async function getEmbedding(text: string): Promise<number[]> {
   return response.data[0].embedding;
 }
 
-// Fetch servers from search
-async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10): Promise<ServerResponse[]> {
+// First pass function to get total result count for a query
+async function getResultCount(searchQuery?: string): Promise<number> {
   try {
+    const { pagination } = await getAllServers(
+      searchQuery,
+      { page: 1, pageSize: 10 }, // We only need pagination info, not actual results
+      true
+    );
+    return pagination.totalCount;
+  } catch (error) {
+    console.error("Error getting result count:", error);
+    throw error;
+  }
+}
+
+// Fetch servers from search with dynamic page size
+async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10, maxResults?: number): Promise<ServerResponse[]> {
+  try {
+    // If maxResults is specified, override pageSize
+    const effectivePageSize = maxResults || pageSize;
+    
     const { servers } = await getAllServers(
       searchQuery,
-      { page, pageSize },
+      { page, pageSize: effectivePageSize },
       true
     );
     return servers;
@@ -100,16 +118,25 @@ function calculateMetrics(results: SearchResult[], keywordResults?: SearchResult
     (r.relevanceType === 'secondary' && (r.relevanceScore ?? 0) > 0.8)
   ).length;
   
+  // Use the actual number of relevant results from keyword search as our denominator
+  // If no keyword results provided, fall back to result count
   const totalRelevantPossible = keywordResults ? 
     keywordResults.filter(r => r.isRelevant).length : 
-    10;
+    results.length;
   
   const precision = results.length > 0 ? relevantCount / results.length : 0;
-  const recall = relevantCount / totalRelevantPossible;
+  const recall = totalRelevantPossible > 0 ? relevantCount / totalRelevantPossible : 0;
   const f1 = precision && recall ? 
     2 * (precision * recall) / (precision + recall) : 0;
 
-  return { precision, recall, f1 };
+  return { 
+    precision, 
+    recall, 
+    f1,
+    relevantCount,
+    totalResults: results.length,
+    totalRelevantPossible
+  };
 }
 
 function evaluateKeywordResults(servers: ServerResponse[], keyword: string): SearchResult[] {
@@ -198,13 +225,33 @@ async function evaluateLongQueryResults(
   return results;
 }
 
-async function evaluateQueryPair(queryPair: { keyword: string, longQuery: string }) {
+/**
+ * Evaluate a pair of keyword and long queries
+ * @param queryPair The keyword and long query pair to evaluate
+ * @param customMaxResults Optional custom maximum results limit (overrides the default cap)
+ */
+async function evaluateQueryPair(
+  queryPair: { keyword: string, longQuery: string },
+  customMaxResults?: number
+) {
   console.log("\n==========");
   console.log(`========== EVALUATING: "${queryPair.keyword}" vs "${queryPair.longQuery}" ==========`);
   console.log("==========\n");
   
-  const shortResults = await fetchServersList(queryPair.keyword);
-  const longResults = await fetchServersList(queryPair.longQuery);
+  // Use custom max results if provided, otherwise default to 50
+  const resultsLimit = customMaxResults ?? 50;
+  
+  // Get result counts to determine optimal number of results to fetch
+  const keywordResultCount = Math.min(await getResultCount(queryPair.keyword), resultsLimit);
+  const longQueryResultCount = Math.min(await getResultCount(queryPair.longQuery), resultsLimit);
+  
+  // Use the larger of the two counts to ensure we're comparing equivalent sample sizes
+  const maxResultCount = Math.max(keywordResultCount, longQueryResultCount, 10); // Ensure we get at least 10 results
+  
+  console.log(`Fetching ${maxResultCount} results for each query (keyword results: ${keywordResultCount}, long query results: ${longQueryResultCount})`);
+  
+  const shortResults = await fetchServersList(queryPair.keyword, 1, maxResultCount);
+  const longResults = await fetchServersList(queryPair.longQuery, 1, maxResultCount);
 
   const keywordEvaluations = evaluateKeywordResults(shortResults, queryPair.keyword);
   const longQueryEvaluations = await evaluateLongQueryResults(longResults, keywordEvaluations, queryPair);
@@ -244,9 +291,12 @@ async function evaluateQueryPair(queryPair: { keyword: string, longQuery: string
   const longQuerySecondaryCount = longQueryEvaluations.filter(r => r.relevanceType === 'secondary').length;
   
   console.log(`\nSummary for "${queryPair.keyword}":`);
-  console.log(`- Keyword search found ${keywordRelevantCount} relevant results`);
-  console.log(`- Long query found ${longQueryPrimaryCount} primary matches`);
-  console.log(`- Long query found ${longQuerySecondaryCount} secondary matches`);
+  console.log(`- Sample size: ${maxResultCount} results per query`);
+  console.log(`- Keyword search found ${keywordRelevantCount}/${shortResults.length} relevant results`);
+  console.log(`- Long query found ${longQueryPrimaryCount} primary matches and ${longQuerySecondaryCount} secondary matches`);
+  console.log(`- Precision: Keyword=${shortMetrics.precision.toFixed(2)}, Long=${longMetrics.precision.toFixed(2)}`);
+  console.log(`- Recall: Keyword=${shortMetrics.recall.toFixed(2)}, Long=${longMetrics.recall.toFixed(2)}`);
+  console.log(`- F1 Score: Keyword=${shortMetrics.f1.toFixed(2)}, Long=${longMetrics.f1.toFixed(2)}`);
   
   return {
     keyword: queryPair.keyword,
@@ -254,28 +304,61 @@ async function evaluateQueryPair(queryPair: { keyword: string, longQuery: string
     longQueryMetrics: longMetrics,
     keywordRelevantCount,
     longQueryPrimaryCount,
-    longQuerySecondaryCount
+    longQuerySecondaryCount,
+    sampleSize: maxResultCount
   };
 }
 
-async function evaluateSearch() {
+/**
+ * Run evaluation on search queries
+ * @param options Configuration options
+ * @param options.maxResults Maximum number of results to fetch per query (default: 50)
+ * @param options.queryPairs Optional array of query pairs to evaluate (defaults to QUERY_PAIRS)
+ */
+async function evaluateSearch(options: { maxResults?: number; queryPairs?: typeof QUERY_PAIRS } = {}) {
+  const { maxResults = 50, queryPairs = QUERY_PAIRS } = options;
   const allResults = [];
   
-  for (const queryPair of QUERY_PAIRS) {
-    const result = await evaluateQueryPair(queryPair);
+  console.log(`Configured to use up to ${maxResults} results per query`);
+  
+  for (const queryPair of queryPairs) {
+    const result = await evaluateQueryPair(queryPair, maxResults);
     allResults.push(result);
   }
   
   console.log("\n========== OVERALL SUMMARY ==========");
+  
+  // Calculate average metrics across all queries
+  const avgKeywordPrecision = allResults.reduce((sum, r) => sum + r.keywordMetrics.precision, 0) / allResults.length;
+  const avgKeywordRecall = allResults.reduce((sum, r) => sum + r.keywordMetrics.recall, 0) / allResults.length;
+  const avgKeywordF1 = allResults.reduce((sum, r) => sum + r.keywordMetrics.f1, 0) / allResults.length;
+  
+  const avgLongPrecision = allResults.reduce((sum, r) => sum + r.longQueryMetrics.precision, 0) / allResults.length;
+  const avgLongRecall = allResults.reduce((sum, r) => sum + r.longQueryMetrics.recall, 0) / allResults.length;
+  const avgLongF1 = allResults.reduce((sum, r) => sum + r.longQueryMetrics.f1, 0) / allResults.length;
+  
+  const avgSampleSize = allResults.reduce((sum, r) => sum + r.sampleSize, 0) / allResults.length;
+  
   allResults.forEach(result => {
-    console.log(`\n${result.keyword}:`);
+    console.log(`\n${result.keyword} (Sample size: ${result.sampleSize}):`);
     console.log(`Keyword search - Precision: ${result.keywordMetrics.precision.toFixed(2)}, Recall: ${result.keywordMetrics.recall.toFixed(2)}, F1: ${result.keywordMetrics.f1.toFixed(2)}`);
     console.log(`Long query search - Precision: ${result.longQueryMetrics.precision.toFixed(2)}, Recall: ${result.longQueryMetrics.recall.toFixed(2)}, F1: ${result.longQueryMetrics.f1.toFixed(2)}`);
     console.log(`Found: ${result.longQueryPrimaryCount} primary + ${result.longQuerySecondaryCount} secondary matches`);
   });
+  
+  console.log("\n========== AVERAGE METRICS ==========");
+  console.log(`Average sample size: ${avgSampleSize.toFixed(1)} results per query`);
+  console.log(`Keyword search - Avg Precision: ${avgKeywordPrecision.toFixed(2)}, Avg Recall: ${avgKeywordRecall.toFixed(2)}, Avg F1: ${avgKeywordF1.toFixed(2)}`);
+  console.log(`Long query search - Avg Precision: ${avgLongPrecision.toFixed(2)}, Avg Recall: ${avgLongRecall.toFixed(2)}, Avg F1: ${avgLongF1.toFixed(2)}`);
+  
 }
 
-evaluateSearch().catch(console.error);
+// Set the maximum number of results to fetch per query
+// Change this value to increase or decrease the maximum sample size
+const MAX_RESULTS = 10;
+
+// Run evaluation with the specified maximum results
+evaluateSearch({ maxResults: MAX_RESULTS }).catch(console.error);
 
 
 
