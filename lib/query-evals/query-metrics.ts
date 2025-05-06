@@ -6,8 +6,10 @@ import { deployments, serverRepos, servers } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { initDataset } from "braintrust"
 import { getAllServers } from "@/lib/actions/search-servers"
+import OpenAI from 'openai';
 
-// Test query pairs (keyword and corresponding long query)
+const openAI = new OpenAI();
+
 const QUERY_PAIRS = [
   {
     keyword: "anki",
@@ -20,22 +22,67 @@ const QUERY_PAIRS = [
   {
     keyword: "tavily",
     longQuery: "Tools that allow AI assistants to use Tavily for real-time information retrieval, intelligent query formation, and comprehensive multi-source research"
+  },
+  {
+    keyword: "terminal commands",
+    longQuery: "MCP server that enables AI assistants to execute system commands, manage files with diff comparisons, and automate terminal operations with secure permission controls and command history tracking"
+  },
+  {
+    keyword: "structured reasoning",
+    longQuery: "MCP server for enhancing Claude's problem-solving capabilities through a step-by-step thinking framework that supports recursive analysis, hypothesis testing, and methodical evaluation of complex scenarios"
+  },
+  {
+    keyword: "presentation tools",
+    longQuery: "MCP server that allows Claude to create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities for automated business document creation"
+  },
+  {
+    keyword: "team chat",
+    longQuery: "MCP server for connecting Claude to Slack workspaces with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments"
+  },
+  {
+    keyword: "music production",
+    longQuery: "MCP server that connects Claude to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation"
+  },
+  {
+    keyword: "web search",
+    longQuery: "MCP server that provides Claude with capabilities to search the internet for current information, retrieve relevant websites, and extract structured data from search results with source credibility ranking"
+  },
+  {
+    keyword: "file management",
+    longQuery: "MCP server for secure access to local and cloud file systems allowing Claude to read, write, organize, and search through documents with proper permissions and metadata handling"
   }
 ];
 
 interface SearchResult {
   displayName: string;
   isRelevant: boolean;
+  relevanceType: 'primary' | 'secondary' | 'none';
+  relevanceScore?: number;
   reason?: string;
 }
 
 interface ServerResponse {
   displayName: string;
   description: string;
-  // Add other fields as they become available
-  // description?: string;
 }
 
+// Helper function to calculate cosine similarity
+function cosineSimilarity(embedding1: number[], embedding2: number[]): number {
+  const dotProduct = embedding1.reduce((sum, a, i) => sum + a * embedding2[i], 0);
+  const norm1 = Math.sqrt(embedding1.reduce((sum, a) => sum + a * a, 0));
+  const norm2 = Math.sqrt(embedding2.reduce((sum, a) => sum + a * a, 0));
+  return dotProduct / (norm1 * norm2);
+}
+
+async function getEmbedding(text: string): Promise<number[]> {
+  const response = await openAI.embeddings.create({
+    input: text,
+    model: "text-embedding-3-small",
+  });
+  return response.data[0].embedding;
+}
+
+// Fetch servers from search
 async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10): Promise<ServerResponse[]> {
   try {
     const { servers } = await getAllServers(
@@ -51,12 +98,15 @@ async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10): 
 }
 
 function calculateMetrics(results: SearchResult[], keywordResults?: SearchResult[]) {
-  const relevantCount = results.filter(r => r.isRelevant).length;
+  // Count both primary and high-scoring secondary results as relevant
+  const relevantCount = results.filter(r => 
+    r.relevanceType === 'primary' || 
+    (r.relevanceType === 'secondary' && (r.relevanceScore ?? 0) > 0.8)
+  ).length;
   
-  // If we have keyword results, use their length as the total possible relevant
   const totalRelevantPossible = keywordResults ? 
     keywordResults.filter(r => r.isRelevant).length : 
-    10; // Fallback to hardcoded value if no keyword results
+    10;
   
   const precision = results.length > 0 ? relevantCount / results.length : 0;
   const recall = relevantCount / totalRelevantPossible;
@@ -75,6 +125,7 @@ function evaluateKeywordResults(servers: ServerResponse[], keyword: string): Sea
     return {
       displayName: server.displayName,
       isRelevant,
+      relevanceType: isRelevant ? 'primary' : 'none',
       reason: keywordInTitle ? 
         'Contains keyword in title' : 
         keywordInDescription ? 'Contains keyword in description' : 'No keyword match'
@@ -82,95 +133,120 @@ function evaluateKeywordResults(servers: ServerResponse[], keyword: string): Sea
   });
 }
 
-function evaluateLongQueryResults(
-  servers: ServerResponse[], 
-  keywordResults: SearchResult[]
-): SearchResult[] {
-  // Get the displayNames of relevant keyword results
-  const relevantKeywordNames = new Set(
-    keywordResults
-      .filter(r => r.isRelevant)
-      .map(r => r.displayName)
-  );
+async function evaluateLongQueryResults(
+  servers: ServerResponse[],
+  keywordResults: SearchResult[],
+  queryPair: { keyword: string, longQuery: string }
+): Promise<SearchResult[]> {
+  // Get relevant keyword servers to use as comparison baseline
+  const relevantKeywordServers = keywordResults.filter(r => r.isRelevant);
+  const relevantKeywordNames = new Set(relevantKeywordServers.map(r => r.displayName));
+  const intentEmbedding = await getEmbedding(queryPair.longQuery);
 
-  return servers.map(server => {
-    const isInKeywordResults = relevantKeywordNames.has(server.displayName);
-    
+  // Process each server
+  const results = await Promise.all(servers.map(async server => {
+    // If it's in keyword results, it's primary relevant
+    if (relevantKeywordNames.has(server.displayName)) {
+      return {
+        displayName: server.displayName,
+        isRelevant: true,
+        relevanceType: 'primary' as const,
+        reason: 'Found in keyword search results'
+      };
+    }
+
+    // Calculate semantic similarity
+    const serverDescription = `${server.displayName}: ${server.description}`;
+    const serverEmbedding = await getEmbedding(serverDescription);
+    const similarity = cosineSimilarity(intentEmbedding, serverEmbedding);
+
     return {
       displayName: server.displayName,
-      isRelevant: isInKeywordResults,
-      reason: isInKeywordResults ? 
-        'Found in keyword search results' : 
-        'Not found in keyword search results'
+      isRelevant: similarity > 0.8,
+      relevanceType: similarity > 0.8 ? 'secondary' as const : 'none' as const,
+      relevanceScore: similarity,
+      reason: similarity > 0.8 ? 
+        `Semantically similar (${(similarity * 100).toFixed(1)}% match)` : 
+        'Not semantically similar enough'
     };
-  });
+  }));
+
+  return results;
 }
 
 async function evaluateQueryPair(queryPair: { keyword: string, longQuery: string }) {
   console.log(`\n========== EVALUATING: "${queryPair.keyword}" vs "${queryPair.longQuery}" ==========`);
   
-  // Get results for both queries
   const shortResults = await fetchServersList(queryPair.keyword);
   const longResults = await fetchServersList(queryPair.longQuery);
 
-  // Evaluate keyword results first
   const keywordEvaluations = evaluateKeywordResults(shortResults, queryPair.keyword);
-  
-  // Evaluate long query results against keyword results
-  const longQueryEvaluations = evaluateLongQueryResults(longResults, keywordEvaluations);
+  const longQueryEvaluations = await evaluateLongQueryResults(longResults, keywordEvaluations, queryPair);
 
-  // Calculate metrics
   const shortMetrics = calculateMetrics(keywordEvaluations);
   const longMetrics = calculateMetrics(longQueryEvaluations, keywordEvaluations);
 
-  // Display results
   console.log(`\nKeyword Query Results for "${queryPair.keyword}":`);
+  // Print column headers for keyword results
+  console.log('   Server Name                       | Relevance | Reason');
+  console.log('   ----------------------------------|-----------|---------------------------');
   keywordEvaluations.forEach((result, i) => {
-    console.log(`${i + 1}. ${result.displayName} (Relevant: ${result.isRelevant})`);
+    const name = result.displayName.padEnd(34).substring(0, 34);
+    const relevance = result.isRelevant ? 'true ' : 'false';
+    console.log(`${i + 1}. ${name}| ${relevance}    | ${result.reason}`);
   });
   console.log(`\nKeyword Query Metrics for "${queryPair.keyword}":`, shortMetrics);
 
   console.log(`\nLong Query Results for "${queryPair.longQuery.substring(0, 50)}...":`);
+  // Print column headers
+  console.log('   Server Name                       | Relevance       | Score  | Reason');
+  console.log('   ----------------------------------|-----------------|--------|---------------------------');
   longQueryEvaluations.forEach((result, i) => {
-    console.log(`${i + 1}. ${result.displayName} (Relevant: ${result.isRelevant})`);
+    const name = result.displayName.padEnd(34).substring(0, 34);
+    const relevance = result.isRelevant 
+      ? 'true (primary)'.padEnd(16)
+      : `false (${result.relevanceType})`.padEnd(16);
+    const score = result.relevanceScore 
+      ? `${(result.relevanceScore * 100).toFixed(1)}%`.padEnd(8)
+      : 'N/A'.padEnd(8);
+    console.log(`${i + 1}. ${name}| ${relevance}| ${score}| ${result.reason}`);
   });
   console.log(`\nLong Query Metrics for "${queryPair.keyword}":`, longMetrics);
 
-  // Summary statistics
   const keywordRelevantCount = keywordEvaluations.filter(r => r.isRelevant).length;
-  const longQueryMatchCount = longQueryEvaluations.filter(r => r.isRelevant).length;
+  const longQueryPrimaryCount = longQueryEvaluations.filter(r => r.relevanceType === 'primary').length;
+  const longQuerySecondaryCount = longQueryEvaluations.filter(r => r.relevanceType === 'secondary').length;
   
   console.log(`\nSummary for "${queryPair.keyword}":`);
   console.log(`- Keyword search found ${keywordRelevantCount} relevant results`);
-  console.log(`- Long query found ${longQueryMatchCount} of these results`);
+  console.log(`- Long query found ${longQueryPrimaryCount} primary matches`);
+  console.log(`- Long query found ${longQuerySecondaryCount} secondary matches`);
   
   return {
     keyword: queryPair.keyword,
     keywordMetrics: shortMetrics,
     longQueryMetrics: longMetrics,
     keywordRelevantCount,
-    longQueryMatchCount
+    longQueryPrimaryCount,
+    longQuerySecondaryCount
   };
 }
 
 async function evaluateSearch() {
   const allResults = [];
   
-  // Evaluate each query pair
   for (const queryPair of QUERY_PAIRS) {
     const result = await evaluateQueryPair(queryPair);
     allResults.push(result);
   }
   
-  // Overall summary
   console.log("\n========== OVERALL SUMMARY ==========");
   allResults.forEach(result => {
     console.log(`\n${result.keyword}:`);
     console.log(`Keyword search - Precision: ${result.keywordMetrics.precision.toFixed(2)}, Recall: ${result.keywordMetrics.recall.toFixed(2)}, F1: ${result.keywordMetrics.f1.toFixed(2)}`);
     console.log(`Long query search - Precision: ${result.longQueryMetrics.precision.toFixed(2)}, Recall: ${result.longQueryMetrics.recall.toFixed(2)}, F1: ${result.longQueryMetrics.f1.toFixed(2)}`);
-    console.log(`Keyword found ${result.keywordRelevantCount} relevant results, long query found ${result.longQueryMatchCount} of these`);
+    console.log(`Found: ${result.longQueryPrimaryCount} primary + ${result.longQuerySecondaryCount} secondary matches`);
   });
 }
 
-// Run the evaluation
 evaluateSearch().catch(console.error);
