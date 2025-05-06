@@ -1,3 +1,4 @@
+// npx braintrust eval lib/query-evals/pull-eval-data.ts
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.development.local' });
 import { db } from "@/db"
@@ -7,6 +8,7 @@ import { initDataset } from "braintrust"
 import { getAllServers } from "@/lib/actions/search-servers"
 
 
+const search_query = "game"
 
 // Function to get just the servers
 async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10) {
@@ -18,7 +20,6 @@ async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10) {
 		true
 	  );
 	  
-	  // Now you have just the servers array
 	  return servers;
 	} catch (error) {
 	  console.error("Error fetching servers:", error);
@@ -28,19 +29,35 @@ async function fetchServersList(searchQuery?: string, page = 1, pageSize = 10) {
   
   // Usage example
   async function displayServersList() {
-	const servers = await fetchServersList("game");
+	const servers = await fetchServersList(search_query);
 	
 	// Process server data
 	servers.forEach(server => {
 	  console.log(`Server: ${server.displayName}`);
-	  console.log(`Qualified Name: ${server.qualifiedName}`);
 	  // Access other server properties as needed
 	});
   }
 
 displayServersList();
 
+export async function getSearchResults() {
+	const servers = await fetchServersList(search_query)
 
+	const dataset = initDataset("Smithery", { dataset: "query-eval" })
+	for (const server of servers) {
+		dataset.insert({
+			id: server.id,
+			input: {
+				id: server.displayName,
+				search_query: search_query,
+			},
+		})
+	}
+
+	console.log(await dataset.summarize())
+}
+
+getSearchResults();
 
 //
 // (parameter) server: {
