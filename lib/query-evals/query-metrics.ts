@@ -276,3 +276,38 @@ async function evaluateSearch() {
 }
 
 evaluateSearch().catch(console.error);
+
+
+
+
+
+// How this works:
+// 
+// This benchmark evaluates how well semantic search queries (longer,
+// intent-based) perform compared to direct keyword searches. It uses keyword
+// matches as "ground truth" and measures how effectively semantic queries can
+// retrieve the same relevant results while identifying additional
+// 
+//   Keyword Results (Ground Truth)
+// 
+//   - Servers are considered relevant if they contain search term(s) in title or description
+//   - Supports both exact phrase matches and individual word matching
+//   - Example: Think Tool Server | true | Contains keyword(s) "reasoning" in description
+// 
+//   Long Query Evaluation
+// 
+//   - Two types of relevant results:
+//     a. Primary matches: Servers also found in keyword search
+//         - Example: Think Tool Server | true (primary) | N/A | Found in keyword search results
+//     b. Secondary matches: New servers with semantic similarity > 0.6
+//         - Example: Cognitive Framework Server | true (secondary) | 72.0% | Semantically similar
+//   - Non-matches: Image Generation API | false (none) | 35.0% | Not semantically similar enough
+// 
+// Metrics Calculated
+// 
+// - Precision = relevant results ÷ total results returned
+//   - Measures accuracy: "What percentage of returned results are actually relevant?"
+// - Recall = relevant results ÷ total possible relevant results (from ground truth)
+//   - Measures completeness: "What percentage of all relevant items did we find?"
+// - F1 = 2 × (precision × recall) ÷ (precision + recall)
+//   - Balanced measure combining precision and recall
