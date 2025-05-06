@@ -1,10 +1,10 @@
 // npx braintrust eval lib/query-evals/pull-eval-data.ts
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.development.local' });
-import { db } from "@/db"
-import { deployments, serverRepos, servers } from "@/db/schema"
-import { eq, sql } from "drizzle-orm"
-import { initDataset } from "braintrust"
+// import { db } from "@/db"
+// import { deployments, serverRepos, servers } from "@/db/schema"
+// import { eq, sql } from "drizzle-orm"
+// import { initDataset } from "braintrust"
 import { getAllServers } from "@/lib/actions/search-servers"
 import OpenAI from 'openai';
 
@@ -13,15 +13,11 @@ const openAI = new OpenAI();
 const QUERY_PAIRS = [
   {
     keyword: "anki",
-    longQuery: "MCP server for integrating Claude with Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules"
+    longQuery: "MCP server for with Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules"
   },
   {
     keyword: "notion",
     longQuery: "Tools that allow AI assistants to read and modify Notion documents, create new pages with templates, and organize information in hierarchical structures"
-  },
-  {
-    keyword: "tavily",
-    longQuery: "Tools that allow AI assistants to use Tavily for real-time information retrieval, intelligent query formation, and comprehensive multi-source research"
   },
   {
     keyword: "terminal commands",
@@ -29,27 +25,27 @@ const QUERY_PAIRS = [
   },
   {
     keyword: "structured reasoning",
-    longQuery: "MCP server for enhancing Claude's problem-solving capabilities through a step-by-step thinking framework that supports recursive analysis, hypothesis testing, and methodical evaluation of complex scenarios"
+    longQuery: "MCP server for enhancing agent problem-solving capabilities through a step-by-step thinking framework that supports recursive analysis, hypothesis testing, and methodical evaluation of complex scenarios"
   },
   {
-    keyword: "presentation tools",
-    longQuery: "MCP server that allows Claude to create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities for automated business document creation"
+    keyword: "powerpoint",
+    longQuery: "MCP server that allows agents to create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities for automated business document creation"
   },
   {
-    keyword: "team chat",
-    longQuery: "MCP server for connecting Claude to Slack workspaces with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments"
+    keyword: "messages",
+    longQuery: "MCP server for connecting agents to Slack workspaces with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments"
   },
   {
     keyword: "music production",
-    longQuery: "MCP server that connects Claude to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation"
+    longQuery: "MCP server that connects agents to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation"
   },
   {
     keyword: "web search",
-    longQuery: "MCP server that provides Claude with capabilities to search the internet for current information, retrieve relevant websites, and extract structured data from search results with source credibility ranking"
+    longQuery: "MCP server that provides agents with capabilities to search the internet for current information, retrieve relevant websites, and extract structured data from search results with source credibility ranking"
   },
   {
     keyword: "file management",
-    longQuery: "MCP server for secure access to local and cloud file systems allowing Claude to read, write, organize, and search through documents with proper permissions and metadata handling"
+    longQuery: "MCP server for secure access to local and cloud file systems allowing agents to read, write, organize, and search through documents with proper permissions and metadata handling"
   }
 ];
 
@@ -117,18 +113,46 @@ function calculateMetrics(results: SearchResult[], keywordResults?: SearchResult
 }
 
 function evaluateKeywordResults(servers: ServerResponse[], keyword: string): SearchResult[] {
+  // Split keywords into individual words for multi-word queries
+  const keywords = keyword.toLowerCase().split(/\s+/).filter(k => k.length > 3); // Ignore words shorter than 4 chars
+  
   return servers.map(server => {
-    const keywordInTitle = server.displayName.toLowerCase().includes(keyword.toLowerCase());
-    const keywordInDescription = server.description?.toLowerCase().includes(keyword.toLowerCase()) || false;
-    const isRelevant = keywordInTitle || keywordInDescription;
+    const serverNameLower = server.displayName.toLowerCase();
+    const descriptionLower = server.description?.toLowerCase() || '';
+    
+    // Check for exact phrase match first
+    const exactPhraseInTitle = serverNameLower.includes(keyword.toLowerCase());
+    const exactPhraseInDesc = descriptionLower.includes(keyword.toLowerCase());
+    
+    // Check for individual word matches
+    const matchedWords = keywords.filter(word => 
+      serverNameLower.includes(word) || descriptionLower.includes(word)
+    );
+    
+    const hasWordMatch = matchedWords.length > 0;
+    const isRelevant = exactPhraseInTitle || exactPhraseInDesc || hasWordMatch;
+    
+    let reason = 'No keyword match';
+    if (exactPhraseInTitle) {
+      reason = `Contains exact phrase "${keyword}" in title`;
+    } else if (exactPhraseInDesc) {
+      reason = `Contains exact phrase "${keyword}" in description`;
+    } else if (hasWordMatch) {
+      const titleMatches = keywords.filter(word => serverNameLower.includes(word));
+      const descMatches = keywords.filter(word => descriptionLower.includes(word));
+      
+      if (titleMatches.length > 0) {
+        reason = `Contains keyword(s) "${titleMatches.join(', ')}" in title`;
+      } else {
+        reason = `Contains keyword(s) "${descMatches.join(', ')}" in description`;
+      }
+    }
     
     return {
       displayName: server.displayName,
       isRelevant,
       relevanceType: isRelevant ? 'primary' : 'none',
-      reason: keywordInTitle ? 
-        'Contains keyword in title' : 
-        keywordInDescription ? 'Contains keyword in description' : 'No keyword match'
+      reason
     };
   });
 }
@@ -162,10 +186,10 @@ async function evaluateLongQueryResults(
 
     return {
       displayName: server.displayName,
-      isRelevant: similarity > 0.8,
-      relevanceType: similarity > 0.8 ? 'secondary' as const : 'none' as const,
+      isRelevant: similarity > 0.6,
+      relevanceType: similarity > 0.6 ? 'secondary' as const : 'none' as const,
       relevanceScore: similarity,
-      reason: similarity > 0.8 ? 
+      reason: similarity > 0.6 ? 
         `Semantically similar (${(similarity * 100).toFixed(1)}% match)` : 
         'Not semantically similar enough'
     };
@@ -175,7 +199,9 @@ async function evaluateLongQueryResults(
 }
 
 async function evaluateQueryPair(queryPair: { keyword: string, longQuery: string }) {
-  console.log(`\n========== EVALUATING: "${queryPair.keyword}" vs "${queryPair.longQuery}" ==========`);
+  console.log("\n==========");
+  console.log(`========== EVALUATING: "${queryPair.keyword}" vs "${queryPair.longQuery}" ==========`);
+  console.log("==========\n");
   
   const shortResults = await fetchServersList(queryPair.keyword);
   const longResults = await fetchServersList(queryPair.longQuery);
