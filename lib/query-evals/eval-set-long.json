@@ -85,7 +85,7 @@
             "@smithery-ai/fetch",
             "@nickclyde/duckduckgo-mcp-server"
         ],
-        "(browser) automation": [
+        "browser automation": [
             "@wonderwhy-er/desktop-commander",
             "@microsoft/playwright-mcp",
             "@browserbasehq/mcp-browserbase",
