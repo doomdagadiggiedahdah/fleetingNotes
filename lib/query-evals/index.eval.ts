@@ -1,14 +1,21 @@
-// npx braintrust eval lib/query-evals/index.eval.ts
+// npx braintrust eval lib/query-evals/index.eval.ts --pageSize=20
+// Example: npx braintrust eval lib/query-evals/index.eval.ts --pageSize=50
 import { Eval, type EvalScorer, initDataset } from "braintrust"
 import { getAllServers } from "@/lib/actions/search-servers"
 
+// Parse command line arguments
+const args = process.argv.slice(2)
+const pageSize = parseInt(args.find(arg => arg.startsWith('--pageSize='))?.split('=')[1] || '15', 10)
+
 interface SearchInput {
+    category: string
     query: string
     expectedUrls: string[]
 }
 
 type SearchOutput = {
-    results: any[]
+    category: string
+    // results: any[]
     resultUrls: string[]
     recall: number
     precision: number
@@ -34,15 +41,16 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
 		return data
 	},
     task: async (row) => {
-        const { query, expectedUrls } = row
+        const { category, query, expectedUrls } = row
         
         try {
-            console.log(`Running search for query: "${query}"`)
+            console.log(`Running search for ${category} query: "${query}"`)
             
-            // Call the search function with the query
+            // Call the search function with the query using pageSize from CLI args
+            console.log(`Using pageSize: ${pageSize}`)
             const { servers } = await getAllServers(
                 query,
-                { page: 1, pageSize: 20 },
+                { page: 1, pageSize },
                 true
             )
             
@@ -67,7 +75,8 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
                 2 * (precision * recall) / (precision + recall) : 0;
             
             return {
-                results: servers,
+                category,
+                // results: servers,
                 resultUrls,
                 recall,
                 precision,
@@ -95,5 +104,5 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
             name: "F1 Score",
             score: output.f1,
         })
-    ],
+    ]
 })

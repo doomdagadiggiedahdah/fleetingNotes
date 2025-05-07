@@ -1,10 +1,6 @@
-// npx braintrust eval lib/query-evals/pull-eval-data.ts
+// npx braintrust eval lib/query-evals/query-metrics.ts
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.development.local' });
-// import { db } from "@/db"
-// import { deployments, serverRepos, servers } from "@/db/schema"
-// import { eq, sql } from "drizzle-orm"
-// import { initDataset } from "braintrust"
 import { getAllServers } from "@/lib/actions/search-servers"
 import OpenAI from 'openai';
 
@@ -13,15 +9,15 @@ const openAI = new OpenAI();
 const QUERY_PAIRS = [
   {
     keyword: "anki",
-    longQuery: "MCP server for with Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules"
+    longQuery: "Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules"
   },
   {
     keyword: "notion",
-    longQuery: "Tools that allow AI assistants to read and modify Notion documents, create new pages with templates, and organize information in hierarchical structures"
+    longQuery: "Tools that read and modify Notion documents, create new pages with templates, and organize information in hierarchical structures"
   },
   {
     keyword: "terminal commands",
-    longQuery: "MCP server that enables AI assistants to execute system commands, manage files with diff comparisons, and automate terminal operations with secure permission controls and command history tracking"
+    longQuery: "execute system commands, manage files with diff comparisons, and automate terminal operations with secure permission controls and command history tracking"
   },
   {
     keyword: "structured reasoning",
@@ -29,15 +25,15 @@ const QUERY_PAIRS = [
   },
   {
     keyword: "powerpoint",
-    longQuery: "MCP server that allows agents to create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities for automated business document creation"
+    longQuery: "allow agents to create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities for automated business document creation"
   },
   {
     keyword: "messages",
-    longQuery: "MCP server for connecting agents to Slack workspaces with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments"
+    longQuery: "connect to messages with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments"
   },
   {
     keyword: "music production",
-    longQuery: "MCP server that connects agents to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation"
+    longQuery: "Connects agents to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation"
   },
   {
     keyword: "web search",
@@ -359,38 +355,3 @@ const MAX_RESULTS = 10;
 
 // Run evaluation with the specified maximum results
 evaluateSearch({ maxResults: MAX_RESULTS }).catch(console.error);
-
-
-
-
-
-// How this works:
-// 
-// This benchmark evaluates how well semantic search queries (longer,
-// intent-based) perform compared to direct keyword searches. It uses keyword
-// matches as "ground truth" and measures how effectively semantic queries can
-// retrieve the same relevant results while identifying additional
-// 
-//   Keyword Results (Ground Truth)
-// 
-//   - Servers are considered relevant if they contain search term(s) in title or description
-//   - Supports both exact phrase matches and individual word matching
-//   - Example: Think Tool Server | true | Contains keyword(s) "reasoning" in description
-// 
-//   Long Query Evaluation
-// 
-//   - Two types of relevant results:
-//     a. Primary matches: Servers also found in keyword search
-//         - Example: Think Tool Server | true (primary) | N/A | Found in keyword search results
-//     b. Secondary matches: New servers with semantic similarity > 0.6
-//         - Example: Cognitive Framework Server | true (secondary) | 72.0% | Semantically similar
-//   - Non-matches: Image Generation API | false (none) | 35.0% | Not semantically similar enough
-// 
-// Metrics Calculated
-// 
-// - Precision = relevant results ÷ total results returned
-//   - Measures accuracy: "What percentage of returned results are actually relevant?"
-// - Recall = relevant results ÷ total possible relevant results (from ground truth)
-//   - Measures completeness: "What percentage of all relevant items did we find?"
-// - F1 = 2 × (precision × recall) ÷ (precision + recall)
-//   - Balanced measure combining precision and recall

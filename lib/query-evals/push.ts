@@ -8,15 +8,25 @@ async function uploadEvalSet() {
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     const dataset = initDataset("Smithery", { dataset: "search-engine-eval" });
 
-    const formattedData = Object.entries(data).map(([query, urls]) => ({
-      id: query.substring(0, 40), // Use part of the query as ID
-      input: {
-        query,
-        expectedUrls: urls
-      }
-    }));
+    // Process all categories of queries (long_phrase_search_queries and keyword_search_query)
+    const allFormattedData = [];
     
-    for (const item of formattedData) {
+    // Process each category in the data
+    Object.entries(data).forEach(([category, queryMap]) => {
+      // For each query-urls pair in the category
+      Object.entries(queryMap).forEach(([query, urls]) => {
+        allFormattedData.push({
+          id: `${category.substring(0, 10)}_${query.substring(0, 30)}`.replace(/\s+/g, '_'), // Create unique IDs combining category and query
+          input: {
+            category,
+            query,
+            expectedUrls: urls
+          }
+        });
+      });
+    });
+    
+    for (const item of allFormattedData) {
       dataset.insert(item);
     }
     

@@ -1,53 +1,117 @@
 {
-    "Web scraping service that can extract structured JSON data from complex websites": [
-        "https://smithery.ai/server/@ScrapeGraphAI/scrapegraph-mcp",
-        "https://smithery.ai/server/@tavily-ai/tavily-mcp",
-        "https://smithery.ai/server/fetch-mcp",
-        "https://smithery.ai/server/@tavily-ai/tavily-mcp",
-        "https://smithery.ai/server/@goswamig/fetch-mcp"
-    ],
-    "Enhance agent problem-solving capabilities through a step-by-step thinking framework that supports recursive analysis, hypothesis testing, and methodical evaluation of complex scenarios": [
-        "https://smithery.ai/server/@smithery-ai/server-sequential-thinking",
-        "https://smithery.ai/server/@PhillipRt/think-mcp-server",
-        "https://smithery.ai/server/@ddkang1/mcp-think-tool",
-        "https://smithery.ai/server/@waldzellai/clear-thought",
-        "https://smithery.ai/server/@iamwavecut/mcp-think"
-    ],
-    "Connect to messages with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments": [
-        "https://smithery.ai/server/@NexusX-MCP/telegram-mcp-server",
-        "https://smithery.ai/server/@smithery-ai/slack",
-        "https://smithery.ai/server/@barryyip0625/mcp-discord",
-        "https://smithery.ai/server/@KaranThink41/official-slack-mcp"
-    ],
-    "Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules": [
-        "https://smithery.ai/server/@CamdenClark/anki-mcp-server",
-        "https://smithery.ai/server/@captain-blue210/anki-mcp-server",
-        "https://smithery.ai/server/@johwiebe/anki-mcp",
-        "https://smithery.ai/server/@nailuoGG/anki-mcp-server"
-    ],
-    "Tools that read and modify Notion documents, create new pages with templates, and organize information in hierarchical structures": [
-        "https://smithery.ai/server/notion-api-mcp",
-        "https://smithery.ai/server/@emmanuelsystems/mcpnotionslack",
-        "https://smithery.ai/server/@Badhansen/notion-mcp"
-    ],
-    "Execute system commands, manage files with diff comparisons, and automate terminal operations with secure permission controls": [
-        "https://smithery.ai/server/@wonderwhy-er/desktop-commander",
-        "https://smithery.ai/server/@zhanyiwp/desktopcommandermcp-1",
-        "https://smithery.ai/server/iterm-mcp",
-        "https://smithery.ai/server/@GongRzhe/terminal-controller-mcp"
-    ],
-    "Connects agents to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation": [
-        "https://smithery.ai/server/@ahujasid/ableton-mcp",
-        "https://smithery.ai/server/@kimjune01/synth-mcp",
-        "https://smithery.ai/server/@veenastudio/flstudio-mcp"
-    ],
-    "MCP server for secure access to local file systems allowing agents to read, write, organize, and search through documents with proper permissions": [
-        "https://smithery.ai/server/@wonderwhy-er/desktop-commander",
-        "https://smithery.ai/server/@smithery-ai/filesystem",
-        "https://smithery.ai/server/@cyanheads/filesystem-mcp-server",
-        "https://smithery.ai/server/@zhanyiwp/desktopcommandermcp-1"
-    ],
-    "Create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities": [
-        "https://smithery.ai/server/@GongRzhe/Office-PowerPoint-MCP-Server"
-    ]
+    "long_phrase_search_queries": {
+        "Web scraping service that can extract structured JSON data from complex websites": [
+            "@ScrapeGraphAI/scrapegraph-mcp",
+            "@tavily-ai/tavily-mcp",
+            "fetch-mcp",
+            "@tavily-ai/tavily-mcp",
+            "@goswamig/fetch-mcp"
+        ],
+        "Enhance agent problem-solving capabilities through a step-by-step thinking framework that supports recursive analysis, hypothesis testing, and methodical evaluation of complex scenarios": [
+            "@smithery-ai/server-sequential-thinking",
+            "@PhillipRt/think-mcp-server",
+            "@ddkang1/mcp-think-tool",
+            "@waldzellai/clear-thought",
+            "@iamwavecut/mcp-think"
+        ],
+        "Connect to messages with channel monitoring, message posting, and thread management capabilities that preserve formatting and support file attachments": [
+            "@NexusX-MCP/telegram-mcp-server",
+            "@smithery-ai/slack",
+            "@barryyip0625/mcp-discord",
+            "@KaranThink41/official-slack-mcp"
+        ],
+        "Anki flashcard system for reviewing decks, creating cards, and managing spaced repetition learning schedules": [
+            "@CamdenClark/anki-mcp-server",
+            "@captain-blue210/anki-mcp-server",
+            "@johwiebe/anki-mcp",
+            "@nailuoGG/anki-mcp-server"
+        ],
+        "Tools that read and modify Notion documents, create new pages with templates, and organize information in hierarchical structures": [
+            "notion-api-mcp",
+            "@emmanuelsystems/mcpnotionslack",
+            "@Badhansen/notion-mcp"
+        ],
+        "Execute system commands, manage files with diff comparisons, and automate terminal operations with secure permission controls": [
+            "@wonderwhy-er/desktop-commander",
+            "@zhanyiwp/desktopcommandermcp-1",
+            "iterm-mcp",
+            "@GongRzhe/terminal-controller-mcp"
+        ],
+        "Connects agents to digital audio workstations for manipulating MIDI sequences, arranging audio tracks, and controlling mixing parameters with support for plugin management and automation": [
+            "@ahujasid/ableton-mcp",
+            "@kimjune01/synth-mcp",
+            "@veenastudio/flstudio-mcp"
+        ],
+        "MCP server for secure access to local file systems allowing agents to read, write, organize, and search through documents with proper permissions": [
+            "@wonderwhy-er/desktop-commander",
+            "@smithery-ai/filesystem",
+            "@cyanheads/filesystem-mcp-server",
+            "@zhanyiwp/desktopcommandermcp-1"
+        ],
+        "Create and modify PowerPoint presentations with slide management, template application, and content formatting capabilities": [
+            "@GongRzhe/Office-PowerPoint-MCP-Server"
+        ]
+    },
+    "keyword_search_query": {
+        "agent memory system": [
+            "@alioshr/memory-bank-mcp",
+            "@aakarsh-sasi/memory-bank-mcp",
+            "@jlia0/servers",
+            "@cjo4m06/mcp-shrimp-task-manager",
+            "@mem0ai/mem0-memory-mcp"
+        ],
+        "research": [
+            "@ameeralns/DeepResearchMCP",
+            "@JackKuo666/pubmed-mcp-server",
+            "@oneshot-engineering/mcp-webresearch",
+            "exa",
+            "@54yyyu/zotero-mcp",
+            "@gradusnikov/pubmed-search-mcp-server",
+            "@JackKuo666/semanticscholar-mcp-server",
+            "@JackKuo666/google-scholar-mcp-server"
+        ],
+        "code": [
+            "@smithery-ai/github", 
+            "@dev-assistant-ai/github",
+            "@block/code-mcp",
+            "@upstash/context7-mcp",
+            "@wonderwhy-er/desktop-commander",
+            "wcgw",
+            "@tuskermanshu/swagger-mcp-server"
+        ],
+        "fetch": [
+            "@upstash/context7-mcp",
+            "fetch-mcp",
+            "@smithery-ai/fetch",
+            "@nickclyde/duckduckgo-mcp-server"
+        ],
+        "(browser) automation": [
+            "@wonderwhy-er/desktop-commander",
+            "@microsoft/playwright-mcp",
+            "@browserbasehq/mcp-browserbase",
+            "@dmaznest/browsercat-mcp-server",
+            "@executeautomation/playwright-mcp-server",
+            "@smithery-ai/puppeteer"
+        ],
+        "web search": [
+            "@smithery-ai/brave-search",
+            "@nickclyde/duckduckgo-mcp-server",
+            "exa",
+            "@tavily-ai/tavily-mcp",
+            "@arjunkmrm/perplexity-search",
+            "@isnow890/naver-search-mcp",
+            "mcp-tavily",
+            "@ameeralns/DeepResearchMCP"
+        ],
+        "agent reasoning / thinking": [
+            "@smithery-ai/server-sequential-thinking",
+            "@ddkang1/mcp-think-tool",
+            "@PhillipRt/think-mcp-server",
+            "@xinzhongyouhai/mcp-sequentialthinking-tools",
+            "@waldzellai/clear-thought",
+            "@iamwavecut/mcp-think",
+            "@marcopesani/think-mcp-server",
+            "@Leghis/smart-thinking"
+        ]
+    }
 }
