@@ -1,6 +1,5 @@
 // npx braintrust eval lib/query-evals/index.eval.ts
 import { Eval, type EvalScorer, initDataset } from "braintrust"
-import { shuffle } from "lodash"
 import { getAllServers } from "@/lib/actions/search-servers"
 
 interface SearchInput {
