@@ -9,160 +9,16 @@ interface SearchInput {
 
 type SearchOutput = {
     results: any[]
-    queryTime: number
     resultUrls: string[]
+    recall: number
+    precision: number
+    f1: number
+    foundCount: number
+    relevantCount: number
+    totalExpected: number
+    totalRetrieved: number
 }
 
-/**
- * Recall: Proportion of expected URLs that were found in the results
- * Recall = Number of relevant documents retrieved / Total number of relevant documents
- */
-const recallEval: EvalScorer<SearchInput, SearchOutput, null> = async ({ input, output }) => {
-    const { expectedUrls } = input
-    const { resultUrls } = output
-    
-    if (!Array.isArray(expectedUrls) || expectedUrls.length === 0) {
-        return {
-            name: "Recall",
-            score: 0,
-            metadata: {
-                foundCount: 0,
-                totalExpected: 0,
-                error: "No expected URLs provided"
-            }
-        };
-    }
-    
-    let foundCount = 0;
-    const foundUrls = [];
-    
-    for (const expectedUrl of expectedUrls) {
-        const isFound = resultUrls.some(url => 
-            url.includes(expectedUrl) || expectedUrl.includes(url)
-        );
-        
-        if (isFound) {
-            foundCount++;
-            foundUrls.push(expectedUrl);
-        }
-    }
-    
-    // Calculate recall score (proportion of expected URLs found)
-    const recallScore = foundCount / expectedUrls.length;
-    
-    return {
-        name: "Recall",
-        score: recallScore,
-        metadata: {
-            foundCount,
-            totalExpected: expectedUrls.length,
-            foundUrls
-        }
-    }
-}
-
-/**
- * Precision: Proportion of retrieved results that are relevant
- * Precision = Number of relevant documents retrieved / Total number of documents retrieved
- */
-const precisionEval: EvalScorer<SearchInput, SearchOutput, null> = async ({ input, output }) => {
-    const { expectedUrls } = input
-    const { resultUrls } = output
-    
-    if (!Array.isArray(expectedUrls) || expectedUrls.length === 0) {
-        return {
-            name: "Precision",
-            score: 0,
-            metadata: {
-                relevantCount: 0,
-                totalRetrieved: resultUrls.length,
-                error: "No expected URLs provided"
-            }
-        };
-    }
-    
-    if (!Array.isArray(resultUrls) || resultUrls.length === 0) {
-        return {
-            name: "Precision",
-            score: 0,
-            metadata: {
-                relevantCount: 0,
-                totalRetrieved: 0,
-                error: "No results retrieved"
-            }
-        };
-    }
-    
-    let relevantCount = 0;
-    const relevantUrls = [];
-    
-    for (const resultUrl of resultUrls) {
-        const isRelevant = expectedUrls.some(url => 
-            url.includes(resultUrl) || resultUrl.includes(url)
-        );
-        
-        if (isRelevant) {
-            relevantCount++;
-            relevantUrls.push(resultUrl);
-        }
-    }
-    
-    // Calculate precision score (proportion of relevant results among all retrieved)
-    const precisionScore = relevantCount / resultUrls.length;
-    
-    return {
-        name: "Precision",
-        score: precisionScore,
-        metadata: {
-            relevantCount,
-            totalRetrieved: resultUrls.length,
-            relevantUrls
-        }
-    }
-}
-
-/**
- * F1 Score: Harmonic mean of precision and recall
- * F1 = 2 * (Precision * Recall) / (Precision + Recall)
- */
-const f1ScoreEval: EvalScorer<SearchInput, SearchOutput, null> = async ({ input, output }) => {
-    const { expectedUrls } = input
-    const { resultUrls } = output
-    
-    // Calculate recall
-    let foundCount = 0
-    for (const expectedUrl of expectedUrls) {
-        if (resultUrls.some(url => url.includes(expectedUrl) || expectedUrl.includes(url))) {
-            foundCount++;
-        }
-    }
-    const recall = expectedUrls.length > 0 ? foundCount / expectedUrls.length : 0
-    
-    // Calculate precision
-    let relevantCount = 0
-    for (const resultUrl of resultUrls) {
-        if (expectedUrls.some(url => url.includes(resultUrl) || resultUrl.includes(url))) {
-            relevantCount++;
-        }
-    }
-    const precision = resultUrls.length > 0 ? relevantCount / resultUrls.length : 0
-    
-    // Calculate F1 score (harmonic mean of precision and recall)
-    const f1Score = (precision + recall > 0) ? 
-        2 * (precision * recall) / (precision + recall) : 0
-    
-    return {
-        name: "F1Score",
-        score: f1Score,
-        metadata: {
-            precision,
-            recall,
-            relevantCount,
-            totalRetrieved: resultUrls.length,
-            totalExpected: expectedUrls.length
-        }
-    }
-}
 
 /**
  * Input: A search query and its expected results
@@ -179,7 +35,6 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
 	},
     task: async (row) => {
         const { query, expectedUrls } = row
-        const startTime = Date.now()
         
         try {
             console.log(`Running search for query: "${query}"`)
@@ -191,19 +46,36 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
                 true
             )
             
-            const endTime = Date.now()
-            
             // Extract URLs from the results for easier comparison
             // This assumes servers have a url or href property - adjust based on your actual data structure
             const resultUrls = servers.map(server => server.qualifiedName || "").filter(Boolean)
             
-            console.log(`Found ${resultUrls.length} results in ${endTime - startTime}ms`)
+            //recall
+            const foundCount = expectedUrls.filter(expected => 
+                resultUrls.some(result => result.includes(expected) || expected.includes(result))
+            ).length;
+            const recall = expectedUrls.length > 0 ? foundCount / expectedUrls.length : 0;
             
-            // Return the search results and query time
+            //precision
+            const relevantCount = resultUrls.filter(result => 
+                expectedUrls.some(expected => result.includes(expected) || expected.includes(result))
+            ).length;
+            const precision = resultUrls.length > 0 ? relevantCount / resultUrls.length : 0;
+            
+            // F1 score
+            const f1 = precision + recall > 0 ? 
+                2 * (precision * recall) / (precision + recall) : 0;
+            
             return {
                 results: servers,
                 resultUrls,
-                queryTime: endTime - startTime
+                recall,
+                precision,
+                f1,
+                foundCount,
+                relevantCount,
+                totalExpected: expectedUrls.length,
+                totalRetrieved: resultUrls.length
             }
         } catch (error) {
             console.error(`Error searching for query "${query}":`, error)
@@ -211,8 +83,17 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
         }
     },
     scores: [
-        recallEval,
-        precisionEval,
-        f1ScoreEval,
+        ({ output }) => ({
+            name: "Recall",
+            score: output.recall,
+        }),
+        ({ output }) => ({
+            name: "Precision",
+            score: output.precision,
+        }),
+        ({ output }) => ({
+            name: "F1 Score",
+            score: output.f1,
+        })
     ],
 })
