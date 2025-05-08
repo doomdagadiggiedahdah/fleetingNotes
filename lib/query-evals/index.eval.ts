@@ -40,9 +40,10 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
 		const data = await dataset.fetchedData()
 		return data
 	},
-    task: async (row) => {
+    task: async (row, hooks) => {
         const { category, query, expectedUrls } = row
         
+
         try {
             console.log(`Running search for ${category} query: "${query}"`)
             
@@ -56,7 +57,8 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
             
             // Extract URLs from the results for easier comparison
             // This assumes servers have a url or href property - adjust based on your actual data structure
-            const resultUrls = servers.map(server => server.qualifiedName || "").filter(Boolean)
+            const resultUrls = servers.filter(server => server.qualifiedName).map(server => server.qualifiedName)
+
             
             //recall
             const foundCount = expectedUrls.filter(expected => 
@@ -73,18 +75,22 @@ Eval<SearchInput, SearchOutput, null>("Smithery", {
             // F1 score
             const f1 = precision + recall > 0 ? 
                 2 * (precision * recall) / (precision + recall) : 0;
+
+            // define for metadata
+            const totalExpected = expectedUrls.length;
+            const totalRetrieved = resultUrls.length;
             
+            // metadata
+            hooks.metadata.foundCount = foundCount;
+            hooks.metadata.relevantCount = relevantCount;
+            hooks.metadata.totalExpected = totalExpected;
+            hooks.metadata.totalRetrieved = totalRetrieved;
+            hooks.metadata.z_resultUrls = resultUrls; //z_ prefix to put at end
+
             return {
-                category,
-                // results: servers,
-                resultUrls,
                 recall,
                 precision,
-                f1,
-                foundCount,
-                relevantCount,
-                totalExpected: expectedUrls.length,
-                totalRetrieved: resultUrls.length
+                f1, //removing these removes them from Scores too
             }
         } catch (error) {
             console.error(`Error searching for query "${query}":`, error)
