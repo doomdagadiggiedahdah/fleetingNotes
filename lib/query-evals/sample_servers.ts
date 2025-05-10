@@ -1,5 +1,4 @@
 // npx braintrust eval lib/query-evals/sample-servers.ts
-// npx braintrust eval lib/query-evals/sample-servers.ts
 import { db } from "@/db"
 import { servers } from "@/db/schema"
 import { desc, or, ilike, innerProduct } from "drizzle-orm"
@@ -7,12 +6,18 @@ import OpenAI from "openai"
 import dotenv from "dotenv"
 import { pick } from "lodash" // Import pick from lodash
 import yaml from "js-yaml" // Import js-yaml for YAML handling
+import { GoogleGenAI } from "@google/genai" // Import Google GenAI
 
 // Load environment variables
 dotenv.config({ path: '.env.local' })
 
 // Initialize OpenAI client
 const openAI = new OpenAI()
+
+// Initialize Google GenAI client
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
+const googleAI = new GoogleGenAI({ apiKey: GOOGLE_API_KEY })
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Hardcoded search query - change this value to search for different terms
 const SEARCH_QUERY = "obsidian"
@@ -46,13 +51,50 @@ async function generateOpenAIEmbedding(text) {
 }
 
 /**
+ * Generate an embedding for the given text using Google's Gemini
+ * @param {string} text - The text to embed
+ * @returns {Promise<number[]|null>} The embedding vector or null if failed
+ */
+async function generateGeminiEmbedding(text) {
+  try {
+    // Sleep for 500ms before making the Gemini API call
+    await sleep(500);
+    
+    const response = await googleAI.models.embedContent({
+      model: 'gemini-embedding-exp-03-07',
+      contents: text,
+      config: {
+        taskType: "SEMANTIC_SIMILARITY",
+      }
+    });
+    
+    // Extract the actual embedding values from the response
+    if (response && response.embeddings && 
+        Array.isArray(response.embeddings) && 
+        response.embeddings.length > 0 && 
+        response.embeddings[0].values) {
+      return response.embeddings[0].values;
+    }
+    
+    console.error("Unexpected Gemini embedding response format:", response);
+    return null;
+  } catch (error) {
+    console.error("Error generating Gemini embedding:", error);
+    return null;
+  }
+}
+
+/**
  * Fetches up to 10 server items from the database, filtered by the hardcoded search query
  * @returns {Promise<Object>} A promise that resolves to an object with results and query embedding
  */
 export async function getServers() {
   try {
-    // Generate embedding for the hardcoded query
-    const queryEmbedding = await generateOpenAIEmbedding(SEARCH_QUERY)
+    // Generate OpenAI embedding for the query
+    const openAIQueryEmbedding = await generateOpenAIEmbedding(SEARCH_QUERY)
+    
+    // Generate Gemini embedding for the query
+    const geminiQueryEmbedding = await generateGeminiEmbedding(SEARCH_QUERY)
     
     // Start building the query with all requested fields
     let query = db
@@ -66,8 +108,8 @@ export async function getServers() {
         tools: servers.tools,
         embedding: servers.embedding,
         // Include similarity score
-        similarity: queryEmbedding 
-          ? innerProduct(servers.embedding, queryEmbedding)
+        similarity: openAIQueryEmbedding 
+          ? innerProduct(servers.embedding, openAIQueryEmbedding)
           : null
       })
       .from(servers)
@@ -86,30 +128,39 @@ export async function getServers() {
       .orderBy(desc('similarity'))
       .limit(10)
     
-    // Generate fresh embeddings for each server
-    const serversWithFreshEmbeddings = await Promise.all(
+    // Process each server
+    const processedServers = await Promise.all(
       serverItems.map(async (server) => {
         // Create a YAML representation of the server content using the same approach as the original code
         const infLineWidth = 1e100
         const rowData = pick(server, promptFields)
         const embeddingInput = yaml.dump(rowData, { lineWidth: infLineWidth })
         
-        // Generate a fresh embedding
-        const freshEmbedding = await generateOpenAIEmbedding(embeddingInput)
+        // Generate OpenAI embedding for the server content
+        const openAIServerEmbedding = await generateOpenAIEmbedding(embeddingInput)
+        
+        // Generate Gemini embedding for the server content
+        const geminiServerEmbedding = await generateGeminiEmbedding(embeddingInput)
+        
+        // Calculate similarities
+        const openAISimilarity = openAIQueryEmbedding && openAIServerEmbedding ? 
+          calculateCosineSimilarity(openAIQueryEmbedding, openAIServerEmbedding) : null
+        
+        const geminiSimilarity = geminiQueryEmbedding && geminiServerEmbedding ? 
+          calculateCosineSimilarity(geminiQueryEmbedding, geminiServerEmbedding) : null
         
         return {
           ...server,
-          freshEmbedding,
-          // Calculate similarity between stored and fresh embedding
-          embeddingSimilarity: server.embedding && freshEmbedding ? 
-            calculateCosineSimilarity(server.embedding, freshEmbedding) : null
+          openAISimilarity,
+          geminiSimilarity
         }
       })
     )
     
     return {
-      results: serversWithFreshEmbeddings,
-      queryEmbedding
+      results: processedServers,
+      openAIQueryEmbedding,
+      geminiQueryEmbedding
     }
   } catch (error) {
     console.error("Error fetching servers:", error)
@@ -149,23 +200,13 @@ function calculateCosineSimilarity(vec1, vec2) {
 }
 
 /**
- * Helper function to display query embedding and server results with limited embedding values
+ * Helper function to display query embedding and server results with simplified format
  * @param {Array} servers - The array of server objects to display
- * @param {Array|null} queryEmbedding - The embedding of the search query
- * @param {number} embeddingPreviewLength - Number of embedding values to display
  */
-function displayResults(servers, queryEmbedding = null, embeddingPreviewLength = 5) {
+function displayResults(servers) {
   console.log("==================================================")
   console.log(`SEARCH QUERY: "${SEARCH_QUERY}"`)
   console.log("==================================================\n")
-  
-  // Display query embedding if available
-  if (queryEmbedding) {
-    const previewValues = queryEmbedding.slice(0, embeddingPreviewLength)
-    console.log("QUERY EMBEDDING PREVIEW:")
-    console.log(`[${previewValues.join(', ')}${queryEmbedding.length > embeddingPreviewLength ? ', ...' : ''}]`)
-    console.log(`Dimensions: ${queryEmbedding.length}\n`)
-  }
   
   console.log("==================================================")
   console.log(`RESULTS (${servers.length} servers found)`)
@@ -174,30 +215,14 @@ function displayResults(servers, queryEmbedding = null, embeddingPreviewLength =
   servers.forEach((server, index) => {
     console.log(`[${index + 1}] ${server.displayName || server.qualifiedName}`)
     
-    // Display stored embedding preview
-    if (server.embedding && Array.isArray(server.embedding)) {
-      const previewValues = server.embedding.slice(0, embeddingPreviewLength)
-      console.log(`STORED EMBEDDING: [${previewValues.join(', ')}${server.embedding.length > embeddingPreviewLength ? ', ...' : ''}]`)
-    } else {
-      console.log('STORED EMBEDDING: None')
+    // Display OpenAI similarity
+    if (server.openAISimilarity !== null && server.openAISimilarity !== undefined) {
+      console.log(`OPENAI QUERY + SERVER EMBEDDING MATCH:  ${server.openAISimilarity.toFixed(6)} similarity`)
     }
     
-    // Display fresh embedding preview
-    if (server.freshEmbedding && Array.isArray(server.freshEmbedding)) {
-      const previewValues = server.freshEmbedding.slice(0, embeddingPreviewLength)
-      console.log(`FRESH EMBEDDING:  [${previewValues.join(', ')}${server.freshEmbedding.length > embeddingPreviewLength ? ', ...' : ''}]`)
-    } else {
-      console.log('FRESH EMBEDDING:  None')
-    }
-    
-    // Display embedding similarity if available
-    if (server.embeddingSimilarity !== null && server.embeddingSimilarity !== undefined) {
-      console.log(`EMBEDDING MATCH:  ${server.embeddingSimilarity.toFixed(6)} similarity`)
-    }
-    
-    // Display query similarity score if available
-    if (server.similarity !== null && server.similarity !== undefined) {
-      console.log(`QUERY SIMILARITY: ${server.similarity.toFixed(6)}`)
+    // Display Gemini similarity
+    if (server.geminiSimilarity !== null && server.geminiSimilarity !== undefined) {
+      console.log(`GEMINI QUERY + SERVER EMBEDDING MATCH:  ${server.geminiSimilarity.toFixed(6)} similarity`)
     }
     
     console.log("--------------------------------------------------\n")
@@ -209,10 +234,10 @@ async function main() {
   try {
     console.log(`Running search with hardcoded query: "${SEARCH_QUERY}"`)
     
-    const { results, queryEmbedding } = await getServers()
+    const { results } = await getServers()
     
-    // Display results with both stored and fresh embeddings
-    displayResults(results, queryEmbedding)
+    // Display results with simplified format
+    displayResults(results)
     
   } catch (error) {
     console.error("Failed to retrieve servers:", error)
