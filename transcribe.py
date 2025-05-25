@@ -31,7 +31,8 @@ LONG_NOTES_DIR  = ZETTLE_DIR / "fleet_notes/voice_memo"
 NOTES_MAP = {
     "concept digest": ZETTLE_DIR / "concept digest.md",
     "memory dump": ZETTLE_DIR / "memory dump.md",
-    "daily reflection": "daily"
+    "daily reflection": "daily",
+    "reminder": "reminder"
 }
 
 WHISPER_MODEL = "turbo"
@@ -127,12 +128,14 @@ class ContentRouter:
                 
                 if target == "daily":
                     return self._get_daily_note_path(source_file), processed_content
+                elif target == "reminder":
+                    return self._get_daily_note_path(source_file, adjust_for_early_hours=False), processed_content
                 return Path(target), processed_content
                 
         # Default to inbox if no keywords match
         return INBOX_NOTE, content
     
-    def _get_daily_note_path(self, source_file: str) -> Path:
+    def _get_daily_note_path(self, source_file: str, adjust_for_early_hours: bool = True) -> Path:
         """Determines the appropriate daily note path"""
         try:
             filename = Path(source_file).stem
@@ -141,8 +144,8 @@ class ContentRouter:
             # Parse both date and time to check hour
             datetime_obj = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H-%M-%S")
             
-            # Adjust date if before 5am
-            if datetime_obj.hour < 5:
+            # Adjust date if before 5am (only if flag is True)
+            if adjust_for_early_hours and datetime_obj.hour < 5:
                 datetime_obj -= timedelta(days=1)
                 date_str = datetime_obj.strftime("%Y-%m-%d")
                 
