@@ -113,10 +113,10 @@ class ContentRouter:
     def __init__(self, notes_map):
         self.notes_map = notes_map
         
-    def determine_destination(self, content: str, source_file: str) -> tuple[Path, str]:
+    def determine_destination(self, content: str, source_file: str) -> tuple[Path, str, str]:
         """
         Determines where content should go based on keywords.
-        Returns tuple of (destination_path, processed_content)
+        Returns tuple of (destination_path, processed_content, keyword)
         """
         content = content.strip()
         
@@ -127,13 +127,13 @@ class ContentRouter:
                 processed_content = content.lower().strip()
                 
                 if target == "daily":
-                    return self._get_daily_note_path(source_file), processed_content
+                    return self._get_daily_note_path(source_file), processed_content, keyword
                 elif target == "reminder":
-                    return self._get_daily_note_path(source_file, adjust_for_early_hours=False), processed_content
-                return Path(target), processed_content
+                    return self._get_daily_note_path(source_file, adjust_for_early_hours=False), processed_content, keyword
+                return Path(target), processed_content, keyword
                 
         # Default to inbox if no keywords match
-        return INBOX_NOTE, content
+        return INBOX_NOTE, content, None
     
     def _get_daily_note_path(self, source_file: str, adjust_for_early_hours: bool = True) -> Path:
         """Determines the appropriate daily note path"""
@@ -155,7 +155,7 @@ class ContentRouter:
             logging.error(f"Could not parse date from filename {source_file}: {e}")
             return INBOX_NOTE
 
-def write_truncated_note(content: str, source_file: str, target_file: Path) -> None:
+def write_truncated_note(content: str, source_file: str, target_file: Path, keyword: str = None) -> None:
     """Writes content to target file, creating a separate long note if content exceeds 200 chars"""
     def _create_template(filename: str) -> str:
         """Creates a template using datetime from filename format '2025-02-06 18-27-54 10.md'"""
@@ -191,17 +191,26 @@ def write_truncated_note(content: str, source_file: str, target_file: Path) -> N
     else:
         formatted_entry = f"- {Path(source_file)} --VM--\n\t- {content}"
 
-    # handle daily reflection heading add
-    if "Daily Notes" in str(target_file):
+    # handle heading add for daily notes
+    if "Daily Notes" in str(target_file) and keyword:
         with open(target_file, 'r') as f:
             file_content = f.read()
+            
+        if keyword == "daily reflection":
             if "## daily reflection" not in file_content:
                 formatted_entry = "## daily reflection\n" + formatted_entry
+        elif keyword == "reminder":
+            if "## reminders" not in file_content:
+                # Insert reminders heading before daily reflection if it exists
+                if "## daily reflection" in file_content:
+                    formatted_entry = "## reminders\n" + formatted_entry + "\n\n"
+                else:
+                    formatted_entry = "## reminders\n" + formatted_entry
     
     with open(target_file, "a") as tf:
         tf.write("\n\n" + formatted_entry)
 
-def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
+def append_to_file(content: str, source_file: str, target_file: Path, keyword: str = None) -> bool:
     """Handles writing content to files and logging"""
     try:
         if not content:
@@ -210,7 +219,7 @@ def append_to_file(content: str, source_file: str, target_file: Path) -> bool:
         # Check if target directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
         
-        write_truncated_note(content, source_file, target_file)
+        write_truncated_note(content, source_file, target_file, keyword)
         log_operation(content, source_file, target_file)
 
         return True
@@ -230,13 +239,13 @@ def process_audio(audio_file: str, skip_archive: bool = False) -> None:
             logging.error(f"No transcription generated for {audio_file}")
         
         # Determine destination
-        destination, processed_content = content_router.determine_destination(
+        destination, processed_content, keyword = content_router.determine_destination(
             transcription, 
             audio_file
         )
         
         # Append to appropriate destination
-        success = append_to_file(processed_content, audio_file, destination)
+        success = append_to_file(processed_content, audio_file, destination, keyword)
         
         if not skip_archive:
             source_path = RECORDING_DIR / audio_file
