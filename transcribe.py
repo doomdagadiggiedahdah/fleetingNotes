@@ -8,6 +8,7 @@ from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
 from semantic_sort import sort_note_by_topic
+from obsidian_vectordb import find_similar_notes
 warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
 
 
@@ -238,6 +239,27 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
     with open(target_file, "a") as tf:
         tf.write("\n\n" + formatted_entry)
 
+def find_and_log_similar_notes(content: str, source_file: str) -> None:
+    """Find similar notes in Obsidian vault and log them"""
+    try:
+        # Use absolute path to ensure ChromaDB is found
+        chroma_path = FLEET_BASE / ".chroma_obsidian"
+        similar_notes = find_similar_notes(content, n_results=5, chroma_path=str(chroma_path))
+        
+        if similar_notes:
+            logging.info(f"Found {len(similar_notes)} similar notes for {source_file}:")
+            for i, note in enumerate(similar_notes, 1):
+                logging.info(f"  {i}. {note['file_name']} (similarity: {note['similarity']:.3f})")
+                logging.info(f"     Path: {note['relative_path']}")
+                if note['tags']:
+                    logging.info(f"     Tags: {note['tags']}")
+                logging.info(f"     Preview: {note['preview'][:100]}...")
+        else:
+            logging.info(f"No similar notes found for {source_file}")
+            
+    except Exception as e:
+        logging.error(f"Error finding similar notes for {source_file}: {e}")
+
 def append_to_file(content: str, source_file: str, target_file: Path, keyword: str = None) -> bool:
     """Handles writing content to files and logging"""
     try:
@@ -249,6 +271,10 @@ def append_to_file(content: str, source_file: str, target_file: Path, keyword: s
         
         write_truncated_note(content, source_file, target_file, keyword)
         log_operation(content, source_file, target_file)
+
+        # Find similar notes for non-reminder content
+        if keyword != "reminder":
+            find_and_log_similar_notes(content, source_file)
 
         return True
         

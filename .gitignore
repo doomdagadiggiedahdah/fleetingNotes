@@ -8,3 +8,5 @@ temp/
 recordings/
 __pycache__/
 processing_errors.log
+*.m4a
+.chroma_obsidian/
