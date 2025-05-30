@@ -26,6 +26,7 @@ DAILY_NOTES_DIR = OBS_BASE / "Daily Notes"
 ZETTLE_DIR      = OBS_BASE / "ZettleKasten"
 LOG_FILE        = ZETTLE_DIR / "dump_log.md"
 LONG_NOTES_DIR  = ZETTLE_DIR / "fleet_notes/voice_memo"
+REMINDER_DIR    = ZETTLE_DIR / "fleet_notes/reminders"
 
 # Note mapping
 NOTES_MAP = {
@@ -129,7 +130,8 @@ class ContentRouter:
                 if target == "daily":
                     return self._get_daily_note_path(source_file), processed_content, keyword
                 elif target == "reminder":
-                    return self._get_daily_note_path(source_file, adjust_for_early_hours=False), processed_content, keyword
+                    md_filename = Path(source_file).stem + ".md"
+                    return REMINDER_DIR / md_filename, processed_content, keyword
                 return Path(target), processed_content, keyword
                 
         # Default to inbox if no keywords match
@@ -157,23 +159,42 @@ class ContentRouter:
 
 def write_truncated_note(content: str, source_file: str, target_file: Path, keyword: str = None) -> None:
     """Writes content to target file, creating a separate long note if content exceeds 200 chars"""
-    def _create_template(filename: str) -> str:
+    def _create_template(filename: str, is_reminder: bool = False) -> str:
         """Creates a template using datetime from filename format '2025-02-06 18-27-54 10.md'"""
         # Extract the datetime part (everything before the last space)
         datetime_str = ' '.join(filename.split()[:-1])
         # Convert from "2025-02-06 18-27-54" format to datetime object
         dt = datetime.strptime(datetime_str, "%Y-%m-%d %H-%M-%S")
         
-        return dedent(f'''
-            ---
-            date_creation: {dt.strftime("%Y-%m-%d")}
-            time_creation: {dt.strftime("%H:%M:%S")}
-            tags:
-              - "#voice_memo"
-            ---
+        if is_reminder:
+            return dedent(f'''
+                ---
+                tags: ["reminder"]
+                text: ["{content}"]
+                ---
+                ''').strip()
+        else:
+            return dedent(f'''
+                ---
+                date_creation: {dt.strftime("%Y-%m-%d")}
+                time_creation: {dt.strftime("%H:%M:%S")}
+                tags:
+                  - "#voice_memo"
+                ---
 
-            ''').strip()
+                ''').strip()
 
+    # Handle reminder notes - always create individual files
+    if keyword == "reminder":
+        # Create reminder directory and write individual note
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(target_file, "w") as rf:
+            template = _create_template(Path(source_file).name, is_reminder=True)
+            rf.write(template)
+            rf.write("\n\n")
+            rf.write(content)
+        return  # Exit early for reminders
+    
     if len(content) > 200:
         md_filename = Path(source_file).stem + ".md"
         long_note_path = LONG_NOTES_DIR / md_filename
