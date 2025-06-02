@@ -22,9 +22,9 @@ process_recordings() {
         # get rid of those pesky interrupted files >:(
         # TODO: check if file handline is already being done
         # in the python script
-
-        find . -type f -name "*_deleted_*" -delete
-        find . -type f -name "*appended*" -delete
+        # DISABLED: Let ffprobe in transcribe.py handle incomplete files instead
+        # find . -type f -name "*_deleted_*" -delete
+        # find . -type f -name "*appended*" -delete
 
         if ls | grep -E ".*\.m4a$"; then
             echo "transcribing..."

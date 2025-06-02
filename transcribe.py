@@ -3,6 +3,7 @@ import whisper
 import logging
 import warnings
 import argparse
+import subprocess
 from pathlib import Path
 from typing import Optional
 from textwrap import dedent
@@ -50,6 +51,20 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+
+def is_complete_audio(filepath: Path) -> bool:
+    """Check if audio file is complete using ffprobe"""
+    try:
+        # ffprobe returns 0 for valid files, >0 for corrupted/incomplete
+        result = subprocess.run(
+            ['ffprobe', '-v', 'error', '-i', str(filepath)], 
+            capture_output=True, 
+            timeout=10
+        )
+        return result.returncode == 0
+    except Exception as e:
+        logging.debug(f"ffprobe check failed for {filepath}: {e}")
+        return False  # ffprobe failed/timed out
 
 def log_operation(content: str, source: str, target: Path) -> None:
     """Logs operations to the log file"""
@@ -306,8 +321,11 @@ def main():
         # Process all audio files in the recording directory
         for audio_file in RECORDING_DIR.glob("*"):
             if audio_file.is_file() and not audio_file.name.startswith('.'):
-                logging.info(f"Processing: {audio_file.name}")
-                process_audio(audio_file.name, args.skip_archive)
+                if is_complete_audio(audio_file):
+                    logging.info(f"Processing: {audio_file.name}")
+                    process_audio(audio_file.name, args.skip_archive)
+                else:
+                    logging.info(f"Skipping incomplete file: {audio_file.name}")
         
     except Exception as e:
         logging.error(f"Critical error in main process: {e}")
