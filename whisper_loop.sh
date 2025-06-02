@@ -3,6 +3,9 @@
 LOCATION="/home/mat/Documents/ProgramExperiments/fleetingNotes/recordings"
 LOCKFILE="/tmp/whisper_loop.lock"
 
+# prevents multiple ./transcribe.py from happening
+# what is this preventing? I think daemon settings
+# ...means maybe I'm handling this in the wrong manner.
 check_lock() {
     if [ -e "${LOCKFILE}" ] && kill -0 "$(cat ${LOCKFILE})" 2>/dev/null; then
         echo "Already running with PID $(cat ${LOCKFILE})"
