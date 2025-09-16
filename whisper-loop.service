@@ -4,6 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
+User=mat
 ExecStart=/home/mat/Documents/ProgramExperiments/fleetingNotes/whisper_loop.sh
 Restart=always
 

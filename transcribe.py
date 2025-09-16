@@ -3,6 +3,7 @@ import whisper
 import logging
 import warnings
 import argparse
+import subprocess
 from pathlib import Path
 from typing import Optional
 from textwrap import dedent
@@ -18,6 +19,7 @@ OBS_BASE   = Path("/home/mat/Obsidian/")
 # Fleet directories
 RECORDING_DIR         = FLEET_BASE / "recordings"
 ARCHIVE_DIR           = FLEET_BASE / "recordings/.archive"
+CORRUPTED_DIR         = FLEET_BASE / "recordings/.corrupted"
 TRANSCRIPTION_DIR     = FLEET_BASE / "transcriptions/"
 TRANSCRIPTION_ARCHIVE = FLEET_BASE / "transcriptions/.archive"
 
@@ -34,11 +36,11 @@ NOTES_MAP = {
     "concept digest": ZETTLE_DIR / "concept digest.md",
     "memory dump": ZETTLE_DIR / "memory dump.md",
     "daily reflection": "daily",
-    "reminder": "reminder",
-    "operator search": "sort" # TODO: return this back to "operator sort", I fucked up the test audio
+    "reminder": "reminder"
+    #"operator search": "sort" # TODO: return this back to "operator sort", I fucked up the test audio
 }
 
-WHISPER_MODEL = "turbo" # TODO: test out large instead. I've gotten weird hallucinations
+WHISPER_MODEL = "medium" # TODO: test out large instead. I've gotten weird hallucinations
 DEVICE = "cpu"
 
 # Set up logging
@@ -68,6 +70,39 @@ class TranscriptionError(Exception):
     """Custom exception for transcription-related errors"""
     pass
 
+def is_audio_file_corrupted(file_path: Path) -> bool:
+    """Check if an audio file is corrupted using ffprobe"""
+    try:
+        # Use ffprobe to check if the file can be read
+        result = subprocess.run(
+            ['ffprobe', '-v', 'quiet', '-show_format', '-show_streams', str(file_path)],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        # If ffprobe returns non-zero exit code, file is corrupted/unreadable
+        if result.returncode != 0:
+            logging.warning(f"Audio file appears corrupted: {file_path.name} (ffprobe exit code: {result.returncode})")
+            return True
+            
+        # Check if we got any format/stream info
+        if not result.stdout.strip():
+            logging.warning(f"Audio file appears corrupted: {file_path.name} (no format/stream info)")
+            return True
+            
+        return False
+        
+    except subprocess.TimeoutExpired:
+        logging.error(f"Timeout checking audio file: {file_path.name}")
+        return True
+    except FileNotFoundError:
+        logging.error("ffprobe not found - cannot check audio file integrity")
+        return False  # Assume file is okay if we can't check
+    except Exception as e:
+        logging.error(f"Error checking audio file {file_path.name}: {e}")
+        return False  # Assume file is okay if we can't check
+
 class TranscriptionService:
     def __init__(self):
         try:
@@ -94,6 +129,10 @@ class TranscriptionService:
             # Check if file is empty
             if full_audio_path.stat().st_size == 0:
                 raise ValueError(f"Audio file is empty: {full_audio_path}")
+            
+            # Check if file is corrupted
+            if is_audio_file_corrupted(full_audio_path):
+                raise ValueError(f"Audio file is corrupted or unreadable: {full_audio_path}")
             
             result = self.model.transcribe(str(full_audio_path), fp16=False, language="en")
             
@@ -265,6 +304,16 @@ def process_audio(audio_file: str, skip_archive: bool = False) -> None:
         transcription = transcriber.transcribe_audio(audio_file)
         if not transcription:
             logging.error(f"No transcription generated for {audio_file}")
+            
+            # If transcription failed, move the file to corrupted directory
+            # This prevents it from being processed again in an infinite loop
+            if not skip_archive:
+                source_path = RECORDING_DIR / audio_file
+                CORRUPTED_DIR.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
+                corrupted_path = CORRUPTED_DIR / audio_file
+                source_path.rename(corrupted_path)
+                logging.warning(f"Moved corrupted/unprocessable file to: {corrupted_path}")
+            return  # Exit early, don't try to process further
         
         # Determine destination
         destination, processed_content, keyword = content_router.determine_destination(
