@@ -1,0 +1,10 @@
+[project]
+name = "fleeting-notes"
+version = "0.1.0"
+description = "Voice transcription system for fleeting notes"
+requires-python = ">=3.12"
+dependencies = [
+    "faster-whisper>=1.0.0",
+    "sentence-transformers>=2.0.0",
+    "scikit-learn>=1.0.0",
+]

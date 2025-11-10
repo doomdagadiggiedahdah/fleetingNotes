@@ -29,7 +29,7 @@ process_recordings() {
         if ls | grep -E ".*\.m4a$"; then
             echo "transcribing..."
             source ../.venv/bin/activate
-            python3 ../transcribe.py
+            python ../transcribe.py
         else
             sleep 10
         fi

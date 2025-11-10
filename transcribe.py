@@ -1,5 +1,5 @@
 import sys
-import whisper
+from faster_whisper import WhisperModel
 import logging
 import warnings
 import argparse
@@ -9,7 +9,7 @@ from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
 from semantic_sort import sort_note_by_topic
-warnings.filterwarnings('ignore', category=UserWarning, module='whisper.transcribe')
+warnings.filterwarnings('ignore', category=UserWarning, module='faster_whisper')
 
 
 # Base directories
@@ -41,7 +41,8 @@ NOTES_MAP = {
 }
 
 WHISPER_MODEL = "medium" # TODO: test out large instead. I've gotten weird hallucinations
-DEVICE = "cpu"
+DEVICE = "cuda"  # Use GPU if available, falls back to CPU automatically
+COMPUTE_TYPE = "float16"  # Use float16 for faster inference on GPU; auto-fallback on CPU
 
 # Set up logging
 logging.basicConfig(
@@ -108,13 +109,17 @@ class TranscriptionService:
         try:
             # was going to have a check to see if a file is present, but that's
             # taken care of with the control_whisper.sh file already
-            logging.info("Loading whisper model...")
+            logging.info("Loading faster-whisper model...")
 
-            # thanks to https://github.com/MiscellaneousStuff/openai-whisper-cpu/blob/main/script/custom_whisper.py#L21
-            # device needed to be inside load_model params
-            self.model = whisper.load_model(name=WHISPER_MODEL, device=DEVICE) 
+            # faster-whisper: Uses CTranslate2 for optimized inference
+            # Automatically handles GPU/CPU split inference
+            self.model = WhisperModel(
+                model_size_or_path=WHISPER_MODEL,
+                device=DEVICE,
+                compute_type=COMPUTE_TYPE
+            )
         except Exception as e:
-            logging.error(f"Failed to load Whisper model: {e}")
+            logging.error(f"Failed to load faster-whisper model: {e}")
             raise TranscriptionError("Could not initialize transcription service")
     
     def transcribe_audio(self, audio_file) -> Optional[str]:
@@ -134,12 +139,20 @@ class TranscriptionService:
             if is_audio_file_corrupted(full_audio_path):
                 raise ValueError(f"Audio file is corrupted or unreadable: {full_audio_path}")
             
-            result = self.model.transcribe(str(full_audio_path), fp16=False, language="en")
+            # faster-whisper returns segments iterator instead of a dict
+            segments, info = self.model.transcribe(
+                str(full_audio_path),
+                language="en"
+            )
             
-            if not result or "text" not in result:
+            # Collect text from all segments
+            text_parts = [segment.text for segment in segments]
+            transcribed_text = "".join(text_parts).strip()
+            
+            if not transcribed_text:
                 raise TranscriptionError("Transcription returned no text")
                 
-            return result["text"]
+            return transcribed_text
             
         except FileNotFoundError as e:
             logging.error(f"File error: {e}")
