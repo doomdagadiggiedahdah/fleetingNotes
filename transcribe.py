@@ -41,8 +41,8 @@ NOTES_MAP = {
 }
 
 WHISPER_MODEL = "medium" # TODO: test out large instead. I've gotten weird hallucinations
-DEVICE = "cuda"  # Use GPU if available, falls back to CPU automatically
-COMPUTE_TYPE = "float16"  # Use float16 for faster inference on GPU; auto-fallback on CPU
+DEVICE = "cpu"  # Using CPU due to CUDA/cuDNN library issues
+COMPUTE_TYPE = "int8"  # Use int8 quantization for faster CPU inference
 
 # Set up logging
 logging.basicConfig(
@@ -145,9 +145,9 @@ class TranscriptionService:
                 language="en"
             )
             
-            # Collect text from all segments
+            # Collect text from all segments, separated by newlines for readability
             text_parts = [segment.text for segment in segments]
-            transcribed_text = "".join(text_parts).strip()
+            transcribed_text = "\n".join(text_parts).strip()
             
             if not transcribed_text:
                 raise TranscriptionError("Transcription returned no text")
