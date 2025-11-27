@@ -266,10 +266,11 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
             lf.write("\n\n")
             lf.write(content)
         
-        preview = content[:200]
+        preview = content.replace("\n", " ")[:200]
         formatted_entry = f"- [[{Path(source_file).stem}]] --VM--\n\t- {preview}..."
     else:
-        formatted_entry = f"- {Path(source_file)} --VM--\n\t- {content}"
+        preview = content.replace("\n", " ")
+        formatted_entry = f"- {Path(source_file)} --VM--\n\t- {preview}"
 
     # handle heading add for daily notes
     if "Daily Notes" in str(target_file) and keyword:
@@ -311,8 +312,6 @@ def append_to_file(content: str, source_file: str, target_file: Path, keyword: s
 def process_audio(audio_file: str, skip_archive: bool = False) -> None:
     """Main function that calls the transcription, sorting, and logging"""
     try:
-        logging.info(f"Starting processing of {audio_file}")
-        
         # Get transcription
         transcription = transcriber.transcribe_audio(audio_file)
         if not transcription:
