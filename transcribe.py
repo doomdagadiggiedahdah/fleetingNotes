@@ -364,27 +364,83 @@ def _scan_audio_files() -> list[str]:
     return [p.name for p in RECORDING_DIR.glob("*.m4a") if p.is_file() and not p.name.startswith('.')]
 
 
-def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0) -> None:
-    """Continuous processing loop.
+def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0, 
+             retry_limit: int = 10, retry_sleep: int = 30) -> None:
+    """Continuous processing loop with retry logic for corrupted files.
 
     - Processes all available files each iteration
-    - Sleeps when no files are present
+    - Defers corrupted files with retry counter (max retry_limit retries)
+    - Prioritizes fresh files over deferred ones
+    - Sleeps 10s when no files present, 30s when only deferred files remain
     - max_loops: 0 means run indefinitely; otherwise stop after given iterations
+    - retry_limit: maximum number of retries before moving to .corrupted/
+    - retry_sleep: seconds to sleep when only deferred files exist
     """
+    deferred_files: dict[str, int] = {}  # filename -> retry count
     loops = 0
+    
     while True:
-        files = _scan_audio_files()
-        for fname in files:
+        # Scan for all .m4a files
+        all_files = _scan_audio_files()
+        
+        # Separate fresh files from deferred ones
+        fresh_files = [f for f in all_files if f not in deferred_files]
+        deferred = [f for f in all_files if f in deferred_files]
+        
+        # Process fresh files first
+        for fname in fresh_files:
             logging.info(f"Processing: {fname}")
-            process_audio(fname, skip_archive)
-
+            status = process_audio(fname, skip_archive)
+            
+            # If corrupted, add to deferred with counter = 1
+            if status == ProcessingStatus.CORRUPTED:
+                deferred_files[fname] = 1
+                logging.warning(f"File marked as corrupted, deferring: {fname} (attempt 1/{retry_limit})")
+        
+        # Process deferred files (retry logic)
+        for fname in deferred:
+            retry_count = deferred_files[fname]
+            
+            if retry_count < retry_limit:
+                # Attempt to retry
+                logging.info(f"Retrying deferred file: {fname} (attempt {retry_count + 1}/{retry_limit})")
+                status = process_audio(fname, skip_archive)
+                
+                if status == ProcessingStatus.SUCCESS:
+                    # Success! Remove from deferred
+                    del deferred_files[fname]
+                    logging.info(f"Successfully processed after {retry_count} retries: {fname}")
+                elif status == ProcessingStatus.CORRUPTED:
+                    # Still corrupted, increment counter
+                    deferred_files[fname] += 1
+                    logging.warning(f"Still corrupted, retrying next cycle: {fname} (attempt {deferred_files[fname]}/{retry_limit})")
+                # WRITE_FAILED is treated same as CORRUPTED (will retry)
+                elif status == ProcessingStatus.WRITE_FAILED:
+                    deferred_files[fname] += 1
+                    logging.warning(f"Write failed, will retry: {fname} (attempt {deferred_files[fname]}/{retry_limit})")
+            else:
+                # Max retries exceeded, move to .corrupted/
+                source_path = RECORDING_DIR / fname
+                if source_path.exists():
+                    CORRUPTED_DIR.mkdir(parents=True, exist_ok=True)
+                    corrupted_path = CORRUPTED_DIR / fname
+                    source_path.rename(corrupted_path)
+                    logging.error(f"Moved to .corrupted/ after {retry_limit} failed retries: {fname} -> {corrupted_path}")
+                del deferred_files[fname]
+        
         loops += 1
         if max_loops and loops >= max_loops:
             break
-
-        # Sleep only if nothing was found to avoid tight looping
-        if not files:
+        
+        # Determine sleep duration
+        if not all_files:
+            # No files at all, sleep standard interval
             time.sleep(sleep_seconds)
+        elif deferred and not fresh_files:
+            # Only deferred files remain, use longer retry sleep
+            logging.info(f"Only deferred files remain ({len(deferred)}), sleeping {retry_sleep}s before retry")
+            time.sleep(retry_sleep)
+        # else: files were processed, continue immediately for next scan
 
 
 def main():
@@ -395,6 +451,8 @@ def main():
     group.add_argument('--daemon', action='store_true', help='Run continuously, scanning for files')
     group.add_argument('--once', action='store_true', help='Process available files once and exit (default)')
     parser.add_argument('--sleep-seconds', type=int, default=10, help='Sleep between scans when idle (daemon mode)')
+    parser.add_argument('--retry-sleep', type=int, default=30, help='Sleep between retries for deferred files (seconds)')
+    parser.add_argument('--retry-limit', type=int, default=10, help='Max retries before moving file to .corrupted/')
     parser.add_argument('--max-loops', type=int, default=0, help='For testing: stop after N loops (0=infinite)')
     args = parser.parse_args()
 
@@ -405,7 +463,9 @@ def main():
         content_router = ContentRouter(NOTES_MAP)
 
         if args.daemon:
-            run_loop(skip_archive=args.skip_archive, sleep_seconds=args.sleep_seconds, max_loops=args.max_loops)
+            run_loop(skip_archive=args.skip_archive, sleep_seconds=args.sleep_seconds, 
+                    max_loops=args.max_loops, retry_limit=args.retry_limit, 
+                    retry_sleep=args.retry_sleep)
         else:
             # default --once behavior
             for audio_file in _scan_audio_files():
