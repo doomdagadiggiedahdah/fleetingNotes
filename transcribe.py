@@ -4,12 +4,22 @@ import logging
 import warnings
 import argparse
 import subprocess
+import time
 from pathlib import Path
 from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
+from enum import Enum
 from semantic_sort import sort_note_by_topic
 warnings.filterwarnings('ignore', category=UserWarning, module='faster_whisper')
+
+
+class ProcessingStatus(Enum):
+    """Enum for audio file processing outcomes"""
+    SUCCESS = "success"
+    CORRUPTED = "corrupted"
+    WRITE_FAILED = "write_failed"
+    NOT_FOUND = "not_found"
 
 
 # Base directories
@@ -309,23 +319,18 @@ def append_to_file(content: str, source_file: str, target_file: Path, keyword: s
         logging.error(f"Error appending to file: {e}")
         return False
 
-def process_audio(audio_file: str, skip_archive: bool = False) -> None:
-    """Main function that calls the transcription, sorting, and logging"""
+def process_audio(audio_file: str, skip_archive: bool = False) -> ProcessingStatus:
+    """Main function that calls the transcription, sorting, and logging.
+
+    Returns a ProcessingStatus indicating the outcome. Does not move files to
+    .corrupted/ on failure; higher-level loop decides on retries and movement.
+    """
     try:
         # Get transcription
         transcription = transcriber.transcribe_audio(audio_file)
         if not transcription:
             logging.error(f"No transcription generated for {audio_file}")
-            
-            # If transcription failed, move the file to corrupted directory
-            # This prevents it from being processed again in an infinite loop
-            if not skip_archive:
-                source_path = RECORDING_DIR / audio_file
-                CORRUPTED_DIR.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
-                corrupted_path = CORRUPTED_DIR / audio_file
-                source_path.rename(corrupted_path)
-                logging.warning(f"Moved corrupted/unprocessable file to: {corrupted_path}")
-            return  # Exit early, don't try to process further
+            return ProcessingStatus.CORRUPTED
         
         # Determine destination
         destination, processed_content, keyword = content_router.determine_destination(
@@ -336,26 +341,61 @@ def process_audio(audio_file: str, skip_archive: bool = False) -> None:
         # Append to appropriate destination
         success = append_to_file(processed_content, audio_file, destination, keyword)
         
-        if not skip_archive:
-            source_path = RECORDING_DIR / audio_file
-            archive_path = ARCHIVE_DIR / audio_file
-            source_path.rename(archive_path)
-            logging.info(f"Archived {audio_file}")
-        else:
-            print("skipping archive")
-
         if success:
+            if not skip_archive:
+                source_path = RECORDING_DIR / audio_file
+                archive_path = ARCHIVE_DIR / audio_file
+                source_path.rename(archive_path)
+                logging.info(f"Archived {audio_file}")
+            else:
+                print("skipping archive")
             logging.info(f"Successfully processed {audio_file} to {destination}")
+            return ProcessingStatus.SUCCESS
         else:
             logging.error(f"Failed to append transcription for {audio_file}")
+            return ProcessingStatus.WRITE_FAILED
             
     except Exception as e:
         logging.error(f"Failed to process {audio_file}: {e}")
+        return ProcessingStatus.WRITE_FAILED
+
+def _scan_audio_files() -> list[str]:
+    """Return a list of candidate audio filenames ('.m4a', non-hidden)."""
+    return [p.name for p in RECORDING_DIR.glob("*.m4a") if p.is_file() and not p.name.startswith('.')]
+
+
+def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0) -> None:
+    """Continuous processing loop.
+
+    - Processes all available files each iteration
+    - Sleeps when no files are present
+    - max_loops: 0 means run indefinitely; otherwise stop after given iterations
+    """
+    loops = 0
+    while True:
+        files = _scan_audio_files()
+        for fname in files:
+            logging.info(f"Processing: {fname}")
+            process_audio(fname, skip_archive)
+
+        loops += 1
+        if max_loops and loops >= max_loops:
+            break
+
+        # Sleep only if nothing was found to avoid tight looping
+        if not files:
+            time.sleep(sleep_seconds)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Process audio files and generate transcriptions')
     parser.add_argument('-t', '--skip-archive', action='store_true',
                       help='Skip archiving the audio files after processing')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--daemon', action='store_true', help='Run continuously, scanning for files')
+    group.add_argument('--once', action='store_true', help='Process available files once and exit (default)')
+    parser.add_argument('--sleep-seconds', type=int, default=10, help='Sleep between scans when idle (daemon mode)')
+    parser.add_argument('--max-loops', type=int, default=0, help='For testing: stop after N loops (0=infinite)')
     args = parser.parse_args()
 
     try:
@@ -363,12 +403,14 @@ def main():
         global transcriber, content_router
         transcriber = TranscriptionService()
         content_router = ContentRouter(NOTES_MAP)
- 
-        # Process all audio files in the recording directory
-        for audio_file in RECORDING_DIR.glob("*"):
-            if audio_file.is_file() and not audio_file.name.startswith('.'):
-                logging.info(f"Processing: {audio_file.name}")
-                process_audio(audio_file.name, args.skip_archive)
+
+        if args.daemon:
+            run_loop(skip_archive=args.skip_archive, sleep_seconds=args.sleep_seconds, max_loops=args.max_loops)
+        else:
+            # default --once behavior
+            for audio_file in _scan_audio_files():
+                logging.info(f"Processing: {audio_file}")
+                process_audio(audio_file, args.skip_archive)
         
     except Exception as e:
         logging.error(f"Critical error in main process: {e}")
