@@ -52,7 +52,7 @@ NOTES_MAP = {
 
 WHISPER_MODEL = "medium" # TODO: test out large instead. I've gotten weird hallucinations
 DEVICE = "cpu"  # Using CPU due to CUDA/cuDNN library issues
-COMPUTE_TYPE = "int8"  # Use int8 quantization for faster CPU inference
+COMPUTE_TYPE = "int8_float32"  # Use int8 quantization for faster CPU inference
 
 # Set up logging
 logging.basicConfig(
@@ -329,7 +329,6 @@ def process_audio(audio_file: str, skip_archive: bool = False) -> ProcessingStat
         # Get transcription
         transcription = transcriber.transcribe_audio(audio_file)
         if not transcription:
-            logging.error(f"No transcription generated for {audio_file}")
             return ProcessingStatus.CORRUPTED
         
         # Determine destination
@@ -365,7 +364,7 @@ def _scan_audio_files() -> list[str]:
 
 
 def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0, 
-             retry_limit: int = 10, retry_sleep: int = 30) -> None:
+             retry_limit: int = 40, retry_sleep: int = 30) -> None:
     """Continuous processing loop with retry logic for corrupted files.
 
     - Processes all available files each iteration
@@ -452,7 +451,7 @@ def main():
     group.add_argument('--once', action='store_true', help='Process available files once and exit (default)')
     parser.add_argument('--sleep-seconds', type=int, default=10, help='Sleep between scans when idle (daemon mode)')
     parser.add_argument('--retry-sleep', type=int, default=30, help='Sleep between retries for deferred files (seconds)')
-    parser.add_argument('--retry-limit', type=int, default=10, help='Max retries before moving file to .corrupted/')
+    parser.add_argument('--retry-limit', type=int, default=40, help='Max retries before moving file to .corrupted/')
     parser.add_argument('--max-loops', type=int, default=0, help='For testing: stop after N loops (0=infinite)')
     args = parser.parse_args()
 
