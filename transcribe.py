@@ -40,6 +40,7 @@ ZETTLE_DIR      = OBS_BASE / "ZettleKasten"
 LOG_FILE        = ZETTLE_DIR / "dump_log.md"
 LONG_NOTES_DIR  = ZETTLE_DIR / "fleet_notes/voice_memo"
 REMINDER_DIR    = ZETTLE_DIR / "fleet_notes/reminders"
+DAILY_TEMPLATE  = Path("/home/mat/Obsidian/Templates/t - daily.md")
 
 # Note mapping
 NOTES_MAP = {
@@ -63,6 +64,10 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+
+# Suppress verbose logging from faster-whisper
+logging.getLogger('faster_whisper').setLevel(logging.WARNING)
+logging.getLogger('ctranslate2').setLevel(logging.WARNING)
 
 def log_operation(content: str, source: str, target: Path) -> None:
     """Logs operations to the log file"""
@@ -284,8 +289,26 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
 
     # handle heading add for daily notes
     if "Daily Notes" in str(target_file) and keyword:
-        with open(target_file, 'r') as f:
-            file_content = f.read()
+        # Ensure daily note exists; if not, seed it from the template
+        if not target_file.exists():
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                if DAILY_TEMPLATE.exists():
+                    with open(DAILY_TEMPLATE, 'r') as tf:
+                        template_content = tf.read()
+                    with open(target_file, 'w') as nf:
+                        nf.write(template_content)
+                    logging.info(f"Created daily note from template: {target_file}")
+                else:
+                    logging.warning(f"Template not found at {DAILY_TEMPLATE}, creating empty daily note")
+                    target_file.touch()
+            except Exception as e:
+                logging.error(f"Failed to create daily note: {e}")
+        
+        file_content = ""
+        if target_file.exists():
+            with open(target_file, 'r') as f:
+                file_content = f.read()
             
         if keyword == "daily reflection":
             if "## daily reflection" not in file_content:
