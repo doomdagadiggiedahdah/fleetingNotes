@@ -10,7 +10,6 @@ from typing import Optional
 from textwrap import dedent
 from datetime import datetime, timedelta
 from enum import Enum
-from semantic_sort import sort_note_by_topic
 warnings.filterwarnings('ignore', category=UserWarning, module='faster_whisper')
 
 
