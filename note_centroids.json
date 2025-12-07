@@ -1,6 +1,0 @@
-{
-  "type_theory_abstractions": {
-    "representative_text": "Another thing that I'm curious about for composition is what does it mean to be able to compose? What makes something a scalar? So like, if an object has properties, if an object has properties, is that like also a type? A type of object? Understanding how scalable architecture, formal methods, and composability interrelate is crucial for designing robust, efficient, and maintainable systems.",
-    "destination_note": "type_theory_abstractions.md"
-  }
-}
