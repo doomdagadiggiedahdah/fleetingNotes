@@ -324,22 +324,37 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
         tf.write("\n\n" + formatted_entry)
 
 def append_to_file(content: str, source_file: str, target_file: Path, keyword: str = None) -> bool:
-    """Handles writing content to files and logging"""
+    """Handles writing content to files and logging. Falls back to inbox on failure."""
     try:
         if not content:
             raise ValueError("No content to write")
-            
+
         # Check if target directory exists
         target_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         write_truncated_note(content, source_file, target_file, keyword)
         log_operation(content, source_file, target_file)
 
         return True
-        
+
     except Exception as e:
         logging.error(f"Error appending to file: {e}")
-        return False
+
+        # Fallback to inbox if the primary write failed
+        if target_file != INBOX_NOTE:
+            try:
+                logging.warning(f"Falling back to inbox for {source_file}")
+                # Write to inbox without keyword-specific formatting
+                write_truncated_note(content, source_file, INBOX_NOTE, keyword=None)
+                log_operation(content, source_file, INBOX_NOTE)
+                logging.info(f"Successfully wrote to inbox as fallback for {source_file}")
+                return True
+            except Exception as fallback_error:
+                logging.error(f"Fallback to inbox also failed: {fallback_error}")
+                return False
+        else:
+            # Already trying to write to inbox and it failed - can't fall back further
+            return False
 
 def process_audio(audio_file: str, skip_archive: bool = False) -> ProcessingStatus:
     """Main function that calls the transcription, sorting, and logging.
