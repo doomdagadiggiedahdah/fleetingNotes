@@ -34,7 +34,7 @@ TRANSCRIPTION_ARCHIVE = FLEET_BASE / "transcriptions/.archive"
 
 # Obsidian directories
 INBOX_NOTE      = OBS_BASE / "gtd - inbox.md"
-DAILY_NOTES_DIR = OBS_BASE / "Daily Notes"
+DAILY_NOTES_DIR = OBS_BASE / "periodic-notes"
 ZETTLE_DIR      = OBS_BASE / "ZettleKasten"
 LOG_FILE        = ZETTLE_DIR / "dump_log.md"
 LONG_NOTES_DIR  = ZETTLE_DIR / "fleet_notes/voice_memo"
@@ -156,7 +156,11 @@ class TranscriptionService:
             # faster-whisper returns segments iterator instead of a dict
             segments, info = self.model.transcribe(
                 str(full_audio_path),
-                language="en"
+                language="en",
+                initial_prompt="Hello, this is a phone recording and I am working on recording my life events.",
+                #condition_on_previous_text=False ## test this after seeing if the initial prompt is helping.
+                # try out the VAD stuff too; that seems to be a big thing
+                # more tips at this converation: https://claude.ai/chat/42aa3923-5c6d-4400-bbb6-e123ce9d5872
             )
             
             # Collect text from all segments, separated by newlines for readability
@@ -287,7 +291,7 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
         formatted_entry = f"- {Path(source_file)} --VM--\n\t- {preview}"
 
     # handle heading add for daily notes
-    if "Daily Notes" in str(target_file) and keyword:
+    if "periodic-notes" in str(target_file) and keyword:
         # Ensure daily note exists; if not, seed it from the template
         if not target_file.exists():
             target_file.parent.mkdir(parents=True, exist_ok=True)
