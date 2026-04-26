@@ -50,9 +50,9 @@ NOTES_MAP = {
     #"operator search": "sort" # TODO: return this back to "operator sort", I fucked up the test audio
 }
 
-WHISPER_MODEL = "medium" # TODO: test out large instead. I've gotten weird hallucinations
-DEVICE = "cpu"  # Using CPU due to CUDA/cuDNN library issues
-COMPUTE_TYPE = "int8_float32"  # Use int8 quantization for faster CPU inference
+WHISPER_MODEL = "medium"
+DEVICE = "cuda"
+COMPUTE_TYPE = "int8_float16"
 
 # Set up logging
 logging.basicConfig(
@@ -120,24 +120,35 @@ def is_audio_file_corrupted(file_path: Path) -> bool:
 
 class TranscriptionService:
     def __init__(self):
-        try:
-            # was going to have a check to see if a file is present, but that's
-            # taken care of with the control_whisper.sh file already
-            logging.info("Loading faster-whisper model...")
+        self.model = None
+        self.last_used = time.monotonic()
 
-            # faster-whisper: Uses CTranslate2 for optimized inference
-            # Automatically handles GPU/CPU split inference
-            self.model = WhisperModel(
-                model_size_or_path=WHISPER_MODEL,
-                device=DEVICE,
-                compute_type=COMPUTE_TYPE
-            )
-        except Exception as e:
-            logging.error(f"Failed to load faster-whisper model: {e}")
-            raise TranscriptionError("Could not initialize transcription service")
-    
+    def _ensure_model(self):
+        if self.model is None:
+            try:
+                logging.info("Loading faster-whisper model...")
+                self.model = WhisperModel(
+                    model_size_or_path=WHISPER_MODEL,
+                    device=DEVICE,
+                    compute_type=COMPUTE_TYPE
+                )
+            except Exception as e:
+                logging.error(f"Failed to load faster-whisper model: {e}")
+                raise TranscriptionError("Could not initialize transcription service")
+        self.last_used = time.monotonic()
+
+    def unload_model(self):
+        if self.model is not None:
+            logging.info("Unloading model to free VRAM (idle timeout)")
+            del self.model
+            self.model = None
+
+    def idle_seconds(self) -> float:
+        return time.monotonic() - self.last_used
+
     def transcribe_audio(self, audio_file) -> Optional[str]:
         """Transcribes audio file and returns the text"""
+        self._ensure_model()
         try:
             full_audio_path = RECORDING_DIR / audio_file
             
@@ -257,6 +268,7 @@ def write_truncated_note(content: str, source_file: str, target_file: Path, keyw
                 time_creation: {dt.strftime("%H:%M:%S")}
                 tags:
                   - "#voice_memo"
+                unprocessed: true
                 ---
 
                 ''').strip()
@@ -404,8 +416,8 @@ def _scan_audio_files() -> list[str]:
     return [p.name for p in RECORDING_DIR.glob("*.m4a") if p.is_file() and not p.name.startswith('.')]
 
 
-def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0, 
-             retry_limit: int = 40, retry_sleep: int = 30) -> None:
+def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int = 0,
+             retry_limit: int = 40, retry_sleep: int = 30, idle_timeout: int = 60) -> None:
     """Continuous processing loop with retry logic for corrupted files.
 
     - Processes all available files each iteration
@@ -416,62 +428,80 @@ def run_loop(skip_archive: bool = False, sleep_seconds: int = 10, max_loops: int
     - retry_limit: maximum number of retries before moving to .corrupted/
     - retry_sleep: seconds to sleep when only deferred files exist
     """
-    deferred_files: dict[str, int] = {}  # filename -> retry count
+    deferred_files: dict[str, tuple[int, int]] = {}  # filename -> (retry_count, last_known_size)
     loops = 0
-    
+
     while True:
         # Scan for all .m4a files
         all_files = _scan_audio_files()
-        
+
         # Separate fresh files from deferred ones
         fresh_files = [f for f in all_files if f not in deferred_files]
         deferred = [f for f in all_files if f in deferred_files]
-        
+
         # Process fresh files first
         for fname in fresh_files:
             logging.info(f"Processing: {fname}")
             status = process_audio(fname, skip_archive)
-            
-            # If corrupted, add to deferred with counter = 1
+
+            # If corrupted, add to deferred with counter = 0 and current size
             if status == ProcessingStatus.CORRUPTED:
-                deferred_files[fname] = 1
-                logging.warning(f"File marked as corrupted, deferring: {fname} (attempt 1/{retry_limit})")
-        
-        # Process deferred files (retry logic)
+                source_path = RECORDING_DIR / fname
+                current_size = source_path.stat().st_size if source_path.exists() else 0
+                deferred_files[fname] = (0, current_size)
+                logging.warning(f"File marked as corrupted, deferring: {fname} (size: {current_size})")
+
+        # Process deferred files (retry logic with size-growth detection)
         for fname in deferred:
-            retry_count = deferred_files[fname]
-            
+            retry_count, last_size = deferred_files[fname]
+            source_path = RECORDING_DIR / fname
+
+            if not source_path.exists():
+                del deferred_files[fname]
+                continue
+
+            current_size = source_path.stat().st_size
+
+            # Check if file is still growing
+            if current_size != last_size:
+                # File is still being written — reset retries, update size, skip
+                deferred_files[fname] = (0, current_size)
+                continue
+
+            # File size is stable — only count retries when no fresh files remain
+            if fresh_files:
+                logging.info(f"Skipping retry for stable file (fresh files present): {fname}")
+                continue
+
             if retry_count < retry_limit:
-                # Attempt to retry
                 logging.info(f"Retrying deferred file: {fname} (attempt {retry_count + 1}/{retry_limit})")
                 status = process_audio(fname, skip_archive)
-                
+
                 if status == ProcessingStatus.SUCCESS:
-                    # Success! Remove from deferred
                     del deferred_files[fname]
                     logging.info(f"Successfully processed after {retry_count} retries: {fname}")
                 elif status == ProcessingStatus.CORRUPTED:
-                    # Still corrupted, increment counter
-                    deferred_files[fname] += 1
-                    logging.warning(f"Still corrupted, retrying next cycle: {fname} (attempt {deferred_files[fname]}/{retry_limit})")
-                # WRITE_FAILED is treated same as CORRUPTED (will retry)
+                    deferred_files[fname] = (retry_count + 1, current_size)
+                    logging.warning(f"Still corrupted: {fname} (attempt {retry_count + 1}/{retry_limit})")
                 elif status == ProcessingStatus.WRITE_FAILED:
-                    deferred_files[fname] += 1
-                    logging.warning(f"Write failed, will retry: {fname} (attempt {deferred_files[fname]}/{retry_limit})")
+                    deferred_files[fname] = (retry_count + 1, current_size)
+                    logging.warning(f"Write failed, will retry: {fname} (attempt {retry_count + 1}/{retry_limit})")
             else:
                 # Max retries exceeded, move to .corrupted/
-                source_path = RECORDING_DIR / fname
-                if source_path.exists():
-                    CORRUPTED_DIR.mkdir(parents=True, exist_ok=True)
-                    corrupted_path = CORRUPTED_DIR / fname
-                    source_path.rename(corrupted_path)
-                    logging.error(f"Moved to .corrupted/ after {retry_limit} failed retries: {fname} -> {corrupted_path}")
+                CORRUPTED_DIR.mkdir(parents=True, exist_ok=True)
+                corrupted_path = CORRUPTED_DIR / fname
+                source_path.rename(corrupted_path)
+                logging.error(f"Moved to .corrupted/ after {retry_limit} failed retries: {fname} -> {corrupted_path}")
                 del deferred_files[fname]
         
         loops += 1
         if max_loops and loops >= max_loops:
             break
         
+        # Unload model if idle too long
+        if idle_timeout and transcriber.idle_seconds() > idle_timeout:
+            transcriber.unload_model()
+
         # Determine sleep duration
         if not all_files:
             # No files at all, sleep standard interval
@@ -494,6 +524,7 @@ def main():
     parser.add_argument('--retry-sleep', type=int, default=30, help='Sleep between retries for deferred files (seconds)')
     parser.add_argument('--retry-limit', type=int, default=40, help='Max retries before moving file to .corrupted/')
     parser.add_argument('--max-loops', type=int, default=0, help='For testing: stop after N loops (0=infinite)')
+    parser.add_argument('--idle-timeout', type=int, default=60, help='Seconds of inactivity before unloading model to free VRAM (0=never unload)')
     args = parser.parse_args()
 
     try:
@@ -503,9 +534,9 @@ def main():
         content_router = ContentRouter(NOTES_MAP)
 
         if args.daemon:
-            run_loop(skip_archive=args.skip_archive, sleep_seconds=args.sleep_seconds, 
-                    max_loops=args.max_loops, retry_limit=args.retry_limit, 
-                    retry_sleep=args.retry_sleep)
+            run_loop(skip_archive=args.skip_archive, sleep_seconds=args.sleep_seconds,
+                    max_loops=args.max_loops, retry_limit=args.retry_limit,
+                    retry_sleep=args.retry_sleep, idle_timeout=args.idle_timeout)
         else:
             # default --once behavior
             for audio_file in _scan_audio_files():
