@@ -1,10 +1,9 @@
 [Unit]
-Description=Whisper Loop Service
+Description=Fleeting Notes transcription daemon
 After=network.target
 
 [Service]
 Type=simple
-User=mat
 ExecStart=/home/mat/Documents/ProgramExperiments/fleetingNotes/whisper_loop.sh
 Restart=always
 

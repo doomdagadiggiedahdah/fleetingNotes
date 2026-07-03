@@ -5,24 +5,25 @@ A tool that routes STT voice notes into an Obsidian vault, based on keywords in 
 ## What it does
 
 - Watches a directory for audio files (.m4a)
-- Transcribes audio to text using Whisper AI model
+- Transcribes audio to text using faster-whisper (CTranslate2-optimized Whisper)
 - Routes notes to different Obsidian files based on keywords in content
-- Creates separate files with previews for longer notes
+- Creates separate files with previews for longer notes (>200 chars)
+- Handles corrupted/incomplete files with retry logic
 - Archives processed files
-- Logs all operations
+- Logs all operations with rotating log files
 
 ## Setup
 
-1. Make sure you have Python and the required dependencies installed:
+1. Install dependencies:
 ```bash
-# Install uv 
+# Install uv
 # See https://github.com/astral-sh/uv for more installation methods
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create a virtual environment and install dependencies
 uv venv .venv
 source .venv/bin/activate
-uv pip install openai-whisper
+uv pip install -e .
 ```
 
 2. Update these paths in `transcribe.py` to match your system:
@@ -32,17 +33,12 @@ FLEET_BASE = Path("/home/mat/Documents/ProgramExperiments/fleetingNotes")  # Pro
 OBS_BASE   = Path("/home/mat/Obsidian/")                                   # Your Obsidian vault location
 
 # Obsidian directories
-INBOX_NOTE      = OBS_BASE / "gtd - inbox.md"  # Default note for unclassified notes
-DAILY_NOTES_DIR = OBS_BASE / "Daily Notes"     # For daily reflections
-ZETTLE_DIR      = OBS_BASE / "ZettleKasten"    # For other categorized notes
+INBOX_NOTE      = OBS_BASE / "gtd - inbox.md"       # Default note for unclassified notes
+DAILY_NOTES_DIR = OBS_BASE / "periodic-notes"        # For daily reflections
+ZETTLE_DIR      = OBS_BASE / "ZettleKasten"          # For other categorized notes
 ```
 
-3. Update the recording directory in `whisper_loop.sh`:
-```bash
-LOCATION="/home/mat/Documents/ProgramExperiments/fleetingNotes/recordings"
-```
-
-4. Make the setup script executable and run:
+3. Set up the systemd service for continuous processing:
 ```bash
 chmod +x daemon_setup.sh
 sudo ./daemon_setup.sh
@@ -50,38 +46,61 @@ sudo ./daemon_setup.sh
 
 ## Usage
 
-1. Use [Syncthing](https://docs.syncthing.net/intro/getting-started.html) to send your phone recordings in the `recordings` directory
-2. The service will automatically:
-   - Transcribe them using Whisper
-   - Route them to appropriate notes based on keywords
-   - Archive the processed files
+### One-shot mode (default)
+Process all available files once and exit:
+```bash
+python transcribe.py
+```
+
+### Daemon mode
+Run continuously, scanning for new files:
+```bash
+python transcribe.py --daemon
+```
+
+Options:
+- `--sleep-seconds N` — seconds between scans when idle (default: 10)
+- `--retry-sleep N` — seconds between retries for deferred files (default: 30)
+- `--retry-limit N` — max retries before moving file to .corrupted/ (default: 40)
+- `--max-loops N` — stop after N loops, 0 = infinite (default: 0)
+- `-t, --skip-archive` — skip archiving audio files after processing
+
+### Syncthing integration
+Use [Syncthing](https://docs.syncthing.net/intro/getting-started.html) to send phone recordings into the `recordings/` directory. The daemon will automatically pick them up.
 
 ## Notes Routing
 
 The system routes transcriptions based on keywords found in the content:
 - "concept digest" → ZettleKasten/concept digest.md
 - "memory dump" → ZettleKasten/memory dump.md
-- "daily reflection" → Daily Notes/YYYY-MM-DD.md (based on recording date)
-- Any other content → Default inbox note
+- "daily reflection" → periodic-notes/YYYY-MM-DD.md (based on recording date)
+- "reminder" → ZettleKasten/fleet_notes/reminders/ (individual files)
+- Any other content → gtd - inbox.md
 
 ### Adding Your Own Routes
 
-You can add your own keyword-destination pairs by modifying the `NOTES_MAP` in `transcribe.py`:
+Modify the `NOTES_MAP` in `transcribe.py`:
 
 ```python
-# Note mapping
 NOTES_MAP = {
     "concept digest": ZETTLE_DIR / "concept digest.md",
     "memory dump": ZETTLE_DIR / "memory dump.md",
     "daily reflection": "daily",
+    "reminder": "reminder",
     # Add your custom routes here, e.g.:
     "shopping list": OBS_BASE / "Lists/shopping.md",
     "project ideas": ZETTLE_DIR / "project ideas.md",
 }
 ```
 
-To add a new route:
-1. Choose a keyword that you'll say in your voice note
-2. Specify a destination path in your Obsidian vault
-3. Add the pair to the `NOTES_MAP` dictionary
-4. Restart the service: `sudo systemctl restart whisper-loop.service`
+Then restart the service: `sudo systemctl restart whisper-loop.service`
+
+## Service Management
+
+```bash
+sudo systemctl status whisper-loop.service    # Check status
+sudo journalctl -u whisper-loop.service       # View logs
+sudo systemctl restart whisper-loop.service   # Restart
+sudo systemctl stop whisper-loop.service      # Stop
+sudo systemctl disable whisper-loop.service   # Disable
+```

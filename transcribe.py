@@ -1,4 +1,6 @@
 import sys
+import queue
+import threading
 from faster_whisper import WhisperModel
 import logging
 import warnings
@@ -54,12 +56,17 @@ WHISPER_MODEL = "medium"
 DEVICE = "cuda"
 COMPUTE_TYPE = "int8_float16"
 
-# Set up logging
+# Set up logging with rotation (max 5MB per file, keep 3 backups)
+from logging.handlers import RotatingFileHandler
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(FLEET_BASE / 'processing_errors.log'),
+        RotatingFileHandler(
+            FLEET_BASE / 'processing_errors.log',
+            maxBytes=5 * 1024 * 1024,
+            backupCount=3,
+        ),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -84,6 +91,33 @@ def log_operation(content: str, source: str, target: Path) -> None:
 class TranscriptionError(Exception):
     """Custom exception for transcription-related errors"""
     pass
+
+def iter_with_stall_timeout(iterator, timeout=60):
+    """Yields items from iterator, raising TimeoutError if no item arrives within timeout seconds."""
+    q = queue.Queue()
+    sentinel = object()
+
+    def producer():
+        try:
+            for item in iterator:
+                q.put(item)
+        except Exception as e:
+            q.put(e)
+        finally:
+            q.put(sentinel)
+
+    threading.Thread(target=producer, daemon=True).start()
+
+    while True:
+        try:
+            item = q.get(timeout=timeout)
+        except queue.Empty:
+            raise TimeoutError(f"Transcription stalled — no progress for {timeout}s")
+        if item is sentinel:
+            break
+        if isinstance(item, Exception):
+            raise item
+        yield item
 
 def is_audio_file_corrupted(file_path: Path) -> bool:
     """Check if an audio file is corrupted using ffprobe"""
@@ -175,7 +209,9 @@ class TranscriptionService:
             )
             
             # Collect text from all segments, separated by newlines for readability
-            text_parts = [segment.text for segment in segments]
+            text_parts = []
+            for segment in iter_with_stall_timeout(segments, timeout=60):
+                text_parts.append(segment.text)
             transcribed_text = "\n".join(text_parts).strip()
             
             if not transcribed_text:
@@ -188,6 +224,10 @@ class TranscriptionService:
             return None
         except ValueError as e:
             logging.error(f"Invalid file: {e}")
+            return None
+        except TimeoutError as e:
+            logging.error(f"Transcription stalled for {audio_file}: {e}")
+            self.unload_model()
             return None
         except Exception as e:
             logging.error(f"Unexpected error transcribing {audio_file}: {e}")

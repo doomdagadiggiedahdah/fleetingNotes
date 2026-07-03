@@ -4,7 +4,11 @@ research_archive/*
 main/
 transcriptions/
 venv/
+.venv/
+.venv.old/
 temp/
 recordings/
 __pycache__/
+*.egg-info/
 processing_errors.log
+processing_errors.log.*
